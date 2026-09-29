@@ -8,4 +8,8 @@ export const envValidationSchema = Joi.object({
     .required(),
 
   [EnvKeys.API_PORT]: Joi.number().port().default(3050),
+
+  [EnvKeys.FRONTEND_URL]: Joi.string()
+    .uri({ scheme: ["http", "https"] })
+    .required(),
 });
