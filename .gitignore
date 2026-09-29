@@ -1,0 +1,47 @@
+# Dependencies and package-manager cache
+node_modules/
+.pnpm-store/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Build output and local caches
+dist/
+build/
+.next/
+.expo/
+.vercel/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Test and runtime output
+playwright-report/
+test-results/
+*.log
+
+# Local editor and OS files
+.DS_Store
+.idea/
+.vscode/
+
+# Generated files
+apps/api/src/generated/
+apps/api/generated/
+
+# Documentation is kept locally for now
+docs/
+old_docs/
+
+# Local agent/tool configuration
+apps/api/.agents/
+apps/api/.claude/
+apps/api/.windsurf/
+apps/api/skills-lock.json
+
+# Workspace metadata must stay at the repository root
+apps/*/pnpm-lock.yaml
+apps/*/pnpm-workspace.yaml

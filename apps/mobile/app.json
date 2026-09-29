@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "CINEMO",
+    "slug": "cinemo",
+    "scheme": "cinemo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark"
+  }
+}

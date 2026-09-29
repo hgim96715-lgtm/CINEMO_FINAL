@@ -1,0 +1,15 @@
+{
+  "name": "cinemo-final",
+  "private": true,
+  "scripts": {
+    "dev:api": "pnpm --filter @cinemo/api dev",
+    "dev:web": "pnpm --filter @cinemo/web dev",
+    "dev:mobile": "pnpm --filter @cinemo/mobile start",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "typescript": "^7.0.2"
+  }
+}
