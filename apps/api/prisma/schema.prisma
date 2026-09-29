@@ -1,7 +1,199 @@
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+    provider = "postgresql"
+}
+
+enum TitleType {
+    PRIMARY
+    ORIGINAL
+    ALIAS
+    RERELEASE
+}
+
+enum ReleaseType {
+    INITIAL
+    RERELEASE
+}
+
+enum ReleaseStatus {
+    ANNOUNCED
+    SCHEDULED
+    RELEASED
+    CANCELLED
+}
+
+enum SourceProvider {
+    KOBIS
+    TMDB
+    KMDB
+    YOUTUBE
+}
+
+enum MatchMethod {
+    AUTO
+    MANUAL
+}
+
+enum MatchStatus {
+    PENDING_REVIEW
+    APPROVED
+    REJECTED
+}
+
+enum MediaType {
+    POSTER
+    BACKDROP
+    TRAILER
+}
+
+enum MediaStatus {
+    ACTIVE
+    INACTIVE
+}
+
+enum WatchProvider {
+    NETFLIX
+    WATCHA
+    TVING
+    DISNEY_PLUS
+    WAVVE
+    APPLE_TV
+}
+
+enum AvailabilityType {
+    STREAM
+    RENT
+    BUY
+}
+
+model Movie {
+    id        String   @id @default(uuid(7)) @db.Uuid
+    createdAt DateTime @default(now()) @db.Timestamptz(3)
+    updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+    titles           MovieTitle[]
+    releases         MovieRelease[]
+    providerLinks    MovieProviderLink[]
+    media            MovieMedia[]
+    watchOptions     MovieWatchOption[]
+    rankingSnapshots MovieRankingSnapshot[]
+
+    @@map("movies")
+}
+
+model MovieTitle {
+    id           String    @id @default(uuid(7)) @db.Uuid
+    movieId      String    @db.Uuid
+    releaseId    String?   @db.Uuid
+    title        String    @db.Text
+    titleType    TitleType
+    languageCode String?   @db.VarChar(10)
+    createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+    updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
+
+    movie   Movie         @relation(fields: [movieId], references: [id], onDelete: Cascade)
+    release MovieRelease? @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+
+    @@index([movieId, titleType])
+    @@index([releaseId])
+    @@map("movie_titles")
+}
+
+model MovieRelease {
+    id          String        @id @default(uuid(7)) @db.Uuid
+    movieId     String        @db.Uuid
+    releaseDate DateTime?     @db.Date
+    releaseType ReleaseType
+    status      ReleaseStatus
+    countryCode String?       @db.Char(2)
+    isPrimary   Boolean       @default(false)
+    createdAt   DateTime      @default(now()) @db.Timestamptz(3)
+    updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
+
+    movie       Movie        @relation(fields: [movieId], references: [id], onDelete: Cascade)
+    titles      MovieTitle[]
+    movieMedias MovieMedia[]
+
+    @@index([movieId, isPrimary])
+    @@index([status, releaseDate])
+    @@map("movie_releases")
+}
+
+model MovieProviderLink {
+    id             String         @id @default(uuid(7)) @db.Uuid
+    movieId        String         @db.Uuid
+    sourceProvider SourceProvider
+    externalId     String         @db.Text
+    matchMethod    MatchMethod
+    matchStatus    MatchStatus    @default(PENDING_REVIEW)
+    confidence     Decimal?       @db.Decimal(5, 4)
+    verifiedAt     DateTime?      @db.Timestamptz(3)
+    createdAt      DateTime       @default(now()) @db.Timestamptz(3)
+    updatedAt      DateTime       @updatedAt @db.Timestamptz(3)
+
+    movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+    @@unique([sourceProvider, externalId])
+    @@index([movieId, matchStatus])
+    @@map("movie_provider_links")
+}
+
+model MovieMedia {
+    id             String         @id @default(uuid(7)) @db.Uuid
+    movieId        String         @db.Uuid
+    releaseId      String?        @db.Uuid
+    mediaType      MediaType
+    sourceProvider SourceProvider
+    url            String         @db.Text
+    externalId     String?        @db.Text
+    isPrimary      Boolean        @default(false)
+    status         MediaStatus    @default(ACTIVE)
+    verifiedAt     DateTime?      @db.Timestamptz(3)
+    createdAt      DateTime       @default(now()) @db.Timestamptz(3)
+    updatedAt      DateTime       @updatedAt @db.Timestamptz(3)
+
+    movie   Movie         @relation(fields: [movieId], references: [id], onDelete: Cascade)
+    release MovieRelease? @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+
+    @@index([movieId, mediaType, isPrimary])
+    @@index([releaseId])
+    @@map("movie_media")
+}
+
+model MovieWatchOption {
+    id               String           @id @default(uuid(7)) @db.Uuid
+    movieId          String           @db.Uuid
+    watchProvider    WatchProvider
+    availabilityType AvailabilityType
+    regionCode       String           @default("KR") @db.VarChar(10)
+    url              String           @db.Text
+    expiresAt        DateTime?        @db.Timestamptz(3)
+    lastVerifiedAt   DateTime?        @db.Timestamptz(3)
+    createdAt        DateTime         @default(now()) @db.Timestamptz(3)
+    updatedAt        DateTime         @updatedAt @db.Timestamptz(3)
+
+    movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+    @@index([movieId, regionCode])
+    @@index([watchProvider, availabilityType])
+    @@map("movie_watch_options")
+}
+
+model MovieRankingSnapshot {
+    id             String         @id @default(uuid(7)) @db.Uuid
+    movieId        String         @db.Uuid
+    sourceProvider SourceProvider
+    rank           Int
+    audienceCount  Int?
+    collectedAt    DateTime       @db.Timestamptz(3)
+    createdAt      DateTime       @default(now()) @db.Timestamptz(3)
+
+    movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+    @@index([sourceProvider, collectedAt, rank])
+    @@index([movieId, collectedAt])
+    @@map("movie_ranking_snapshots")
 }
