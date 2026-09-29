@@ -7,7 +7,8 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { envValidationSchema } from "./config/env.validation";
 import { appConfig } from "./config/app.config";
 import { databaseConfig } from "./config/database.config";
-import { HealthModule } from './health/health.module';
+import { HealthModule } from "./health/health.module";
+import { MoviesModule } from "./modules/movies/movies.module";
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { HealthModule } from './health/health.module';
     }),
     PrismaModule,
     HealthModule,
+    MoviesModule,
   ],
 })
 export class AppModule {}
