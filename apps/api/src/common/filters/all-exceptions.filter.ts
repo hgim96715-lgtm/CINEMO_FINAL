@@ -4,6 +4,7 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from "@nestjs/common";
 import type { Request, Response } from "express";
 
@@ -17,8 +18,21 @@ function isExceptionResponse(value: unknown): value is ExceptionResponse {
   return typeof value === "object" && value !== null;
 }
 
+function formatLogValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
+  private readonly logger = new Logger(AllExceptionsFilter.name);
   catch(exception: unknown, host: ArgumentsHost) {
     const context = host.switchToHttp();
 
@@ -26,6 +40,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = context.getResponse<Response>();
 
     const isHttpException = exception instanceof HttpException;
+
+    const error = exception as {
+      message?: string;
+      stack?: string;
+      config?: {
+        baseURL?: string;
+        url?: string;
+      };
+      response?: {
+        data?: unknown;
+      };
+    };
 
     const status = isHttpException
       ? exception.getStatus()
@@ -67,6 +93,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const requestId = Array.isArray(requestIdHeader)
       ? requestIdHeader[0]
       : requestIdHeader;
+
+    const upstreamUrl = [error.config?.baseURL, error.config?.url]
+      .filter(Boolean)
+      .join("");
+
+    const logLines = [
+      `[${request.method}] ${request.originalUrl ?? request.url}`,
+      `status: ${status}`,
+      `code: ${code}`,
+      `message: ${message}`,
+      requestId ? `requestId: ${requestId}` : undefined,
+      upstreamUrl ? `upstream: ${upstreamUrl}` : undefined,
+      details !== undefined
+        ? `details:\n${formatLogValue(details)}`
+        : undefined,
+      error.response?.data !== undefined
+        ? `upstreamResponse:\n${formatLogValue(error.response.data)}`
+        : undefined,
+    ].filter((line): line is string => Boolean(line));
+
+    this.logger.error(logLines.join("\n"), error.stack);
 
     response.status(status).json({
       statusCode: status,

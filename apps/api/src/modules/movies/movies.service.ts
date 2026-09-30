@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { MovieNotFoundException } from "../../common/exceptions/movie-not-found.exception";
+import { MovieNotFoundException } from "@/common/exceptions/movie-not-found.exception";
 import { MoviesRepository } from "./movies.repository";
 import { toMovieResponseDto } from "./mappers/movie-response.mapper";
 

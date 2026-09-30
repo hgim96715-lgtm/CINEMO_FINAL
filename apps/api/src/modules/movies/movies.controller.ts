@@ -6,8 +6,8 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { GetMovieRequestDto } from "./dto/requests/get-movie.request.dto";
-import { MovieResponseDto } from "./dto/responses/movie.response.dto";
+import { GetMovieRequestDto } from "@/modules/movies/dto/requests/get-movie.request.dto";
+import { MovieResponseDto } from "@/modules/movies/dto/responses/movie.response.dto";
 import { MoviesService } from "./movies.service";
 
 @ApiTags("Movies")

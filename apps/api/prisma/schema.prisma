@@ -69,17 +69,25 @@ enum AvailabilityType {
     BUY
 }
 
+enum CreditType {
+    DIRECTOR
+    ACTOR
+}
+
 model Movie {
     id        String   @id @default(uuid(7)) @db.Uuid
     createdAt DateTime @default(now()) @db.Timestamptz(3)
     updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-    titles           MovieTitle[]
-    releases         MovieRelease[]
-    providerLinks    MovieProviderLink[]
-    media            MovieMedia[]
-    watchOptions     MovieWatchOption[]
-    rankingSnapshots MovieRankingSnapshot[]
+    titles              MovieTitle[]
+    releases            MovieRelease[]
+    providerLinks       MovieProviderLink[]
+    media               MovieMedia[]
+    watchOptions        MovieWatchOption[]
+    rankingSnapshots    MovieRankingSnapshot[]
+    movieCredits        MovieCredit[]
+    movieGenres         MovieGenre[]
+    movieCertifications MovieCertification[]
 
     @@map("movies")
 }
@@ -196,4 +204,68 @@ model MovieRankingSnapshot {
     @@index([sourceProvider, collectedAt, rank])
     @@index([movieId, collectedAt])
     @@map("movie_ranking_snapshots")
+}
+
+model MoviePerson {
+    id        String   @id @default(uuid(7)) @db.Uuid
+    name      String   @db.Text
+    nameEn    String?  @db.Text
+    createdAt DateTime @default(now()) @db.Timestamptz(3)
+    updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+    credits MovieCredit[]
+
+    @@index([name])
+    @@index([nameEn])
+    @@map("movie_people")
+}
+
+model MovieCredit {
+    id            String     @id @default(uuid(7)) @db.Uuid
+    movieId       String     @db.Uuid
+    personId      String     @db.Uuid
+    creditType    CreditType
+    characterName String?    @db.Text
+    displayOrder  Int?
+    createdAt     DateTime   @default(now()) @db.Timestamptz(3)
+
+    movie  Movie       @relation(fields: [movieId], references: [id], onDelete: Cascade)
+    person MoviePerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+    @@unique([movieId, personId, creditType])
+    @@index([personId, creditType])
+    @@index([movieId, creditType])
+    @@map("movie_credits")
+}
+
+model MovieGenre {
+    id        String   @id @default(uuid(7)) @db.Uuid
+    movieId   String   @db.Uuid
+    code      String?  @db.VarChar(50)
+    name      String   @db.VarChar(100)
+    createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+    movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+    @@unique([movieId, name])
+    @@index([name])
+    @@index([code])
+    @@map("movie_genres")
+}
+
+model MovieCertification {
+    id             String         @id @default(uuid(7)) @db.Uuid
+    movieId        String         @db.Uuid
+    auditNo        String         @db.Text
+    watchGradeName String         @db.VarChar(100)
+    sourceProvider SourceProvider
+    verifiedAt     DateTime?      @db.Timestamptz(3)
+    createdAt      DateTime       @default(now()) @db.Timestamptz(3)
+    updatedAt      DateTime       @updatedAt @db.Timestamptz(3)
+
+    movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+    @@unique([sourceProvider, auditNo])
+    @@index([movieId])
+    @@map("movie_certifications")
 }

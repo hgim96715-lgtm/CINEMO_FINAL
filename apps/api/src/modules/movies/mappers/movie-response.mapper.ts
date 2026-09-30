@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 
-import { MovieResponseDto } from "../dto/responses/movie.response.dto";
+import { MovieResponseDto } from "@/modules/movies/dto/responses/movie.response.dto";
 
 const movieInclude = {
   titles: true,
