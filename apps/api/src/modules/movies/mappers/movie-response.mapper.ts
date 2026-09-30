@@ -8,6 +8,19 @@ const movieInclude = {
   media: true,
   providerLinks: true,
   watchOptions: true,
+  movieGenres: {
+    orderBy: {
+      name: "asc",
+    },
+  },
+  movieCredits: {
+    orderBy: {
+      displayOrder: "asc",
+    },
+    include: {
+      person: true,
+    },
+  },
 } satisfies Prisma.MovieInclude;
 
 export type MovieWithDetails = Prisma.MovieGetPayload<{
@@ -67,6 +80,23 @@ export function toMovieResponseDto(movie: MovieWithDetails): MovieResponseDto {
       url: option.url,
       expiresAt: toIsoString(option.expiresAt),
       lastVerifiedAt: toIsoString(option.lastVerifiedAt),
+    })),
+    genres: movie.movieGenres.map((genre) => ({
+      id: genre.id,
+      code: genre.code,
+      name: genre.name,
+    })),
+
+    credits: movie.movieCredits.map((credit) => ({
+      id: credit.id,
+      creditType: credit.creditType,
+      characterName: credit.characterName,
+      displayOrder: credit.displayOrder,
+      person: {
+        id: credit.person.id,
+        name: credit.person.name,
+        nameEn: credit.person.nameEn,
+      },
     })),
 
     createdAt: movie.createdAt.toISOString(),

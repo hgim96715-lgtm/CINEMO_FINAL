@@ -5,6 +5,8 @@ import { MovieProviderLinkResponseDto } from "./movie-provider-link.response.dto
 import { MovieReleaseResponseDto } from "./movie-release.response.dto";
 import { MovieTitleResponseDto } from "./movie-title.response.dto";
 import { MovieWatchOptionResponseDto } from "./movie-watch-option.response.dto";
+import { MovieCreditResponseDto } from "./movie-credit.response.dto";
+import { MovieGenreResponseDto } from "./movie-genre.response.dto";
 
 export class MovieResponseDto {
   @ApiProperty({ description: "CINEMO 내부 영화 식별자" })
@@ -39,6 +41,18 @@ export class MovieResponseDto {
     type: [MovieWatchOptionResponseDto],
   })
   watchOptions!: MovieWatchOptionResponseDto[];
+
+  @ApiProperty({
+    description: "영화 장르 목록",
+    type: [MovieGenreResponseDto],
+  })
+  genres!: MovieGenreResponseDto[];
+
+  @ApiProperty({
+    description: "영화와 감독·배우 연결 목록",
+    type: [MovieCreditResponseDto],
+  })
+  credits!: MovieCreditResponseDto[];
 
   @ApiProperty({ description: "영화 레코드 생성 시각" })
   createdAt!: string;

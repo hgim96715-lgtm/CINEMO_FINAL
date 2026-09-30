@@ -29,6 +29,19 @@ const movieInclude = {
     },
     orderBy: [{ watchProvider: "asc" }, { availabilityType: "asc" }],
   },
+  movieGenres: {
+    orderBy: {
+      name: "asc",
+    },
+  },
+  movieCredits: {
+    orderBy: {
+      displayOrder: "asc",
+    },
+    include: {
+      person: true,
+    },
+  },
 } satisfies Prisma.MovieInclude;
 
 type MovieWithDetails = Prisma.MovieGetPayload<{

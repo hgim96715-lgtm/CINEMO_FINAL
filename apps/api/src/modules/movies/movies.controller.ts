@@ -1,19 +1,64 @@
-import { Controller, Get, Param } from "@nestjs/common";
+// apps/api/src/modules/movies/movies.controller.ts
+
+import { Controller, Get, Param, Post } from "@nestjs/common";
 import {
+  ApiBadRequestResponse,
+  ApiConflictResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from "@nestjs/swagger";
 
-import { GetMovieRequestDto } from "@/modules/movies/dto/requests/get-movie.request.dto";
-import { MovieResponseDto } from "@/modules/movies/dto/responses/movie.response.dto";
+import { GetKobisMovieInfoRequestDto } from "@/integrations/kobis/dto/requests/get-kobis-movie-info.request.dto";
+
+import { MovieResponseDto } from "./dto/responses/movie.response.dto";
+import { KobisMovieImportService } from "./kobis-movie-import.service";
 import { MoviesService } from "./movies.service";
+import { GetMovieRequestDto } from "./dto/requests/get-movie.request.dto";
 
 @ApiTags("Movies")
 @Controller("movies")
 export class MoviesController {
-  constructor(private readonly moviesService: MoviesService) {}
+  constructor(
+    private readonly moviesService: MoviesService,
+    private readonly kobisMovieImportService: KobisMovieImportService,
+  ) {}
+
+  @ApiConflictResponse({
+    description:
+      "동일한 영화 후보가 여러 개 발견되어 관리자 검토가 필요합니다.",
+    schema: {
+      example: {
+        statusCode: 409,
+        code: "MOVIE_MATCH_REVIEW_REQUIRED",
+        message: "동일한 영화 후보가 여러 개라 관리자 검토가 필요합니다.",
+        candidateMovieIds: [
+          "0199b4f5-7c9d-7abc-8def-123456789abc",
+          "0199b4f5-7c9d-7abc-8def-987654321def",
+        ],
+      },
+    },
+  })
+  @Post("import/kobis/:movieCd")
+  @ApiOperation({
+    summary: "KOBIS 영화 DB 저장",
+    description:
+      "KOBIS 영화 정보를 조회하고, 기존 영화와 매칭한 뒤 CINEMO DB에 저장",
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "string",
+      example: "0199b4f5-7c9d-7abc-8def-123456789abc",
+    },
+    description: "저장되거나 연결된 CINEMO 내부 영화 UUID",
+  })
+  @ApiBadRequestResponse({
+    description: "KOBIS 영화 코드가 올바르지 않습니다.",
+  })
+  importMovie(@Param() params: GetKobisMovieInfoRequestDto) {
+    return this.kobisMovieImportService.importMovie(params.movieCd);
+  }
 
   @Get(":movieId")
   @ApiOperation({
