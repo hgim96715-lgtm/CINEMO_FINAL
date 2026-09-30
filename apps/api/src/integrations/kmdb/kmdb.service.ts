@@ -8,7 +8,6 @@ import type {
 } from "./types/kmdb-response.type";
 import { toKmdbMovieSearchResponseDto } from "./mappers/kmdb-response.mapper";
 import { KmdbMovieSearchResponseDto } from "./dto/responses/kmdb-movie-search.response.dto";
-import { title } from "process";
 
 @Injectable()
 export class KmdbService {
@@ -24,7 +23,7 @@ export class KmdbService {
         params: {
           collection: "kmdb_new2",
           detail: "Y",
-          query,
+          title: query,
           listCount: limit,
           startCount: (page - 1) * limit, // KMDb offset은 0부터 시작
         },
@@ -42,7 +41,7 @@ export class KmdbService {
         params: {
           collection: "kmdb_new2",
           detail: "Y",
-          query: title,
+          title,
           listCount: 100,
           startCount: 0,
         },
