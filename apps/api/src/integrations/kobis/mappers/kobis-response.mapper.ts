@@ -2,8 +2,8 @@ import type {
   KobisMovie,
   KobisMovieInfo,
 } from "@/integrations/kobis/types/kobis.types";
-import { KobisMovieSearchItemResponseDto } from "@/integrations/kobis/dto/response/kobis-movie-search-item.response.dto";
-import { KobisMovieInfoResponseDto } from "@/integrations/kobis/dto/response/kobis-movie-info.response.dto";
+import { KobisMovieSearchItemResponseDto } from "@/integrations/kobis/dto/responses/kobis-movie-search-item.response.dto";
+import { KobisMovieInfoResponseDto } from "@/integrations/kobis/dto/responses/kobis-movie-info.response.dto";
 
 function splitValues(value?: string): string[] {
   return (

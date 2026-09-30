@@ -7,9 +7,9 @@ import {
 } from "@nestjs/swagger";
 
 import { SearchKobisMoviesRequestDto } from "./dto/requests/search-kobis-movies.request.dto";
-import { KobisMovieSearchResponseDto } from "./dto/response/kobis-movie-search.response.dto";
+import { KobisMovieSearchResponseDto } from "./dto/responses/kobis-movie-search.response.dto";
 import { KobisService } from "./kobis.service";
-import { KobisMovieInfoResponseDto } from "./dto/response/kobis-movie-info.response.dto";
+import { KobisMovieInfoResponseDto } from "./dto/responses/kobis-movie-info.response.dto";
 import { GetKobisMovieInfoRequestDto } from "./dto/requests/get-kobis-movie-info.request.dto";
 
 @ApiTags("KOBIS")

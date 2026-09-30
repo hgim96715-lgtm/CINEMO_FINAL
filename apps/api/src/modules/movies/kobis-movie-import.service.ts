@@ -12,7 +12,7 @@ import {
 
 import { PrismaService } from "@/prisma/prisma.service";
 import { KobisService } from "@/integrations/kobis/kobis.service";
-import type { KobisMovieInfoResponseDto } from "@/integrations/kobis/dto/response/kobis-movie-info.response.dto";
+import type { KobisMovieInfoResponseDto } from "@/integrations/kobis/dto/responses/kobis-movie-info.response.dto";
 import { MovieMatcherService } from "./movie-matcher.service";
 
 function parseKobisDate(value: string | null): Date | null {

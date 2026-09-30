@@ -10,8 +10,8 @@ import {
   toKobisMovieInfoResponse,
   toKobisMovieSearchItemResponse,
 } from "./mappers/kobis-response.mapper";
-import { KobisMovieSearchResponseDto } from "./dto/response/kobis-movie-search.response.dto";
-import { KobisMovieInfoResponseDto } from "./dto/response/kobis-movie-info.response.dto";
+import { KobisMovieSearchResponseDto } from "./dto/responses/kobis-movie-search.response.dto";
+import { KobisMovieInfoResponseDto } from "./dto/responses/kobis-movie-info.response.dto";
 
 @Injectable()
 export class KobisService {

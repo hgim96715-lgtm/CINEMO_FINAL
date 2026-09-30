@@ -16,6 +16,8 @@ import { MovieResponseDto } from "./dto/responses/movie.response.dto";
 import { KobisMovieImportService } from "./kobis-movie-import.service";
 import { MoviesService } from "./movies.service";
 import { GetMovieRequestDto } from "./dto/requests/get-movie.request.dto";
+import { EnrichTmdbMovieRequestDto } from "./dto/requests/enrich-tmdb-movie.request.dto";
+import { TmdbMovieEnrichmentService } from "./tmdb-movie-enrichment.service";
 
 @ApiTags("Movies")
 @Controller("movies")
@@ -23,6 +25,7 @@ export class MoviesController {
   constructor(
     private readonly moviesService: MoviesService,
     private readonly kobisMovieImportService: KobisMovieImportService,
+    private readonly tmdbMovieEnrichmentService: TmdbMovieEnrichmentService,
   ) {}
 
   @ApiConflictResponse({
@@ -74,5 +77,23 @@ export class MoviesController {
   })
   findById(@Param() params: GetMovieRequestDto) {
     return this.moviesService.findById(params.movieId);
+  }
+
+  @Post(":movieId/enrich/tmdb/:tmdbMovieId")
+  @ApiOperation({
+    summary: "TMDB 영화 정보 보완",
+    description: "기존 CINEMO 영화에 TMDB 포스터·배경·장르·예고편 정보를 보완",
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "string",
+      example: "0199b4f5-7c9d-7abc-8def-123456789abc",
+    },
+  })
+  enrichFromTmdb(@Param() params: EnrichTmdbMovieRequestDto) {
+    return this.tmdbMovieEnrichmentService.enrichMovie(
+      params.movieId,
+      params.tmdbMovieId,
+    );
   }
 }

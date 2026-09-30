@@ -11,13 +11,15 @@ import { HealthModule } from "@/health/health.module";
 import { MoviesModule } from "@/modules/movies/movies.module";
 import { kobisConfig } from "@/config/kobis.config";
 import { KobisModule } from "@/integrations/kobis/kobis.module";
+import { tmdbConfig } from "./config/tmdb.config";
+import { TmdbModule } from "./integrations/tmdb/tmdb.module";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      load: [appConfig, databaseConfig, kobisConfig],
+      load: [appConfig, databaseConfig, kobisConfig, tmdbConfig],
       validationSchema: envValidationSchema,
       validationOptions: {
         convert: true,
@@ -29,6 +31,7 @@ import { KobisModule } from "@/integrations/kobis/kobis.module";
     HealthModule,
     MoviesModule,
     KobisModule,
+    TmdbModule,
   ],
 })
 export class AppModule {}
