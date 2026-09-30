@@ -17,4 +17,14 @@ export class MoviesService {
     }
     return toMovieResponseDto(movie);
   }
+
+  async search(
+    query: string,
+    page: number,
+    limit: number,
+  ): Promise<MovieResponseDto[]> {
+    const movies = await this.movieRepository.search(query, page, limit);
+
+    return movies.map(toMovieResponseDto);
+  }
 }

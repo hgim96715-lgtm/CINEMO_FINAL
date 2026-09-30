@@ -1,6 +1,6 @@
 // apps/api/src/modules/movies/movies.controller.ts
 
-import { Controller, Get, Param, Post } from "@nestjs/common";
+import { Controller, Get, Param, Post, Query } from "@nestjs/common";
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
@@ -20,6 +20,7 @@ import { EnrichTmdbMovieRequestDto } from "./dto/requests/enrich-tmdb-movie.requ
 import { TmdbMovieEnrichmentService } from "./tmdb-movie-enrichment.service";
 import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
 import { EnrichKmdbMovieRequestDto } from "./dto/requests/enrich-kmdb-movie.request.dto";
+import { SearchMoviesRequestDto } from "./dto/requests/search-movies.request.dto";
 
 @ApiTags("Movies")
 @Controller("movies")
@@ -40,7 +41,7 @@ export class MoviesController {
         code: "MOVIE_MATCH_REVIEW_REQUIRED",
         message: "동일한 영화 후보가 여러 개라 관리자 검토가 필요합니다.",
         candidateMovieIds: [
-          "0199b4f5-7c9d-7abc-8def-123456789abc",
+          "01a0f063-d740-7084-a1ea-ed5c020640bb",
           "0199b4f5-7c9d-7abc-8def-987654321def",
         ],
       },
@@ -55,7 +56,7 @@ export class MoviesController {
   @ApiOkResponse({
     schema: {
       type: "string",
-      example: "0199b4f5-7c9d-7abc-8def-123456789abc",
+      example: "01a0f063-d740-7084-a1ea-ed5c020640bb",
     },
     description: "저장되거나 연결된 CINEMO 내부 영화 UUID",
   })
@@ -64,6 +65,19 @@ export class MoviesController {
   })
   importMovie(@Param() params: GetKobisMovieInfoRequestDto) {
     return this.kobisMovieImportService.importMovie(params.movieCd);
+  }
+
+  @Get("search")
+  @ApiOperation({
+    summary: "CINEMO 영화 통합 검색",
+    description: "제목·감독·배우·장르로 CINEMO DB의 영화를 검색",
+  })
+  @ApiOkResponse({
+    type: [MovieResponseDto],
+    description: "영화 검색 결과",
+  })
+  search(@Query() params: SearchMoviesRequestDto) {
+    return this.moviesService.search(params.query, params.page, params.limit);
   }
 
   @Get(":movieId")

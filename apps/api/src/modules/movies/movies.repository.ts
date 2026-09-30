@@ -60,4 +60,65 @@ export class MoviesRepository {
       include: movieInclude,
     });
   }
+
+  search(
+    query: string,
+    page: number,
+    limit: number,
+  ): Prisma.PrismaPromise<MovieWithDetails[]> {
+    return this.prisma.movie.findMany({
+      where: {
+        OR: [
+          {
+            titles: {
+              some: {
+                title: {
+                  contains: query,
+                  mode: "insensitive",
+                },
+              },
+            },
+          },
+          {
+            movieGenres: {
+              some: {
+                name: {
+                  contains: query,
+                  mode: "insensitive",
+                },
+              },
+            },
+          },
+          {
+            movieCredits: {
+              some: {
+                person: {
+                  OR: [
+                    {
+                      name: {
+                        contains: query,
+                        mode: "insensitive",
+                      },
+                    },
+                    {
+                      nameEn: {
+                        contains: query,
+                        mode: "insensitive",
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        ],
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: {
+        updatedAt: "desc",
+      },
+      include: movieInclude,
+    });
+  }
 }

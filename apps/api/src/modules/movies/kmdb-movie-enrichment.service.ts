@@ -57,14 +57,18 @@ const parseKmdbDate = (value?: string | null): Date | null => {
   );
 };
 
-const getReleaseDate = (movie: KmdbMovieResult): Date | null => {
+const getReleaseDates = (movie: KmdbMovieResult): Date[] => {
   const dates =
     movie.ratings?.rating
       ?.map((rating) => parseKmdbDate(rating.releaseDate))
       .filter((date): date is Date => date !== null)
-      .sort((a, b) => b.getTime() - a.getTime()) ?? [];
+      .sort((a, b) => a.getTime() - b.getTime()) ?? [];
 
-  return dates[0] ?? null;
+  return [
+    ...new Map(
+      dates.map((date) => [date.toISOString().slice(0, 10), date]),
+    ).values(),
+  ];
 };
 
 @Injectable()
@@ -143,47 +147,88 @@ export class KmdbMovieEnrichmentService {
         }
       }
 
-      const releaseDate = getReleaseDate(kmdbMovie);
-      let releaseId: string | undefined;
+      const releaseDates = getReleaseDates(kmdbMovie);
+      const initialReleaseDate = releaseDates[0] ?? null;
+      const rereleaseDates = releaseDates.slice(1);
+      let releaseId: string | null = null;
 
-      if (releaseDate) {
+      if (releaseDates.length > 0) {
         await tx.movieRelease.updateMany({
           where: { movieId },
           data: { isPrimary: false },
         });
 
-        const existingRelease = await tx.movieRelease.findFirst({
-          where: {
-            movieId,
-            releaseType: ReleaseType.RERELEASE,
-            releaseDate,
-          },
-        });
+        if (initialReleaseDate) {
+          const initialStatus =
+            initialReleaseDate.getTime() > Date.now()
+              ? ReleaseStatus.SCHEDULED
+              : ReleaseStatus.RELEASED;
+          const existingInitialRelease = await tx.movieRelease.findFirst({
+            where: {
+              movieId,
+              releaseType: ReleaseType.INITIAL,
+            },
+          });
 
-        const status =
-          releaseDate.getTime() > Date.now()
-            ? ReleaseStatus.SCHEDULED
-            : ReleaseStatus.RELEASED;
+          const initialRelease = existingInitialRelease
+            ? await tx.movieRelease.update({
+                where: { id: existingInitialRelease.id },
+                data: {
+                  releaseDate: initialReleaseDate,
+                  status: initialStatus,
+                  isPrimary: rereleaseDates.length === 0,
+                },
+              })
+            : await tx.movieRelease.create({
+                data: {
+                  movieId,
+                  releaseDate: initialReleaseDate,
+                  releaseType: ReleaseType.INITIAL,
+                  status: initialStatus,
+                  isPrimary: rereleaseDates.length === 0,
+                },
+              });
 
-        const release = existingRelease
-          ? await tx.movieRelease.update({
-              where: { id: existingRelease.id },
-              data: {
-                status,
-                isPrimary: true,
-              },
-            })
-          : await tx.movieRelease.create({
-              data: {
-                movieId,
-                releaseDate,
-                releaseType: ReleaseType.RERELEASE,
-                status,
-                isPrimary: true,
-              },
-            });
+          if (rereleaseDates.length === 0) {
+            releaseId = initialRelease.id;
+          }
+        }
 
-        releaseId = release.id;
+        for (const [index, rereleaseDate] of rereleaseDates.entries()) {
+          const rereleaseStatus =
+            rereleaseDate.getTime() > Date.now()
+              ? ReleaseStatus.SCHEDULED
+              : ReleaseStatus.RELEASED;
+          const existingRerelease = await tx.movieRelease.findFirst({
+            where: {
+              movieId,
+              releaseType: ReleaseType.RERELEASE,
+              releaseDate: rereleaseDate,
+            },
+          });
+
+          const rerelease = existingRerelease
+            ? await tx.movieRelease.update({
+                where: { id: existingRerelease.id },
+                data: {
+                  status: rereleaseStatus,
+                  isPrimary: index === rereleaseDates.length - 1,
+                },
+              })
+            : await tx.movieRelease.create({
+                data: {
+                  movieId,
+                  releaseDate: rereleaseDate,
+                  releaseType: ReleaseType.RERELEASE,
+                  status: rereleaseStatus,
+                  isPrimary: index === rereleaseDates.length - 1,
+                },
+              });
+
+          if (index === rereleaseDates.length - 1) {
+            releaseId = rerelease.id;
+          }
+        }
       }
 
       const posterUrl = toStringArray(kmdbMovie.posters)[0];
@@ -199,12 +244,28 @@ export class KmdbMovieEnrichmentService {
           },
         });
 
+        if (releaseId) {
+          await tx.movieMedia.updateMany({
+            where: {
+              movieId,
+              mediaType: MediaType.POSTER,
+              releaseId,
+              status: MediaStatus.ACTIVE,
+              isPrimary: true,
+            },
+            data: {
+              isPrimary: false,
+            },
+          });
+        }
+
         if (existingMedia) {
           await tx.movieMedia.update({
             where: { id: existingMedia.id },
             data: {
               releaseId,
               url: posterUrl,
+              isPrimary: releaseId ? true : existingMedia.isPrimary,
               status: MediaStatus.ACTIVE,
               verifiedAt: new Date(),
             },
@@ -228,7 +289,7 @@ export class KmdbMovieEnrichmentService {
               sourceProvider: SourceProvider.KMDB,
               externalId: posterUrl,
               url: posterUrl,
-              isPrimary: !primaryMedia,
+              isPrimary: releaseId ? true : !primaryMedia,
               status: MediaStatus.ACTIVE,
               verifiedAt: new Date(),
             },
