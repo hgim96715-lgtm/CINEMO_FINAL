@@ -1,5 +1,4 @@
 import { ApiProperty } from "@nestjs/swagger";
-
 import { MovieSearchItemResponseDto } from "./movie-search-item.response.dto";
 
 export class MovieSearchResponseDto {

@@ -5,6 +5,7 @@
     "dev:api": "pnpm --filter @cinemo/api dev",
     "dev:web": "pnpm --filter @cinemo/web dev",
     "dev:mobile": "pnpm --filter @cinemo/mobile start",
+    "codegen:openapi": "pnpm dlx --package=@hey-api/openapi-ts@0.99.0 --package=typescript@5.9.3 openapi-ts -i http://localhost:3050/api-json -o packages/api-contract/src/generated",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck"
   },

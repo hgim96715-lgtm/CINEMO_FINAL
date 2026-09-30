@@ -15,6 +15,7 @@
     "typescript": "~6.0.3"
   },
   "dependencies": {
+    "@cinemo/api-contract": "workspace:*",
     "@cinemo/shared": "workspace:*",
     "@expo/metro-runtime": "~57.0.16",
     "@expo/ui": "~57.0.21",

@@ -13,14 +13,16 @@ export class MovieSearchItemResponseDto {
   })
   title!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
+    type: String,
     description: "대표 개봉일",
     example: "2026-09-23",
     nullable: true,
   })
   releaseDate!: string | null;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
+    type: String,
     description: "대표 세로 포스터 주소",
     example: "https://image.tmdb.org/t/p/w500/poster.jpg",
     nullable: true,

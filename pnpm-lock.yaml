@@ -198,6 +198,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@cinemo/api-contract':
+        specifier: workspace:*
+        version: link:../../packages/api-contract
       '@cinemo/shared':
         specifier: workspace:*
         version: link:../../packages/shared
