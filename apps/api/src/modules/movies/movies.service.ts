@@ -5,6 +5,8 @@ import { MovieNotFoundException } from "@/common/exceptions/movie-not-found.exce
 import { MovieResponseDto } from "./dto/responses/movie.response.dto";
 import { MoviesRepository } from "./movies.repository";
 import { toMovieResponseDto } from "./mappers/movie-response.mapper";
+import { MovieSearchResponseDto } from "./dto/responses/movie-search.response.dto";
+import { toMovieSearchItemResponseDto } from "./mappers/movie-search-response.mapper";
 
 @Injectable()
 export class MoviesService {
@@ -22,9 +24,18 @@ export class MoviesService {
     query: string,
     page: number,
     limit: number,
-  ): Promise<MovieResponseDto[]> {
-    const movies = await this.movieRepository.search(query, page, limit);
+  ): Promise<MovieSearchResponseDto> {
+    const { movies, totalCount } = await this.movieRepository.search(
+      query,
+      page,
+      limit,
+    );
 
-    return movies.map(toMovieResponseDto);
+    return {
+      items: movies.map(toMovieSearchItemResponseDto),
+      totalCount,
+      page,
+      limit,
+    };
   }
 }

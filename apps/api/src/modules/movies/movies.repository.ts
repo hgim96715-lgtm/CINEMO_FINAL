@@ -48,6 +48,35 @@ type MovieWithDetails = Prisma.MovieGetPayload<{
   include: typeof movieInclude;
 }>;
 
+const movieSearchInclude = {
+  titles: {
+    orderBy: {
+      createdAt: "asc",
+    },
+  },
+  releases: {
+    orderBy: [{ isPrimary: "desc" }, { releaseDate: "desc" }],
+    take: 1,
+  },
+  media: {
+    where: {
+      mediaType: "POSTER",
+      status: MediaStatus.ACTIVE,
+    },
+    orderBy: [{ isPrimary: "desc" }, { verifiedAt: "desc" }],
+    take: 1,
+  },
+  movieGenres: {
+    orderBy: {
+      name: "asc",
+    },
+  },
+} satisfies Prisma.MovieInclude;
+
+export type MovieSearchWithDetails = Prisma.MovieGetPayload<{
+  include: typeof movieSearchInclude;
+}>;
+
 @Injectable()
 export class MoviesRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -65,60 +94,75 @@ export class MoviesRepository {
     query: string,
     page: number,
     limit: number,
-  ): Prisma.PrismaPromise<MovieWithDetails[]> {
-    return this.prisma.movie.findMany({
-      where: {
-        OR: [
-          {
-            titles: {
-              some: {
-                title: {
-                  contains: query,
-                  mode: "insensitive",
-                },
+  ): Promise<{
+    movies: MovieSearchWithDetails[];
+    totalCount: number;
+  }> {
+    const where: Prisma.MovieWhereInput = {
+      OR: [
+        {
+          titles: {
+            some: {
+              title: {
+                contains: query,
+                mode: "insensitive",
               },
             },
           },
-          {
-            movieGenres: {
-              some: {
-                name: {
-                  contains: query,
-                  mode: "insensitive",
-                },
+        },
+        {
+          movieGenres: {
+            some: {
+              name: {
+                contains: query,
+                mode: "insensitive",
               },
             },
           },
-          {
-            movieCredits: {
-              some: {
-                person: {
-                  OR: [
-                    {
-                      name: {
-                        contains: query,
-                        mode: "insensitive",
-                      },
+        },
+        {
+          movieCredits: {
+            some: {
+              person: {
+                OR: [
+                  {
+                    name: {
+                      contains: query,
+                      mode: "insensitive",
                     },
-                    {
-                      nameEn: {
-                        contains: query,
-                        mode: "insensitive",
-                      },
+                  },
+                  {
+                    nameEn: {
+                      contains: query,
+                      mode: "insensitive",
                     },
-                  ],
-                },
+                  },
+                ],
               },
             },
           },
-        ],
-      },
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: {
-        updatedAt: "desc",
-      },
-      include: movieInclude,
+        },
+      ],
+    };
+
+    return this.prisma.$transaction(async (tx) => {
+      const [movies, totalCount] = await Promise.all([
+        tx.movie.findMany({
+          where,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: {
+            updatedAt: "desc",
+          },
+          include: movieSearchInclude,
+        }),
+        tx.movie.count({ where }),
+      ]);
+
+      return {
+        movies,
+        totalCount,
+      };
     });
   }
 }

@@ -21,6 +21,7 @@ import { TmdbMovieEnrichmentService } from "./tmdb-movie-enrichment.service";
 import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
 import { EnrichKmdbMovieRequestDto } from "./dto/requests/enrich-kmdb-movie.request.dto";
 import { SearchMoviesRequestDto } from "./dto/requests/search-movies.request.dto";
+import { MovieSearchResponseDto } from "./dto/responses/movie-search.response.dto";
 
 @ApiTags("Movies")
 @Controller("movies")
@@ -70,11 +71,12 @@ export class MoviesController {
   @Get("search")
   @ApiOperation({
     summary: "CINEMO 영화 통합 검색",
-    description: "제목·감독·배우·장르로 CINEMO DB의 영화를 검색",
+    description:
+      "제목·감독·배우·장르로 영화를 검색하고 페이지 단위 결과를 반환",
   })
   @ApiOkResponse({
-    type: [MovieResponseDto],
-    description: "영화 검색 결과",
+    type: MovieSearchResponseDto,
+    description: "영화 검색 결과와 페이지 정보",
   })
   search(@Query() params: SearchMoviesRequestDto) {
     return this.moviesService.search(params.query, params.page, params.limit);
