@@ -1,5 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 
+import { KobisPersonResponseDto } from "./kobis-person.response.dto";
+
 export class KobisMovieInfoResponseDto {
   @ApiProperty({
     description: "KOBIS 영화 식별자",
@@ -70,15 +72,15 @@ export class KobisMovieInfoResponseDto {
 
   @ApiProperty({
     description: "감독 이름 목록",
-    type: [String],
+    type: [KobisPersonResponseDto],
   })
-  directors!: string[];
+  directors!: KobisPersonResponseDto[];
 
   @ApiProperty({
     description: "배우 이름 목록",
-    type: [String],
+    type: [KobisPersonResponseDto],
   })
-  actors!: string[];
+  actors!: KobisPersonResponseDto[];
 
   @ApiProperty({
     description: "제작사 이름 목록",

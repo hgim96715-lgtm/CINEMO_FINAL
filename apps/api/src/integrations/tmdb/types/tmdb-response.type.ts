@@ -105,3 +105,25 @@ export interface TmdbMovieDetailResponse extends TmdbMovieSummary {
   status: string;
   tagline: string | null;
 }
+
+export interface TmdbMovieCreditsResponse {
+  id: number;
+  cast: TmdbMovieCast[];
+  crew: TmdbMovieCrew[];
+}
+
+export interface TmdbMovieCast {
+  id: number;
+  name: string;
+  original_name?: string;
+  character: string;
+  order: number;
+}
+
+export interface TmdbMovieCrew {
+  id: number;
+  name: string;
+  original_name?: string;
+  job: string;
+  department: string;
+}

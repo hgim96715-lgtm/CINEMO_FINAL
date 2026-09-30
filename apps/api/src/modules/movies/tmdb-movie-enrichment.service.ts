@@ -1,5 +1,6 @@
 import { ConflictException, Injectable } from "@nestjs/common";
 import {
+  CreditType,
   MatchMethod,
   MatchStatus,
   MediaStatus,
@@ -12,15 +13,23 @@ import {
 import { TmdbService } from "@/integrations/tmdb/tmdb.service";
 import { PrismaService } from "@/prisma/prisma.service";
 
+import { MoviePersonService } from "./movie-person.service";
+
+const TMDB_ACTOR_LIMIT = 10;
+
+const hasKoreanName = (name: string): boolean => /[가-힣]/.test(name);
+
 @Injectable()
 export class TmdbMovieEnrichmentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tmdbService: TmdbService,
+    private readonly moviePersonService: MoviePersonService,
   ) {}
 
   async enrichMovie(movieId: string, tmdbMovieId: number): Promise<string> {
     const tmdbMovie = await this.tmdbService.getMovieDetail(tmdbMovieId);
+    const tmdbCredits = await this.tmdbService.getMovieCredits(tmdbMovieId);
     const trailer = await this.tmdbService.getOfficialTrailer(tmdbMovieId);
     return this.prisma.$transaction(async (tx) => {
       await tx.movie.findUniqueOrThrow({
@@ -100,6 +109,59 @@ export class TmdbMovieEnrichmentService {
           });
         }
       }
+
+      const directors = tmdbCredits.crew
+        .filter(
+          (person) =>
+            person.department === "Directing" && person.job === "Director",
+        )
+        .filter((person) => hasKoreanName(person.name))
+        .map((person) => ({
+          name: person.name,
+          nameEn: person.original_name ?? null,
+          externalId: String(person.id),
+          creditType: CreditType.DIRECTOR,
+        }));
+
+      const actors = [...tmdbCredits.cast]
+        .sort((a, b) => a.order - b.order)
+        .filter((person) => hasKoreanName(person.name))
+        .slice(0, TMDB_ACTOR_LIMIT)
+        .map((person) => ({
+          name: person.name,
+          nameEn: person.original_name ?? null,
+          externalId: String(person.id),
+          creditType: CreditType.ACTOR,
+        }));
+
+      for (const [index, credit] of [...directors, ...actors].entries()) {
+        const person = await this.moviePersonService.resolve(tx, {
+          name: credit.name,
+          nameEn: credit.nameEn,
+          sourceProvider: SourceProvider.TMDB,
+          externalId: credit.externalId,
+        });
+
+        await tx.movieCredit.upsert({
+          where: {
+            movieId_personId_creditType: {
+              movieId,
+              personId: person.id,
+              creditType: credit.creditType,
+            },
+          },
+          create: {
+            movieId,
+            personId: person.id,
+            creditType: credit.creditType,
+            displayOrder: index,
+          },
+          update: {
+            displayOrder: index,
+          },
+        });
+      }
+
       // 포스터·배경·예고편의 원본 provider와 미디어 주소를 저장
       const createOrUpdateMedia = async (
         mediaType: MediaType,

@@ -14,6 +14,7 @@ import { PrismaService } from "@/prisma/prisma.service";
 import { KobisService } from "@/integrations/kobis/kobis.service";
 import type { KobisMovieInfoResponseDto } from "@/integrations/kobis/dto/responses/kobis-movie-info.response.dto";
 import { MovieMatcherService } from "./movie-matcher.service";
+import { MoviePersonService } from "./movie-person.service";
 
 function parseKobisDate(value: string | null): Date | null {
   if (!value || !/^\d{8}$/.test(value)) {
@@ -42,6 +43,7 @@ export class KobisMovieImportService {
     private readonly prisma: PrismaService,
     private readonly kobisService: KobisService,
     private readonly movieMatcher: MovieMatcherService,
+    private readonly moviePersonService: MoviePersonService,
   ) {}
 
   async importMovie(movieCd: string): Promise<string> {
@@ -201,24 +203,23 @@ export class KobisMovieImportService {
       }
 
       const credits = [
-        ...kobisMovie.directors.map((name) => ({
-          name,
+        ...kobisMovie.directors.map((person) => ({
+          name: person.name,
+          nameEn: person.nameEn,
           creditType: CreditType.DIRECTOR,
         })),
-        ...kobisMovie.actors.map((name) => ({
-          name,
+        ...kobisMovie.actors.map((person) => ({
+          name: person.name,
+          nameEn: person.nameEn,
           creditType: CreditType.ACTOR,
         })),
       ];
 
       for (const [index, credit] of credits.entries()) {
-        const person =
-          (await tx.moviePerson.findFirst({
-            where: { name: credit.name },
-          })) ??
-          (await tx.moviePerson.create({
-            data: { name: credit.name },
-          }));
+        const person = await this.moviePersonService.resolve(tx, {
+          name: credit.name,
+          nameEn: credit.nameEn,
+        });
 
         await tx.movieCredit.upsert({
           where: {

@@ -18,6 +18,8 @@ import { MoviesService } from "./movies.service";
 import { GetMovieRequestDto } from "./dto/requests/get-movie.request.dto";
 import { EnrichTmdbMovieRequestDto } from "./dto/requests/enrich-tmdb-movie.request.dto";
 import { TmdbMovieEnrichmentService } from "./tmdb-movie-enrichment.service";
+import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
+import { EnrichKmdbMovieRequestDto } from "./dto/requests/enrich-kmdb-movie.request.dto";
 
 @ApiTags("Movies")
 @Controller("movies")
@@ -26,6 +28,7 @@ export class MoviesController {
     private readonly moviesService: MoviesService,
     private readonly kobisMovieImportService: KobisMovieImportService,
     private readonly tmdbMovieEnrichmentService: TmdbMovieEnrichmentService,
+    private readonly kmdbMovieEnrichmentService: KmdbMovieEnrichmentService,
   ) {}
 
   @ApiConflictResponse({
@@ -94,6 +97,23 @@ export class MoviesController {
     return this.tmdbMovieEnrichmentService.enrichMovie(
       params.movieId,
       params.tmdbMovieId,
+    );
+  }
+  @Post(":movieId/enrich/kmdb/:docId")
+  @ApiOperation({
+    summary: "KMDb 영화 정보 보완",
+    description: "기존 CINEMO 영화에 KMDb 제목·재개봉·포스터·상세 정보를 보완",
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "string",
+      example: "0199b4f5-7c9d-7abc-8def-123456789abc",
+    },
+  })
+  enrichFromKmdb(@Param() params: EnrichKmdbMovieRequestDto) {
+    return this.kmdbMovieEnrichmentService.enrichMovie(
+      params.movieId,
+      params.docId,
     );
   }
 }

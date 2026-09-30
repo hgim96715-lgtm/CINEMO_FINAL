@@ -52,8 +52,16 @@ export function toKobisMovieInfoResponse(
     typeName: movie.typeNm ?? null,
     nations: movie.nations?.map((nation) => nation.nationNm) ?? [],
     genres: movie.genres?.map((genre) => genre.genreNm) ?? [],
-    directors: movie.directors?.map((director) => director.peopleNm) ?? [],
-    actors: movie.actors?.map((actor) => actor.peopleNm) ?? [],
+    directors:
+      movie.directors?.map((director) => ({
+        name: director.peopleNm,
+        nameEn: director.peopleNmEn ?? null,
+      })) ?? [],
+    actors:
+      movie.actors?.map((actor) => ({
+        name: actor.peopleNm,
+        nameEn: actor.peopleNmEn ?? null,
+      })) ?? [],
     companies: movie.companies?.map((company) => company.companyNm ?? "") ?? [],
     certifications: movie.audits?.map((audit) => audit.watchGradeNm) ?? [],
   };

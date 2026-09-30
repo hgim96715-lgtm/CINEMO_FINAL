@@ -8,6 +8,9 @@ export const EnvKeys = {
 
   TMDB_ACCESS_TOKEN: "TMDB_ACCESS_TOKEN",
   TMDB_BASE_URL: "TMDB_BASE_URL",
+
+  KMDB_API_KEY: "KMDB_API_KEY",
+  KMDB_BASE_URL: "KMDB_BASE_URL",
 };
 
 export type EnvKey = (typeof EnvKeys)[keyof typeof EnvKeys];

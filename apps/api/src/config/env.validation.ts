@@ -22,4 +22,9 @@ export const envValidationSchema = Joi.object({
   [EnvKeys.TMDB_BASE_URL]: Joi.string()
     .uri({ allowRelative: false })
     .required(),
+
+  [EnvKeys.KMDB_API_KEY]: Joi.string().trim().min(1).required(),
+  [EnvKeys.KMDB_BASE_URL]: Joi.string()
+    .uri({ allowRelative: false })
+    .required(),
 });

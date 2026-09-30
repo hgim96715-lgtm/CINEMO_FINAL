@@ -4,6 +4,7 @@ import { firstValueFrom } from "rxjs";
 import type {
   TmdbGenreListResponse,
   TmdbMovieDetailResponse,
+  TmdbMovieCreditsResponse,
   TmdbMovieListResponse,
   TmdbMovieSearchResponse,
   TmdbMovieVideo,
@@ -12,6 +13,7 @@ import type {
 
 @Injectable()
 export class TmdbService {
+  // TMDB 전용 HTTP 설정은 tmdb.module.ts에서 등록
   constructor(private readonly httpService: HttpService) {}
 
   async searchMovies(
@@ -38,6 +40,23 @@ export class TmdbService {
           language: "ko-KR",
         },
       }),
+    );
+
+    return data;
+  }
+
+  async getMovieCredits(
+    tmdbMovieId: number,
+  ): Promise<TmdbMovieCreditsResponse> {
+    const { data } = await firstValueFrom(
+      this.httpService.get<TmdbMovieCreditsResponse>(
+        `/movie/${tmdbMovieId}/credits`,
+        {
+          params: {
+            language: "ko-KR",
+          },
+        },
+      ),
     );
 
     return data;
