@@ -1,37 +1,39 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { CINEMO_BRAND } from "@cinemo/shared";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3051",
   ),
+
   title: {
-    default: "CINEMO | 영화의 순간을 모으다",
+    default: CINEMO_BRAND.title,
     template: "%s | CINEMO",
   },
-  description: "좋아하는 영화와 함께 새로운 추억을 쌓아가는 공간",
+
+  description: CINEMO_BRAND.description,
+
   alternates: {
     canonical: "/",
   },
+
   openGraph: {
     type: "website",
-    siteName: "CINEMO",
-    title: "영화의 순간을 모으다 | CINEMO",
-    description: "좋아하는 영화와 함께 새로운 추억을 쌓아가는 공간",
+    siteName: CINEMO_BRAND.name,
+    title: CINEMO_BRAND.title,
+    description: CINEMO_BRAND.description,
     url: "/",
     locale: "ko_KR",
   },
 
   twitter: {
     card: "summary_large_image",
-    title: "영화의 순간을 모으다 | CINEMO",
-    description: "좋아하는 영화와 함께 새로운 추억을 쌓아가는 공간",
-  },
-  robots: {
-    index: true,
-    follow: true,
+    title: CINEMO_BRAND.title,
+    description: CINEMO_BRAND.description,
   },
 };
 

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { CINEMO_BRAND } from "@cinemo/shared";
+
 import { getMovie } from "../../../lib/api/movies";
 
 type MovieLayoutProps = {
@@ -15,18 +17,19 @@ export async function generateMetadata({
 }: MovieLayoutProps): Promise<Metadata> {
   const { id } = await params;
   const movie = await getMovie(id);
-  const primarytitle =
+
+  const primaryTitle =
     movie?.titles.find((item) => item.titleType === "PRIMARY") ??
     movie?.titles[0];
 
-  const title = primarytitle?.title ?? "영화 상세";
+  const title = primaryTitle?.title ?? "영화 상세";
   const poster = movie?.media.find(
     (item) => item.mediaType === "POSTER" && item.isPrimary,
   );
 
   const description = movie
     ? `${title}의 영화 정보와 출연진, 장르, 개봉 정보를 확인하세요.`
-    : "CINEMO 영화 상세 정보";
+    : `${CINEMO_BRAND.slogan}. ${CINEMO_BRAND.description}`;
 
   return {
     title,
@@ -36,7 +39,7 @@ export async function generateMetadata({
     },
     openGraph: {
       type: "article",
-      title: `${title} | CINEMO`,
+      title: `${title} | ${CINEMO_BRAND.name}`,
       description,
       url: `/movies/${id}`,
       images: poster
@@ -50,6 +53,7 @@ export async function generateMetadata({
     },
   };
 }
+
 export default function MovieLayout({ children }: MovieLayoutProps) {
   return children;
 }

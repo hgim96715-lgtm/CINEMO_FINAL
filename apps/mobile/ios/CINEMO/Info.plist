@@ -28,7 +28,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>cinemo</string>
-				<string>com.hgim.cinemo</string>
+				<string>site.cinemo.app</string>
 			</array>
 		</dict>
 	</array>

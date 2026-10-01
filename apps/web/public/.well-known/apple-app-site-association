@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "대기중.site.cinemo.app"
+        ],
+        "paths": [
+          "/",
+          "/lobby",
+          "/movies/*"
+        ]
+      }
+    ]
+  }
+}

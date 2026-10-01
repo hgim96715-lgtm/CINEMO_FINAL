@@ -1,6 +1,6 @@
 # CINEMO
 
-> CINEMO | 영화의 순간을 모으다
+> CINEMO | 영화 속으로, 추억의 한 장면으로
 >
 > 좋아하는 영화와 함께 새로운 추억을 쌓아가는 공간
 
@@ -21,14 +21,18 @@ CINEMO 아이콘은 둥근 `C` 안쪽으로 한 아이가 걸어 들어가는 �
 
 ## 외부 API
 
-| 외부 API | 사용하는 정보 |
-| --- | --- |
-| KOBIS | 한국 영화 식별자·개봉 정보·박스오피스 |
-| TMDB | 영화 상세 정보·포스터·배경·장르·영상 |
-| KMDb | 한국어 영화 정보·재개봉 정보·포스터 |
+
+| 외부 API | 사용하는 정보               |
+| ------ | --------------------- |
+| KOBIS  | 한국 영화 식별자·개봉 정보·박스오피스 |
+| TMDB   | 영화 상세 정보·포스터·배경·장르·영상 |
+| KMDb   | 한국어 영화 정보·재개봉 정보·포스터  |
+
 
 - 외부 API 원본 응답은 API 서버에서 수집·변환한 뒤 CINEMO DB에 저장.
 - Web과 Mobile은 외부 API를 직접 호출하지 않고 CINEMO API만 사용.
+
+
 
 ## Docker
 
@@ -47,12 +51,16 @@ DataGrip과 Mac에서 실행하는 앱은 `localhost:5445`로 접속
 
 ## 로컬 실행 주소
 
-| 구분 | 주소 | 용도 |
-| --- | --- | --- |
-| Web | `http://localhost:3051` | CINEMO Web 앱 |
-| API | `http://localhost:3050/api/v1` | 버전이 포함된 API 기본 경로 |
-| Swagger UI | `http://localhost:3050/api` | API 문서·Try it out 확인 |
+
+| 구분           | 주소                               | 용도                       |
+| ------------ | -------------------------------- | ------------------------ |
+| Web          | `http://localhost:3051`          | CINEMO Web 앱             |
+| API          | `http://localhost:3050/api/v1`   | 버전이 포함된 API 기본 경로        |
+| Swagger UI   | `http://localhost:3050/api`      | API 문서·Try it out 확인     |
 | OpenAPI JSON | `http://localhost:3050/api-json` | OpenAPI 원본 문서·Codegen 입력 |
+
+
+
 
 ### Swagger 확인 순서
 
@@ -70,8 +78,22 @@ Try it out으로 요청·응답 확인
 - OpenAPI JSON은 `packages/api-contract`의 OpenAPI Codegen 입력으로 사용.
 - Web은 `http://localhost:3051`에서 확인.
 
+
 ## 배포 주소
 
 ```text
 https://www.cinemo.site
 ```
+
+
+## Mobile App Identifier
+
+모바일 앱과 웹 딥링크를 연결하기 위해 사용하는 공개 식별자.
+
+
+| 구분                | 값                         |
+| ----------------- | ------------------------- |
+| iOS Bundle ID     | `site.cinemo.app`         |
+| Android Package   | `site.cinemo.app`         |
+| Custom URL Scheme | `cinemo`                  |
+| Web Domain        | `https://www.cinemo.site` |

@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { CINEMO_BRAND } from "@cinemo/shared";
+
 export const metadata: Metadata = {
   title: "Lobby",
-  description:
-    "현재 상영작과 인기 영화, 새로운 영화의 순간을 만나는 CINEMO Lobby.",
+  description: `${CINEMO_BRAND.slogan}. ${CINEMO_BRAND.description}`,
   alternates: {
     canonical: "/lobby",
   },
   openGraph: {
-    title: "Lobby | CINEMO",
-    description:
-      "현재 상영작과 인기 영화, 새로운 영화의 순간을 만나는 CINEMO Lobby.",
+    title: `Lobby | ${CINEMO_BRAND.name}`,
+    description: `${CINEMO_BRAND.slogan}. ${CINEMO_BRAND.description}`,
     url: "/lobby",
     type: "website",
   },

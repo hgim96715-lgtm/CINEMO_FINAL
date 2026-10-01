@@ -5,6 +5,7 @@
     "scheme": "cinemo",
     "icon": "./assets/icon.png",
     "version": "1.0.0",
+    "description": "영화 속으로, 추억의 한 장면으로",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "splash": {
@@ -13,14 +14,29 @@
       "backgroundColor": "#101014"
     },
     "ios": {
+      "associatedDomains": ["applinks:www.cinemo.site"],
       "supportsTablet": true,
       "deploymentTarget": "16.4",
-      "bundleIdentifier": "com.hgim.cinemo"
+      "bundleIdentifier": "site.cinemo.app"
     },
     "android": {
+      "package": "site.cinemo.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0f1014"
-      }
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#101014"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": {
+            "scheme": "https",
+            "host": "www.cinemo.site",
+            "pathPrefix": "/"
+          }
+        }
+      ]
     },
     "plugins": [
       "expo-router",

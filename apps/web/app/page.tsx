@@ -3,8 +3,11 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+import { CINEMO_BRAND } from "@cinemo/shared";
+
 export default function HomePage() {
   const router = useRouter();
+
   useEffect(() => {
     const timer = setTimeout(() => {
       router.replace("/lobby");
@@ -14,12 +17,23 @@ export default function HomePage() {
   }, [router]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#101014] text-[#f3efe6]">
+    <main
+      className="flex min-h-screen items-center justify-center"
+      style={{
+        backgroundColor: CINEMO_BRAND.colors.background,
+        color: CINEMO_BRAND.colors.textPrimary,
+      }}
+    >
       <section className="text-center">
-        <h1 className="text-5xl font-bold tracking-[6px]">CINEMO</h1>
+        <h1 className="text-5xl font-bold tracking-[6px]">
+          {CINEMO_BRAND.name}
+        </h1>
 
-        <p className="mt-5 text-base text-[#958d82]">
-          영화의 순간을 모으다
+        <p
+          className="mt-5 text-base"
+          style={{ color: CINEMO_BRAND.colors.textSecondary }}
+        >
+          {CINEMO_BRAND.slogan}
         </p>
       </section>
     </main>
