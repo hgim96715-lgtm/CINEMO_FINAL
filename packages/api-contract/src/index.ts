@@ -4,5 +4,5 @@ export type HealthResponse = {
 export type {
   MovieSearchItemResponseDto as MovieSearchItemResponse,
   MovieSearchResponseDto as MovieSearchResponse,
-  MovieResponseDto,
+  MovieResponseDto as MovieResponse,
 } from "./generated/types.gen";

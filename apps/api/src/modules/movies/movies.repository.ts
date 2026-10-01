@@ -77,6 +77,11 @@ export type MovieSearchWithDetails = Prisma.MovieGetPayload<{
   include: typeof movieSearchInclude;
 }>;
 
+type MovieSitemapItem = {
+  id: string;
+  updatedAt: Date;
+};
+
 @Injectable()
 export class MoviesRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -163,6 +168,19 @@ export class MoviesRepository {
         movies,
         totalCount,
       };
+    });
+  }
+
+  // Web SEO용 sitemap 생성을 위해 영화 ID와 수정 시각만 조회
+  findSitemapMovies(): Prisma.PrismaPromise<MovieSitemapItem[]> {
+    return this.prisma.movie.findMany({
+      select: {
+        id: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
     });
   }
 }

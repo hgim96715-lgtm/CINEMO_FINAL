@@ -22,6 +22,7 @@ import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
 import { EnrichKmdbMovieRequestDto } from "./dto/requests/enrich-kmdb-movie.request.dto";
 import { SearchMoviesRequestDto } from "./dto/requests/search-movies.request.dto";
 import { MovieSearchResponseDto } from "./dto/responses/movie-search.response.dto";
+import { MovieSitemapResponseDto } from "./dto/responses/movie-sitemap.response.dto";
 
 @ApiTags("Movies")
 @Controller("movies")
@@ -80,6 +81,20 @@ export class MoviesController {
   })
   search(@Query() params: SearchMoviesRequestDto) {
     return this.moviesService.search(params.query, params.page, params.limit);
+  }
+
+  @Get("sitemap")
+  @ApiOperation({
+    summary: "영화 sitemap 데이터 조회",
+    description:
+      "Web SEO sitemap 생성을 위해 영화의 CINEMO 내부 ID와 수정 시각을 조회",
+  })
+  @ApiOkResponse({
+    type: MovieSitemapResponseDto,
+    description: "sitemap 생성용 영화 목록",
+  })
+  getSitemapMovies() {
+    return this.moviesService.getSitemapMovies();
   }
 
   @Get(":movieId")

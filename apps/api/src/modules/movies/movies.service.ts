@@ -3,10 +3,12 @@ import { Injectable } from "@nestjs/common";
 import { MovieNotFoundException } from "@/common/exceptions/movie-not-found.exception";
 
 import { MovieResponseDto } from "./dto/responses/movie.response.dto";
+import { MovieSitemapResponseDto } from "./dto/responses/movie-sitemap.response.dto";
 import { MoviesRepository } from "./movies.repository";
 import { toMovieResponseDto } from "./mappers/movie-response.mapper";
 import { MovieSearchResponseDto } from "./dto/responses/movie-search.response.dto";
 import { toMovieSearchItemResponseDto } from "./mappers/movie-search-response.mapper";
+import { toMovieSitemapItemResponseDto } from "./mappers/movie-sitemap.mapper";
 
 @Injectable()
 export class MoviesService {
@@ -36,6 +38,14 @@ export class MoviesService {
       totalCount,
       page,
       limit,
+    };
+  }
+
+  async getSitemapMovies(): Promise<MovieSitemapResponseDto> {
+    const movies = await this.movieRepository.findSitemapMovies();
+
+    return {
+      items: movies.map(toMovieSitemapItemResponseDto),
     };
   }
 }
