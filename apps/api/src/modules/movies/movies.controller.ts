@@ -10,16 +10,9 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { GetKobisMovieInfoRequestDto } from "@/integrations/kobis/dto/requests/get-kobis-movie-info.request.dto";
-
 import { MovieResponseDto } from "./dto/responses/movie.response.dto";
-import { KobisMovieImportService } from "./kobis-movie-import.service";
 import { MoviesService } from "./movies.service";
 import { GetMovieRequestDto } from "./dto/requests/get-movie.request.dto";
-import { EnrichTmdbMovieRequestDto } from "./dto/requests/enrich-tmdb-movie.request.dto";
-import { TmdbMovieEnrichmentService } from "./tmdb-movie-enrichment.service";
-import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
-import { EnrichKmdbMovieRequestDto } from "./dto/requests/enrich-kmdb-movie.request.dto";
 import { SearchMoviesRequestDto } from "./dto/requests/search-movies.request.dto";
 import { MovieSearchResponseDto } from "./dto/responses/movie-search.response.dto";
 import { MovieSitemapResponseDto } from "./dto/responses/movie-sitemap.response.dto";
@@ -27,12 +20,7 @@ import { MovieSitemapResponseDto } from "./dto/responses/movie-sitemap.response.
 @ApiTags("Movies")
 @Controller("movies")
 export class MoviesController {
-  constructor(
-    private readonly moviesService: MoviesService,
-    private readonly kobisMovieImportService: KobisMovieImportService,
-    private readonly tmdbMovieEnrichmentService: TmdbMovieEnrichmentService,
-    private readonly kmdbMovieEnrichmentService: KmdbMovieEnrichmentService,
-  ) {}
+  constructor(private readonly moviesService: MoviesService) {}
 
   @ApiConflictResponse({
     description:
@@ -49,26 +37,6 @@ export class MoviesController {
       },
     },
   })
-  @Post("import/kobis/:movieCd")
-  @ApiOperation({
-    summary: "KOBIS 영화 DB 저장",
-    description:
-      "KOBIS 영화 정보를 조회하고, 기존 영화와 매칭한 뒤 CINEMO DB에 저장",
-  })
-  @ApiOkResponse({
-    schema: {
-      type: "string",
-      example: "01a0f063-d740-7084-a1ea-ed5c020640bb",
-    },
-    description: "저장되거나 연결된 CINEMO 내부 영화 UUID",
-  })
-  @ApiBadRequestResponse({
-    description: "KOBIS 영화 코드가 올바르지 않습니다.",
-  })
-  importMovie(@Param() params: GetKobisMovieInfoRequestDto) {
-    return this.kobisMovieImportService.importMovie(params.movieCd);
-  }
-
   @Get("search")
   @ApiOperation({
     summary: "CINEMO 영화 통합 검색",
@@ -111,40 +79,5 @@ export class MoviesController {
   })
   findById(@Param() params: GetMovieRequestDto) {
     return this.moviesService.findById(params.movieId);
-  }
-
-  @Post(":movieId/enrich/tmdb/:tmdbMovieId")
-  @ApiOperation({
-    summary: "TMDB 영화 정보 보완",
-    description: "기존 CINEMO 영화에 TMDB 포스터·배경·장르·예고편 정보를 보완",
-  })
-  @ApiOkResponse({
-    schema: {
-      type: "string",
-      example: "0199b4f5-7c9d-7abc-8def-123456789abc",
-    },
-  })
-  enrichFromTmdb(@Param() params: EnrichTmdbMovieRequestDto) {
-    return this.tmdbMovieEnrichmentService.enrichMovie(
-      params.movieId,
-      params.tmdbMovieId,
-    );
-  }
-  @Post(":movieId/enrich/kmdb/:docId")
-  @ApiOperation({
-    summary: "KMDb 영화 정보 보완",
-    description: "기존 CINEMO 영화에 KMDb 제목·재개봉·포스터·상세 정보를 보완",
-  })
-  @ApiOkResponse({
-    schema: {
-      type: "string",
-      example: "0199b4f5-7c9d-7abc-8def-123456789abc",
-    },
-  })
-  enrichFromKmdb(@Param() params: EnrichKmdbMovieRequestDto) {
-    return this.kmdbMovieEnrichmentService.enrichMovie(
-      params.movieId,
-      params.docId,
-    );
   }
 }

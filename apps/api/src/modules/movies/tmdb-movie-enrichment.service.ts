@@ -6,6 +6,8 @@ import {
   MediaStatus,
   MediaType,
   Prisma,
+  ReleaseStatus,
+  ReleaseType,
   SourceProvider,
   TitleType,
 } from "@prisma/client";
@@ -74,6 +76,54 @@ export class TmdbMovieEnrichmentService {
           verifiedAt: new Date(),
         },
       });
+
+      const tmdbReleaseDate = tmdbMovie.release_date
+        ? new Date(`${tmdbMovie.release_date}T00:00:00.000Z`)
+        : null;
+
+      if (tmdbReleaseDate) {
+        const existingTmdbRelease = await tx.movieRelease.findFirst({
+          where: {
+            movieId,
+            releaseType: ReleaseType.INITIAL,
+            countryCode: null,
+          },
+        });
+
+        const hasKoreanRelease = await tx.movieRelease.findFirst({
+          where: {
+            movieId,
+            countryCode: "KR",
+          },
+          select: { id: true },
+        });
+
+        const releaseData = {
+          releaseDate: tmdbReleaseDate,
+          status:
+            tmdbReleaseDate.getTime() > Date.now()
+              ? ReleaseStatus.SCHEDULED
+              : ReleaseStatus.RELEASED,
+          isPrimary: !hasKoreanRelease,
+        };
+
+        if (existingTmdbRelease) {
+          await tx.movieRelease.update({
+            where: { id: existingTmdbRelease.id },
+            data: releaseData,
+          });
+        } else {
+          await tx.movieRelease.create({
+            data: {
+              movieId,
+              releaseType: ReleaseType.INITIAL,
+              countryCode: null,
+              ...releaseData,
+            },
+          });
+        }
+      }
+
       const originalTitle = await tx.movieTitle.findFirst({
         where: {
           movieId,
@@ -235,6 +285,21 @@ export class TmdbMovieEnrichmentService {
           trailer.key,
         );
       }
+
+      const productionCountryCodes = [
+        ...new Set(
+          tmdbMovie.production_countries
+            .map((country) => country.iso_3166_1)
+            .filter(Boolean),
+        ),
+      ];
+      if (productionCountryCodes.length > 0) {
+        await tx.movie.update({
+          where: { id: movieId },
+          data: { productionCountryCodes },
+        });
+      }
+
       return movieId;
     });
   }

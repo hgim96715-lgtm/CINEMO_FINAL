@@ -37,6 +37,13 @@ export class MovieResponseDto {
   media!: MovieMediaResponseDto[];
 
   @ApiProperty({
+    description: "영화 제작 국가 ISO 코드 목록",
+    example: ["JP"],
+    type: [String],
+  })
+  productionCountryCodes!: string[];
+
+  @ApiProperty({
     description: "시청 가능한 플랫폼 목록",
     type: [MovieWatchOptionResponseDto],
   })

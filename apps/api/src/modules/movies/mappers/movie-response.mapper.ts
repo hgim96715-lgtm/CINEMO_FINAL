@@ -38,6 +38,7 @@ function toDateString(value: Date | null | undefined) {
 export function toMovieResponseDto(movie: MovieWithDetails): MovieResponseDto {
   return {
     id: movie.id,
+    productionCountryCodes: movie.productionCountryCodes,
     titles: movie.titles.map((title) => ({
       id: title.id,
       title: title.title,

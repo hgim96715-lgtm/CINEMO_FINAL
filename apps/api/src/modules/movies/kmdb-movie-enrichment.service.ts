@@ -158,40 +158,48 @@ export class KmdbMovieEnrichmentService {
           data: { isPrimary: false },
         });
 
-        if (initialReleaseDate) {
-          const initialStatus =
-            initialReleaseDate.getTime() > Date.now()
-              ? ReleaseStatus.SCHEDULED
-              : ReleaseStatus.RELEASED;
-          const existingInitialRelease = await tx.movieRelease.findFirst({
-            where: {
-              movieId,
-              releaseType: ReleaseType.INITIAL,
-            },
-          });
+        const initialStatus =
+          initialReleaseDate && initialReleaseDate.getTime() > Date.now()
+            ? ReleaseStatus.SCHEDULED
+            : ReleaseStatus.RELEASED;
 
-          const initialRelease = existingInitialRelease
-            ? await tx.movieRelease.update({
-                where: { id: existingInitialRelease.id },
-                data: {
-                  releaseDate: initialReleaseDate,
-                  status: initialStatus,
-                  isPrimary: rereleaseDates.length === 0,
-                },
-              })
-            : await tx.movieRelease.create({
-                data: {
-                  movieId,
-                  releaseDate: initialReleaseDate,
-                  releaseType: ReleaseType.INITIAL,
-                  status: initialStatus,
-                  isPrimary: rereleaseDates.length === 0,
-                },
-              });
+        const existingInitialRelease = await tx.movieRelease.findFirst({
+          where: {
+            movieId,
+            releaseType: ReleaseType.INITIAL,
+            OR: [
+              { countryCode: "KR" },
+              {
+                countryCode: null,
+                releaseDate: initialReleaseDate,
+              },
+            ],
+          },
+        });
 
-          if (rereleaseDates.length === 0) {
-            releaseId = initialRelease.id;
-          }
+        const initialRelease = existingInitialRelease
+          ? await tx.movieRelease.update({
+              where: { id: existingInitialRelease.id },
+              data: {
+                releaseDate: initialReleaseDate,
+                countryCode: "KR",
+                status: initialStatus,
+                isPrimary: rereleaseDates.length === 0,
+              },
+            })
+          : await tx.movieRelease.create({
+              data: {
+                movieId,
+                releaseDate: initialReleaseDate,
+                releaseType: ReleaseType.INITIAL,
+                countryCode: "KR",
+                status: initialStatus,
+                isPrimary: rereleaseDates.length === 0,
+              },
+            });
+
+        if (rereleaseDates.length === 0) {
+          releaseId = initialRelease.id;
         }
 
         for (const [index, rereleaseDate] of rereleaseDates.entries()) {
@@ -199,11 +207,13 @@ export class KmdbMovieEnrichmentService {
             rereleaseDate.getTime() > Date.now()
               ? ReleaseStatus.SCHEDULED
               : ReleaseStatus.RELEASED;
+
           const existingRerelease = await tx.movieRelease.findFirst({
             where: {
               movieId,
               releaseType: ReleaseType.RERELEASE,
               releaseDate: rereleaseDate,
+              OR: [{ countryCode: "KR" }, { countryCode: null }],
             },
           });
 
@@ -211,6 +221,7 @@ export class KmdbMovieEnrichmentService {
             ? await tx.movieRelease.update({
                 where: { id: existingRerelease.id },
                 data: {
+                  countryCode: "KR",
                   status: rereleaseStatus,
                   isPrimary: index === rereleaseDates.length - 1,
                 },
@@ -220,6 +231,7 @@ export class KmdbMovieEnrichmentService {
                   movieId,
                   releaseDate: rereleaseDate,
                   releaseType: ReleaseType.RERELEASE,
+                  countryCode: "KR",
                   status: rereleaseStatus,
                   isPrimary: index === rereleaseDates.length - 1,
                 },

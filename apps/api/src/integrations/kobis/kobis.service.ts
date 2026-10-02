@@ -43,6 +43,34 @@ export class KobisService {
     };
   }
 
+  async searchMoviesByProductionYear(
+    productionStartYear: number,
+    productionEndYear: number,
+    page = 1,
+    limit = 20,
+  ): Promise<KobisMovieSearchResponseDto> {
+    const { data } = await firstValueFrom(
+      this.httpService.get<KobisMovieListResponse>(
+        "/movie/searchMovieList.json",
+        {
+          params: {
+            prdtStartYear: productionStartYear,
+            prdtEndYear: productionEndYear,
+            curPage: page,
+            itemPerPage: limit,
+          },
+        },
+      ),
+    );
+
+    return {
+      totalCount: Number(data.movieListResult.totCnt),
+      results: data.movieListResult.movieList.map(
+        toKobisMovieSearchItemResponse,
+      ),
+    };
+  }
+
   async getMovieInfo(movieCd: string): Promise<KobisMovieInfoResponseDto> {
     const { data } = await firstValueFrom(
       this.httpService.get<KobisMovieInfoResponse>(
