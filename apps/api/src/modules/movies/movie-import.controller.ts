@@ -64,7 +64,7 @@ export class MovieImportController {
     },
   })
   importPopularFromTmdb() {
-    return this.tmdbMovieBatchImportService.importPopularMovies(2);
+    return this.tmdbMovieBatchImportService.importPopularMovies(10);
   }
 
   @Post("tmdb/now-playing")
@@ -81,7 +81,7 @@ export class MovieImportController {
     },
   })
   importNowPlayingFromTmdb() {
-    return this.tmdbMovieBatchImportService.importNowPlayingMovies(2);
+    return this.tmdbMovieBatchImportService.importNowPlayingMovies(10);
   }
 
   @Post(":movieId/enrich/tmdb/:tmdbMovieId")
