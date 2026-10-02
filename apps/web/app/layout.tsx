@@ -6,6 +6,10 @@ import { CINEMO_BRAND } from "@cinemo/shared";
 import "./globals.css";
 import { QueryProvider } from "../providers/query-provider";
 import { Header } from "../components/common/Header";
+import { Inter } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -41,7 +45,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ko">
+    <html lang="ko" className={cn("font-sans", inter.variable)}>
       <body>
         <QueryProvider>
           <Header />

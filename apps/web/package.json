@@ -19,6 +19,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@base-ui/react": "^1.8.0",
     "@cinemo/api-contract": "workspace:*",
     "@cinemo/shared": "workspace:*",
     "@daypicker/react": "^10.0.1",
@@ -28,13 +29,18 @@
     "@radix-ui/react-tabs": "^1.1.21",
     "@tanstack/react-query": "^5.104.0",
     "axios": "^1.20.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "lucide-react": "^1.48.0",
     "next": "16.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.89.0",
+    "shadcn": "^4.21.1",
     "socket.io-client": "^4.8.4",
+    "tailwind-merge": "^3.7.0",
+    "tw-animate-css": "^1.4.0",
     "zod": "^4.6.5",
     "zustand": "^5.0.15"
   }
