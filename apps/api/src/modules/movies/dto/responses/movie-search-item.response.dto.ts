@@ -35,4 +35,12 @@ export class MovieSearchItemResponseDto {
     type: [String],
   })
   genres!: string[];
+
+  @ApiProperty({
+    type: Number,
+    description: "KOBIS 박스오피스 순위",
+    example: 1,
+    nullable: true,
+  })
+  rank!: number | null;
 }

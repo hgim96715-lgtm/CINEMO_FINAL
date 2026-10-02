@@ -1,17 +1,21 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 
-import type {
-  KobisMovieInfoResponse,
-  KobisMovieListResponse,
+import {
+  KobisDailyBoxOfficeResponse,
+  type KobisDailyBoxOfficeMovie,
+  type KobisMovieInfoResponse,
+  type KobisMovieListResponse,
 } from "./types/kobis.types";
 import {
+  toKobisDailyBoxOfficeResponse,
   toKobisMovieInfoResponse,
   toKobisMovieSearchItemResponse,
 } from "./mappers/kobis-response.mapper";
 import { KobisMovieSearchResponseDto } from "./dto/responses/kobis-movie-search.response.dto";
 import { KobisMovieInfoResponseDto } from "./dto/responses/kobis-movie-info.response.dto";
+import { KobisDailyBoxOfficeResponseDto } from "./dto/responses/kobis-daily-box-office.response.dto";
 
 @Injectable()
 export class KobisService {
@@ -84,5 +88,28 @@ export class KobisService {
     );
 
     return toKobisMovieInfoResponse(data.movieInfoResult.movieInfo);
+  }
+
+  async getDailyBoxOffice(
+    targetDt: string,
+  ): Promise<KobisDailyBoxOfficeResponseDto> {
+    if (!/^\d{8}$/.test(targetDt)) {
+      throw new BadRequestException("targetDt는 YYYYMMDD 형식이어야 합니다.");
+    }
+
+    const { data } = await firstValueFrom(
+      this.httpService.get<KobisDailyBoxOfficeResponse>(
+        "/boxoffice/searchDailyBoxOfficeList.json",
+        {
+          params: {
+            targetDt,
+          },
+        },
+      ),
+    );
+
+    return toKobisDailyBoxOfficeResponse(
+      data.boxOfficeResult.dailyBoxOfficeList,
+    );
   }
 }

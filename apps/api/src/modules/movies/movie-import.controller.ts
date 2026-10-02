@@ -17,6 +17,7 @@ import { TmdbMovieBatchImportService } from "./tmdb-movie-batch-import.service";
 import { TmdbMovieEnrichmentService } from "./tmdb-movie-enrichment.service";
 import { ImportKobisMoviesRequestDto } from "./dto/requests/import-kobis-movies.request.dto";
 import { KobisMovieBatchImportService } from "./kobis-movie-batch-import.service";
+import { GetKobisDailyBoxOfficeRequestDto } from "@/integrations/kobis/dto/requests/get-kobis-daily-box-office.request.dto";
 
 @ApiTags("Movie Imports")
 @Controller("movie-imports")
@@ -28,6 +29,25 @@ export class MovieImportController {
     private readonly tmdbMovieEnrichmentService: TmdbMovieEnrichmentService,
     private readonly kmdbMovieEnrichmentService: KmdbMovieEnrichmentService,
   ) {}
+
+  @Post("kobis/box-office")
+  @ApiOperation({
+    summary: "KOBIS 일별 박스오피스 저장",
+    description: "KOBIS 박스오피스를 영화와 순위 스냅샷으로 저장",
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "array",
+      items: {
+        type: "string",
+      },
+    },
+  })
+  importDailyBoxOffice(@Query() query: GetKobisDailyBoxOfficeRequestDto) {
+    return this.kobisMovieBatchImportService.importDailyBoxOffice(
+      query.targetDt,
+    );
+  }
 
   @Post("kobis/:movieCd")
   @ApiOperation({

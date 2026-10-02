@@ -3,6 +3,7 @@ import { MovieSearchWithDetails } from "../movies.repository";
 
 export function toMovieSearchItemResponseDto(
   movie: MovieSearchWithDetails,
+  rank: number | null = null,
 ): MovieSearchItemResponseDto {
   const title =
     movie.titles.find((item) => item.titleType === "PRIMARY") ??
@@ -23,5 +24,6 @@ export function toMovieSearchItemResponseDto(
       : null,
     posterUrl: poster?.url ?? null,
     genres: movie.movieGenres.map((genre) => genre.name),
+    rank,
   };
 }

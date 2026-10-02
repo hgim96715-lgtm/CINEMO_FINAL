@@ -84,3 +84,23 @@ export interface KobisAudit {
   auditNo: string;
   watchGradeNm: string;
 }
+
+export interface KobisDailyBoxOfficeMovie {
+  rank: string;
+  movieCd: string;
+  movieNm: string;
+  openDt?: string;
+
+  audiCnt: string;
+  audiAcc: string;
+  audiInten: string;
+  audiChange: string;
+  audiIntenAcc: string;
+  audiChangeAcc: string;
+}
+
+export interface KobisDailyBoxOfficeResponse {
+  boxOfficeResult: {
+    dailyBoxOfficeList: KobisDailyBoxOfficeMovie[];
+  };
+}

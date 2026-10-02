@@ -34,7 +34,9 @@ export class MoviesService {
     );
 
     return {
-      items: movies.map(toMovieSearchItemResponseDto),
+      items: movies.map((movie) =>
+        toMovieSearchItemResponseDto(movie, null),
+      ),
       totalCount,
       page,
       limit,
@@ -60,6 +62,23 @@ export class MoviesService {
 
     return {
       items: movies.map(toMovieSearchItemResponseDto),
+      totalCount,
+      page,
+      limit,
+    };
+  }
+
+  async getMovieRankings(
+    page: number,
+    limit: number,
+  ): Promise<MovieSearchResponseDto> {
+    const { movies, totalCount } =
+      await this.movieRepository.findMovieRankings(page, limit);
+
+    return {
+      items: movies.map(({ movie, rank }) =>
+        toMovieSearchItemResponseDto(movie, rank),
+      ),
       totalCount,
       page,
       limit,

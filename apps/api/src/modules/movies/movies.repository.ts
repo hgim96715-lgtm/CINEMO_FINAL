@@ -125,6 +125,7 @@ export type SaveMovieRankingSnapshotInput = {
   movieId: string;
   sourceProvider: SourceProvider;
   rank: number;
+  audienceCount?: number | null;
   collectedAt?: Date;
 };
 
@@ -235,6 +236,7 @@ export class MoviesRepository {
 
   async getOrCreateMovieByProviderLink(
     input: CreateMovieFromProviderInput,
+    matchedMovieId?: string,
   ): Promise<string> {
     return this.prisma.$transaction(async (tx) => {
       const existingLink = await tx.movieProviderLink.findUnique({
@@ -251,6 +253,22 @@ export class MoviesRepository {
 
       if (existingLink) {
         return existingLink.movieId;
+      }
+
+      if (matchedMovieId) {
+        await tx.movieProviderLink.create({
+          data: {
+            movieId: matchedMovieId,
+            sourceProvider: input.sourceProvider,
+            externalId: input.externalId,
+            matchMethod: MatchMethod.AUTO,
+            matchStatus: MatchStatus.APPROVED,
+            confidence: new Prisma.Decimal("1.0000"),
+            verifiedAt: new Date(),
+          },
+        });
+
+        return matchedMovieId;
       }
 
       const movie = await tx.movie.create({
@@ -589,6 +607,79 @@ export class MoviesRepository {
     };
   }
 
+  async findMovieRankings(
+    page: number,
+    limit: number,
+  ): Promise<{
+    movies: Array<{
+      movie: MovieSearchWithDetails;
+      rank: number;
+    }>;
+    totalCount: number;
+  }> {
+    const latestSnapshot = await this.prisma.movieRankingSnapshot.findFirst({
+      where: {
+        sourceProvider: SourceProvider.KOBIS,
+      },
+      orderBy: {
+        collectedAt: "desc",
+      },
+      select: {
+        collectedAt: true,
+      },
+    });
+
+    if (!latestSnapshot) {
+      return {
+        movies: [],
+        totalCount: 0,
+      };
+    }
+
+    const rankingWhere: Prisma.MovieRankingSnapshotWhereInput = {
+      sourceProvider: SourceProvider.KOBIS,
+      collectedAt: latestSnapshot.collectedAt,
+    };
+
+    const [rankings, totalCount] = await this.prisma.$transaction([
+      this.prisma.movieRankingSnapshot.findMany({
+        where: rankingWhere,
+        orderBy: {
+          rank: "asc",
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          movieId: true,
+          rank: true,
+        },
+      }),
+      this.prisma.movieRankingSnapshot.count({
+        where: rankingWhere,
+      }),
+    ]);
+
+    const movies = await this.prisma.movie.findMany({
+      where: {
+        id: {
+          in: rankings.map((ranking) => ranking.movieId),
+        },
+      },
+      include: movieSearchInclude,
+    });
+
+    const moviesById = new Map(movies.map((movie) => [movie.id, movie]));
+
+    return {
+      movies: rankings.flatMap((ranking) => {
+        const movie = moviesById.get(ranking.movieId);
+
+        return movie ? [{ movie, rank: ranking.rank }] : [];
+      }),
+      totalCount,
+    };
+  }
+
   async saveMovieRankingSnapshot(
     input: SaveMovieRankingSnapshotInput,
   ): Promise<void> {
@@ -597,6 +688,7 @@ export class MoviesRepository {
         movieId: input.movieId,
         sourceProvider: input.sourceProvider,
         rank: input.rank,
+        audienceCount: input.audienceCount ?? null,
         collectedAt: input.collectedAt ?? new Date(),
       },
     });

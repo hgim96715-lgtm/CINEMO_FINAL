@@ -25,6 +25,10 @@ export type MovieSearchItemResponseDto = {
      * 영화 장르 목록
      */
     genres: Array<string>;
+    /**
+     * TMDB 기준 영화 순위
+     */
+    rank: number | null;
 };
 
 export type MovieSearchResponseDto = {

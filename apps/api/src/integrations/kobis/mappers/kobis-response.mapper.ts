@@ -1,9 +1,11 @@
 import type {
+  KobisDailyBoxOfficeMovie,
   KobisMovie,
   KobisMovieInfo,
 } from "@/integrations/kobis/types/kobis.types";
 import { KobisMovieSearchItemResponseDto } from "@/integrations/kobis/dto/responses/kobis-movie-search-item.response.dto";
 import { KobisMovieInfoResponseDto } from "@/integrations/kobis/dto/responses/kobis-movie-info.response.dto";
+import { KobisDailyBoxOfficeResponseDto } from "../dto/responses/kobis-daily-box-office.response.dto";
 
 function splitValues(value?: string): string[] {
   return (
@@ -64,5 +66,24 @@ export function toKobisMovieInfoResponse(
       })) ?? [],
     companies: movie.companies?.map((company) => company.companyNm ?? "") ?? [],
     certifications: movie.audits?.map((audit) => audit.watchGradeNm) ?? [],
+  };
+}
+
+export function toKobisDailyBoxOfficeResponse(
+  movies: KobisDailyBoxOfficeMovie[],
+): KobisDailyBoxOfficeResponseDto {
+  return {
+    results: movies.map((movie) => ({
+      rank: movie.rank,
+      movieCd: movie.movieCd,
+      movieNm: movie.movieNm,
+      openDt: movie.openDt ?? null,
+      audiCnt: movie.audiCnt,
+      audiAcc: movie.audiAcc,
+      audiInten: movie.audiInten,
+      audiChange: movie.audiChange,
+      audiIntenAcc: movie.audiIntenAcc,
+      audiChangeAcc: movie.audiChangeAcc,
+    })),
   };
 }

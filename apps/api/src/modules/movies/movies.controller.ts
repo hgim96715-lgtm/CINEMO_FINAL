@@ -78,6 +78,18 @@ export class MoviesController {
     return this.moviesService.getPopularMovies(params.page, params.limit);
   }
 
+  @Get("rankings")
+  @ApiOperation({
+    summary: "KOBIS 영화 순위 조회",
+    description: "DB에 저장된 최신 KOBIS 박스오피스 순위 조회",
+  })
+  @ApiOkResponse({
+    type: MovieSearchResponseDto,
+  })
+  getMovieRankings(@Query() params: GetPopularMoviesRequestDto) {
+    return this.moviesService.getMovieRankings(params.page, params.limit);
+  }
+
   @Get(":movieId")
   @ApiOperation({
     summary: "영화 상세 조회",

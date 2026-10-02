@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from "@nestjs/common";
 import { SourceProvider } from "@prisma/client";
 
 import { KobisService } from "@/integrations/kobis/kobis.service";
@@ -15,13 +19,35 @@ export class KobisMovieImportService {
     private readonly moviesRepository: MoviesRepository,
   ) {}
 
-  async importMovie(movieCd: string): Promise<string> {
-    const kobisMovie = await this.kobisService.getMovieInfo(movieCd);
-    const input = toKobisMovieImportInput(kobisMovie);
+  async importMovie(movieCd: string, fallbackTitle?: string): Promise<string> {
+    const normalizedMovieCd = movieCd.trim();
+
+    const kobisMovie = await this.kobisService.getMovieInfo(normalizedMovieCd);
+
+    const mappedInput = toKobisMovieImportInput(kobisMovie);
+
+    const titleFromKobis =
+      typeof mappedInput.title === "string" ? mappedInput.title.trim() : "";
+
+    const title =
+      titleFromKobis ||
+      (typeof fallbackTitle === "string" ? fallbackTitle.trim() : "");
+
+    if (!title) {
+      throw new BadRequestException(
+        `KOBIS 영화 제목이 없습니다. movieCd: ${normalizedMovieCd}`,
+      );
+    }
+
+    const input = {
+      ...mappedInput,
+      movieCd: normalizedMovieCd,
+      title,
+    };
 
     const linkedMovieId = await this.moviesRepository.findMovieIdByProviderLink(
       SourceProvider.KOBIS,
-      input.movieCd,
+      normalizedMovieCd,
     );
 
     let movieId = linkedMovieId;

@@ -11,6 +11,11 @@ import { KobisMovieSearchResponseDto } from "./dto/responses/kobis-movie-search.
 import { KobisService } from "./kobis.service";
 import { KobisMovieInfoResponseDto } from "./dto/responses/kobis-movie-info.response.dto";
 import { GetKobisMovieInfoRequestDto } from "./dto/requests/get-kobis-movie-info.request.dto";
+import { GetKobisDailyBoxOfficeRequestDto } from "./dto/requests/get-kobis-daily-box-office.request.dto";
+import {
+  KobisDailyBoxOfficeItemResponseDto,
+  KobisDailyBoxOfficeResponseDto,
+} from "./dto/responses/kobis-daily-box-office.response.dto";
 
 @ApiTags("KOBIS")
 @Controller("kobis")
@@ -47,5 +52,18 @@ export class KobisController {
   })
   getMovieInfo(@Param() params: GetKobisMovieInfoRequestDto) {
     return this.kobisService.getMovieInfo(params.movieCd);
+  }
+
+  @Get("box-office/daily")
+  @ApiOperation({
+    summary: "KOBIS 일별 박스오피스 조회",
+    description: "기준일의 국내 일별 박스오피스 조회",
+  })
+  @ApiOkResponse({
+    type: KobisDailyBoxOfficeResponseDto,
+    description: "일별 박스오피스 조회 성공",
+  })
+  getDailyBoxOffice(@Query() query: GetKobisDailyBoxOfficeRequestDto) {
+    return this.kobisService.getDailyBoxOffice(query.targetDt);
   }
 }
