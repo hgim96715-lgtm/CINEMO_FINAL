@@ -121,6 +121,13 @@ export type KobisMovieImportInput = {
   }>;
 };
 
+export type SaveMovieRankingSnapshotInput = {
+  movieId: string;
+  sourceProvider: SourceProvider;
+  rank: number;
+  collectedAt?: Date;
+};
+
 @Injectable()
 export class MoviesRepository {
   constructor(
@@ -509,6 +516,89 @@ export class MoviesRepository {
       }
 
       return movie.id;
+    });
+  }
+
+  async findPopularMovies(
+    page: number,
+    limit: number,
+  ): Promise<{
+    movies: MovieSearchWithDetails[];
+    totalCount: number;
+  }> {
+    const latestSnapshot = await this.prisma.movieRankingSnapshot.findFirst({
+      where: {
+        sourceProvider: SourceProvider.TMDB,
+      },
+      orderBy: {
+        collectedAt: "desc",
+      },
+      select: {
+        collectedAt: true,
+      },
+    });
+
+    if (!latestSnapshot) {
+      return {
+        movies: [],
+        totalCount: 0,
+      };
+    }
+
+    const rankingWhere: Prisma.MovieRankingSnapshotWhereInput = {
+      sourceProvider: SourceProvider.TMDB,
+      collectedAt: latestSnapshot.collectedAt,
+    };
+
+    const [rankings, totalCount] = await this.prisma.$transaction([
+      this.prisma.movieRankingSnapshot.findMany({
+        where: rankingWhere,
+        orderBy: {
+          rank: "asc",
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          movieId: true,
+        },
+      }),
+      this.prisma.movieRankingSnapshot.count({
+        where: rankingWhere,
+      }),
+    ]);
+
+    const movieIds = rankings.map((ranking) => ranking.movieId);
+
+    const movies = await this.prisma.movie.findMany({
+      where: {
+        id: {
+          in: movieIds,
+        },
+      },
+      include: movieSearchInclude,
+    });
+
+    const moviesById = new Map(movies.map((movie) => [movie.id, movie]));
+
+    return {
+      movies: movieIds.flatMap((movieId) => {
+        const movie = moviesById.get(movieId);
+        return movie ? [movie] : [];
+      }),
+      totalCount,
+    };
+  }
+
+  async saveMovieRankingSnapshot(
+    input: SaveMovieRankingSnapshotInput,
+  ): Promise<void> {
+    await this.prisma.movieRankingSnapshot.create({
+      data: {
+        movieId: input.movieId,
+        sourceProvider: input.sourceProvider,
+        rank: input.rank,
+        collectedAt: input.collectedAt ?? new Date(),
+      },
     });
   }
 }

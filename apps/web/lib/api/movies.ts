@@ -1,18 +1,50 @@
-import type { MovieResponse } from "@cinemo/api-contract";
+import type {
+  MovieResponse,
+  MovieSearchResponse,
+} from "@cinemo/api-contract";
+import { apiClient } from "./apiClient";
+
+export type SearchMoviesParams = {
+  query: string;
+  page?: number;
+  limit?: number;
+};
+
+export async function searchMovies(
+  params: SearchMoviesParams,
+  signal?: AbortSignal,
+): Promise<MovieSearchResponse> {
+  const { data } = await apiClient.get<MovieSearchResponse>(`/movies/search`, {
+    params: {
+      query: params.query,
+      page: params.page ?? 1,
+      limit: params.limit ?? 10,
+    },
+    signal,
+  });
+  return data;
+}
 
 export async function getMovie(
   movieId: string,
+  signal?: AbortSignal,
 ): Promise<MovieResponse | null> {
-  const apiUrl =
-    process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3050";
-
-  const response = await fetch(`${apiUrl}/v1/movies/${movieId}`, {
-    next: { revalidate: 3600 },
+  const response = await apiClient.get<MovieResponse>(`/movies/${movieId}`, {
+    signal,
+    validateStatus: (status) => status === 200 || status === 404,
   });
 
-  if (!response.ok) {
-    return null;
-  }
+  return response.status === 404 ? null : response.data;
+}
 
-  return response.json() as Promise<MovieResponse>;
+export async function getPopularMovies(
+  page = 1,
+  signal?: AbortSignal,
+): Promise<MovieSearchResponse> {
+  const { data } = await apiClient.get<MovieSearchResponse>("/movies/popular", {
+    params: { page },
+    signal,
+  });
+
+  return data;
 }

@@ -16,6 +16,7 @@ import { GetMovieRequestDto } from "./dto/requests/get-movie.request.dto";
 import { SearchMoviesRequestDto } from "./dto/requests/search-movies.request.dto";
 import { MovieSearchResponseDto } from "./dto/responses/movie-search.response.dto";
 import { MovieSitemapResponseDto } from "./dto/responses/movie-sitemap.response.dto";
+import { GetPopularMoviesRequestDto } from "./dto/requests/get-popular-movies.request.dto";
 
 @ApiTags("Movies")
 @Controller("movies")
@@ -63,6 +64,18 @@ export class MoviesController {
   })
   getSitemapMovies() {
     return this.moviesService.getSitemapMovies();
+  }
+
+  @Get("popular")
+  @ApiOperation({
+    summary: "DB에 저장된 인기 영화 조회",
+    description: "TMDB 연결이 승인된 CINEMO 영화 목록을 조회",
+  })
+  @ApiOkResponse({
+    type: MovieSearchResponseDto,
+  })
+  getPopularMovies(@Query() params: GetPopularMoviesRequestDto) {
+    return this.moviesService.getPopularMovies(params.page, params.limit);
   }
 
   @Get(":movieId")

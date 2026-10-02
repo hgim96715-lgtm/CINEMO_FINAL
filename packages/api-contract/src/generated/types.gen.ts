@@ -46,6 +46,24 @@ export type MovieSearchResponseDto = {
     limit: number;
 };
 
+export type MovieSitemapItemResponseDto = {
+    /**
+     * CINEMO 내부 영화 UUID
+     */
+    id: string;
+    /**
+     * 영화 정보가 마지막으로 수정된 시각
+     */
+    updatedAt: string;
+};
+
+export type MovieSitemapResponseDto = {
+    /**
+     * sitemap에 포함할 영화 목록
+     */
+    items: Array<MovieSitemapItemResponseDto>;
+};
+
 export type MovieTitleResponseDto = {
     /**
      * 영화 제목 레코드 식별자
@@ -267,6 +285,10 @@ export type MovieResponseDto = {
      * 포스터·배경·예고편 목록
      */
     media: Array<MovieMediaResponseDto>;
+    /**
+     * 영화 제작 국가 ISO 코드 목록
+     */
+    productionCountryCodes: Array<string>;
     /**
      * 시청 가능한 플랫폼 목록
      */
@@ -764,38 +786,6 @@ export type HealthControllerCheckV1Responses = {
     200: unknown;
 };
 
-export type MoviesControllerImportMovieV1Data = {
-    body?: never;
-    path: {
-        /**
-         * KOBIS 영화 코드
-         */
-        movieCd: string;
-    };
-    query?: never;
-    url: '/v1/movies/import/kobis/{movieCd}';
-};
-
-export type MoviesControllerImportMovieV1Errors = {
-    /**
-     * KOBIS 영화 코드가 올바르지 않습니다.
-     */
-    400: unknown;
-    /**
-     * 동일한 영화 후보가 여러 개 발견되어 관리자 검토가 필요합니다.
-     */
-    409: unknown;
-};
-
-export type MoviesControllerImportMovieV1Responses = {
-    /**
-     * 저장되거나 연결된 CINEMO 내부 영화 UUID
-     */
-    200: string;
-};
-
-export type MoviesControllerImportMovieV1Response = MoviesControllerImportMovieV1Responses[keyof MoviesControllerImportMovieV1Responses];
-
 export type MoviesControllerSearchV1Data = {
     body?: never;
     path?: never;
@@ -816,6 +806,13 @@ export type MoviesControllerSearchV1Data = {
     url: '/v1/movies/search';
 };
 
+export type MoviesControllerSearchV1Errors = {
+    /**
+     * 동일한 영화 후보가 여러 개 발견되어 관리자 검토가 필요합니다.
+     */
+    409: unknown;
+};
+
 export type MoviesControllerSearchV1Responses = {
     /**
      * 영화 검색 결과와 페이지 정보
@@ -824,6 +821,44 @@ export type MoviesControllerSearchV1Responses = {
 };
 
 export type MoviesControllerSearchV1Response = MoviesControllerSearchV1Responses[keyof MoviesControllerSearchV1Responses];
+
+export type MoviesControllerGetSitemapMoviesV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/movies/sitemap';
+};
+
+export type MoviesControllerGetSitemapMoviesV1Responses = {
+    /**
+     * sitemap 생성용 영화 목록
+     */
+    200: MovieSitemapResponseDto;
+};
+
+export type MoviesControllerGetSitemapMoviesV1Response = MoviesControllerGetSitemapMoviesV1Responses[keyof MoviesControllerGetSitemapMoviesV1Responses];
+
+export type MoviesControllerGetPopularMoviesV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 조회할 페이지 번호
+         */
+        page: number;
+        /**
+         * 페이지당 인기 영화 수
+         */
+        limit: number;
+    };
+    url: '/v1/movies/popular';
+};
+
+export type MoviesControllerGetPopularMoviesV1Responses = {
+    200: MovieSearchResponseDto;
+};
+
+export type MoviesControllerGetPopularMoviesV1Response = MoviesControllerGetPopularMoviesV1Responses[keyof MoviesControllerGetPopularMoviesV1Responses];
 
 export type MoviesControllerFindByIdV1Data = {
     body?: never;
@@ -853,7 +888,62 @@ export type MoviesControllerFindByIdV1Responses = {
 
 export type MoviesControllerFindByIdV1Response = MoviesControllerFindByIdV1Responses[keyof MoviesControllerFindByIdV1Responses];
 
-export type MoviesControllerEnrichFromTmdbV1Data = {
+export type MovieImportControllerImportFromKobisV1Data = {
+    body?: never;
+    path: {
+        /**
+         * KOBIS 영화 코드
+         */
+        movieCd: string;
+    };
+    query?: never;
+    url: '/v1/movie-imports/kobis/{movieCd}';
+};
+
+export type MovieImportControllerImportFromKobisV1Errors = {
+    /**
+     * KOBIS 영화 코드가 올바르지 않음
+     */
+    400: unknown;
+    /**
+     * 동일한 영화 후보가 여러 개 발견됨
+     */
+    409: unknown;
+};
+
+export type MovieImportControllerImportFromKobisV1Responses = {
+    200: string;
+};
+
+export type MovieImportControllerImportFromKobisV1Response = MovieImportControllerImportFromKobisV1Responses[keyof MovieImportControllerImportFromKobisV1Responses];
+
+export type MovieImportControllerImportPopularFromTmdbV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/movie-imports/tmdb/popular';
+};
+
+export type MovieImportControllerImportPopularFromTmdbV1Responses = {
+    200: Array<string>;
+};
+
+export type MovieImportControllerImportPopularFromTmdbV1Response = MovieImportControllerImportPopularFromTmdbV1Responses[keyof MovieImportControllerImportPopularFromTmdbV1Responses];
+
+export type MovieImportControllerImportNowPlayingFromTmdbV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/movie-imports/tmdb/now-playing';
+};
+
+export type MovieImportControllerImportNowPlayingFromTmdbV1Responses = {
+    200: Array<string>;
+};
+
+export type MovieImportControllerImportNowPlayingFromTmdbV1Response = MovieImportControllerImportNowPlayingFromTmdbV1Responses[keyof MovieImportControllerImportNowPlayingFromTmdbV1Responses];
+
+export type MovieImportControllerEnrichFromTmdbV1Data = {
     body?: never;
     path: {
         /**
@@ -866,16 +956,16 @@ export type MoviesControllerEnrichFromTmdbV1Data = {
         tmdbMovieId: number;
     };
     query?: never;
-    url: '/v1/movies/{movieId}/enrich/tmdb/{tmdbMovieId}';
+    url: '/v1/movie-imports/{movieId}/enrich/tmdb/{tmdbMovieId}';
 };
 
-export type MoviesControllerEnrichFromTmdbV1Responses = {
+export type MovieImportControllerEnrichFromTmdbV1Responses = {
     200: string;
 };
 
-export type MoviesControllerEnrichFromTmdbV1Response = MoviesControllerEnrichFromTmdbV1Responses[keyof MoviesControllerEnrichFromTmdbV1Responses];
+export type MovieImportControllerEnrichFromTmdbV1Response = MovieImportControllerEnrichFromTmdbV1Responses[keyof MovieImportControllerEnrichFromTmdbV1Responses];
 
-export type MoviesControllerEnrichFromKmdbV1Data = {
+export type MovieImportControllerEnrichFromKmdbV1Data = {
     body?: never;
     path: {
         /**
@@ -888,14 +978,44 @@ export type MoviesControllerEnrichFromKmdbV1Data = {
         docId: string;
     };
     query?: never;
-    url: '/v1/movies/{movieId}/enrich/kmdb/{docId}';
+    url: '/v1/movie-imports/{movieId}/enrich/kmdb/{docId}';
 };
 
-export type MoviesControllerEnrichFromKmdbV1Responses = {
+export type MovieImportControllerEnrichFromKmdbV1Responses = {
     200: string;
 };
 
-export type MoviesControllerEnrichFromKmdbV1Response = MoviesControllerEnrichFromKmdbV1Responses[keyof MoviesControllerEnrichFromKmdbV1Responses];
+export type MovieImportControllerEnrichFromKmdbV1Response = MovieImportControllerEnrichFromKmdbV1Responses[keyof MovieImportControllerEnrichFromKmdbV1Responses];
+
+export type MovieImportControllerImportMoviesFromKobisV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 제작 연도 시작값
+         */
+        productionStartYear: number;
+        /**
+         * 제작 연도 종료값
+         */
+        productionEndYear: number;
+        /**
+         * 가져올 페이지 수
+         */
+        pageCount?: number;
+        /**
+         * 페이지당 조회할 영화 수
+         */
+        limit?: number;
+    };
+    url: '/v1/movie-imports/kobis';
+};
+
+export type MovieImportControllerImportMoviesFromKobisV1Responses = {
+    200: Array<string>;
+};
+
+export type MovieImportControllerImportMoviesFromKobisV1Response = MovieImportControllerImportMoviesFromKobisV1Responses[keyof MovieImportControllerImportMoviesFromKobisV1Responses];
 
 export type KobisControllerSearchMoviesV1Data = {
     body?: never;

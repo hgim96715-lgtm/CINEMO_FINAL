@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { CINEMO_BRAND } from "@cinemo/shared";
 
 import "./globals.css";
+import { QueryProvider } from "../providers/query-provider";
+import { Header } from "../components/common/Header";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -40,7 +42,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko">
-      <body>{children}</body>
+      <body>
+        <QueryProvider>
+          <Header />
+          {children}
+        </QueryProvider>
+      </body>
     </html>
   );
 }

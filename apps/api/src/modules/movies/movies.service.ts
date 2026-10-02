@@ -48,4 +48,21 @@ export class MoviesService {
       items: movies.map(toMovieSitemapItemResponseDto),
     };
   }
+
+  async getPopularMovies(
+    page: number,
+    limit: number,
+  ): Promise<MovieSearchResponseDto> {
+    const { movies, totalCount } = await this.movieRepository.findPopularMovies(
+      page,
+      limit,
+    );
+
+    return {
+      items: movies.map(toMovieSearchItemResponseDto),
+      totalCount,
+      page,
+      limit,
+    };
+  }
 }
