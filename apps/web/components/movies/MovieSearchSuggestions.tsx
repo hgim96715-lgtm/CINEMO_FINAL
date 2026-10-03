@@ -48,7 +48,7 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
     }
 
     return (
-      <ul className="grid gap-2">
+      <ul className="grid gap-2 md:gap-3">
         {popularQuery.data?.items.slice(0, 5).map((movie) => (
           <MovieSuggestionItem
             key={movie.id}
@@ -78,7 +78,7 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
   }
 
   return (
-    <ul className="grid gap-2">
+    <ul className="grid gap-2 md:gap-3">
       {searchQuery.data?.items.map((movie) => (
         <MovieSuggestionItem
           key={movie.id}

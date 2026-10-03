@@ -1,12 +1,13 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { movieSearchQueryOptions } from "@/lib/queries/movie-search.query";
 import { MovieSearchList } from "@/components/movies/MovieSearchList";
 import { ApiErrorState } from "@/components/common/ApiErrorState";
 
-export default function MoviesPage() {
+function MoviesPageContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("query") ?? "";
 
@@ -45,5 +46,13 @@ export default function MoviesPage() {
       <p>총 {data.totalCount}편</p>
       <MovieSearchList movies={data.items} />
     </main>
+  );
+}
+
+export default function MoviesPage() {
+  return (
+    <Suspense fallback={<main>검색 결과를 불러오는 중...</main>}>
+      <MoviesPageContent />
+    </Suspense>
   );
 }

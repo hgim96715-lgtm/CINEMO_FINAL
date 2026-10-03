@@ -5,8 +5,29 @@
 @custom-variant dark (&:is(.dark *));
 
 body {
-  background: var(--background);
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  background-color: var(--cinemo-bg);
+  background-image:
+    radial-gradient(circle at 12% 8%, rgb(46 143 134 / 5%), transparent 30rem),
+    radial-gradient(circle at 88% 42%, rgb(198 161 91 / 3%), transparent 34rem),
+    linear-gradient(135deg, var(--cinemo-bg) 0%, #0d1b1e 52%, #091214 100%);
+  background-attachment: fixed;
   color: var(--foreground);
+}
+
+body::before {
+  position: fixed;
+  inset: -12%;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  background:
+    radial-gradient(circle at 18% 16%, rgb(46 143 134 / 7%), transparent 28rem),
+    radial-gradient(circle at 82% 68%, rgb(198 161 91 / 3%), transparent 26rem);
+  filter: blur(56px);
+  opacity: 0.45;
 }
 
 @layer base {
@@ -55,6 +76,17 @@ body {
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-cinemo-bg: var(--cinemo-bg);
+  --color-cinemo-bg-deep: var(--cinemo-bg-deep);
+  --color-cinemo-surface: var(--cinemo-surface);
+  --color-cinemo-teal: var(--cinemo-teal);
+  --color-cinemo-teal-deep: var(--cinemo-teal-deep);
+  --color-cinemo-teal-light: var(--cinemo-teal-light);
+  --color-cinemo-gold: var(--cinemo-gold);
+  --color-cinemo-gold-light: var(--cinemo-gold-light);
+  --color-cinemo-text: var(--cinemo-text);
+  --color-cinemo-muted: var(--cinemo-muted);
+  --color-cinemo-placeholder: var(--cinemo-placeholder);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -65,24 +97,35 @@ body {
 }
 
 :root {
-  --background: oklch(0.17 0.015 55);
-  --foreground: oklch(0.95 0.025 85);
-  --card: oklch(0.21 0.02 55);
-  --card-foreground: oklch(0.95 0.025 85);
-  --popover: oklch(0.21 0.02 55);
-  --popover-foreground: oklch(0.95 0.025 85);
-  --primary: oklch(0.76 0.12 82);
-  --primary-foreground: oklch(0.18 0.02 55);
+  --cinemo-bg: #0b181b;
+  --cinemo-bg-deep: #081113;
+  --cinemo-surface: rgb(255 255 255 / 5%);
+  --cinemo-teal: #176b68;
+  --cinemo-teal-deep: #0f514f;
+  --cinemo-teal-light: #9ad8d1;
+  --cinemo-gold: #c6a15b;
+  --cinemo-gold-light: #d4b56a;
+  --cinemo-text: #f3efe6;
+  --cinemo-muted: #b0b8b4;
+  --cinemo-placeholder: #8fb8b3;
+  --background: var(--cinemo-bg);
+  --foreground: var(--cinemo-text);
+  --card: #16272a;
+  --card-foreground: var(--cinemo-text);
+  --popover: #16272a;
+  --popover-foreground: var(--cinemo-text);
+  --primary: var(--cinemo-gold);
+  --primary-foreground: #171515;
   --secondary: oklch(0.3 0.025 55);
   --secondary-foreground: oklch(0.95 0.025 85);
   --muted: oklch(0.3 0.025 55);
-  --muted-foreground: oklch(0.72 0.03 80);
+  --muted-foreground: var(--cinemo-muted);
   --accent: oklch(0.3 0.025 55);
   --accent-foreground: oklch(0.95 0.025 85);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.76 0.12 82);
+  --ring: var(--cinemo-gold);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);

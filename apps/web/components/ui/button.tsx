@@ -8,6 +8,10 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        "cinemo-primary":
+          "border-cinemo-teal-light/25 bg-cinemo-teal/35 text-cinemo-text shadow-[inset_0_1px_0_rgb(255_255_255_/_14%),0_8px_20px_rgb(0_0_0_/_12%)] backdrop-blur-md hover:border-cinemo-teal-light/45 hover:bg-cinemo-teal/55 active:bg-cinemo-teal-deep/70",
+        "cinemo-secondary":
+          "border-cinemo-text/25 bg-white/8 text-cinemo-text backdrop-blur-sm hover:bg-white/16",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:

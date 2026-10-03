@@ -8,10 +8,20 @@ import { useQuery } from "@tanstack/react-query";
 
 import { movieDetailQueryOptions } from "@/lib/queries/movie-detail.query";
 import { popularMoviesQueryOptions } from "@/lib/queries/movie-search.query";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+import { getTrailerEmbedUrl } from "@/lib/media/trailer";
 
 export function MovieHeroCarousel() {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const popularQuery = useQuery(
     popularMoviesQueryOptions({ page: 1, enabled: true, limit: 20 }),
   );
@@ -27,28 +37,29 @@ export function MovieHeroCarousel() {
   );
 
   const detail = movieDetailQuery.data;
-  const trailer = detail?.media.find((media) =>
-    Boolean(media.mediaType.toUpperCase() === "TRAILER"),
+
+  const trailer = detail?.media.find(
+    (media) =>
+      media.mediaType.toUpperCase() === "TRAILER" &&
+      media.sourceProvider.toUpperCase() === "YOUTUBE",
   );
+  const trailerEmbedUrl = getTrailerEmbedUrl(trailer);
 
   useEffect(() => {
-    if (movies.length === 0) return;
-
-    const isMobile = window.matchMedia("(max-width: 639px)").matches;
-
-    if (isMobile) {
-      setSelectedIndex(Math.floor(Math.random() * movies.length));
+    if (
+      movies.length <= 1 ||
+      isTrailerOpen ||
+      window.matchMedia("(max-width: 639px)").matches
+    ) {
       return;
     }
-
-    if (movies.length <= 1) return;
 
     const timerId = window.setInterval(() => {
       setSelectedIndex((index) => (index + 1) % movies.length);
     }, 10_000);
 
     return () => window.clearInterval(timerId);
-  }, [movies.length]);
+  }, [movies.length, isTrailerOpen]);
 
   if (!currentMovie) return null;
 
@@ -60,13 +71,6 @@ export function MovieHeroCarousel() {
   const releaseDate =
     detail?.releases.find((release) => release.isPrimary)?.releaseDate ??
     currentMovie.releaseDate;
-
-  const backdrop =
-    detail?.media.find(
-      (media) =>
-        media.mediaType.toUpperCase() === "BACKDROP" && media.isPrimary,
-    ) ??
-    detail?.media.find((media) => media.mediaType.toUpperCase() === "BACKDROP");
 
   const poster =
     detail?.media.find(
@@ -83,7 +87,7 @@ export function MovieHeroCarousel() {
 
   return (
     <section
-      className="relative isolate mx-auto min-h-[clamp(22rem,42vw,28rem)] w-full max-w-[120rem] overflow-hidden rounded-[2rem] bg-white/3 text-[#f3efe6] shadow-[0_2rem_5rem_rgb(0_0_0_/24%),inset_0_1px_0_rgb(255_255_255_/10%)] max-[639px]:min-h-[clamp(28rem,110vw,32rem)] max-[639px]:rounded-[1.25rem]"
+      className="relative isolate mx-auto min-h-[clamp(22rem,42vw,28rem)] w-full max-w-[120rem] overflow-hidden rounded-[2rem] bg-cinemo-surface text-cinemo-text shadow-[0_2rem_5rem_rgb(0_0_0_/24%),inset_0_1px_0_rgb(255_255_255_/10%)] max-[639px]:min-h-[clamp(28rem,110vw,32rem)] max-[639px]:rounded-[1.25rem]"
       aria-label="인기 영화"
     >
       {backgroundUrl ? (
@@ -92,6 +96,7 @@ export function MovieHeroCarousel() {
           src={backgroundUrl}
           alt=""
           fill
+          sizes="(min-width: 640px) 100vw, 0px"
           loading="eager"
           className="z-0 scale-[1.04] object-cover object-center opacity-90 saturate-[1.05] brightness-[0.95] blur-xs max-[639px]:hidden"
           aria-hidden
@@ -103,16 +108,17 @@ export function MovieHeroCarousel() {
           src={posterUrl}
           alt=""
           fill
+          sizes="(max-width: 639px) 100vw, 0px"
           loading="eager"
           className="z-0 hidden object-cover object-top max-[639px]:block max-[639px]:opacity-90 max-[639px]:saturate-[0.92] max-[639px]:brightness-[0.82]"
           aria-hidden
         />
       ) : null}
       <div
-        className="absolute inset-0 z-1 bg-[linear-gradient(90deg,rgb(23_21_21_/68%)_0%,rgb(23_21_21_/34%)_38%,rgb(23_21_21_/8%)_78%,transparent_100%),linear-gradient(0deg,rgb(23_21_21_/64%)_0%,rgb(23_21_21_/14%)_30%,transparent_58%)] max-[639px]:bg-[linear-gradient(0deg,rgba(23,21,21,0.86)_0%,rgba(23,21,21,0.48)_42%,rgba(23,21,21,0.08)_78%,transparent_100%),linear-gradient(90deg,rgba(23,21,21,0.2)_0%,transparent_75%)]"
+        className="absolute inset-0 z-1 bg-[linear-gradient(90deg,rgb(23_21_21_/76%)_0%,rgb(23_21_21_/40%)_38%,rgb(23_21_21_/10%)_78%,transparent_100%),linear-gradient(0deg,rgb(23_21_21_/72%)_0%,rgb(23_21_21_/18%)_30%,transparent_58%)] max-[639px]:bg-[linear-gradient(0deg,rgba(23,21,21,0.94)_0%,rgba(23,21,21,0.68)_42%,rgba(23,21,21,0.18)_78%,transparent_100%),linear-gradient(90deg,rgba(23,21,21,0.34)_0%,transparent_80%)]"
         aria-hidden
       />
-      <div className="relative z-2 flex min-h-[clamp(22rem,42vw,28rem)] items-end justify-between gap-8 p-[clamp(2rem,6vw,3rem)] pb-[clamp(4rem,9vw,5.5rem)] max-sm:min-h-[clamp(28rem,110vw,32rem)] max-sm:p-6 max-sm:pb-8">
+      <div className="relative z-2 flex min-h-[clamp(22rem,42vw,28rem)] items-end justify-between gap-8 p-[clamp(2rem,6vw,3rem)] pb-[clamp(4rem,9vw,5.5rem)] drop-shadow-[0_0.2rem_0.8rem_rgb(0_0_0_/60%)] max-sm:min-h-[clamp(28rem,110vw,32rem)] max-sm:p-6 max-sm:pb-8">
         <div className="max-w-120 max-sm:w-full max-sm:max-w-none">
           <p className="mb-4 text-[0.72rem] tracking-[0.28em] text-primary">
             CINEMO FEATURED MOVIE
@@ -133,13 +139,31 @@ export function MovieHeroCarousel() {
           </div>
 
           <div className="mt-8 flex items-center gap-4 max-sm:mt-6  max-sm:flex-col max-sm:gap-[0.6rem] ">
-            예고편
-            <Link
-              href={`/movies/${currentMovie.id}`}
-              className="inline-flex items-center justify-center gap-[0.45rem] rounded-full bg-black/28 px-[1.2rem] py-3 text-[0.85rem] font-bold text-[#f3efe6] no-underline transition-colors hover:bg-white/18 max-sm:w-full"
+            {trailerEmbedUrl ? (
+              <Button
+                type="button"
+                variant="cinemo-primary"
+                size="lg"
+                onClick={() => setIsTrailerOpen(true)}
+                className="h-11 px-5 font-semibold max-sm:w-full"
+              >
+                <Play
+                  size={16}
+                  fill="currentColor"
+                  className="text-cinemo-teal-light transition-colors group-hover/button:text-cinemo-text group-active/button:text-cinemo-text"
+                />
+                예고편
+              </Button>
+            ) : null}
+            <Button
+              render={<Link href={`/movies/${currentMovie.id}`} />}
+              nativeButton={false}
+              variant="cinemo-secondary"
+              size="lg"
+              className="h-11 px-5 font-semibold no-underline max-sm:w-full"
             >
               자세히 보기
-            </Link>
+            </Button>
           </div>
         </div>
 
@@ -157,6 +181,25 @@ export function MovieHeroCarousel() {
           </div>
         ) : null}
       </div>
+      <Dialog open={isTrailerOpen} onOpenChange={setIsTrailerOpen}>
+        <DialogContent className="w-[calc(100%-1.5rem)] overflow-hidden border-0 bg-black p-0 sm:w-[calc(100%-3rem)] sm:max-w-5xl">
+          <DialogTitle className="sr-only">{title} 예고편</DialogTitle>
+
+          <DialogDescription className="sr-only">
+            {title} 영화 예고편
+          </DialogDescription>
+
+          <div className="aspect-video w-full">
+            <iframe
+              src={trailerEmbedUrl ?? undefined}
+              title={`${title} 예고편`}
+              className="h-full w-full"
+              allow="encrypted-media; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

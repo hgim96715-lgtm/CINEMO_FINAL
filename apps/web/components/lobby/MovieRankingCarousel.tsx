@@ -65,22 +65,22 @@ export function MovieRankingCarousel() {
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-between px-2">
           <Button
             type="button"
-            variant="outline"
-            size="icon-sm"
+            variant="ghost"
+            size="icon-lg"
             aria-label="이전 순위 영화 보기"
             onClick={() => move("left")}
-            className="pointer-events-auto rounded-full bg-background/90 shadow-lg backdrop-blur-sm"
+            className="pointer-events-auto h-20 w-14 rounded-xl bg-gradient-to-r from-cinemo-bg/75 via-cinemo-bg/35 to-transparent text-cinemo-gold drop-shadow-lg backdrop-blur-[2px] transition-colors hover:bg-cinemo-teal/45 hover:text-cinemo-gold-light active:bg-cinemo-teal/60 max-sm:h-16 max-sm:w-12 [&_svg]:size-6"
           >
             <ChevronLeft />
           </Button>
 
           <Button
             type="button"
-            variant="outline"
-            size="icon-sm"
+            variant="ghost"
+            size="icon-lg"
             aria-label="다음 순위 영화 보기"
             onClick={() => move("right")}
-            className="pointer-events-auto rounded-full bg-background/90 shadow-lg backdrop-blur-sm"
+            className="pointer-events-auto h-20 w-14 rounded-xl bg-gradient-to-l from-cinemo-bg/75 via-cinemo-bg/35 to-transparent text-cinemo-gold drop-shadow-lg backdrop-blur-[2px] transition-colors hover:bg-cinemo-teal/45 hover:text-cinemo-gold-light active:bg-cinemo-teal/60 max-sm:h-16 max-sm:w-12 [&_svg]:size-6"
           >
             <ChevronRight />
           </Button>

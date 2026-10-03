@@ -36,7 +36,7 @@ export default async function MoviePage({ params }: MoviePageProps) {
   );
 
   return (
-    <main className="min-h-screen bg-[#101014] px-6 py-12 text-[#f3efe6]">
+    <main className="min-h-screen bg-transparent px-6 py-12 text-cinemo-text">
       <div className="mx-auto max-w-5xl">
         <div className="grid gap-8 md:grid-cols-[280px_1fr]">
           {poster ? (
@@ -46,18 +46,18 @@ export default async function MoviePage({ params }: MoviePageProps) {
               className="w-full rounded-2xl object-cover"
             />
           ) : (
-            <div className="flex aspect-2/3 items-center justify-center rounded-2xl bg-[#29282d] text-[#958d82]">
+            <div className="flex aspect-2/3 items-center justify-center rounded-2xl bg-card text-cinemo-placeholder">
               포스터 없음
             </div>
           )}
 
-          <section>
+          <section className="rounded-2xl bg-cinemo-surface p-6 backdrop-blur-md md:p-8">
             <h1 className="text-4xl font-bold">
               {primaryTitle?.title ?? "제목 없음"}
             </h1>
 
             {primaryRelease?.releaseDate && (
-              <p className="mt-3 text-[#958d82]">
+              <p className="mt-3 text-cinemo-muted">
                 개봉일 {primaryRelease.releaseDate}
               </p>
             )}
@@ -66,14 +66,14 @@ export default async function MoviePage({ params }: MoviePageProps) {
               {movie.genres.map((genre) => (
                 <span
                   key={genre.id}
-                  className="rounded-full bg-[#29282d] px-3 py-1 text-sm"
+                  className="rounded-lg border border-cinemo-gold/25 bg-cinemo-gold/8 px-3 py-1 text-sm text-cinemo-text"
                 >
                   {genre.name}
                 </span>
               ))}
             </div>
 
-            <div className="mt-8 space-y-3 text-[#c7c0b6]">
+            <div className="mt-8 space-y-3 text-cinemo-muted">
               <p>
                 감독:{" "}
                 {directors.map((credit) => credit.person.name).join(", ") ||

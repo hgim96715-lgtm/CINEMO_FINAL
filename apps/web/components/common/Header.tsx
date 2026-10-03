@@ -83,10 +83,9 @@ export function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full backdrop-blur-lg transition-[background-color,box-shadow] duration-200",
-        isLobby ? "bg-[#171412]/55" : "bg-[#171412]/88",
+        "sticky top-0 z-50 w-full bg-transparent transition-[background-color,box-shadow,backdrop-filter] duration-200",
         isScrolled &&
-          "bg-[#171412]/94 shadow-[0_0.5rem_1.5rem_rgb(0_0_0_/20%)]",
+          "bg-cinemo-bg-deep/82 shadow-[0_0.5rem_1.5rem_rgb(0_0_0_/20%)] backdrop-blur-lg",
       )}
     >
       <div
@@ -116,25 +115,30 @@ export function Header() {
           />
         </Link>
 
-        <div ref={searchRef} className="relative ml-auto">
+        <div
+          ref={searchRef}
+          className="relative ml-auto md:mx-auto md:flex md:flex-1 md:justify-center"
+        >
           <button
             type="button"
             aria-label="영화 검색 열기"
             aria-expanded={isSearchOpen}
             onClick={openSearch}
             className={cn(
-              "flex h-11 w-11 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white ",
-              isSearchOpen && "bg-white/10 text-white",
+              "flex h-11 w-11 items-center justify-center rounded-full text-cinemo-gold-light transition hover:bg-white/10 hover:text-cinemo-gold md:hidden",
+              isSearchOpen && "bg-white/10 text-cinemo-gold",
             )}
           >
             <Search size={24} />
           </button>
 
-          {isSearchOpen && (
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="fixed inset-0 z-50 flex min-h-screen flex-col bg-[#171412]/95 p-4 text-[#f3efe6] shadow-2xl backdrop-blur-xl md:absolute md:inset-auto md:right-0 md:top-14 md:min-h-0 md:w-[min(22rem,calc(100vw-2rem))] md:rounded-2xl md:border md:border-white/10 md:p-3"
-            >
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className={cn(
+              "fixed inset-0 z-50 flex min-h-screen flex-col bg-cinemo-bg/96 p-4 text-cinemo-text shadow-2xl backdrop-blur-xl md:relative md:min-h-0 md:w-[min(42rem,52vw)] md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none",
+              !isSearchOpen && "hidden md:flex",
+            )}
+          >
               <div className="mb-4 flex items-center gap-3 md:hidden">
                 <button
                   type="button"
@@ -151,7 +155,7 @@ export function Header() {
                 <span className="text-base font-semibold">영화 검색</span>
               </div>
 
-              <div className="flex h-12 items-center rounded-full border border-white/10 bg-black/35 px-4 focus-within:border-[#d4b56a]/60">
+              <div className="flex h-12 items-center rounded-lg border border-cinemo-gold/30 bg-transparent px-4 transition-colors focus-within:border-cinemo-gold/60 focus-within:bg-white/5 md:h-14">
                 <input
                   {...register("query")}
                   autoFocus
@@ -159,7 +163,7 @@ export function Header() {
                   placeholder="영화 검색"
                   aria-label="영화 검색"
                   autoComplete="off"
-                  className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-white/40"
+                  className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-white/40 md:text-lg"
                 />
 
                 {query.trim() && (
@@ -176,17 +180,21 @@ export function Header() {
                 <button
                   type="submit"
                   aria-label="검색"
-                  className="ml-2 flex h-8 w-8 items-center justify-center rounded-full text-[#d4b56a] transition hover:bg-white/10 hover:text-[#f3efe6] "
+                  className="ml-2 flex h-8 w-8 items-center justify-center rounded-full text-cinemo-gold-light transition hover:bg-white/10 hover:text-cinemo-text "
                 >
                   <Search size={20} />
                 </button>
               </div>
 
-              <div className="mt-4 flex-1 overflow-y-auto">
+              <div
+                className={cn(
+                  "empty:hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden mt-4 flex-1 overflow-y-auto md:absolute md:left-0 md:right-0 md:top-16 md:z-50 md:max-h-[28rem] md:overflow-y-auto md:rounded-2xl md:bg-cinemo-bg/96 md:p-3 md:shadow-2xl md:backdrop-blur-xl",
+                  !query.trim() && "md:hidden",
+                )}
+              >
                 <MovieSearchSuggestions query={query} />
               </div>
-            </form>
-          )}
+          </form>
 
           {errors.query && (
             <p className="mt-2 px-4 text-sm text-red-400">
