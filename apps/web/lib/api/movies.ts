@@ -1,7 +1,4 @@
-import type {
-  MovieResponse,
-  MovieSearchResponse,
-} from "@cinemo/api-contract";
+import type { MovieResponse, MovieSearchResponse } from "@cinemo/api-contract";
 import { apiClient } from "./apiClient";
 
 export type SearchMoviesParams = {
@@ -39,12 +36,29 @@ export async function getMovie(
 
 export async function getPopularMovies(
   page = 1,
+  limit = 10,
   signal?: AbortSignal,
 ): Promise<MovieSearchResponse> {
   const { data } = await apiClient.get<MovieSearchResponse>("/movies/popular", {
-    params: { page },
+    params: { page, limit },
     signal,
   });
+
+  return data;
+}
+
+export async function getMovieRankings(
+  page = 1,
+  limit = 10,
+  signal?: AbortSignal,
+): Promise<MovieSearchResponse> {
+  const { data } = await apiClient.get<MovieSearchResponse>(
+    "/movies/rankings",
+    {
+      params: { page, limit },
+      signal,
+    },
+  );
 
   return data;
 }

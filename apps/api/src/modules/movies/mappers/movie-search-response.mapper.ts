@@ -1,3 +1,4 @@
+import { MediaType } from "@prisma/client";
 import { MovieSearchItemResponseDto } from "../dto/responses/movie-search-item.response.dto";
 import { MovieSearchWithDetails } from "../movies.repository";
 
@@ -23,6 +24,10 @@ export function toMovieSearchItemResponseDto(
       ? release.releaseDate.toISOString().slice(0, 10)
       : null,
     posterUrl: poster?.url ?? null,
+
+    hasTrailer: movie.media.some(
+      (media) => media.mediaType === MediaType.TRAILER,
+    ),
     genres: movie.movieGenres.map((genre) => genre.name),
     rank,
   };

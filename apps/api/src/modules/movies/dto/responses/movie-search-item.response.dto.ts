@@ -43,4 +43,10 @@ export class MovieSearchItemResponseDto {
     nullable: true,
   })
   rank!: number | null;
+
+  @ApiProperty({
+    description: "공식 예고편 존재 여부",
+    example: true,
+  })
+  hasTrailer!: boolean;
 }

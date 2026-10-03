@@ -72,11 +72,12 @@ const movieSearchInclude = {
   },
   media: {
     where: {
-      mediaType: "POSTER",
+      mediaType: {
+        in: [MediaType.POSTER, MediaType.TRAILER],
+      },
       status: MediaStatus.ACTIVE,
     },
     orderBy: [{ isPrimary: "desc" }, { verifiedAt: "desc" }],
-    take: 1,
   },
   movieGenres: {
     orderBy: {

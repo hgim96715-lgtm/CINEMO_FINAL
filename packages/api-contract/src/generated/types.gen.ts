@@ -26,9 +26,13 @@ export type MovieSearchItemResponseDto = {
      */
     genres: Array<string>;
     /**
-     * TMDB 기준 영화 순위
+     * KOBIS 박스오피스 순위
      */
     rank: number | null;
+    /**
+     * 공식 예고편 존재 여부
+     */
+    hasTrailer: boolean;
 };
 
 export type MovieSearchResponseDto = {
@@ -465,6 +469,25 @@ export type KobisMovieInfoResponseDto = {
     certifications: Array<string>;
 };
 
+export type KobisDailyBoxOfficeItemResponseDto = {
+    rank: string;
+    movieCd: string;
+    movieNm: string;
+    openDt: {
+        [key: string]: unknown;
+    } | null;
+    audiCnt: string;
+    audiAcc: string;
+    audiInten: string;
+    audiChange: string;
+    audiIntenAcc: string;
+    audiChangeAcc: string;
+};
+
+export type KobisDailyBoxOfficeResponseDto = {
+    results: Array<KobisDailyBoxOfficeItemResponseDto>;
+};
+
 export type TmdbMovieSearchItemResponseDto = {
     adult: boolean;
     /**
@@ -864,6 +887,28 @@ export type MoviesControllerGetPopularMoviesV1Responses = {
 
 export type MoviesControllerGetPopularMoviesV1Response = MoviesControllerGetPopularMoviesV1Responses[keyof MoviesControllerGetPopularMoviesV1Responses];
 
+export type MoviesControllerGetMovieRankingsV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 조회할 페이지 번호
+         */
+        page: number;
+        /**
+         * 페이지당 인기 영화 수
+         */
+        limit: number;
+    };
+    url: '/v1/movies/rankings';
+};
+
+export type MoviesControllerGetMovieRankingsV1Responses = {
+    200: MovieSearchResponseDto;
+};
+
+export type MoviesControllerGetMovieRankingsV1Response = MoviesControllerGetMovieRankingsV1Responses[keyof MoviesControllerGetMovieRankingsV1Responses];
+
 export type MoviesControllerFindByIdV1Data = {
     body?: never;
     path: {
@@ -891,6 +936,24 @@ export type MoviesControllerFindByIdV1Responses = {
 };
 
 export type MoviesControllerFindByIdV1Response = MoviesControllerFindByIdV1Responses[keyof MoviesControllerFindByIdV1Responses];
+
+export type MovieImportControllerImportDailyBoxOfficeV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 박스오피스 조회 기준일
+         */
+        targetDt: string;
+    };
+    url: '/v1/movie-imports/kobis/box-office';
+};
+
+export type MovieImportControllerImportDailyBoxOfficeV1Responses = {
+    200: Array<string>;
+};
+
+export type MovieImportControllerImportDailyBoxOfficeV1Response = MovieImportControllerImportDailyBoxOfficeV1Responses[keyof MovieImportControllerImportDailyBoxOfficeV1Responses];
 
 export type MovieImportControllerImportFromKobisV1Data = {
     body?: never;
@@ -1084,6 +1147,27 @@ export type KobisControllerGetMovieInfoV1Responses = {
 };
 
 export type KobisControllerGetMovieInfoV1Response = KobisControllerGetMovieInfoV1Responses[keyof KobisControllerGetMovieInfoV1Responses];
+
+export type KobisControllerGetDailyBoxOfficeV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 박스오피스 조회 기준일
+         */
+        targetDt: string;
+    };
+    url: '/v1/kobis/box-office/daily';
+};
+
+export type KobisControllerGetDailyBoxOfficeV1Responses = {
+    /**
+     * 일별 박스오피스 조회 성공
+     */
+    200: KobisDailyBoxOfficeResponseDto;
+};
+
+export type KobisControllerGetDailyBoxOfficeV1Response = KobisControllerGetDailyBoxOfficeV1Responses[keyof KobisControllerGetDailyBoxOfficeV1Responses];
 
 export type TmdbControllerSearchMoviesV1Data = {
     body?: never;
