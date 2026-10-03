@@ -19,6 +19,33 @@ CINEMO 아이콘은 둥근 `C` 안쪽으로 한 아이가 걸어 들어가는 �
 
 둥근 `C`는 Cinema의 첫 글자이면서 영화로 들어가는 하나의 공간과 통로를 나타냅니다. 아이가 그 안으로 걸어가는 모습에는 영화가 한 편의 영상으로 끝나는 것이 아니라, 성장과 기억, 인생의 순간에 함께 움직인다는 의미를 담았습니다.
 
+## CINEMO 색상
+
+CINEMO의 기본 색상은 어두운 블루 그린 배경에 골드 포인트를 조합한 구성.
+
+| 토큰 | 색상 | 용도 |
+| --- | --- | --- |
+| `cinemo-bg` | `#0B181B` | 홈·상세 페이지 기본 배경 |
+| `cinemo-bg-deep` | `#081113` | 헤더 스크롤 상태·어두운 오버레이 |
+| `cinemo-surface` | `rgb(255 255 255 / 5%)` | 카드·콘텐츠 영역의 반투명 글래스 배경 |
+| `cinemo-teal` | `#176B68` | 블루 그린 포인트·버튼 배경 |
+| `cinemo-teal-deep` | `#0F514F` | 버튼 active 상태 |
+| `cinemo-teal-light` | `#9AD8D1` | 아이콘·보조 강조 색상 |
+| `cinemo-gold` | `#C6A15B` | 대표 포인트·제목·테두리·링크 |
+| `cinemo-gold-light` | `#D4B56A` | hover 상태·밝은 골드 강조 |
+| `cinemo-text` | `#F3EFE6` | 기본 텍스트 |
+| `cinemo-muted` | `#B0B8B4` | 설명·보조 텍스트 |
+| `cinemo-placeholder` | `#8FB8B3` | 빈 상태·placeholder 텍스트 |
+
+### 사용 규칙
+
+- Tailwind 클래스에서 `bg-cinemo-*`, `text-cinemo-*`, `border-cinemo-*` 형태로 사용.
+- `primary`는 공통 골드(`cinemo-gold`) 기준.
+- 시네마 레드는 로그인·특정 강조 상태처럼 제한적인 영역에만 사용.
+- 주요 버튼은 알약 형태보다 `rounded-lg` 기반의 직사각형 형태 우선.
+- 콘텐츠 영역은 불투명한 박스보다 `cinemo-surface`와 `backdrop-blur` 조합 우선.
+- 전역 CSS 변수와 Tailwind 토큰의 기준 파일은 `apps/web/app/globals.css`.
+
 ## 외부 API
 
 
