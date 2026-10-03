@@ -69,7 +69,7 @@ export function MovieRankingCarousel() {
             size="icon-lg"
             aria-label="이전 순위 영화 보기"
             onClick={() => move("left")}
-            className="pointer-events-auto h-20 w-14 rounded-xl bg-gradient-to-r from-cinemo-bg/75 via-cinemo-bg/35 to-transparent text-cinemo-gold drop-shadow-lg backdrop-blur-[2px] transition-colors hover:bg-cinemo-teal/45 hover:text-cinemo-gold-light active:bg-cinemo-teal/60 max-sm:h-16 max-sm:w-12 [&_svg]:size-6"
+            className="pointer-events-auto h-20 w-14 rounded-xl bg-gradient-to-r from-cinemo-bg/75 via-cinemo-bg/35 to-transparent text-cinemo-gold drop-shadow-lg backdrop-blur-[2px] transition-colors hover:bg-cinemo-teal/45 hover:text-cinemo-gold-light active:bg-cinemo-teal/60 max-sm:h-14 max-sm:w-14 max-sm:rounded-lg max-sm:border max-sm:border-cinemo-gold/30 max-sm:bg-cinemo-bg/80 max-sm:bg-none max-sm:backdrop-blur-md [&_svg]:size-6"
           >
             <ChevronLeft />
           </Button>
@@ -80,7 +80,7 @@ export function MovieRankingCarousel() {
             size="icon-lg"
             aria-label="다음 순위 영화 보기"
             onClick={() => move("right")}
-            className="pointer-events-auto h-20 w-14 rounded-xl bg-gradient-to-l from-cinemo-bg/75 via-cinemo-bg/35 to-transparent text-cinemo-gold drop-shadow-lg backdrop-blur-[2px] transition-colors hover:bg-cinemo-teal/45 hover:text-cinemo-gold-light active:bg-cinemo-teal/60 max-sm:h-16 max-sm:w-12 [&_svg]:size-6"
+            className="pointer-events-auto h-20 w-14 rounded-xl bg-gradient-to-l from-cinemo-bg/75 via-cinemo-bg/35 to-transparent text-cinemo-gold drop-shadow-lg backdrop-blur-[2px] transition-colors hover:bg-cinemo-teal/45 hover:text-cinemo-gold-light active:bg-cinemo-teal/60 max-sm:h-14 max-sm:w-14 max-sm:rounded-lg max-sm:border max-sm:border-cinemo-gold/30 max-sm:bg-cinemo-bg/80 max-sm:bg-none max-sm:backdrop-blur-md [&_svg]:size-6"
           >
             <ChevronRight />
           </Button>
