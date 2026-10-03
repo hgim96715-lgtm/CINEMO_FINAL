@@ -3,7 +3,7 @@ import { Camera, Mail, MessageCircle, Play } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="mt-10 bg-[#15120f]/70 px-6 py-10 text-sm text-muted-foreground sm:px-10 sm:py-14">
+    <footer className="mt-0 bg-cinemo-bg-deep/70 px-6 py-10 text-sm text-muted-foreground sm:px-10 sm:py-14">
       <div className="mx-auto max-w-7xl">
         <div className="flex items-center gap-5">
           <a

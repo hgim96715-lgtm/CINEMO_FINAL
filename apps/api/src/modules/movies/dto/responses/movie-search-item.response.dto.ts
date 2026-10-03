@@ -45,6 +45,30 @@ export class MovieSearchItemResponseDto {
   rank!: number | null;
 
   @ApiProperty({
+    type: Number,
+    description: "전일 대비 순위 변동. 양수는 상승, 음수는 하락",
+    example: 2,
+    nullable: true,
+  })
+  rankChange!: number | null;
+
+  @ApiProperty({
+    type: Number,
+    description: "해당 날짜의 관객수",
+    example: 12500,
+    nullable: true,
+  })
+  audienceCount!: number | null;
+
+  @ApiProperty({
+    type: Number,
+    description: "누적 관객수",
+    example: 13900000,
+    nullable: true,
+  })
+  totalAudienceCount!: number | null;
+
+  @ApiProperty({
     description: "공식 예고편 존재 여부",
     example: true,
   })

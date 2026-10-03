@@ -1,10 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { movieRankingQueryOptions } from "@/lib/queries/movie-search.query";
 
@@ -15,8 +20,80 @@ export function MovieRankingCarousel() {
     }),
   );
 
+  const formatAudienceCount = (count: number | null) => {
+    if (count === null) return "-";
+
+    const flooredCount = Math.floor(count / 1_000) * 1_000;
+
+    const formatted = new Intl.NumberFormat("ko-KR", {
+      notation: "compact",
+      maximumFractionDigits: 1,
+      useGrouping: true,
+    }).format(flooredCount);
+
+    return `누적 ${formatted}`;
+  };
+
+  function RankChange({ value }: { value: number | null }) {
+    if (value === null || value === 0) return null;
+
+    if (value > 0) {
+      return (
+        <span className="inline-flex items-center gap-1 text-sm text-cinemo-gold">
+          <TrendingUp className="size-4" />+{value}
+        </span>
+      );
+    }
+
+    if (value < 0) {
+      return (
+        <span className="inline-flex items-center gap-1 text-sm text-cinemo-teal-light">
+          <TrendingDown className="size-4" />
+          {value}
+        </span>
+      );
+    }
+
+    return null;
+  }
+
   const scrollRef = useRef<HTMLOListElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const movies = rankingQuery.data?.items ?? [];
+
+  const updateScrollButtons = useCallback(() => {
+    const list = scrollRef.current;
+    if (!list) return;
+
+    const maxScrollLeft = Math.max(0, list.scrollWidth - list.clientWidth);
+    const leftPadding = Number.parseFloat(
+      window.getComputedStyle(list).paddingLeft,
+    );
+
+    setCanScrollLeft(
+      list.scrollLeft > (Number.isNaN(leftPadding) ? 0 : leftPadding) + 1,
+    );
+    setCanScrollRight(list.scrollLeft < maxScrollLeft - 1);
+  }, []);
+
+  useEffect(() => {
+    const list = scrollRef.current;
+    if (!list) return;
+
+    list.scrollLeft = 0;
+    updateScrollButtons();
+    list.addEventListener("scroll", updateScrollButtons, { passive: true });
+
+    const resizeObserver = new ResizeObserver(updateScrollButtons);
+    resizeObserver.observe(list);
+    Array.from(list.children).forEach((child) => resizeObserver.observe(child));
+
+    return () => {
+      list.removeEventListener("scroll", updateScrollButtons);
+      resizeObserver.disconnect();
+    };
+  }, [movies.length, updateScrollButtons]);
 
   const move = (direction: "left" | "right") => {
     const list = scrollRef.current;
@@ -27,13 +104,12 @@ export function MovieRankingCarousel() {
     const nextLeft =
       list.scrollLeft + (direction === "left" ? -distance : distance);
 
-    list.scrollTo({
-      left: Math.max(
-        0,
-        Math.min(nextLeft, list.scrollWidth - list.clientWidth),
-      ),
-      behavior: "smooth",
-    });
+    const targetLeft = Math.max(
+      0,
+      Math.min(nextLeft, list.scrollWidth - list.clientWidth),
+    );
+
+    list.scrollLeft = targetLeft;
   };
 
   if (rankingQuery.isPending || rankingQuery.isError || movies.length === 0) {
@@ -62,36 +138,43 @@ export function MovieRankingCarousel() {
       </div>
 
       <div className="relative">
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-between px-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-lg"
-            aria-label="이전 순위 영화 보기"
-            onClick={() => move("left")}
-            className="pointer-events-auto h-20 w-14 rounded-xl bg-gradient-to-r from-cinemo-bg/75 via-cinemo-bg/35 to-transparent text-cinemo-gold drop-shadow-lg backdrop-blur-[2px] transition-colors hover:bg-cinemo-teal/45 hover:text-cinemo-gold-light active:bg-cinemo-teal/60 max-sm:h-14 max-sm:w-14 max-sm:rounded-lg max-sm:border max-sm:border-cinemo-gold/30 max-sm:bg-cinemo-bg/80 max-sm:bg-none max-sm:backdrop-blur-md [&_svg]:size-6"
-          >
-            <ChevronLeft />
-          </Button>
+        <>
+          {canScrollLeft && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-lg"
+              aria-label="이전 순위 영화 보기"
+              onClick={() => move("left")}
+              className="pointer-events-auto absolute left-2 top-1/2 z-20 h-20 w-14 -translate-y-1/2 rounded-xl bg-linear-to-r from-cinemo-bg/75 via-cinemo-bg/35 to-transparent text-cinemo-gold drop-shadow-lg backdrop-blur-[2px] transition-colors hover:bg-cinemo-teal/45 hover:text-cinemo-gold-light active:bg-cinemo-teal/60 max-sm:hidden max-sm:h-14 max-sm:w-14 max-sm:rounded-lg max-sm:border max-sm:border-cinemo-teal-light/15 max-sm:bg-cinemo-teal/25 max-sm:bg-none max-sm:text-cinemo-gold-light/85 max-sm:backdrop-blur-md max-sm:hover:bg-cinemo-teal/35 max-sm:active:bg-cinemo-teal/70 xl:hidden [&_svg]:size-6"
+            >
+              <ChevronLeft />
+            </Button>
+          )}
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-lg"
-            aria-label="다음 순위 영화 보기"
-            onClick={() => move("right")}
-            className="pointer-events-auto h-20 w-14 rounded-xl bg-gradient-to-l from-cinemo-bg/75 via-cinemo-bg/35 to-transparent text-cinemo-gold drop-shadow-lg backdrop-blur-[2px] transition-colors hover:bg-cinemo-teal/45 hover:text-cinemo-gold-light active:bg-cinemo-teal/60 max-sm:h-14 max-sm:w-14 max-sm:rounded-lg max-sm:border max-sm:border-cinemo-gold/30 max-sm:bg-cinemo-bg/80 max-sm:bg-none max-sm:backdrop-blur-md [&_svg]:size-6"
-          >
-            <ChevronRight />
-          </Button>
-        </div>
+          {canScrollRight && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-lg"
+              aria-label="다음 순위 영화 보기"
+              onClick={() => move("right")}
+              className="pointer-events-auto absolute right-2 top-1/2 z-20 h-20 w-14 -translate-y-1/2 rounded-xl bg-linear-to-l from-cinemo-bg/75 via-cinemo-bg/35 to-transparent text-cinemo-gold drop-shadow-lg backdrop-blur-[2px] transition-colors hover:bg-cinemo-teal/45 hover:text-cinemo-gold-light active:bg-cinemo-teal/60 max-sm:hidden max-sm:h-14 max-sm:w-14 max-sm:rounded-lg max-sm:border max-sm:border-cinemo-teal-light/15 max-sm:bg-cinemo-teal/25 max-sm:bg-none max-sm:text-cinemo-gold-light/85 max-sm:backdrop-blur-md max-sm:hover:bg-cinemo-teal/35 max-sm:active:bg-cinemo-teal/70 xl:hidden [&_svg]:size-6"
+            >
+              <ChevronRight />
+            </Button>
+          )}
+        </>
 
         <ol
           ref={scrollRef}
-          className="flex snap-x gap-4 overflow-x-auto pl-10 pr-0 pb-4 [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden"
+          className="flex gap-4 overflow-x-auto pl-0 pr-0 pb-4 [-ms-overflow-style:none] scrollbar-none max-sm:snap-x max-sm:snap-mandatory [&::-webkit-scrollbar]:hidden"
         >
           {movies.map((movie, index) => (
-            <li key={movie.id} className="w-34 shrink-0 snap-start sm:w-42">
+            <li
+              key={movie.id}
+              className="w-34 shrink-0 sm:w-42 max-sm:w-[72vw] max-sm:snap-center"
+            >
               <Link href={`/movies/${movie.id}`} className="group block">
                 <div className="relative aspect-2/3 overflow-hidden rounded-2xl bg-card">
                   {movie.posterUrl ? (
@@ -117,14 +200,19 @@ export function MovieRankingCarousel() {
                   {movie.title}
                 </h3>
 
-                {movie.releaseDate ? (
-                  <time
-                    dateTime={movie.releaseDate}
-                    className="mt-1 block text-xs text-muted-foreground"
-                  >
-                    {movie.releaseDate.slice(0, 4)}
-                  </time>
-                ) : null}
+                <div className="mt-1 space-y-1 text-sm">
+                  {movie.totalAudienceCount !== null ? (
+                    <p className="text-sm text-muted-foreground">
+                      {formatAudienceCount(movie.totalAudienceCount)}
+                    </p>
+                  ) : null}
+
+                  {movie.rankChange !== null && movie.rankChange !== 0 ? (
+                    <p>
+                      <RankChange value={movie.rankChange} />
+                    </p>
+                  ) : null}
+                </div>
               </Link>
             </li>
           ))}

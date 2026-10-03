@@ -126,7 +126,15 @@ export type SaveMovieRankingSnapshotInput = {
   movieId: string;
   sourceProvider: SourceProvider;
   rank: number;
+  rankChange?: number | null;
   audienceCount?: number | null;
+  totalAudienceCount?: number | null;
+  collectedAt?: Date;
+};
+
+export type SaveMoviePopularitySnapshotInput = {
+  movieId: string;
+  rank: number;
   collectedAt?: Date;
 };
 
@@ -545,10 +553,7 @@ export class MoviesRepository {
     movies: MovieSearchWithDetails[];
     totalCount: number;
   }> {
-    const latestSnapshot = await this.prisma.movieRankingSnapshot.findFirst({
-      where: {
-        sourceProvider: SourceProvider.TMDB,
-      },
+    const latestSnapshot = await this.prisma.moviePopularitySnapshot.findFirst({
       orderBy: {
         collectedAt: "desc",
       },
@@ -564,14 +569,13 @@ export class MoviesRepository {
       };
     }
 
-    const rankingWhere: Prisma.MovieRankingSnapshotWhereInput = {
-      sourceProvider: SourceProvider.TMDB,
+    const popularityWhere: Prisma.MoviePopularitySnapshotWhereInput = {
       collectedAt: latestSnapshot.collectedAt,
     };
 
     const [rankings, totalCount] = await this.prisma.$transaction([
-      this.prisma.movieRankingSnapshot.findMany({
-        where: rankingWhere,
+      this.prisma.moviePopularitySnapshot.findMany({
+        where: popularityWhere,
         orderBy: {
           rank: "asc",
         },
@@ -581,8 +585,8 @@ export class MoviesRepository {
           movieId: true,
         },
       }),
-      this.prisma.movieRankingSnapshot.count({
-        where: rankingWhere,
+      this.prisma.moviePopularitySnapshot.count({
+        where: popularityWhere,
       }),
     ]);
 
@@ -615,6 +619,9 @@ export class MoviesRepository {
     movies: Array<{
       movie: MovieSearchWithDetails;
       rank: number;
+      rankChange: number | null;
+      audienceCount: number | null;
+      totalAudienceCount: number | null;
     }>;
     totalCount: number;
   }> {
@@ -653,6 +660,9 @@ export class MoviesRepository {
         select: {
           movieId: true,
           rank: true,
+          rankChange: true,
+          audienceCount: true,
+          totalAudienceCount: true,
         },
       }),
       this.prisma.movieRankingSnapshot.count({
@@ -675,7 +685,17 @@ export class MoviesRepository {
       movies: rankings.flatMap((ranking) => {
         const movie = moviesById.get(ranking.movieId);
 
-        return movie ? [{ movie, rank: ranking.rank }] : [];
+        return movie
+          ? [
+              {
+                movie,
+                rank: ranking.rank,
+                rankChange: ranking.rankChange,
+                audienceCount: ranking.audienceCount,
+                totalAudienceCount: ranking.totalAudienceCount,
+              },
+            ]
+          : [];
       }),
       totalCount,
     };
@@ -689,7 +709,21 @@ export class MoviesRepository {
         movieId: input.movieId,
         sourceProvider: input.sourceProvider,
         rank: input.rank,
+        rankChange: input.rankChange ?? null,
         audienceCount: input.audienceCount ?? null,
+        totalAudienceCount: input.totalAudienceCount ?? null,
+        collectedAt: input.collectedAt ?? new Date(),
+      },
+    });
+  }
+
+  async saveMoviePopularitySnapshot(
+    input: SaveMoviePopularitySnapshotInput,
+  ): Promise<void> {
+    await this.prisma.moviePopularitySnapshot.create({
+      data: {
+        movieId: input.movieId,
+        rank: input.rank,
         collectedAt: input.collectedAt ?? new Date(),
       },
     });

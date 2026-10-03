@@ -47,7 +47,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko" className={cn("font-sans", inter.variable)}>
-      <body>
+      <body className="flex min-h-screen flex-col">
         <QueryProvider>
           <Header />
           <div className="flex-1">{children}</div>

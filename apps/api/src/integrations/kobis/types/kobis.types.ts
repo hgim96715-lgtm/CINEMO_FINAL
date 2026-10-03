@@ -87,6 +87,7 @@ export interface KobisAudit {
 
 export interface KobisDailyBoxOfficeMovie {
   rank: string;
+  rankInten: string;
   movieCd: string;
   movieNm: string;
   openDt?: string;

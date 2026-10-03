@@ -4,18 +4,24 @@ import type { KobisDailyBoxOfficeItemResponseDto } from "@/integrations/kobis/dt
 
 import type { SaveMovieRankingSnapshotInput } from "../movies.repository";
 
+function parseKobisNumber(value?: string | null): number | null {
+  if (!value?.trim()) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export function toKobisRankingSnapshotInput(
   movie: KobisDailyBoxOfficeItemResponseDto,
   movieId: string,
   collectedAt: Date,
 ): SaveMovieRankingSnapshotInput {
-  const audienceCount = Number(movie.audiCnt);
-
   return {
     movieId,
     sourceProvider: SourceProvider.KOBIS,
-    rank: Number(movie.rank),
-    audienceCount: Number.isFinite(audienceCount) ? audienceCount : null,
+    rank: parseKobisNumber(movie.rank) ?? 0,
+    rankChange: parseKobisNumber(movie.rankInten),
+    audienceCount: parseKobisNumber(movie.audiCnt),
+    totalAudienceCount: parseKobisNumber(movie.audiAcc),
     collectedAt,
   };
 }

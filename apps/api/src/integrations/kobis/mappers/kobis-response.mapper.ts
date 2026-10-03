@@ -75,6 +75,7 @@ export function toKobisDailyBoxOfficeResponse(
   return {
     results: movies.map((movie) => ({
       rank: movie.rank,
+      rankInten: movie.rankInten,
       movieCd: movie.movieCd,
       movieNm: movie.movieNm,
       openDt: movie.openDt ?? null,

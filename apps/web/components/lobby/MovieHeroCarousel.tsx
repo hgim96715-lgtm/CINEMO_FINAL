@@ -26,7 +26,7 @@ export function MovieHeroCarousel() {
     popularMoviesQueryOptions({ page: 1, enabled: true, limit: 20 }),
   );
 
-  const hasKorean = (value: string) => /[가-힣]/.test(value);
+  const hasKorean = (value: string) => /[가-힣0-9]/.test(value);
   const movies =
     popularQuery.data?.items.filter(
       (movie) => hasKorean(movie.title) && movie.hasTrailer,
@@ -124,7 +124,7 @@ export function MovieHeroCarousel() {
             CINEMO FEATURED MOVIE
           </p>
 
-          <h1 className="m-0 font-serif text-[clamp(2rem,5.5vw,3.5rem)] font-semibold leading-[1.08] max-sm:text-[clamp(1.8rem,9vw,2.7rem)]">
+          <h1 className="m-0 font-serif text-[clamp(2rem,5.5vw,3.5rem)] font-semibold leading-[1.08] max-sm:text-[clamp(1.65rem,8vw,2.4rem)]">
             {title}
           </h1>
 

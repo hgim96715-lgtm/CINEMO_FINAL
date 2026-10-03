@@ -30,6 +30,18 @@ export type MovieSearchItemResponseDto = {
      */
     rank: number | null;
     /**
+     * 전일 대비 순위 변동. 양수는 상승, 음수는 하락
+     */
+    rankChange: number | null;
+    /**
+     * 해당 날짜의 관객수
+     */
+    audienceCount: number | null;
+    /**
+     * 누적 관객수
+     */
+    totalAudienceCount: number | null;
+    /**
      * 공식 예고편 존재 여부
      */
     hasTrailer: boolean;
@@ -470,17 +482,51 @@ export type KobisMovieInfoResponseDto = {
 };
 
 export type KobisDailyBoxOfficeItemResponseDto = {
+    /**
+     * 일별 박스오피스 순위
+     */
     rank: string;
+    /**
+     * 전일 대비 순위 변동. 양수는 순위 상승, 음수는 순위 하락을 의미
+     */
+    rankInten: string;
+    /**
+     * KOBIS에서 사용하는 영화 고유 식별자
+     */
     movieCd: string;
+    /**
+     * 영화 제목
+     */
     movieNm: string;
+    /**
+     * 영화 개봉일
+     */
     openDt: {
         [key: string]: unknown;
     } | null;
+    /**
+     * 해당 날짜의 관객수
+     */
     audiCnt: string;
+    /**
+     * 누적 관객수
+     */
     audiAcc: string;
+    /**
+     * 전일 대비 관객수 증감
+     */
     audiInten: string;
+    /**
+     * 전일 대비 관객수 증감률(%)
+     */
     audiChange: string;
+    /**
+     * 전주 대비 누적 관객수 증감
+     */
     audiIntenAcc: string;
+    /**
+     * 전주 대비 누적 관객수 증감률(%)
+     */
     audiChangeAcc: string;
 };
 

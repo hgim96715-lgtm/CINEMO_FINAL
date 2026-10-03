@@ -60,15 +60,12 @@ export class TmdbMovieBatchImportService {
           await this.getOrCreateTmdbMovie(
             toCreateMovieFromTmdbInput(movie),
           );
-        const TMDB_PAGE_SIZE = 20;
 
         await this.tmdbMovieEnrichmentService.enrichMovie(movieId, movie.id);
 
-        await this.moviesRepository.saveMovieRankingSnapshot({
+        await this.moviesRepository.saveMoviePopularitySnapshot({
           movieId,
-          sourceProvider: SourceProvider.TMDB,
-
-          rank: (page - 1) * TMDB_PAGE_SIZE + index + 1,
+          rank: (page - 1) * 20 + index + 1,
           collectedAt,
         });
 
