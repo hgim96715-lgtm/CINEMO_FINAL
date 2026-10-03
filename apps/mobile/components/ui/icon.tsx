@@ -1,33 +1,31 @@
 import { TextClassContext } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import type { LucideIcon, LucideProps } from 'lucide-react-native';
-import { cssInterop } from 'nativewind';
+import { styled } from 'nativewind';
 import * as React from 'react';
 
 type IconProps = LucideProps & {
   as: LucideIcon;
 } & React.RefAttributes<LucideIcon>;
 
-function IconImpl({ as: IconComponent, ...props }: IconProps) {
-  return <IconComponent {...props} />;
-}
-
-cssInterop(IconImpl, {
-  className: {
-    target: 'style',
-    nativeStyleToProp: {
-      height: 'size',
-      width: 'size',
-    },
-  },
-});
-
 function Icon({ as: IconComponent, className, size = 14, ...props }: IconProps) {
   const textClass = React.useContext(TextClassContext);
+  const StyledIcon = React.useMemo(
+    () =>
+      styled(IconComponent, {
+        className: {
+          target: 'style',
+          nativeStyleMapping: {
+            height: true,
+            width: true,
+          },
+        },
+      }),
+    [IconComponent]
+  );
 
   return (
-    <IconImpl
-      as={IconComponent}
+    <StyledIcon
       className={cn('text-foreground', textClass, className)}
       size={size}
       {...props}
