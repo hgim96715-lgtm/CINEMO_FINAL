@@ -61,6 +61,34 @@ export class MovieResponseDto {
   })
   credits!: MovieCreditResponseDto[];
 
+  @ApiProperty({
+    description: "영화 줄거리",
+    type: String,
+    nullable: true,
+  })
+  overview!: string | null;
+
+  @ApiProperty({
+    description: "상영 시간(분)",
+    type: Number,
+    nullable: true,
+  })
+  runtime!: number | null;
+
+  @ApiProperty({
+    description: "TMDB 평균 평점",
+    type: Number,
+    nullable: true,
+  })
+  tmdbVoteAverage!: number | null;
+
+  @ApiProperty({
+    description: "TMDB 평점 참여자 수",
+    type: Number,
+    nullable: true,
+  })
+  tmdbVoteCount!: number | null;
+
   @ApiProperty({ description: "영화 레코드 생성 시각" })
   createdAt!: string;
 

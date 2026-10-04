@@ -15,6 +15,7 @@ export class MoviePersonResponseDto {
 
   @ApiProperty({
     description: "외국어 또는 원문 인물 이름",
+    type: String,
     nullable: true,
     example: "Anthony Russo",
   })

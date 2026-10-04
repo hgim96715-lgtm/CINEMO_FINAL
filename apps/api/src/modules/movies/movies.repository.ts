@@ -518,6 +518,8 @@ export class MoviesRepository {
         const person = await this.moviePersonService.resolve(tx, {
           name: credit.name,
           nameEn: credit.nameEn,
+          movieId: movie.id,
+          creditType: credit.creditType,
         });
 
         await tx.movieCredit.upsert({

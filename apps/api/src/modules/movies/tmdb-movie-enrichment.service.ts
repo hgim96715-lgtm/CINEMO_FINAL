@@ -190,6 +190,8 @@ export class TmdbMovieEnrichmentService {
           nameEn: credit.nameEn,
           sourceProvider: SourceProvider.TMDB,
           externalId: credit.externalId,
+          movieId,
+          creditType: credit.creditType,
         });
 
         await tx.movieCredit.upsert({
@@ -293,12 +295,20 @@ export class TmdbMovieEnrichmentService {
             .filter(Boolean),
         ),
       ];
-      if (productionCountryCodes.length > 0) {
-        await tx.movie.update({
-          where: { id: movieId },
-          data: { productionCountryCodes },
-        });
-      }
+      await tx.movie.update({
+        where: { id: movieId },
+        data: {
+          overview: tmdbMovie.overview?.trim() || null,
+          runtime: tmdbMovie.runtime,
+          tmdbVoteAverage: new Prisma.Decimal(
+            tmdbMovie.vote_average.toFixed(1),
+          ),
+          tmdbVoteCount: tmdbMovie.vote_count,
+          ...(productionCountryCodes.length > 0
+            ? { productionCountryCodes }
+            : {}),
+        },
+      });
 
       return movieId;
     });

@@ -39,6 +39,11 @@ export function toMovieResponseDto(movie: MovieWithDetails): MovieResponseDto {
   return {
     id: movie.id,
     productionCountryCodes: movie.productionCountryCodes,
+    overview: movie.overview,
+    runtime: movie.runtime,
+    tmdbVoteAverage:
+      movie.tmdbVoteAverage === null ? null : Number(movie.tmdbVoteAverage),
+    tmdbVoteCount: movie.tmdbVoteCount,
     titles: movie.titles.map((title) => ({
       id: title.id,
       title: title.title,

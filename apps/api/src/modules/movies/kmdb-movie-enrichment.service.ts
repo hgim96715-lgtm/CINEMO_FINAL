@@ -364,6 +364,8 @@ export class KmdbMovieEnrichmentService {
           nameEn: credit.nameEn,
           sourceProvider: SourceProvider.KMDB,
           externalId: credit.externalId,
+          movieId,
+          creditType: credit.creditType,
         });
 
         await tx.movieCredit.upsert({

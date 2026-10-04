@@ -252,9 +252,7 @@ export type MoviePersonResponseDto = {
     /**
      * 외국어 또는 원문 인물 이름
      */
-    nameEn: {
-        [key: string]: unknown;
-    } | null;
+    nameEn: string | null;
 };
 
 export type MovieCreditResponseDto = {
@@ -321,6 +319,22 @@ export type MovieResponseDto = {
      * 영화와 감독·배우 연결 목록
      */
     credits: Array<MovieCreditResponseDto>;
+    /**
+     * 영화 줄거리
+     */
+    overview: string | null;
+    /**
+     * 상영 시간(분)
+     */
+    runtime: number | null;
+    /**
+     * TMDB 평균 평점
+     */
+    tmdbVoteAverage: number | null;
+    /**
+     * TMDB 평점 참여자 수
+     */
+    tmdbVoteCount: number | null;
     /**
      * 영화 레코드 생성 시각
      */
