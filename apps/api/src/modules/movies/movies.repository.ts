@@ -154,7 +154,7 @@ export class MoviesRepository {
     });
   }
 
-  search(
+  async search(
     query: string,
     page: number,
     limit: number,
@@ -209,25 +209,23 @@ export class MoviesRepository {
       ],
     };
 
-    return this.prisma.$transaction(async (tx) => {
-      const [movies, totalCount] = await Promise.all([
-        tx.movie.findMany({
-          where,
-          skip: (page - 1) * limit,
-          take: limit,
-          orderBy: {
-            updatedAt: "desc",
-          },
-          include: movieSearchInclude,
-        }),
-        tx.movie.count({ where }),
-      ]);
+    const [movies, totalCount] = await Promise.all([
+      this.prisma.movie.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: {
+          updatedAt: "desc",
+        },
+        include: movieSearchInclude,
+      }),
+      this.prisma.movie.count({ where }),
+    ]);
 
-      return {
-        movies,
-        totalCount,
-      };
-    });
+    return {
+      movies,
+      totalCount,
+    };
   }
 
   // Web SEO용 sitemap 생성을 위해 영화 ID와 수정 시각만 조회

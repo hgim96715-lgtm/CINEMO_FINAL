@@ -11,7 +11,7 @@ export async function searchMovies(
   params: SearchMoviesParams,
   signal?: AbortSignal,
 ): Promise<MovieSearchResponse> {
-  const { data } = await apiClient.get<MovieSearchResponse>(`/movies/search`, {
+  const { data } = await apiClient.get<MovieSearchResponse>("/movies/search", {
     params: {
       query: params.query,
       page: params.page ?? 1,
@@ -19,9 +19,9 @@ export async function searchMovies(
     },
     signal,
   });
+
   return data;
 }
-
 export async function getMovie(
   movieId: string,
   signal?: AbortSignal,
