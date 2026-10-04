@@ -1,13 +1,21 @@
-import { PortalHost } from '@rn-primitives/portal';
-import { Slot } from 'expo-router';
+import { PortalHost } from "@rn-primitives/portal";
+import { Stack } from "expo-router";
 
-import '../global.css';
+import "../global.css";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { QueryProvider } from "@/provider/query-provider";
 
 export default function RootLayout() {
   return (
-    <>
-      <Slot />
-      <PortalHost />
-    </>
+    <QueryProvider>
+      <SafeAreaProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}
+        />
+        <PortalHost />
+      </SafeAreaProvider>
+    </QueryProvider>
   );
 }

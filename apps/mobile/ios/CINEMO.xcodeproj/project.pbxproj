@@ -7,26 +7,26 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		07DE659AB8CC408002C4DD9E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CEACD689B05FAFE89FF8EC65 /* PrivacyInfo.xcprivacy */; };
+		088BBA9D7AA8DEB3E51BA0A3 /* libPods-CINEMO.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 7989E151BF0E052D9ADD72DB /* libPods-CINEMO.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		1D31EE0F3DDDAFF34F5E5406 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 586F5CEB56B8AFB5E2D17E9E /* PrivacyInfo.xcprivacy */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		41D5C2458FF220C0AD376AD0 /* libPods-CINEMO.a in Frameworks */ = {isa = PBXBuildFile; fileRef = AFE3AB0ED3746C4FDFA6B553 /* libPods-CINEMO.a */; };
-		AAABBB14C3083096376B7456 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4DFA07E88227C28DBD340B6 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		DEAF4C1C75FFD926A34D735D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EC147661AAD016498CAFFC9 /* ExpoModulesProvider.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0EC147661AAD016498CAFFC9 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-CINEMO/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* CINEMO.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CINEMO.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = CINEMO/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = CINEMO/Info.plist; sourceTree = "<group>"; };
-		586F5CEB56B8AFB5E2D17E9E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = CINEMO/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		605D9F8650B996712F2C0162 /* Pods-CINEMO.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CINEMO.release.xcconfig"; path = "Target Support Files/Pods-CINEMO/Pods-CINEMO.release.xcconfig"; sourceTree = "<group>"; };
+		580C08B48B5AE9557B2350D0 /* Pods-CINEMO.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CINEMO.release.xcconfig"; path = "Target Support Files/Pods-CINEMO/Pods-CINEMO.release.xcconfig"; sourceTree = "<group>"; };
+		7989E151BF0E052D9ADD72DB /* libPods-CINEMO.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-CINEMO.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = CINEMO/SplashScreen.storyboard; sourceTree = "<group>"; };
-		AFE3AB0ED3746C4FDFA6B553 /* libPods-CINEMO.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-CINEMO.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		B2DAADF4AA4B35E5E2077A11 /* Pods-CINEMO.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CINEMO.debug.xcconfig"; path = "Target Support Files/Pods-CINEMO/Pods-CINEMO.debug.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		D4DFA07E88227C28DBD340B6 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-CINEMO/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		BF91B885F8D14A17C81FA754 /* Pods-CINEMO.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CINEMO.debug.xcconfig"; path = "Target Support Files/Pods-CINEMO/Pods-CINEMO.debug.xcconfig"; sourceTree = "<group>"; };
+		CEACD689B05FAFE89FF8EC65 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = CINEMO/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = CINEMO/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* CINEMO-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "CINEMO-Bridging-Header.h"; path = "CINEMO/CINEMO-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -37,7 +37,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				41D5C2458FF220C0AD376AD0 /* libPods-CINEMO.a in Frameworks */,
+				088BBA9D7AA8DEB3E51BA0A3 /* libPods-CINEMO.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,35 +53,28 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				586F5CEB56B8AFB5E2D17E9E /* PrivacyInfo.xcprivacy */,
+				CEACD689B05FAFE89FF8EC65 /* PrivacyInfo.xcprivacy */,
 			);
 			name = CINEMO;
-			sourceTree = "<group>";
-		};
-		16A1CDF1671534F33A939AD4 /* CINEMO */ = {
-			isa = PBXGroup;
-			children = (
-				D4DFA07E88227C28DBD340B6 /* ExpoModulesProvider.swift */,
-			);
-			name = CINEMO;
-			sourceTree = "<group>";
-		};
-		2D092FB5439EE9868A7FEAF6 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				B2DAADF4AA4B35E5E2077A11 /* Pods-CINEMO.debug.xcconfig */,
-				605D9F8650B996712F2C0162 /* Pods-CINEMO.release.xcconfig */,
-			);
-			path = Pods;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				AFE3AB0ED3746C4FDFA6B553 /* libPods-CINEMO.a */,
+				7989E151BF0E052D9ADD72DB /* libPods-CINEMO.a */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		371E01C43C488268DBBF9423 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				BF91B885F8D14A17C81FA754 /* Pods-CINEMO.debug.xcconfig */,
+				580C08B48B5AE9557B2350D0 /* Pods-CINEMO.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -98,8 +91,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				2D092FB5439EE9868A7FEAF6 /* Pods */,
-				ABC17FC159D38DFD65897DC0 /* ExpoModulesProviders */,
+				371E01C43C488268DBBF9423 /* Pods */,
+				F2380F00B1E054CC06193E6F /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -114,12 +107,12 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		ABC17FC159D38DFD65897DC0 /* ExpoModulesProviders */ = {
+		AC3623189E4B1BC113E46F3E /* CINEMO */ = {
 			isa = PBXGroup;
 			children = (
-				16A1CDF1671534F33A939AD4 /* CINEMO */,
+				0EC147661AAD016498CAFFC9 /* ExpoModulesProvider.swift */,
 			);
-			name = ExpoModulesProviders;
+			name = CINEMO;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -131,6 +124,14 @@
 			path = CINEMO/Supporting;
 			sourceTree = "<group>";
 		};
+		F2380F00B1E054CC06193E6F /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				AC3623189E4B1BC113E46F3E /* CINEMO */,
+			);
+			name = ExpoModulesProviders;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -139,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "CINEMO" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				F98D9818866166794237426D /* [Expo] Configure project */,
+				DA2636D57CD9B5026DB9002C /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				6EB944D41183986FCB8C4A89 /* [CP] Embed Pods Frameworks */,
+				11F605FAC06B76B4309F444C /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -195,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				1D31EE0F3DDDAFF34F5E5406 /* PrivacyInfo.xcprivacy in Resources */,
+				07DE659AB8CC408002C4DD9E /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -241,7 +242,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		6EB944D41183986FCB8C4A89 /* [CP] Embed Pods Frameworks */ = {
+		11F605FAC06B76B4309F444C /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -283,6 +284,7 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/RNSVG/RNSVGFilters.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-timing/React-timing_privacy.bundle",
@@ -292,6 +294,7 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNSVGFilters.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-Core_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-timing_privacy.bundle",
@@ -301,7 +304,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CINEMO/Pods-CINEMO-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		F98D9818866166794237426D /* [Expo] Configure project */ = {
+		DA2636D57CD9B5026DB9002C /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -333,7 +336,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				AAABBB14C3083096376B7456 /* ExpoModulesProvider.swift in Sources */,
+				DEAF4C1C75FFD926A34D735D /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -342,7 +345,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B2DAADF4AA4B35E5E2077A11 /* Pods-CINEMO.debug.xcconfig */;
+			baseConfigurationReference = BF91B885F8D14A17C81FA754 /* Pods-CINEMO.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -379,7 +382,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 605D9F8650B996712F2C0162 /* Pods-CINEMO.release.xcconfig */;
+			baseConfigurationReference = 580C08B48B5AE9557B2350D0 /* Pods-CINEMO.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;

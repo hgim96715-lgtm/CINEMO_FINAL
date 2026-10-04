@@ -1,3 +1,4 @@
+import { CINEMO_BRAND } from "@cinemo/shared";
 import { useEffect } from "react";
 import { router } from "expo-router";
 import { Text, View } from "react-native";
@@ -11,12 +12,15 @@ export default function IntroScreen() {
   }, []);
 
   return (
-    <View>
-      <Text className="text-5xl font-bold tracking-[6px] text-[#f3efe6]">
-        CINEMO
+    <View
+      className="flex-1 items-center justify-center"
+    >
+      <Text className="text-5xl font-bold tracking-[6px]">
+        {CINEMO_BRAND.name}
       </Text>
-      <Text className="mt-5 text-center text-base text-[#958d82]">
-        영화의 순간을 모으다
+
+      <Text className="mt-5 text-center text-base">
+        {CINEMO_BRAND.slogan}
       </Text>
     </View>
   );
