@@ -19,7 +19,11 @@ export class KobisMovieImportService {
     private readonly moviesRepository: MoviesRepository,
   ) {}
 
-  async importMovie(movieCd: string, fallbackTitle?: string): Promise<string> {
+  async importMovie(
+    movieCd: string,
+    fallbackTitle?: string,
+    preferredMovieId?: string,
+  ): Promise<string> {
     const normalizedMovieCd = movieCd.trim();
 
     const kobisMovie = await this.kobisService.getMovieInfo(normalizedMovieCd);
@@ -50,7 +54,9 @@ export class KobisMovieImportService {
       normalizedMovieCd,
     );
 
-    let movieId = linkedMovieId;
+    // 이미 실패한 이전 수집에서 KOBIS 링크가 임시 영화에 남아 있어서 같은영화가 있다는 에러
+    // TMDB 연결 영화가 확인되면 그 영화를 기준으로 KOBIS 정보를 재연결로 수정
+    let movieId = preferredMovieId ?? linkedMovieId;
 
     if (!movieId) {
       const candidates = await this.movieMatcher.findCandidates(

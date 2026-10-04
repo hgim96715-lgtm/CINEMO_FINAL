@@ -54,14 +54,22 @@ export class KobisMovieBatchImportService {
     const boxOffice = await this.kobisService.getDailyBoxOffice(targetDt);
 
     for (const movie of boxOffice.results) {
-      const movieId = await this.kobisMovieImportService.importMovie(
-        movie.movieCd,
-        movie.movieNm,
-      );
-
       const tmdbMovie = await this.findTmdbMovie(
         movie.movieNm,
         movie.openDt,
+      );
+
+      const tmdbLinkedMovieId = tmdbMovie
+        ? await this.moviesRepository.findMovieIdByProviderLink(
+            SourceProvider.TMDB,
+            String(tmdbMovie.id),
+          )
+        : null;
+
+      const movieId = await this.kobisMovieImportService.importMovie(
+        movie.movieCd,
+        movie.movieNm,
+        tmdbLinkedMovieId ?? undefined,
       );
 
       if (tmdbMovie) {
