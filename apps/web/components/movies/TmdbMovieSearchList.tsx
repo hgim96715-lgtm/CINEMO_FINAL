@@ -29,7 +29,7 @@ export function TmdbMovieSearchList({ movies }: TmdbMovieSearchListProps) {
   };
 
   return (
-    <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <ul className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-4 sm:gap-6">
       {movies.map((movie) => {
         const posterUrl = movie.poster_path
           ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
@@ -37,7 +37,7 @@ export function TmdbMovieSearchList({ movies }: TmdbMovieSearchListProps) {
         const isLoading = loadingMovieId === movie.id;
 
         return (
-          <li key={movie.id} className="min-w-0">
+          <li key={movie.id} className="min-w-0 max-w-[18rem]">
             <button
               type="button"
               onClick={() => handleSelect(movie.id)}

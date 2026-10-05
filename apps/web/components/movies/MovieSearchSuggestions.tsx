@@ -13,6 +13,8 @@ import { useSearchStore } from "@/stores/search.store";
 import { ApiErrorState } from "../common/ApiErrorState";
 import { MovieSuggestionItem } from "./MovieSuggestionItem";
 
+const hasKoreanTitle = (value: string) => /[가-힣0-9]/.test(value);
+
 type MovieSearchSuggestionsProps = {
   query: string;
 };
@@ -25,6 +27,7 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
   const popularQuery = useQuery(
     popularMoviesQueryOptions({
       page: 1,
+      limit: 20,
       enabled: keyword.length === 0,
     }),
   );
@@ -33,12 +36,11 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
     dbQuery: searchQuery,
     tmdbQuery,
     shouldFetchTmdb,
-  } =
-    useMovieSearchWithTmdbFallback({
-      query: keyword,
-      page: 1,
-      limit: 5,
-    });
+  } = useMovieSearchWithTmdbFallback({
+    query: keyword,
+    page: 1,
+    limit: 5,
+  });
 
   const handleTmdbMovieSelect = async (tmdbMovieId: number) => {
     const movieId = await importMovieFromTmdb(tmdbMovieId);
@@ -62,13 +64,16 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
 
     return (
       <ul className="grid gap-2 md:gap-3">
-        {popularQuery.data?.items.slice(0, 5).map((movie) => (
-          <MovieSuggestionItem
-            key={movie.id}
-            movie={movie}
-            onSelect={closeSearch}
-          />
-        ))}
+        {popularQuery.data?.items
+          .filter((movie) => hasKoreanTitle(movie.title))
+          .slice(0, 5)
+          .map((movie) => (
+            <MovieSuggestionItem
+              key={movie.id}
+              movie={movie}
+              onSelect={closeSearch}
+            />
+          ))}
       </ul>
     );
   }
@@ -87,6 +92,7 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
   }
 
   const dbMovies = searchQuery.data?.items ?? [];
+
   const dbMovieTitles = new Set(
     dbMovies.map((movie) => normalizeSearchText(movie.title)),
   );
@@ -98,11 +104,7 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
     return <p className="px-2 py-3 text-sm text-white/50">영화를 찾는 중...</p>;
   }
 
-  if (
-    shouldFetchTmdb &&
-    tmdbQuery.isError &&
-    dbMovies.length === 0
-  ) {
+  if (shouldFetchTmdb && tmdbQuery.isError && dbMovies.length === 0) {
     return (
       <ApiErrorState
         message="영화 검색 결과를 불러오지 못했습니다."
@@ -112,7 +114,9 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
   }
 
   if (dbMovies.length === 0 && tmdbMovies.length === 0) {
-    return <p className="px-2 py-3 text-sm text-white/50">검색 결과가 없습니다.</p>;
+    return (
+      <p className="px-2 py-3 text-sm text-white/50">검색 결과가 없습니다.</p>
+    );
   }
 
   return (

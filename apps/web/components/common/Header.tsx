@@ -13,7 +13,7 @@ import { useSearchStore } from "@/stores/search.store";
 import Image from "next/image";
 import Link from "next/link";
 import cinemoLogo from "@/app/icon.png";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MovieSearchSuggestions } from "../movies/MovieSearchSuggestions";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +41,6 @@ export function Header() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
     reset,
     setValue,
     watch,
@@ -54,29 +53,38 @@ export function Header() {
 
   const query = watch("query");
 
-  useEffect(() => {
-    reset({ query: "" });
+  const resetSearchForm = useCallback(() => {
+    reset(
+      { query: "" },
+      {
+        keepErrors: false,
+        keepIsSubmitted: false,
+        keepSubmitCount: false,
+      },
+    );
     closeSearch();
-  }, [pathname, reset, closeSearch]);
+  }, [closeSearch, reset]);
+
+  useEffect(() => {
+    resetSearchForm();
+  }, [pathname, resetSearchForm]);
 
   useEffect(() => {
     const handleOutsideClick = (event: PointerEvent) => {
       const target = event.target as Node;
       if (!searchRef.current?.contains(target)) {
-        reset({ query: "" });
-        closeSearch();
+        resetSearchForm();
       }
     };
     document.addEventListener("pointerdown", handleOutsideClick);
     return () => {
       document.removeEventListener("pointerdown", handleOutsideClick);
     };
-  }, [reset, closeSearch]);
+  }, [resetSearchForm]);
 
   const onSubmit = (values: MovieSearchFormValues) => {
     const query = values.query.trim();
-    reset({ query: "" });
-    closeSearch();
+    resetSearchForm();
     router.push(`/lobby/movies?query=${encodeURIComponent(query)}`);
   };
 
@@ -98,10 +106,7 @@ export function Header() {
       >
         <Link
           href="/lobby"
-          onClick={() => {
-            reset({ query: "" });
-            closeSearch();
-          }}
+          onClick={resetSearchForm}
           aria-label={CINEMO_BRAND.name}
           className="flex shrink-0 items-center"
         >
@@ -123,7 +128,10 @@ export function Header() {
             type="button"
             aria-label="영화 검색 열기"
             aria-expanded={isSearchOpen}
-            onClick={openSearch}
+            onClick={() => {
+              resetSearchForm();
+              openSearch();
+            }}
             className={cn(
               "flex h-11 w-11 items-center justify-center rounded-full text-cinemo-gold-light transition hover:bg-white/10 hover:text-cinemo-gold md:hidden",
               isSearchOpen && "bg-white/10 text-cinemo-gold",
@@ -139,68 +147,61 @@ export function Header() {
               !isSearchOpen && "hidden md:flex",
             )}
           >
-              <div className="mb-4 flex items-center gap-3 md:hidden">
+            <div className="mb-4 flex items-center gap-3 md:hidden">
+              <button
+                type="button"
+                aria-label="검색 닫기"
+                onClick={resetSearchForm}
+                className="flex h-11 w-11 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+
+              <span className="text-base font-semibold">영화 검색</span>
+            </div>
+
+            <div className="flex h-12 items-center rounded-lg border border-cinemo-gold/30 bg-transparent px-4 transition-colors focus-within:border-cinemo-gold/60 focus-within:bg-white/5 md:h-14">
+              <input
+                {...register("query")}
+                autoFocus
+                type="text"
+                placeholder="영화 검색"
+                aria-label="영화 검색"
+                autoComplete="off"
+                className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-white/40 md:text-lg"
+              />
+
+              {query.trim() && (
                 <button
                   type="button"
-                  aria-label="검색 닫기"
+                  aria-label="검색어 지우기"
                   onClick={() => {
-                    reset({ query: "" });
-                    closeSearch();
+                    setValue("query", "");
                   }}
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white"
                 >
-                  <X size={24} />
+                  <X size={18} />
                 </button>
+              )}
 
-                <span className="text-base font-semibold">영화 검색</span>
-              </div>
-
-              <div className="flex h-12 items-center rounded-lg border border-cinemo-gold/30 bg-transparent px-4 transition-colors focus-within:border-cinemo-gold/60 focus-within:bg-white/5 md:h-14">
-                <input
-                  {...register("query")}
-                  autoFocus
-                  type="text"
-                  placeholder="영화 검색"
-                  aria-label="영화 검색"
-                  autoComplete="off"
-                  className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-white/40 md:text-lg"
-                />
-
-                {query.trim() && (
-                  <button
-                    type="button"
-                    aria-label="검색어 지우기"
-                    onClick={() => setValue("query", "")}
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white"
-                  >
-                    <X size={18} />
-                  </button>
-                )}
-
-                <button
-                  type="submit"
-                  aria-label="검색"
-                  className="ml-2 flex h-8 w-8 items-center justify-center rounded-full text-cinemo-gold-light transition hover:bg-white/10 hover:text-cinemo-text "
-                >
-                  <Search size={20} />
-                </button>
-              </div>
-
-              <div
-                className={cn(
-                  "empty:hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden mt-4 flex-1 overflow-y-auto md:absolute md:left-0 md:right-0 md:top-16 md:z-50 md:max-h-[28rem] md:overflow-y-auto md:rounded-2xl md:bg-cinemo-bg/96 md:p-3 md:shadow-2xl md:backdrop-blur-xl",
-                  !query.trim() && "md:hidden",
-                )}
+              <button
+                type="submit"
+                aria-label="검색"
+                className="ml-2 flex h-8 w-8 items-center justify-center rounded-full text-cinemo-gold-light transition hover:bg-white/10 hover:text-cinemo-text "
               >
-                <MovieSearchSuggestions query={query} />
-              </div>
-          </form>
+                <Search size={20} />
+              </button>
+            </div>
 
-          {errors.query && (
-            <p className="mt-2 px-4 text-sm text-red-400">
-              {errors.query.message}
-            </p>
-          )}
+            <div
+              className={cn(
+                "empty:hidden scroll-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden mt-4 flex-1 overflow-y-auto md:absolute md:left-0 md:right-0 md:top-16 md:z-50 md:max-h-112 md:overflow-y-auto md:rounded-2xl md:bg-cinemo-bg/96 md:p-3 md:shadow-2xl md:backdrop-blur-xl",
+                !query.trim() && "md:hidden",
+              )}
+            >
+              <MovieSearchSuggestions query={query} />
+            </div>
+          </form>
         </div>
       </div>
     </header>

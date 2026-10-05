@@ -97,31 +97,17 @@ function MoviesPageContent() {
         <p className="mb-3 text-xs tracking-[0.28em] text-cinemo-gold">
           CINEMO SEARCH
         </p>
-        <div className="mb-10 flex flex-wrap items-end justify-between gap-3">
+        <div className="mb-10">
           <h1 className="text-3xl font-semibold tracking-tight text-cinemo-text sm:text-4xl">
             &quot;{query}&quot; 검색 결과
           </h1>
-          <p className="text-sm text-cinemo-muted">
-            CINEMO {dbMovies.length}편 · TMDB {tmdbMovies.length}편
-          </p>
         </div>
         {dbMovies.length > 0 && <MovieSearchList movies={dbMovies} />}
 
         {tmdbMovies.length > 0 && (
-          <section className={dbMovies.length > 0 ? "mt-14" : undefined}>
-            <div className="mb-6">
-              <p className="mb-2 text-xs tracking-[0.24em] text-cinemo-gold">
-                TMDB FALLBACK
-              </p>
-              <h2 className="text-2xl font-semibold text-cinemo-text">
-                CINEMO에 없는 영화
-              </h2>
-              <p className="mt-2 text-sm text-cinemo-muted">
-                선택하면 CINEMO에 저장하고 상세페이지로 이동함
-              </p>
-            </div>
+          <div className={dbMovies.length > 0 ? "mt-14" : undefined}>
             <TmdbMovieSearchList movies={tmdbMovies.slice(0, 10)} />
-          </section>
+          </div>
         )}
       </div>
     </main>

@@ -8,9 +8,9 @@ type MovieSearchListProps = {
 
 export function MovieSearchList({ movies }: MovieSearchListProps) {
   return (
-    <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <ul className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-4 sm:gap-6">
       {movies.map((movie) => (
-        <li key={movie.id} className="min-w-0">
+        <li key={movie.id} className="min-w-0 max-w-[18rem]">
           <Link href={`/movies/${movie.id}`} className="group block">
             <div className="relative aspect-2/3 overflow-hidden rounded-2xl border border-white/10 bg-cinemo-surface">
               {movie.posterUrl ? (

@@ -31,6 +31,7 @@ export function MovieHeroCarousel() {
     popularQuery.data?.items.filter(
       (movie) => hasKorean(movie.title) && movie.hasTrailer,
     ) ?? [];
+
   const currentMovie = movies[selectedIndex] ?? movies[0];
   const movieDetailQuery = useQuery(
     movieDetailQueryOptions(currentMovie?.id ?? ""),
