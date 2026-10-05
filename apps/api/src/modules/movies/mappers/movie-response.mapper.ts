@@ -13,6 +13,11 @@ const movieInclude = {
       name: "asc",
     },
   },
+  movieCertifications: {
+    orderBy: {
+      verifiedAt: "desc",
+    },
+  },
   movieCredits: {
     orderBy: {
       displayOrder: "asc",
@@ -41,6 +46,9 @@ export function toMovieResponseDto(movie: MovieWithDetails): MovieResponseDto {
     productionCountryCodes: movie.productionCountryCodes,
     overview: movie.overview,
     runtime: movie.runtime,
+    certifications: movie.movieCertifications.map(
+      (certification) => certification.watchGradeName,
+    ),
     tmdbVoteAverage:
       movie.tmdbVoteAverage === null ? null : Number(movie.tmdbVoteAverage),
     tmdbVoteCount: movie.tmdbVoteCount,

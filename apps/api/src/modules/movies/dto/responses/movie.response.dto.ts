@@ -83,6 +83,13 @@ export class MovieResponseDto {
   tmdbVoteAverage!: number | null;
 
   @ApiProperty({
+    description: "영화 관람 등급 목록",
+    example: ["청소년관람불가"],
+    type: [String],
+  })
+  certifications!: string[];
+
+  @ApiProperty({
     description: "TMDB 평점 참여자 수",
     type: Number,
     nullable: true,

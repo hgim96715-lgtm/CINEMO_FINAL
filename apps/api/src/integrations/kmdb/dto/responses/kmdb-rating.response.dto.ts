@@ -16,6 +16,6 @@ export class KmdbRatingResponseDto {
   @ApiProperty({ nullable: true, example: "20250416", type: String })
   releaseDate!: string | null;
 
-  @ApiProperty({ nullable: true, example: "123" })
+  @ApiProperty({ nullable: true, example: "123", type: String })
   runtime!: string | null;
 }

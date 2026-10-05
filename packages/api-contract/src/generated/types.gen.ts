@@ -45,6 +45,10 @@ export type MovieSearchItemResponseDto = {
      * 공식 예고편 존재 여부
      */
     hasTrailer: boolean;
+    /**
+     * 청소년관람불가 영화 여부
+     */
+    isAdultOnly: boolean;
 };
 
 export type MovieSearchResponseDto = {
@@ -331,6 +335,10 @@ export type MovieResponseDto = {
      * TMDB 평균 평점
      */
     tmdbVoteAverage: number | null;
+    /**
+     * 영화 관람 등급 목록
+     */
+    certifications: Array<string>;
     /**
      * TMDB 평점 참여자 수
      */
@@ -760,9 +768,7 @@ export type KmdbRatingResponseDto = {
         [key: string]: unknown;
     } | null;
     releaseDate: string | null;
-    runtime: {
-        [key: string]: unknown;
-    } | null;
+    runtime: string | null;
 };
 
 export type KmdbMovieSearchItemResponseDto = {
@@ -803,9 +809,7 @@ export type KmdbMovieSearchItemResponseDto = {
     /**
      * 상영 시간(분)
      */
-    runtime: {
-        [key: string]: unknown;
-    } | null;
+    runtime: number | null;
     /**
      * 관람 등급
      */
@@ -1067,6 +1071,24 @@ export type MovieImportControllerImportNowPlayingFromTmdbV1Responses = {
 };
 
 export type MovieImportControllerImportNowPlayingFromTmdbV1Response = MovieImportControllerImportNowPlayingFromTmdbV1Responses[keyof MovieImportControllerImportNowPlayingFromTmdbV1Responses];
+
+export type MovieImportControllerImportFromTmdbV1Data = {
+    body?: never;
+    path: {
+        /**
+         * TMDB 외부 영화 식별자
+         */
+        tmdbMovieId: number;
+    };
+    query?: never;
+    url: '/v1/movie-imports/tmdb/{tmdbMovieId}';
+};
+
+export type MovieImportControllerImportFromTmdbV1Responses = {
+    200: string;
+};
+
+export type MovieImportControllerImportFromTmdbV1Response = MovieImportControllerImportFromTmdbV1Responses[keyof MovieImportControllerImportFromTmdbV1Responses];
 
 export type MovieImportControllerSyncFromTmdbV1Data = {
     body?: never;

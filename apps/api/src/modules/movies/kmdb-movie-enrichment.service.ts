@@ -57,6 +57,33 @@ const parseKmdbDate = (value?: string | null): Date | null => {
   );
 };
 
+const parseRuntime = (
+  ...values: Array<string | number | null | undefined>
+): number | null => {
+  for (const value of values) {
+    if (value === null || value === undefined) {
+      continue;
+    }
+
+    const runtime = Number(String(value).trim());
+
+    if (Number.isInteger(runtime) && runtime > 0) {
+      return runtime;
+    }
+  }
+
+  return null;
+};
+
+const getKmdbOverview = (movie: KmdbMovieResult): string | null => {
+  const plots = movie.plots?.plot ?? [];
+  const plot =
+    plots.find((item) => item.plotLang === "한국어")?.plotText ??
+    plots[0]?.plotText;
+
+  return cleanText(plot);
+};
+
 const getReleaseDates = (movie: KmdbMovieResult): Date[] => {
   const dates =
     movie.ratings?.rating
@@ -98,6 +125,12 @@ export class KmdbMovieEnrichmentService {
     if (!kmdbMovie) {
       throw new NotFoundException("KMDb 영화를 찾을 수 없습니다.");
     }
+
+    const runtime = parseRuntime(
+      kmdbMovie.runtime,
+      ...(kmdbMovie.ratings?.rating ?? []).map((rating) => rating.runtime),
+    );
+    const overview = getKmdbOverview(kmdbMovie);
 
     return this.prisma.$transaction(async (tx) => {
       await tx.movie.findUniqueOrThrow({
@@ -153,6 +186,16 @@ export class KmdbMovieEnrichmentService {
       const initialReleaseDate = releaseDates[0] ?? null;
       const rereleaseDates = releaseDates.slice(1);
       let releaseId: string | null = null;
+
+      if (runtime !== null || overview !== null) {
+        await tx.movie.update({
+          where: { id: movieId },
+          data: {
+            ...(runtime !== null ? { runtime } : {}),
+            ...(overview !== null ? { overview } : {}),
+          },
+        });
+      }
 
       if (releaseDates.length > 0) {
         await tx.movieRelease.updateMany({

@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import {
+  normalizeSearchText,
   popularMoviesQueryOptions,
-  hasMovieTitleMatch,
   useMovieSearchWithTmdbFallback,
 } from "@/lib/queries/movie-search.query";
 import { importMovieFromTmdb } from "@/lib/api/movies";
@@ -29,7 +29,11 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
     }),
   );
 
-  const { dbQuery: searchQuery, tmdbQuery } =
+  const {
+    dbQuery: searchQuery,
+    tmdbQuery,
+    shouldFetchTmdb,
+  } =
     useMovieSearchWithTmdbFallback({
       query: keyword,
       page: 1,
@@ -82,28 +86,23 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
     );
   }
 
-  if (
-    searchQuery.data?.items.length &&
-    hasMovieTitleMatch(searchQuery.data.items, keyword)
-  ) {
-    return (
-      <ul className="grid gap-2 md:gap-3">
-        {searchQuery.data.items.map((movie) => (
-          <MovieSuggestionItem
-            key={movie.id}
-            movie={movie}
-            onSelect={closeSearch}
-          />
-        ))}
-      </ul>
-    );
-  }
+  const dbMovies = searchQuery.data?.items ?? [];
+  const dbMovieTitles = new Set(
+    dbMovies.map((movie) => normalizeSearchText(movie.title)),
+  );
+  const tmdbMovies = (tmdbQuery.data?.results ?? [])
+    .filter((movie) => !dbMovieTitles.has(normalizeSearchText(movie.title)))
+    .slice(0, 5);
 
-  if (tmdbQuery.isPending) {
+  if (shouldFetchTmdb && tmdbQuery.isPending && dbMovies.length === 0) {
     return <p className="px-2 py-3 text-sm text-white/50">영화를 찾는 중...</p>;
   }
 
-  if (tmdbQuery.isError) {
+  if (
+    shouldFetchTmdb &&
+    tmdbQuery.isError &&
+    dbMovies.length === 0
+  ) {
     return (
       <ApiErrorState
         message="영화 검색 결과를 불러오지 못했습니다."
@@ -112,44 +111,62 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
     );
   }
 
-  const tmdbMovies = tmdbQuery.data?.results ?? [];
-
-  if (tmdbMovies.length === 0) {
+  if (dbMovies.length === 0 && tmdbMovies.length === 0) {
     return <p className="px-2 py-3 text-sm text-white/50">검색 결과가 없습니다.</p>;
   }
 
   return (
-    <ul className="grid gap-2 md:gap-3">
-      {tmdbMovies.slice(0, 5).map((movie) => {
-        const posterPath =
-          typeof movie.poster_path === "string" ? movie.poster_path : null;
+    <div className="grid gap-3">
+      {dbMovies.length > 0 && (
+        <ul className="grid gap-2 md:gap-3">
+          {dbMovies.map((movie) => (
+            <MovieSuggestionItem
+              key={movie.id}
+              movie={movie}
+              onSelect={closeSearch}
+            />
+          ))}
+        </ul>
+      )}
 
-        return (
-          <li key={movie.id} className="overflow-hidden rounded-xl">
-            <button
-              type="button"
-              onClick={() => handleTmdbMovieSelect(movie.id)}
-              className="flex w-full items-center gap-3 p-2 text-left transition hover:bg-white/10 md:gap-4 md:p-3"
-            >
-              {posterPath ? (
-                <img
-                  src={`https://image.tmdb.org/t/p/w185${posterPath}`}
-                  alt={`${movie.title} 포스터`}
-                  className="h-[60px] w-10 rounded-md object-cover md:h-24 md:w-16"
-                />
-              ) : (
-                <span className="flex h-[60px] w-10 items-center justify-center rounded-md bg-white/10 text-xs text-white/50 md:h-24 md:w-16">
-                  없음
-                </span>
-              )}
+      {tmdbMovies.length > 0 && (
+        <div>
+          <ul className="grid gap-2 md:gap-3">
+            {tmdbMovies.map((movie) => {
+              const posterPath =
+                typeof movie.poster_path === "string"
+                  ? movie.poster_path
+                  : null;
 
-              <span className="min-w-0 truncate text-sm text-cinemo-text md:text-base">
-                {movie.title}
-              </span>
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+              return (
+                <li key={movie.id} className="overflow-hidden rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => handleTmdbMovieSelect(movie.id)}
+                    className="flex w-full items-center gap-3 p-2 text-left transition hover:bg-white/10 md:gap-4 md:p-3"
+                  >
+                    {posterPath ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w185${posterPath}`}
+                        alt={`${movie.title} 포스터`}
+                        className="h-[60px] w-10 rounded-md object-cover md:h-24 md:w-16"
+                      />
+                    ) : (
+                      <span className="flex h-[60px] w-10 items-center justify-center rounded-md bg-white/10 text-xs text-white/50 md:h-24 md:w-16">
+                        없음
+                      </span>
+                    )}
+
+                    <span className="min-w-0 truncate text-sm text-cinemo-text md:text-base">
+                      {movie.title}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }

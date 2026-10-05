@@ -35,8 +35,10 @@ export const toKobisMovieImportInput = (
 ): KobisMovieImportInput => ({
   movieCd: movie.movieCd,
   title: movie.title,
+  runningTime: movie.runningTime,
   releaseDate: parseKobisDate(movie.releaseDate),
   productionCountryCodes: toProductionCountryCodes(movie.nations),
+  certifications: movie.certifications,
   genres: movie.genres,
   directors: movie.directors.map((person) => ({
     name: person.name,

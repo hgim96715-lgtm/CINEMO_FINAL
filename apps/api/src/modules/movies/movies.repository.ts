@@ -46,6 +46,11 @@ const movieInclude = {
       name: "asc",
     },
   },
+  movieCertifications: {
+    orderBy: {
+      verifiedAt: "desc",
+    },
+  },
   movieCredits: {
     orderBy: {
       displayOrder: "asc",
@@ -84,6 +89,11 @@ const movieSearchInclude = {
       name: "asc",
     },
   },
+  movieCertifications: {
+    orderBy: {
+      verifiedAt: "desc",
+    },
+  },
 } satisfies Prisma.MovieInclude;
 
 export type MovieSearchWithDetails = Prisma.MovieGetPayload<{
@@ -109,9 +119,11 @@ export type CreateMovieFromProviderInput = {
 export type KobisMovieImportInput = {
   movieCd: string;
   title: string;
+  runningTime: number | null;
   releaseDate: Date | null;
   genres: string[];
   productionCountryCodes: string[];
+  certifications: string[];
   directors: Array<{
     name: string;
     nameEn: string | null;
@@ -246,6 +258,26 @@ export class MoviesRepository {
     matchedMovieId?: string,
   ): Promise<string> {
     return this.prisma.$transaction(async (tx) => {
+      const ensurePrimaryTitle = async (movieId: string) => {
+        const primaryTitle = await tx.movieTitle.findFirst({
+          where: {
+            movieId,
+            titleType: TitleType.PRIMARY,
+          },
+        });
+
+        if (!primaryTitle && input.title.trim()) {
+          await tx.movieTitle.create({
+            data: {
+              movieId,
+              title: input.title.trim(),
+              titleType: TitleType.PRIMARY,
+              languageCode: input.languageCode,
+            },
+          });
+        }
+      };
+
       const existingLink = await tx.movieProviderLink.findUnique({
         where: {
           sourceProvider_externalId: {
@@ -259,6 +291,7 @@ export class MoviesRepository {
       });
 
       if (existingLink) {
+        await ensurePrimaryTitle(existingLink.movieId);
         return existingLink.movieId;
       }
 
@@ -275,6 +308,7 @@ export class MoviesRepository {
           },
         });
 
+        await ensurePrimaryTitle(matchedMovieId);
         return matchedMovieId;
       }
 
@@ -390,6 +424,14 @@ export class MoviesRepository {
           },
         });
       }
+
+      if (input.runningTime !== null && input.runningTime > 0) {
+        await tx.movie.update({
+          where: { id: movie.id },
+          data: { runtime: input.runningTime },
+        });
+      }
+
       const releaseStatus = input.releaseDate
         ? input.releaseDate.getTime() > Date.now()
           ? ReleaseStatus.SCHEDULED
@@ -500,6 +542,33 @@ export class MoviesRepository {
           update: {
             code: `KOBIS_${index + 1}`,
           },
+        });
+      }
+
+      const certifications = [
+        ...new Set(
+          input.certifications
+            .map((certification) => certification.trim())
+            .filter(Boolean),
+        ),
+      ];
+
+      await tx.movieCertification.deleteMany({
+        where: {
+          movieId: movie.id,
+          sourceProvider: SourceProvider.KOBIS,
+        },
+      });
+
+      if (certifications.length > 0) {
+        await tx.movieCertification.createMany({
+          data: certifications.map((watchGradeName, index) => ({
+            movieId: movie.id,
+            auditNo: `${input.movieCd}:${index}`,
+            watchGradeName,
+            sourceProvider: SourceProvider.KOBIS,
+            verifiedAt: new Date(),
+          })),
         });
       }
 

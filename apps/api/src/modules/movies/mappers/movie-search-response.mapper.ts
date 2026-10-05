@@ -24,6 +24,18 @@ export function toMovieSearchItemResponseDto(
     movie.media.find((item) => item.mediaType === "POSTER" && item.isPrimary) ??
     movie.media.find((item) => item.mediaType === "POSTER");
 
+  const isAdultOnly = movie.movieCertifications.some((certification) => {
+    const normalizedCertification = certification.watchGradeName.replace(
+      /\s/g,
+      "",
+    );
+
+    return (
+      normalizedCertification.includes("청소년관람불가") ||
+      normalizedCertification.includes("19세")
+    );
+  });
+
   return {
     id: movie.id,
     title: title?.title ?? "",
@@ -35,6 +47,7 @@ export function toMovieSearchItemResponseDto(
       (media) => media.mediaType === MediaType.TRAILER,
     ),
     genres: movie.movieGenres.map((genre) => genre.name),
+    isAdultOnly,
     rank,
     rankChange: ranking?.rankChange ?? null,
     audienceCount: ranking?.audienceCount ?? null,

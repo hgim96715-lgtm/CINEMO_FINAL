@@ -34,11 +34,15 @@ export default async function MoviePage({ params }: MoviePageProps) {
     )
     .sort((a, b) => a.releaseDate!.localeCompare(b.releaseDate!))[0];
 
-  const rereleases = movie.releases
+  const latestRerelease = movie.releases
     .filter(
       (release) => release.releaseType === "RERELEASE" && release.releaseDate,
     )
-    .sort((a, b) => (a.releaseDate ?? "").localeCompare(b.releaseDate ?? ""));
+    .sort((a, b) =>
+      (b.releaseDate ?? "").localeCompare(a.releaseDate ?? ""),
+    )[0];
+
+  const hasReleaseDate = movie.releases.some((release) => release.releaseDate);
 
   const isUpcoming = primaryRelease?.releaseDate
     ? new Date(`${primaryRelease.releaseDate}T00:00:00`) > new Date()
@@ -62,6 +66,8 @@ export default async function MoviePage({ params }: MoviePageProps) {
       (item) => item.mediaType === "BACKDROP" && item.isPrimary,
     ) ?? movie.media.find((item) => item.mediaType === "BACKDROP");
 
+  const backgroundMedia = backdrop ?? poster;
+
   const trailer =
     movie.media.find(
       (media) =>
@@ -77,13 +83,36 @@ export default async function MoviePage({ params }: MoviePageProps) {
     (credit) => credit.creditType === "ACTOR",
   );
 
+  const runtimeText =
+    movie.runtime !== null && movie.runtime !== undefined
+      ? [
+          Math.floor(movie.runtime / 60) > 0
+            ? `${Math.floor(movie.runtime / 60)}시간`
+            : null,
+          movie.runtime % 60 > 0 ? `${movie.runtime % 60}분` : null,
+        ]
+          .filter(Boolean)
+          .join("") || "0분"
+      : "정보 없음 ";
+
+  console.log(movie.runtime);
+
+  const isAdultOnly = movie.certifications.some((certification) => {
+    const normalizedCertification = certification.replace(/\s/g, "");
+
+    return (
+      normalizedCertification.includes("청소년관람불가") ||
+      normalizedCertification.includes("19세")
+    );
+  });
+
   return (
     <main className="min-h-screen bg-[#071619] text-white">
       <section
         className="relative overflow-hidden"
         style={{
-          backgroundImage: backdrop
-            ? `linear-gradient(to bottom, rgba(7, 22, 25, 0.25), #071619 92%), url(${backdrop.url})`
+          backgroundImage: backgroundMedia
+            ? `linear-gradient(to bottom, rgba(7, 22, 25, 0.38), #071619 92%), url(${backgroundMedia.url})`
             : undefined,
           backgroundPosition: "center",
           backgroundSize: "cover",
@@ -92,24 +121,44 @@ export default async function MoviePage({ params }: MoviePageProps) {
         <div className="absolute inset-0 bg-[#071619]/45" />
 
         <div className="relative mx-auto flex min-h-170 max-w-6xl items-end gap-10 px-6 py-16">
-          {poster ? (
-            <img
-              src={poster.url}
-              alt={`${primaryTitle?.title ?? "영화"} 포스터`}
-              className="hidden w-64 rounded-2xl object-cover shadow-2xl md:block"
-            />
-          ) : null}
+          <div className="hidden w-64 shrink-0 overflow-hidden rounded-2xl bg-white/5 shadow-2xl md:block">
+            {poster ? (
+              <img
+                src={poster.url}
+                alt={`${primaryTitle?.title ?? "영화"} 포스터`}
+                className="aspect-2/3 h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex aspect-2/3 items-center justify-center border border-white/10 text-sm text-white/45">
+                포스터 준비중
+              </div>
+            )}
+          </div>
 
           <div className="max-w-3xl">
             <div className="mb-4 flex flex-wrap gap-2">
               {movie.genres.map((genre) => (
                 <span
                   key={genre.id}
-                  className="rounded-full border border-white/25 bg-black/25 px-3 py-1 text-sm text-white/80"
+                  className="rounded-full border border-white/25 bg-black/25 px-3 py-1 text-sm text-white/80 leading-loose"
                 >
                   {genre.name}
                 </span>
               ))}
+              {!hasReleaseDate && (
+                <span className="rounded-full border border-cinemo-gold/45 bg-cinemo-gold/10 px-3 py-1 text-sm text-cinemo-gold-light">
+                  개봉일 미정
+                </span>
+              )}
+              {isAdultOnly && (
+                <span
+                  aria-label="청소년관람불가"
+                  title="청소년관람불가"
+                  className="inline-flex size-9 items-center justify-center rounded-lg border-2 border-red-400/70 bg-red-500/15 text-lg font-black leading-none text-red-300 shadow-[0_0_18px_rgba(239,68,68,0.16)]"
+                >
+                  <span className="relative top-px">19</span>
+                </span>
+              )}
             </div>
 
             <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
@@ -172,11 +221,7 @@ export default async function MoviePage({ params }: MoviePageProps) {
           <div className="mt-6 flex flex-wrap gap-6 text-sm text-white/65">
             <div>
               <span className="text-white/40">러닝타임</span>
-              <p className="mt-1 text-base text-white">
-                {movie.runtime
-                  ? `${Math.floor(movie.runtime / 60)}시간 ${movie.runtime % 60}분`
-                  : "정보 없음"}
-              </p>
+              <p className="mt-1 text-base text-white">{runtimeText}</p>
             </div>
 
             <div>
@@ -252,15 +297,20 @@ export default async function MoviePage({ params }: MoviePageProps) {
                   </div>
                 ) : null}
 
-                {rereleases.map((release) => (
-                  <div key={release.id} className="flex justify-between gap-4">
+                {latestRerelease && (
+                  <div className="flex justify-between gap-4">
                     <span className="text-white/45">재개봉</span>
-                    <span>{formatReleaseDate(release.releaseDate)}</span>
+                    <span>
+                      {formatReleaseDate(latestRerelease.releaseDate)}
+                    </span>
                   </div>
-                ))}
+                )}
 
-                {!initialRelease?.releaseDate && rereleases.length === 0 && (
-                  <span>정보 없음</span>
+                {!initialRelease?.releaseDate && !latestRerelease && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-white/45">최초 개봉</span>
+                    <span>{formatReleaseDate(null)}</span>
+                  </div>
                 )}
               </dd>
             </div>

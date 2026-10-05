@@ -21,7 +21,7 @@ export class KmdbMovieSearchItemResponseDto {
   @ApiProperty({ description: "제작 국가·지역", nullable: true })
   nation!: string | null;
 
-  @ApiProperty({ description: "상영 시간(분)", nullable: true })
+  @ApiProperty({ description: "상영 시간(분)", nullable: true, type: Number })
   runtime!: number | null;
 
   @ApiProperty({ description: "관람 등급", nullable: true })

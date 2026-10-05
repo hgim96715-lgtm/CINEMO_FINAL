@@ -73,4 +73,10 @@ export class MovieSearchItemResponseDto {
     example: true,
   })
   hasTrailer!: boolean;
+
+  @ApiProperty({
+    description: "청소년관람불가 영화 여부",
+    example: false,
+  })
+  isAdultOnly!: boolean;
 }

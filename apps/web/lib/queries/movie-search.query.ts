@@ -31,7 +31,7 @@ type TmdbMovieSearchQueryOptions = {
   enabled?: boolean;
 };
 
-const normalizeSearchText = (value: string) =>
+export const normalizeSearchText = (value: string) =>
   value.toLocaleLowerCase().replace(/\s+/g, "");
 
 export const hasMovieTitleMatch = (
@@ -61,22 +61,22 @@ export const useMovieSearchWithTmdbFallback = (
   params: SearchMoviesParams,
 ) => {
   const dbQuery = useQuery(movieSearchQueryOptions(params));
-  const hasDbTitleMatch = dbQuery.data
-    ? hasMovieTitleMatch(dbQuery.data.items, params.query)
-    : false;
+  const dbLimit = params.limit ?? 10;
+  const shouldFetchTmdb =
+    dbQuery.isSuccess && dbQuery.data.items.length < dbLimit;
 
   const tmdbQuery = useQuery(
     tmdbMovieSearchQueryOptions({
       query: params.query,
       page: params.page,
-      enabled: dbQuery.isSuccess && !hasDbTitleMatch,
+      enabled: shouldFetchTmdb,
     }),
   );
 
   return {
     dbQuery,
     tmdbQuery,
-    hasDbTitleMatch,
+    shouldFetchTmdb,
   };
 };
 

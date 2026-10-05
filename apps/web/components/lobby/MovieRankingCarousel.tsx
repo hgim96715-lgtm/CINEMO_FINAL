@@ -187,13 +187,23 @@ export function MovieRankingCarousel() {
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                      포스터 없음
+                      포스터 준비중
                     </div>
                   )}
 
                   <span className="absolute bottom-2 left-2 text-3xl font-black leading-none text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]">
                     {movie.rank ?? index + 1}
                   </span>
+
+                  {movie.isAdultOnly && (
+                    <span
+                      aria-label="청소년관람불가"
+                      title="청소년관람불가"
+                      className="absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-md border-2 border-red-300/70 bg-red-500/55 text-base font-black leading-none text-red-50 shadow-[0_0_10px_rgba(239,68,68,0.14)] backdrop-blur-sm"
+                    >
+                      <span className="relative top-px">19</span>
+                    </span>
+                  )}
                 </div>
 
                 <h3 className="mt-3 truncate text-sm font-medium text-foreground">
