@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { ConfigModule } from "@nestjs/config";
-
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { PrismaModule } from "@/prisma/prisma.module";
 import { envValidationSchema } from "@/config/env.validation";
 import { appConfig } from "@/config/app.config";
@@ -21,6 +21,13 @@ import { mailConfig } from "./config/mail.config";
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        name: "default",
+        ttl: 60_000,
+        limit: 10,
+      },
+    ]),
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
@@ -51,6 +58,10 @@ import { mailConfig } from "./config/mail.config";
     {
       provide: APP_GUARD,
       useClass: SessionAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

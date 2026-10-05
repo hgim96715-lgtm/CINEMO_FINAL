@@ -12,12 +12,28 @@ type SendVerificationEmailInput = {
   expiresAt: Date;
 };
 
+type SendPasswordResetEmailInput = {
+  to: string;
+  token: string;
+  expiresAt: Date;
+};
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
   private readonly resend: Resend;
   private readonly from: string;
   private readonly appUrl: string;
+
+  private readonly koreanDateTimeFormatter = new Intl.DateTimeFormat("ko-KR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Seoul",
+  });
+
+  private formatExpiresAt(date: Date) {
+    return this.koreanDateTimeFormatter.format(date);
+  }
 
   constructor(private readonly configService: ConfigService) {
     this.resend = new Resend(
@@ -26,15 +42,12 @@ export class MailService {
     this.from = this.configService.getOrThrow<string>("mail.from");
     this.appUrl = this.configService.getOrThrow<string>("mail.appUrl");
   }
+
   async sendSignupVerificationEmail(input: SendVerificationEmailInput) {
     const verifyUrl = new URL(`/v1/auth/verify-email`, this.appUrl);
     verifyUrl.searchParams.set("token", input.token);
 
-    const expiresAtLabel = new Intl.DateTimeFormat("ko-KR", {
-      dateStyle: "medium",
-      timeStyle: "short",
-      timeZone: "Asia/Seoul",
-    }).format(input.expiresAt);
+    const expiresAtLabel = this.formatExpiresAt(input.expiresAt);
 
     const { error } = await this.resend.emails.send({
       from: this.from,
@@ -94,6 +107,92 @@ export class MailService {
         `[Resend] 인증 메일 발송 실패: ${error.name} ${error.message}`,
       );
       throw new InternalServerErrorException("인증 메일 발송에 실패했습니다.");
+    }
+  }
+
+  async sendPasswordResetEmail(input: SendPasswordResetEmailInput) {
+    const resetUrl = new URL("/reset-password", this.appUrl);
+    resetUrl.searchParams.set("token", input.token);
+
+    const expiresAtLabel = this.formatExpiresAt(input.expiresAt);
+
+    const { error } = await this.resend.emails.send({
+      from: this.from,
+      to: [input.to],
+      subject: "CINEMO 비밀번호 재설정",
+      text: [
+        "CINEMO 비밀번호 재설정",
+        "",
+        "아래 링크를 눌러 비밀번호를 재설정해주세요.",
+        resetUrl.toString(),
+        "",
+        `재설정 링크는 ${expiresAtLabel}까지 유효합니다.`,
+        "본인이 요청하지 않은 메일이라면 이 메일을 무시해주세요.",
+      ].join("\n"),
+      html: `
+        <!doctype html>
+        <html lang="ko">
+          <body style="margin:0; padding:40px 16px; background:#061719; color:#f7f3ea; font-family:Arial, sans-serif;">
+            <table
+              role="presentation"
+              width="100%"
+              cellspacing="0"
+              cellpadding="0"
+              border="0"
+              style="max-width:600px; margin:0 auto; background:#10292b; border:1px solid #29484a; border-radius:24px;"
+            >
+              <tr>
+                <td style="padding:36px;">
+                  <div style="color:#d5aa58; font-size:13px; font-weight:700; letter-spacing:4px;">
+                    CINEMO
+                  </div>
+
+                  <h1 style="margin:24px 0 14px; color:#fffaf0; font-size:28px;">
+                    비밀번호를 재설정해주세요
+                  </h1>
+
+                  <p style="color:#b6c3c0; font-size:16px; line-height:1.8;">
+                    아래 버튼을 눌러 새로운 비밀번호를 설정해주세요.
+                  </p>
+
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:30px 0;">
+                    <tr>
+                      <td style="border-radius:12px; background:#d5aa58;">
+                        <a
+                          href="${resetUrl.toString()}"
+                          style="display:inline-block; padding:15px 26px; color:#071719; font-size:16px; font-weight:700; text-decoration:none;"
+                        >
+                          비밀번호 재설정하기 →
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <div style="padding:16px 18px; border-left:3px solid #d5aa58; background:#0b2123; color:#aebdb9; font-size:13px; line-height:1.7;">
+                    재설정 링크는<br />
+                    <strong style="color:#f2d38c;">${expiresAtLabel}</strong>까지 유효합니다.
+                  </div>
+
+                  <p style="margin:28px 0 0; color:#738a87; font-size:12px; line-height:1.7;">
+                    본인이 요청하지 않은 메일이라면 이 메일을 무시해주세요.<br />
+                    이 링크는 한 번만 사용할 수 있습니다.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      this.logger.error(
+        `[Resend] 비밀번호 재설정 메일 발송 실패: ${error.name} ${error.message}`,
+      );
+
+      throw new InternalServerErrorException(
+        "비밀번호 재설정 메일 발송에 실패했습니다.",
+      );
     }
   }
 }

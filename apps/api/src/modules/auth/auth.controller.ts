@@ -30,6 +30,10 @@ import { LoginRequestDto } from "./dto/requests/login.request.dto";
 import { Public } from "./decorators/public.decorator";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import type { SessionUser } from "./types/session-user.type";
+import { PasswordResetService } from "./password-reset.service";
+import { RequestPasswordResetRequestDto } from "./dto/requests/request-password-reset.request.dto";
+import { ResetPasswordRequestDto } from "./dto/requests/reset-password.request.dto";
+import { Throttle } from "@nestjs/throttler";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -37,6 +41,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly emailVerificationService: EmailVerificationService,
+    private readonly passwordResetService: PasswordResetService,
   ) {}
 
   @ApiCookieAuth("cinemo_session")
@@ -60,6 +65,44 @@ export class AuthController {
   })
   register(@Body() input: RegisterRequestDto) {
     return this.authService.register(input);
+  }
+
+  @Public()
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 900_000, //15분
+    },
+  })
+  @Post("password-reset/request")
+  @ApiOperation({
+    summary: "비밀번호 재설정 요청",
+    description: "입력한 이메일로 비밀번호 재설정 링크를 발송",
+  })
+  @ApiOkResponse({
+    description: "비밀번호 재설정 요청 접수",
+  })
+  requestPasswordReset(@Body() input: RequestPasswordResetRequestDto) {
+    return this.passwordResetService.request(input);
+  }
+
+  @Public()
+  @Throttle({
+    default: {
+      limit: 10,
+      ttl: 900_000, // 15분
+    },
+  })
+  @Post("password-reset/confirm")
+  @ApiOperation({
+    summary: "비밀번호 재설정 확정",
+    description: "재설정 토큰을 검증하고 새 비밀번호로 변경",
+  })
+  @ApiOkResponse({
+    description: "비밀번호 재설정 완료",
+  })
+  resetPassword(@Body() input: ResetPasswordRequestDto) {
+    return this.passwordResetService.reset(input);
   }
 
   @Public()
