@@ -2,6 +2,7 @@ import { Logger, ValidationPipe, VersioningType } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import cookieParser from "cookie-parser";
 
 import { AppModule } from "@/app.module";
 import { AllExceptionsFilter } from "@/common/filters/all-exceptions.filter";
@@ -9,6 +10,8 @@ import { AllExceptionsFilter } from "@/common/filters/all-exceptions.filter";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger("Bootstrap");
+
+  app.use(cookieParser());
 
   const configService = app.get(ConfigService);
   const port = configService.getOrThrow<number>("app.port");
@@ -29,7 +32,7 @@ async function bootstrap() {
     .setTitle("CINEMO API")
     .setDescription("CINEMO 영화·사용자 API")
     .setVersion("1.0")
-    .addBearerAuth()
+    .addCookieAuth("cinemo_session")
     .build();
 
   const documentFactory = () =>

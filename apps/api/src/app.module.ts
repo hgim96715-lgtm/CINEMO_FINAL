@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 
 import { ConfigModule } from "@nestjs/config";
-import * as Joi from "joi";
 
 import { PrismaModule } from "@/prisma/prisma.module";
 import { envValidationSchema } from "@/config/env.validation";
@@ -15,6 +14,9 @@ import { tmdbConfig } from "./config/tmdb.config";
 import { TmdbModule } from "./integrations/tmdb/tmdb.module";
 import { kmdbConfig } from "./config/kmdb.config";
 import { KmdbModule } from "./integrations/kmdb/kmdb.module";
+import { AuthModule } from "./modules/auth/auth.module";
+import { APP_GUARD } from "@nestjs/core";
+import { SessionAuthGuard } from "./modules/auth/session-auth.guard";
 
 @Module({
   imports: [
@@ -35,6 +37,13 @@ import { KmdbModule } from "./integrations/kmdb/kmdb.module";
     KobisModule,
     TmdbModule,
     KmdbModule,
+    AuthModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: SessionAuthGuard,
+    },
   ],
 })
 export class AppModule {}
