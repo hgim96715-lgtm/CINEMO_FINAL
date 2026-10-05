@@ -22,14 +22,17 @@ const TMDB_ACTOR_LIMIT = 10;
 const hasKoreanName = (name: string): boolean => /[가-힣]/.test(name);
 
 @Injectable()
-export class TmdbMovieEnrichmentService {
+export class TmdbMovieSyncService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tmdbService: TmdbService,
     private readonly moviePersonService: MoviePersonService,
   ) {}
 
-  async enrichMovie(movieId: string, tmdbMovieId: number): Promise<string> {
+  async syncMovieFromTmdb(
+    movieId: string,
+    tmdbMovieId: number,
+  ): Promise<string> {
     const tmdbMovie = await this.tmdbService.getMovieDetail(tmdbMovieId);
     const tmdbCredits = await this.tmdbService.getMovieCredits(tmdbMovieId);
     const trailer = await this.tmdbService.getOfficialTrailer(tmdbMovieId);
@@ -122,6 +125,37 @@ export class TmdbMovieEnrichmentService {
             },
           });
         }
+      }
+
+      const primaryRelease = await tx.movieRelease.findFirst({
+        where: {
+          movieId,
+          isPrimary: true,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      const primaryTitle = await tx.movieTitle.findFirst({
+        where: {
+          movieId,
+          titleType: TitleType.PRIMARY,
+        },
+      });
+
+      if (!primaryTitle && tmdbMovie.title) {
+        await tx.movieTitle.create({
+          data: {
+            movieId,
+            releaseId: primaryRelease?.id ?? null,
+            title: tmdbMovie.title,
+            titleType: TitleType.PRIMARY,
+            languageCode: hasKoreanName(tmdbMovie.title)
+              ? "ko"
+              : tmdbMovie.original_language,
+          },
+        });
       }
 
       const originalTitle = await tx.movieTitle.findFirst({

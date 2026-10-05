@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { getMovie } from "../../../lib/api/movies";
-import { Bell, CircleCheck, Heart, Play } from "lucide-react";
+import { Bell, CircleCheck, Heart } from "lucide-react";
+import { MovieTrailerButton } from "@/components/movies/MovieTrailerButton";
 
 type MoviePageProps = {
   params: Promise<{
@@ -27,6 +28,22 @@ export default async function MoviePage({ params }: MoviePageProps) {
   const primaryRelease =
     movie.releases.find((date) => date.isPrimary) ?? movie.releases[0];
 
+  const initialRelease = movie.releases
+    .filter(
+      (release) => release.releaseType === "INITIAL" && release.releaseDate,
+    )
+    .sort((a, b) => a.releaseDate!.localeCompare(b.releaseDate!))[0];
+
+  const rereleases = movie.releases
+    .filter(
+      (release) => release.releaseType === "RERELEASE" && release.releaseDate,
+    )
+    .sort((a, b) => (a.releaseDate ?? "").localeCompare(b.releaseDate ?? ""));
+
+  const isUpcoming = primaryRelease?.releaseDate
+    ? new Date(`${primaryRelease.releaseDate}T00:00:00`) > new Date()
+    : false;
+
   const formatReleaseDate = (date: string | null) =>
     date ? date.replaceAll("-", ".") : "개봉일 미정";
 
@@ -44,6 +61,13 @@ export default async function MoviePage({ params }: MoviePageProps) {
     movie.media.find(
       (item) => item.mediaType === "BACKDROP" && item.isPrimary,
     ) ?? movie.media.find((item) => item.mediaType === "BACKDROP");
+
+  const trailer =
+    movie.media.find(
+      (media) =>
+        media.mediaType.toUpperCase() === "TRAILER" &&
+        media.sourceProvider.toUpperCase() === "YOUTUBE",
+    ) ?? null;
 
   const directors = movie.credits.filter(
     (credit) => credit.creditType === "DIRECTOR",
@@ -99,20 +123,14 @@ export default async function MoviePage({ params }: MoviePageProps) {
             )}
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <button
-                type="button"
-                className="group inline-flex items-center gap-2 rounded-xl bg-cinemo-gold px-5 py-3 font-semibold text-[#171515] transition hover:bg-cinemo-gold-light"
-              >
-                <Play
-                  className="size-4 transition-transform group-hover:scale-110"
-                  fill="currentColor"
-                />
-                예고편
-              </button>
+              <MovieTrailerButton
+                title={primaryTitle?.title ?? "영화"}
+                trailer={trailer}
+              />
 
               <button
                 type="button"
-                className="group inline-flex items-center gap-2 rounded-xl border border-cinemo-gold/40 bg-cinemo-surface px-5 py-3 font-semibold text-cinemo-text backdrop-blur transition hover:border-cinemo-gold hover:bg-cinemo-gold/15"
+                className="group inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 font-semibold text-cinemo-text backdrop-blur transition hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10"
               >
                 <Heart className="size-4 transition group-hover:fill-cinemo-gold group-hover:text-cinemo-gold" />
                 찜하기
@@ -125,13 +143,15 @@ export default async function MoviePage({ params }: MoviePageProps) {
                 <CircleCheck className="size-4 text-cinemo-teal-light transition group-hover:scale-110" />
                 봤어요
               </button>
-              <button
-                type="button"
-                className="group inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 font-semibold text-cinemo-muted backdrop-blur transition hover:border-cinemo-gold/40 hover:text-cinemo-gold-light"
-              >
-                <Bell className="size-4 transition group-hover:scale-110" />
-                알림
-              </button>
+              {isUpcoming && (
+                <button
+                  type="button"
+                  className="group inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 font-semibold text-cinemo-muted backdrop-blur transition hover:border-cinemo-gold/40 hover:text-cinemo-gold-light"
+                >
+                  <Bell className="size-4 transition group-hover:scale-110" />
+                  알림
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -222,9 +242,26 @@ export default async function MoviePage({ params }: MoviePageProps) {
 
           <dl className="mt-5 space-y-4 text-sm">
             <div>
-              <dt className="text-white/40">개봉일</dt>
-              <dd className="mt-1 text-white/80">
-                {formatReleaseDate(primaryRelease?.releaseDate ?? null)}
+              <dt className="text-white/40">개봉 정보</dt>
+
+              <dd className="mt-2 space-y-2 text-white/80">
+                {initialRelease?.releaseDate ? (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-white/45">최초 개봉</span>
+                    <span>{formatReleaseDate(initialRelease.releaseDate)}</span>
+                  </div>
+                ) : null}
+
+                {rereleases.map((release) => (
+                  <div key={release.id} className="flex justify-between gap-4">
+                    <span className="text-white/45">재개봉</span>
+                    <span>{formatReleaseDate(release.releaseDate)}</span>
+                  </div>
+                ))}
+
+                {!initialRelease?.releaseDate && rereleases.length === 0 && (
+                  <span>정보 없음</span>
+                )}
               </dd>
             </div>
 

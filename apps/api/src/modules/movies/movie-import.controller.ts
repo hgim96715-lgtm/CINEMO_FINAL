@@ -14,10 +14,11 @@ import { EnrichTmdbMovieRequestDto } from "./dto/requests/enrich-tmdb-movie.requ
 import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
 import { KobisMovieImportService } from "./kobis-movie-import.service";
 import { TmdbMovieBatchImportService } from "./tmdb-movie-batch-import.service";
-import { TmdbMovieEnrichmentService } from "./tmdb-movie-enrichment.service";
+import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
 import { ImportKobisMoviesRequestDto } from "./dto/requests/import-kobis-movies.request.dto";
 import { KobisMovieBatchImportService } from "./kobis-movie-batch-import.service";
 import { GetKobisDailyBoxOfficeRequestDto } from "@/integrations/kobis/dto/requests/get-kobis-daily-box-office.request.dto";
+import { GetTmdbMovieRequestDto } from "@/integrations/tmdb/dto/requests/get-tmdb-movie.request.dto";
 
 @ApiTags("Movie Imports")
 @Controller("movie-imports")
@@ -26,7 +27,7 @@ export class MovieImportController {
     private readonly kobisMovieImportService: KobisMovieImportService,
     private readonly kobisMovieBatchImportService: KobisMovieBatchImportService,
     private readonly tmdbMovieBatchImportService: TmdbMovieBatchImportService,
-    private readonly tmdbMovieEnrichmentService: TmdbMovieEnrichmentService,
+    private readonly tmdbMovieSyncService: TmdbMovieSyncService,
     private readonly kmdbMovieEnrichmentService: KmdbMovieEnrichmentService,
   ) {}
 
@@ -104,6 +105,21 @@ export class MovieImportController {
     return this.tmdbMovieBatchImportService.importNowPlayingMovies(10);
   }
 
+  @Post("tmdb/:tmdbMovieId")
+  @ApiOperation({
+    summary: "TMDB 영화 단건 저장",
+    description: "TMDB 검색 결과에서 선택한 영화를 CINEMO DB에 저장",
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "string",
+      example: "01a0f063-d740-7084-a1ea-ed5c020640bb",
+    },
+  })
+  importFromTmdb(@Param() params: GetTmdbMovieRequestDto) {
+    return this.tmdbMovieBatchImportService.importMovie(params.tmdbMovieId);
+  }
+
   @Post(":movieId/enrich/tmdb/:tmdbMovieId")
   @ApiOperation({
     summary: "TMDB 영화 정보 보완",
@@ -115,8 +131,8 @@ export class MovieImportController {
       example: "01a0f063-d740-7084-a1ea-ed5c020640bb",
     },
   })
-  enrichFromTmdb(@Param() params: EnrichTmdbMovieRequestDto) {
-    return this.tmdbMovieEnrichmentService.enrichMovie(
+  syncFromTmdb(@Param() params: EnrichTmdbMovieRequestDto) {
+    return this.tmdbMovieSyncService.syncMovieFromTmdb(
       params.movieId,
       params.tmdbMovieId,
     );

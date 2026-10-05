@@ -24,10 +24,10 @@ export function MovieSuggestionItem({
             alt={`${movie.title} 포스터`}
             width={40}
             height={60}
-            className="h-[60px] w-10 rounded-md object-cover md:h-24 md:w-16"
+            className="h-15 w-10 rounded-md object-cover md:h-24 md:w-16"
           />
         ) : (
-          <span className="flex h-[60px] w-10 items-center justify-center rounded-md bg-white/10 text-xs text-white/50 md:h-24 md:w-16">
+          <span className="flex h-15 w-10 items-center justify-center rounded-md bg-white/10 text-xs text-white/50 md:h-24 md:w-16">
             없음
           </span>
         )}

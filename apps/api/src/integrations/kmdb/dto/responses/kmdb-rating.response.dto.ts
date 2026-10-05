@@ -13,7 +13,7 @@ export class KmdbRatingResponseDto {
   @ApiProperty({ nullable: true, example: "청소년 관람불가" })
   ratingGrade!: string | null;
 
-  @ApiProperty({ nullable: true, example: "20250416" })
+  @ApiProperty({ nullable: true, example: "20250416", type: String })
   releaseDate!: string | null;
 
   @ApiProperty({ nullable: true, example: "123" })

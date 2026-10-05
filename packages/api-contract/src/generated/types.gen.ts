@@ -759,9 +759,7 @@ export type KmdbRatingResponseDto = {
     ratingGrade: {
         [key: string]: unknown;
     } | null;
-    releaseDate: {
-        [key: string]: unknown;
-    } | null;
+    releaseDate: string | null;
     runtime: {
         [key: string]: unknown;
     } | null;
@@ -1070,7 +1068,7 @@ export type MovieImportControllerImportNowPlayingFromTmdbV1Responses = {
 
 export type MovieImportControllerImportNowPlayingFromTmdbV1Response = MovieImportControllerImportNowPlayingFromTmdbV1Responses[keyof MovieImportControllerImportNowPlayingFromTmdbV1Responses];
 
-export type MovieImportControllerEnrichFromTmdbV1Data = {
+export type MovieImportControllerSyncFromTmdbV1Data = {
     body?: never;
     path: {
         /**
@@ -1086,11 +1084,11 @@ export type MovieImportControllerEnrichFromTmdbV1Data = {
     url: '/v1/movie-imports/{movieId}/enrich/tmdb/{tmdbMovieId}';
 };
 
-export type MovieImportControllerEnrichFromTmdbV1Responses = {
+export type MovieImportControllerSyncFromTmdbV1Responses = {
     200: string;
 };
 
-export type MovieImportControllerEnrichFromTmdbV1Response = MovieImportControllerEnrichFromTmdbV1Responses[keyof MovieImportControllerEnrichFromTmdbV1Responses];
+export type MovieImportControllerSyncFromTmdbV1Response = MovieImportControllerSyncFromTmdbV1Responses[keyof MovieImportControllerSyncFromTmdbV1Responses];
 
 export type MovieImportControllerEnrichFromKmdbV1Data = {
     body?: never;

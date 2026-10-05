@@ -60,7 +60,9 @@ const parseKmdbDate = (value?: string | null): Date | null => {
 const getReleaseDates = (movie: KmdbMovieResult): Date[] => {
   const dates =
     movie.ratings?.rating
-      ?.map((rating) => parseKmdbDate(rating.releaseDate))
+      ?.flatMap((rating) =>
+        toStringArray(rating.releaseDate).map(parseKmdbDate),
+      )
       .filter((date): date is Date => date !== null)
       .sort((a, b) => a.getTime() - b.getTime()) ?? [];
 

@@ -1,18 +1,22 @@
 "use client";
 
 import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { movieSearchQueryOptions } from "@/lib/queries/movie-search.query";
 import { MovieSearchList } from "@/components/movies/MovieSearchList";
 import { ApiErrorState } from "@/components/common/ApiErrorState";
+import { useSearchParams } from "next/navigation";
 
 function MoviesPageContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("query") ?? "";
 
   const { data, isPending, isError, refetch } = useQuery(
-    movieSearchQueryOptions({ query, page: 1, limit: 10 }),
+    movieSearchQueryOptions({
+      query,
+      page: 1,
+      limit: 10,
+    }),
   );
 
   if (!query) {

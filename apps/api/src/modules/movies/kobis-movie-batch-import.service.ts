@@ -7,7 +7,7 @@ import { TmdbService } from "@/integrations/tmdb/tmdb.service";
 import { KobisMovieImportService } from "./kobis-movie-import.service";
 import { MoviesRepository } from "./movies.repository";
 import { toKobisRankingSnapshotInput } from "./mappers/kobis-ranking.mapper";
-import { TmdbMovieEnrichmentService } from "./tmdb-movie-enrichment.service";
+import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
 
 @Injectable()
 export class KobisMovieBatchImportService {
@@ -16,7 +16,7 @@ export class KobisMovieBatchImportService {
     private readonly kobisMovieImportService: KobisMovieImportService,
     private readonly moviesRepository: MoviesRepository,
     private readonly tmdbService: TmdbService,
-    private readonly tmdbMovieEnrichmentService: TmdbMovieEnrichmentService,
+    private readonly tmdbMovieSyncService: TmdbMovieSyncService,
   ) {}
 
   async importMovies(
@@ -73,7 +73,7 @@ export class KobisMovieBatchImportService {
       );
 
       if (tmdbMovie) {
-        await this.tmdbMovieEnrichmentService.enrichMovie(
+        await this.tmdbMovieSyncService.syncMovieFromTmdb(
           movieId,
           tmdbMovie.id,
         );

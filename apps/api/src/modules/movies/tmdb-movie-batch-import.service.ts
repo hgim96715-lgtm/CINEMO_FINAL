@@ -6,7 +6,7 @@ import { TmdbService } from "@/integrations/tmdb/tmdb.service";
 import { toCreateMovieFromTmdbInput } from "./mappers/tmdb-movie-import.mapper";
 import { MoviesRepository } from "./movies.repository";
 import { MovieMatcherService } from "./movie-matcher.service";
-import { TmdbMovieEnrichmentService } from "./tmdb-movie-enrichment.service";
+import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
 
 @Injectable()
 export class TmdbMovieBatchImportService {
@@ -14,7 +14,7 @@ export class TmdbMovieBatchImportService {
     private readonly tmdbService: TmdbService,
     private readonly moviesRepository: MoviesRepository,
     private readonly movieMatcher: MovieMatcherService,
-    private readonly tmdbMovieEnrichmentService: TmdbMovieEnrichmentService,
+    private readonly tmdbMovieSyncService: TmdbMovieSyncService,
   ) {}
 
   private async getOrCreateTmdbMovie(
@@ -36,9 +36,7 @@ export class TmdbMovieBatchImportService {
       throw new ConflictException({
         code: "MOVIE_MATCH_REVIEW_REQUIRED",
         message: "동일한 영화 후보가 여러 개라 관리자 검토가 필요합니다.",
-        candidateMovieIds: candidates.map(
-          (candidate) => candidate.id,
-        ),
+        candidateMovieIds: candidates.map((candidate) => candidate.id),
       });
     }
 
@@ -56,12 +54,11 @@ export class TmdbMovieBatchImportService {
       const response = await this.tmdbService.getPopularMovies(page);
 
       for (const [index, movie] of response.results.entries()) {
-        const movieId =
-          await this.getOrCreateTmdbMovie(
-            toCreateMovieFromTmdbInput(movie),
-          );
+        const movieId = await this.getOrCreateTmdbMovie(
+          toCreateMovieFromTmdbInput(movie),
+        );
 
-        await this.tmdbMovieEnrichmentService.enrichMovie(movieId, movie.id);
+        await this.tmdbMovieSyncService.syncMovieFromTmdb(movieId, movie.id);
 
         await this.moviesRepository.saveMoviePopularitySnapshot({
           movieId,
@@ -83,17 +80,28 @@ export class TmdbMovieBatchImportService {
       const response = await this.tmdbService.getNowPlayingMovies(page);
 
       for (const movie of response.results) {
-        const movieId =
-          await this.getOrCreateTmdbMovie(
-            toCreateMovieFromTmdbInput(movie),
-          );
+        const movieId = await this.getOrCreateTmdbMovie(
+          toCreateMovieFromTmdbInput(movie),
+        );
 
-        await this.tmdbMovieEnrichmentService.enrichMovie(movieId, movie.id);
+        await this.tmdbMovieSyncService.syncMovieFromTmdb(movieId, movie.id);
 
         movieIds.add(movieId);
       }
     }
 
     return [...movieIds];
+  }
+
+  async importMovie(tmdbMovieId: number): Promise<string> {
+    const tmdbMovie = await this.tmdbService.getMovieDetail(tmdbMovieId);
+    const movieId = await this.getOrCreateTmdbMovie(
+      toCreateMovieFromTmdbInput({
+        ...tmdbMovie,
+        genre_ids: [],
+      }),
+    );
+    await this.tmdbMovieSyncService.syncMovieFromTmdb(movieId, tmdbMovieId);
+    return movieId;
   }
 }

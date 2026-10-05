@@ -9,7 +9,7 @@ import { MovieMatcherService } from "./movie-matcher.service";
 import { KobisMovieImportService } from "./kobis-movie-import.service";
 import { KobisMovieBatchImportService } from "./kobis-movie-batch-import.service";
 import { TmdbModule } from "@/integrations/tmdb/tmdb.module";
-import { TmdbMovieEnrichmentService } from "./tmdb-movie-enrichment.service";
+import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
 import { MoviePersonService } from "./movie-person.service";
 import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
 import { KmdbModule } from "@/integrations/kmdb/kmdb.module";
@@ -25,7 +25,7 @@ import { MovieImportController } from "./movie-import.controller";
     MovieMatcherService,
     KobisMovieImportService,
     KobisMovieBatchImportService,
-    TmdbMovieEnrichmentService,
+    TmdbMovieSyncService,
     TmdbMovieBatchImportService,
     KmdbMovieEnrichmentService,
     MoviePersonService,
@@ -35,7 +35,7 @@ import { MovieImportController } from "./movie-import.controller";
     MovieMatcherService,
     KobisMovieImportService,
     KobisMovieBatchImportService,
-    TmdbMovieEnrichmentService,
+    TmdbMovieSyncService,
     TmdbMovieBatchImportService,
     KmdbMovieEnrichmentService,
     MoviePersonService,
