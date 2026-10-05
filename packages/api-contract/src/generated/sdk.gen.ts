@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { HealthControllerCheckV1Data, HealthControllerCheckV1Responses, KmdbControllerSearchMoviesV1Data, KmdbControllerSearchMoviesV1Responses, KobisControllerGetDailyBoxOfficeV1Data, KobisControllerGetDailyBoxOfficeV1Responses, KobisControllerGetMovieInfoV1Data, KobisControllerGetMovieInfoV1Errors, KobisControllerGetMovieInfoV1Responses, KobisControllerSearchMoviesV1Data, KobisControllerSearchMoviesV1Errors, KobisControllerSearchMoviesV1Responses, MovieImportControllerEnrichFromKmdbV1Data, MovieImportControllerEnrichFromKmdbV1Responses, MovieImportControllerImportDailyBoxOfficeV1Data, MovieImportControllerImportDailyBoxOfficeV1Responses, MovieImportControllerImportFromKobisV1Data, MovieImportControllerImportFromKobisV1Errors, MovieImportControllerImportFromKobisV1Responses, MovieImportControllerImportFromTmdbV1Data, MovieImportControllerImportFromTmdbV1Responses, MovieImportControllerImportMoviesFromKobisV1Data, MovieImportControllerImportMoviesFromKobisV1Responses, MovieImportControllerImportNowPlayingFromTmdbV1Data, MovieImportControllerImportNowPlayingFromTmdbV1Responses, MovieImportControllerImportPopularFromTmdbV1Data, MovieImportControllerImportPopularFromTmdbV1Responses, MovieImportControllerSyncFromTmdbV1Data, MovieImportControllerSyncFromTmdbV1Responses, MoviesControllerFindByIdV1Data, MoviesControllerFindByIdV1Errors, MoviesControllerFindByIdV1Responses, MoviesControllerGetMovieRankingsV1Data, MoviesControllerGetMovieRankingsV1Responses, MoviesControllerGetPopularMoviesV1Data, MoviesControllerGetPopularMoviesV1Responses, MoviesControllerGetSitemapMoviesV1Data, MoviesControllerGetSitemapMoviesV1Responses, MoviesControllerSearchV1Data, MoviesControllerSearchV1Errors, MoviesControllerSearchV1Responses, TmdbControllerGetMovieDetailV1Data, TmdbControllerGetMovieDetailV1Responses, TmdbControllerGetMovieGenresV1Data, TmdbControllerGetMovieGenresV1Responses, TmdbControllerGetMovieVideosV1Data, TmdbControllerGetMovieVideosV1Responses, TmdbControllerGetNowPlayingMoviesV1Data, TmdbControllerGetNowPlayingMoviesV1Responses, TmdbControllerGetOfficialTrailerV1Data, TmdbControllerGetOfficialTrailerV1Responses, TmdbControllerGetPopularMoviesV1Data, TmdbControllerGetPopularMoviesV1Responses, TmdbControllerSearchMoviesV1Data, TmdbControllerSearchMoviesV1Responses } from './types.gen';
+import type { AuthControllerDeleteAccountV1Data, AuthControllerDeleteAccountV1Responses, AuthControllerGetMeV1Data, AuthControllerGetMeV1Responses, AuthControllerLoginV1Data, AuthControllerLoginV1Errors, AuthControllerLoginV1Responses, AuthControllerLogoutV1Data, AuthControllerLogoutV1Responses, AuthControllerRegisterV1Data, AuthControllerRegisterV1Errors, AuthControllerRegisterV1Responses, AuthControllerRequestPasswordResetV1Data, AuthControllerRequestPasswordResetV1Responses, AuthControllerResetPasswordV1Data, AuthControllerResetPasswordV1Responses, AuthControllerVerifyEmailV1Data, AuthControllerVerifyEmailV1Errors, AuthControllerVerifyEmailV1Responses, HealthControllerCheckV1Data, HealthControllerCheckV1Responses, KmdbControllerSearchMoviesV1Data, KmdbControllerSearchMoviesV1Responses, KobisControllerGetDailyBoxOfficeV1Data, KobisControllerGetDailyBoxOfficeV1Responses, KobisControllerGetMovieInfoV1Data, KobisControllerGetMovieInfoV1Errors, KobisControllerGetMovieInfoV1Responses, KobisControllerSearchMoviesV1Data, KobisControllerSearchMoviesV1Errors, KobisControllerSearchMoviesV1Responses, MovieImportControllerEnrichFromKmdbV1Data, MovieImportControllerEnrichFromKmdbV1Responses, MovieImportControllerImportDailyBoxOfficeV1Data, MovieImportControllerImportDailyBoxOfficeV1Responses, MovieImportControllerImportFromKobisV1Data, MovieImportControllerImportFromKobisV1Errors, MovieImportControllerImportFromKobisV1Responses, MovieImportControllerImportFromTmdbV1Data, MovieImportControllerImportFromTmdbV1Responses, MovieImportControllerImportMoviesFromKobisV1Data, MovieImportControllerImportMoviesFromKobisV1Responses, MovieImportControllerImportNowPlayingFromTmdbV1Data, MovieImportControllerImportNowPlayingFromTmdbV1Responses, MovieImportControllerImportPopularFromTmdbV1Data, MovieImportControllerImportPopularFromTmdbV1Responses, MovieImportControllerSyncFromTmdbV1Data, MovieImportControllerSyncFromTmdbV1Responses, MoviesControllerFindByIdV1Data, MoviesControllerFindByIdV1Errors, MoviesControllerFindByIdV1Responses, MoviesControllerGetMovieRankingsV1Data, MoviesControllerGetMovieRankingsV1Responses, MoviesControllerGetPopularMoviesV1Data, MoviesControllerGetPopularMoviesV1Responses, MoviesControllerGetSitemapMoviesV1Data, MoviesControllerGetSitemapMoviesV1Responses, MoviesControllerSearchV1Data, MoviesControllerSearchV1Errors, MoviesControllerSearchV1Responses, TmdbControllerGetMovieDetailV1Data, TmdbControllerGetMovieDetailV1Responses, TmdbControllerGetMovieGenresV1Data, TmdbControllerGetMovieGenresV1Responses, TmdbControllerGetMovieVideosV1Data, TmdbControllerGetMovieVideosV1Responses, TmdbControllerGetNowPlayingMoviesV1Data, TmdbControllerGetNowPlayingMoviesV1Responses, TmdbControllerGetOfficialTrailerV1Data, TmdbControllerGetOfficialTrailerV1Responses, TmdbControllerGetPopularMoviesV1Data, TmdbControllerGetPopularMoviesV1Responses, TmdbControllerSearchMoviesV1Data, TmdbControllerSearchMoviesV1Responses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -176,3 +176,76 @@ export const tmdbControllerGetMovieDetailV1 = <ThrowOnError extends boolean = fa
  * KMDb 영화 검색
  */
 export const kmdbControllerSearchMoviesV1 = <ThrowOnError extends boolean = false>(options: Options<KmdbControllerSearchMoviesV1Data, ThrowOnError>): RequestResult<KmdbControllerSearchMoviesV1Responses, unknown, ThrowOnError> => (options.client ?? client).get<KmdbControllerSearchMoviesV1Responses, unknown, ThrowOnError>({ url: '/v1/kmdb/movies/search', ...options });
+
+/**
+ * 회원 탈퇴
+ */
+export const authControllerDeleteAccountV1 = <ThrowOnError extends boolean = false>(options?: Options<AuthControllerDeleteAccountV1Data, ThrowOnError>): RequestResult<AuthControllerDeleteAccountV1Responses, unknown, ThrowOnError> => (options?.client ?? client).delete<AuthControllerDeleteAccountV1Responses, unknown, ThrowOnError>({ url: '/v1/auth/me', ...options });
+
+export const authControllerGetMeV1 = <ThrowOnError extends boolean = false>(options?: Options<AuthControllerGetMeV1Data, ThrowOnError>): RequestResult<AuthControllerGetMeV1Responses, unknown, ThrowOnError> => (options?.client ?? client).get<AuthControllerGetMeV1Responses, unknown, ThrowOnError>({ url: '/v1/auth/me', ...options });
+
+/**
+ * 이메일 회원가입
+ *
+ * 이메일·비밀번호·닉네임과 필수 약관 동의로 회원가입 처리
+ */
+export const authControllerRegisterV1 = <ThrowOnError extends boolean = false>(options: Options<AuthControllerRegisterV1Data, ThrowOnError>): RequestResult<AuthControllerRegisterV1Responses, AuthControllerRegisterV1Errors, ThrowOnError> => (options.client ?? client).post<AuthControllerRegisterV1Responses, AuthControllerRegisterV1Errors, ThrowOnError>({
+    url: '/v1/auth/register',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 비밀번호 재설정 요청
+ *
+ * 입력한 이메일로 비밀번호 재설정 링크를 발송
+ */
+export const authControllerRequestPasswordResetV1 = <ThrowOnError extends boolean = false>(options: Options<AuthControllerRequestPasswordResetV1Data, ThrowOnError>): RequestResult<AuthControllerRequestPasswordResetV1Responses, unknown, ThrowOnError> => (options.client ?? client).post<AuthControllerRequestPasswordResetV1Responses, unknown, ThrowOnError>({
+    url: '/v1/auth/password-reset/request',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 비밀번호 재설정 확정
+ *
+ * 재설정 토큰을 검증하고 새 비밀번호로 변경
+ */
+export const authControllerResetPasswordV1 = <ThrowOnError extends boolean = false>(options: Options<AuthControllerResetPasswordV1Data, ThrowOnError>): RequestResult<AuthControllerResetPasswordV1Responses, unknown, ThrowOnError> => (options.client ?? client).post<AuthControllerResetPasswordV1Responses, unknown, ThrowOnError>({
+    url: '/v1/auth/password-reset/confirm',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 이메일 인증
+ *
+ * 회원가입 이메일 인증 토큰을 검증하고 이메일을 활성화
+ */
+export const authControllerVerifyEmailV1 = <ThrowOnError extends boolean = false>(options: Options<AuthControllerVerifyEmailV1Data, ThrowOnError>): RequestResult<AuthControllerVerifyEmailV1Responses, AuthControllerVerifyEmailV1Errors, ThrowOnError> => (options.client ?? client).get<AuthControllerVerifyEmailV1Responses, AuthControllerVerifyEmailV1Errors, ThrowOnError>({ url: '/v1/auth/verify-email', ...options });
+
+/**
+ * 이메일 로그인
+ */
+export const authControllerLoginV1 = <ThrowOnError extends boolean = false>(options: Options<AuthControllerLoginV1Data, ThrowOnError>): RequestResult<AuthControllerLoginV1Responses, AuthControllerLoginV1Errors, ThrowOnError> => (options.client ?? client).post<AuthControllerLoginV1Responses, AuthControllerLoginV1Errors, ThrowOnError>({
+    url: '/v1/auth/login',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 로그아웃
+ */
+export const authControllerLogoutV1 = <ThrowOnError extends boolean = false>(options?: Options<AuthControllerLogoutV1Data, ThrowOnError>): RequestResult<AuthControllerLogoutV1Responses, unknown, ThrowOnError> => (options?.client ?? client).post<AuthControllerLogoutV1Responses, unknown, ThrowOnError>({ url: '/v1/auth/logout', ...options });

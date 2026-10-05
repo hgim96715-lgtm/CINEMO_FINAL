@@ -2,6 +2,7 @@ import { Controller, Get } from "@nestjs/common";
 import { ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
 
 import { HealthService } from "./health.service";
+import { Public } from "@/modules/auth/decorators/public.decorator";
 
 @ApiTags("Health")
 @Controller("health")
@@ -22,6 +23,7 @@ export class HealthController {
       },
     },
   })
+  @Public()
   check() {
     return this.healthService.check();
   }

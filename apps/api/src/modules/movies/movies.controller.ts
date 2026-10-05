@@ -17,6 +17,7 @@ import { SearchMoviesRequestDto } from "./dto/requests/search-movies.request.dto
 import { MovieSearchResponseDto } from "./dto/responses/movie-search.response.dto";
 import { MovieSitemapResponseDto } from "./dto/responses/movie-sitemap.response.dto";
 import { GetPopularMoviesRequestDto } from "./dto/requests/get-popular-movies.request.dto";
+import { Public } from "../auth/decorators/public.decorator";
 
 @ApiTags("Movies")
 @Controller("movies")
@@ -38,6 +39,7 @@ export class MoviesController {
       },
     },
   })
+  @Public()
   @Get("search")
   @ApiOperation({
     summary: "CINEMO 영화 통합 검색",
@@ -52,6 +54,7 @@ export class MoviesController {
     return this.moviesService.search(params.query, params.page, params.limit);
   }
 
+  @Public()
   @Get("sitemap")
   @ApiOperation({
     summary: "영화 sitemap 데이터 조회",
@@ -66,6 +69,7 @@ export class MoviesController {
     return this.moviesService.getSitemapMovies();
   }
 
+  @Public()
   @Get("popular")
   @ApiOperation({
     summary: "DB에 저장된 인기 영화 조회",
@@ -78,6 +82,7 @@ export class MoviesController {
     return this.moviesService.getPopularMovies(params.page, params.limit);
   }
 
+  @Public()
   @Get("rankings")
   @ApiOperation({
     summary: "KOBIS 영화 순위 조회",
@@ -90,6 +95,7 @@ export class MoviesController {
     return this.moviesService.getMovieRankings(params.page, params.limit);
   }
 
+  @Public()
   @Get(":movieId")
   @ApiOperation({
     summary: "영화 상세 조회",

@@ -13,6 +13,7 @@ import {
 } from "./dto/responses/movie-videos.response.dto";
 import { SearchTmdbMoviesResponseDto } from "./dto/responses/search-tmdb-movies.response.dto";
 import { TmdbService } from "./tmdb.service";
+import { Public } from "@/modules/auth/decorators/public.decorator";
 
 @ApiTags("TMDB")
 @Controller("tmdb")
@@ -24,6 +25,7 @@ export class TmdbController {
   @ApiOkResponse({
     type: SearchTmdbMoviesResponseDto,
   })
+  @Public()
   searchMovies(@Query() query: SearchTmdbMoviesRequestDto) {
     return this.tmdbService.searchMovies(query.query, query.page);
   }
@@ -33,6 +35,7 @@ export class TmdbController {
   @ApiOkResponse({
     type: TmdbMovieListResponseDto,
   })
+  @Public()
   getNowPlayingMovies(@Query() query: GetTmdbMovieListRequestDto) {
     return this.tmdbService.getNowPlayingMovies(query.page);
   }
@@ -42,6 +45,7 @@ export class TmdbController {
   @ApiOkResponse({
     type: TmdbMovieListResponseDto,
   })
+  @Public()
   getPopularMovies(@Query() query: GetTmdbMovieListRequestDto) {
     return this.tmdbService.getPopularMovies(query.page);
   }
@@ -51,6 +55,7 @@ export class TmdbController {
   @ApiOkResponse({
     type: TmdbMovieGenreListResponseDto,
   })
+  @Public()
   getMovieGenres() {
     return this.tmdbService.getMovieGenres();
   }
@@ -60,6 +65,7 @@ export class TmdbController {
   @ApiOkResponse({
     type: TmdbMovieVideosResponseDto,
   })
+  @Public()
   getMovieVideos(@Param() params: GetTmdbMovieRequestDto) {
     return this.tmdbService.getMovieVideos(params.tmdbMovieId);
   }
@@ -70,6 +76,7 @@ export class TmdbController {
     type: TmdbMovieVideoResponseDto,
     nullable: true,
   })
+  @Public()
   getOfficialTrailer(@Param() params: GetTmdbMovieRequestDto) {
     return this.tmdbService.getOfficialTrailer(params.tmdbMovieId);
   }
@@ -79,6 +86,7 @@ export class TmdbController {
   @ApiOkResponse({
     type: TmdbMovieDetailResponseDto,
   })
+  @Public()
   getMovieDetail(@Param() params: GetTmdbMovieRequestDto) {
     return this.tmdbService.getMovieDetail(params.tmdbMovieId);
   }

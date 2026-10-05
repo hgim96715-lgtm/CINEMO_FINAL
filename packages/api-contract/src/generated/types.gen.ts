@@ -861,6 +861,125 @@ export type KmdbMovieSearchResponseDto = {
     results: Array<KmdbMovieSearchItemResponseDto>;
 };
 
+export type RegisterTermsDto = {
+    /**
+     * 서비스 이용약관 동의
+     */
+    service: boolean;
+    /**
+     * 개인정보 처리방침 동의
+     */
+    privacy: boolean;
+    /**
+     * 마케팅 정보 수신 동의
+     */
+    marketing?: {
+        [key: string]: unknown;
+    };
+};
+
+export type RegisterRequestDto = {
+    /**
+     * 로그인에 사용할 이메일
+     */
+    email: string;
+    /**
+     * CINEMO에서 사용할 닉네임
+     */
+    nickname: string;
+    /**
+     * 회원가입 약관 동의
+     */
+    terms: RegisterTermsDto;
+};
+
+export type RegisterUserResponseDto = {
+    /**
+     * CINEMO 사용자 ID
+     */
+    id: string;
+    /**
+     * 가입 이메일
+     */
+    email: string;
+    /**
+     * 닉네임
+     */
+    nickname: string;
+    status: 'ACTIVE' | 'SUSPENDED' | 'DELETED';
+    createdAt: string;
+};
+
+export type RegisterResponseDto = {
+    user: RegisterUserResponseDto;
+    /**
+     * 이메일 인증 필요 여부
+     */
+    emailVerificationRequired: boolean;
+};
+
+export type RequestPasswordResetRequestDto = {
+    /**
+     * 비밀번호 재설정 링크를 받을 이메일
+     */
+    email: string;
+};
+
+export type ResetPasswordRequestDto = {
+    /**
+     * 비밀번호 재설정 링크에 포함된 토큰
+     */
+    token: string;
+};
+
+export type LoginRequestDto = {
+    /**
+     * 가입한 이메일
+     */
+    email: string;
+};
+
+export type RegisterRequestDtoWritable = {
+    /**
+     * 로그인에 사용할 이메일
+     */
+    email: string;
+    /**
+     * 비밀번호
+     */
+    password: string;
+    /**
+     * CINEMO에서 사용할 닉네임
+     */
+    nickname: string;
+    /**
+     * 회원가입 약관 동의
+     */
+    terms: RegisterTermsDto;
+};
+
+export type ResetPasswordRequestDtoWritable = {
+    /**
+     * 비밀번호 재설정 링크에 포함된 토큰
+     */
+    token: string;
+    /**
+     * 새 비밀번호
+     */
+    newPassword: string;
+};
+
+export type LoginRequestDtoWritable = {
+    /**
+     * 가입한 이메일
+     */
+    email: string;
+    /**
+     * 비밀번호
+     */
+    password: string;
+};
+
 export type HealthControllerCheckV1Data = {
     body?: never;
     path?: never;
@@ -1399,3 +1518,137 @@ export type KmdbControllerSearchMoviesV1Responses = {
 };
 
 export type KmdbControllerSearchMoviesV1Response = KmdbControllerSearchMoviesV1Responses[keyof KmdbControllerSearchMoviesV1Responses];
+
+export type AuthControllerDeleteAccountV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/me';
+};
+
+export type AuthControllerDeleteAccountV1Responses = {
+    /**
+     * 회원 탈퇴 성공
+     */
+    200: unknown;
+};
+
+export type AuthControllerGetMeV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/me';
+};
+
+export type AuthControllerGetMeV1Responses = {
+    200: unknown;
+};
+
+export type AuthControllerRegisterV1Data = {
+    body: RegisterRequestDtoWritable;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/register';
+};
+
+export type AuthControllerRegisterV1Errors = {
+    /**
+     * 이미 가입된 이메일
+     */
+    409: unknown;
+};
+
+export type AuthControllerRegisterV1Responses = {
+    /**
+     * 회원가입 성공
+     */
+    201: RegisterResponseDto;
+};
+
+export type AuthControllerRegisterV1Response = AuthControllerRegisterV1Responses[keyof AuthControllerRegisterV1Responses];
+
+export type AuthControllerRequestPasswordResetV1Data = {
+    body: RequestPasswordResetRequestDto;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/password-reset/request';
+};
+
+export type AuthControllerRequestPasswordResetV1Responses = {
+    /**
+     * 비밀번호 재설정 요청 접수
+     */
+    200: unknown;
+};
+
+export type AuthControllerResetPasswordV1Data = {
+    body: ResetPasswordRequestDtoWritable;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/password-reset/confirm';
+};
+
+export type AuthControllerResetPasswordV1Responses = {
+    /**
+     * 비밀번호 재설정 완료
+     */
+    200: unknown;
+};
+
+export type AuthControllerVerifyEmailV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 이메일 인증 링크에 포함된 일회성 토큰
+         */
+        token: string;
+    };
+    url: '/v1/auth/verify-email';
+};
+
+export type AuthControllerVerifyEmailV1Errors = {
+    /**
+     * 유효하지 않거나 만료된 인증 링크
+     */
+    400: unknown;
+};
+
+export type AuthControllerVerifyEmailV1Responses = {
+    200: unknown;
+};
+
+export type AuthControllerLoginV1Data = {
+    body: LoginRequestDtoWritable;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/login';
+};
+
+export type AuthControllerLoginV1Errors = {
+    /**
+     * 이메일 또는 비밀번호가 올바르지 않음
+     */
+    401: unknown;
+};
+
+export type AuthControllerLoginV1Responses = {
+    /**
+     * 로그인 성공
+     */
+    200: unknown;
+};
+
+export type AuthControllerLogoutV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/logout';
+};
+
+export type AuthControllerLogoutV1Responses = {
+    /**
+     * 로그아웃 성공
+     */
+    200: unknown;
+};
