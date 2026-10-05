@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, Query, Req, Res } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Post,
+  Query,
+  Req,
+  Res,
+} from "@nestjs/common";
 
 import {
   ApiBadRequestResponse,
@@ -127,6 +136,29 @@ export class AuthController {
 
     return {
       loggedOut: true,
+    };
+  }
+
+  @ApiCookieAuth("cinemo_session")
+  @Delete("me")
+  @ApiOperation({
+    summary: "회원 탈퇴",
+  })
+  @ApiOkResponse({
+    description: "회원 탈퇴 성공",
+  })
+  async deleteAccount(
+    @CurrentUser() user: SessionUser,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    await this.authService.deleteAccount(user.id);
+
+    response.clearCookie("cinemo_session", {
+      path: "/",
+    });
+
+    return {
+      deleted: true,
     };
   }
 }

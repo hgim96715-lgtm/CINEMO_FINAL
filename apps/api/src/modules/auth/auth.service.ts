@@ -16,6 +16,7 @@ import { PrismaService } from "@/prisma/prisma.service";
 import { RegisterRequestDto } from "./dto/requests/register.request.dto";
 import { PasswordHasherService } from "./password-hasher.service";
 import { LoginRequestDto } from "./dto/requests/login.request.dto";
+import { MailService } from "./mail.service";
 
 const CURRENT_TERMS_VERSION = "1.0.0";
 const EMAIL_VERIFICATION_EXPIRES_IN_MS = 30 * 60 * 1000;
@@ -27,6 +28,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly passwordHasher: PasswordHasherService,
+    private readonly mailService: MailService,
   ) {}
 
   async register(input: RegisterRequestDto) {
@@ -104,6 +106,12 @@ export class AuthService {
           createdAt: true,
         },
       });
+    });
+
+    await this.mailService.sendSignupVerificationEmail({
+      to: email,
+      token: verificationToken,
+      expiresAt,
     });
 
     return {
@@ -191,6 +199,17 @@ export class AuthService {
       data: {
         revokedAt: new Date(),
       },
+    });
+  }
+
+  async deleteAccount(userId: string) {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.authSession.deleteMany({
+        where: { userId },
+      });
+      await tx.user.delete({
+        where: { id: userId },
+      });
     });
   }
 

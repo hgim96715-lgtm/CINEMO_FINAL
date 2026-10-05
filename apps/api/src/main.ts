@@ -52,7 +52,7 @@ async function bootstrap() {
   );
 
   await app.listen(port);
-  logger.log(`🚀 http://localhost:${port}/api/v1`);
+  logger.log(`🚀 http://localhost:${port}/v1`);
 }
 
 void bootstrap();

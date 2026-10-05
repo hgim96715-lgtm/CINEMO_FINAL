@@ -17,13 +17,21 @@ import { KmdbModule } from "./integrations/kmdb/kmdb.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { APP_GUARD } from "@nestjs/core";
 import { SessionAuthGuard } from "./modules/auth/session-auth.guard";
+import { mailConfig } from "./config/mail.config";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      load: [appConfig, databaseConfig, kobisConfig, tmdbConfig, kmdbConfig],
+      load: [
+        appConfig,
+        databaseConfig,
+        kobisConfig,
+        tmdbConfig,
+        kmdbConfig,
+        mailConfig,
+      ],
       validationSchema: envValidationSchema,
       validationOptions: {
         convert: true,

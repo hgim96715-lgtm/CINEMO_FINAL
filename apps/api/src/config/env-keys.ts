@@ -11,6 +11,10 @@ export const EnvKeys = {
 
   KMDB_API_KEY: "KMDB_API_KEY",
   KMDB_BASE_URL: "KMDB_BASE_URL",
+
+  RESEND_API_KEY: "RESEND_API_KEY",
+  MAIL_FROM: "MAIL_FROM",
+  APP_URL: "APP_URL",
 };
 
 export type EnvKey = (typeof EnvKeys)[keyof typeof EnvKeys];
