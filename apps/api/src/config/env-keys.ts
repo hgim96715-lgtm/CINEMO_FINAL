@@ -14,7 +14,7 @@ export const EnvKeys = {
 
   RESEND_API_KEY: "RESEND_API_KEY",
   MAIL_FROM: "MAIL_FROM",
-  APP_URL: "APP_URL",
+  API_URL: "API_URL",
 };
 
 export type EnvKey = (typeof EnvKeys)[keyof typeof EnvKeys];

@@ -23,7 +23,7 @@ export class MailService {
   private readonly logger = new Logger(MailService.name);
   private readonly resend: Resend;
   private readonly from: string;
-  private readonly appUrl: string;
+  private readonly apiUrl: string;
   private readonly frontendUrl: string;
 
   private readonly koreanDateTimeFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -41,14 +41,12 @@ export class MailService {
       this.configService.getOrThrow<string>("mail.apiKey"),
     );
     this.from = this.configService.getOrThrow<string>("mail.from");
-    this.appUrl = this.configService.getOrThrow<string>("mail.appUrl");
-    this.frontendUrl = this.configService.getOrThrow<string>(
-      "app.frontendUrl",
-    );
+    this.apiUrl = this.configService.getOrThrow<string>("app.apiUrl");
+    this.frontendUrl = this.configService.getOrThrow<string>("app.frontendUrl");
   }
 
   async sendSignupVerificationEmail(input: SendVerificationEmailInput) {
-    const verifyUrl = new URL(`/v1/auth/verify-email`, this.appUrl);
+    const verifyUrl = new URL(`/v1/auth/verify-email`, this.apiUrl);
     verifyUrl.searchParams.set("token", input.token);
 
     const expiresAtLabel = this.formatExpiresAt(input.expiresAt);
