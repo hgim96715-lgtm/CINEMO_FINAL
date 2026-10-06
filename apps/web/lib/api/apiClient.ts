@@ -7,3 +7,26 @@ export const apiClient = axios.create({
   },
   withCredentials: true,
 });
+
+type ApiErrorResponse = {
+  message?: string | string[];
+};
+
+export function getApiErrorMessage(
+  error: unknown,
+  fallbackMessage: string,
+) {
+  if (axios.isAxiosError<ApiErrorResponse>(error)) {
+    const message = error.response?.data?.message;
+
+    if (Array.isArray(message)) {
+      return message[0] ?? fallbackMessage;
+    }
+
+    if (message) {
+      return message;
+    }
+  }
+
+  return fallbackMessage;
+}

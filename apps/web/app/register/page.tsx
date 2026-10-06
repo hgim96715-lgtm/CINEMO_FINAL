@@ -17,7 +17,12 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { register as registerUser } from "@/lib/api/auth";
+import {
+  checkEmail,
+  checkNickname,
+  register as registerUser,
+} from "@/lib/api/auth";
+import { getApiErrorMessage } from "@/lib/api/apiClient";
 import {
   registerSchema,
   type RegisterFormValues,
@@ -51,11 +56,24 @@ export default function RegisterPage() {
   const [registered, setRegistered] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
 
+  const [nicknameCheckMessage, setNicknameCheckMessage] = useState("");
+  const [nicknameAvailable, setNicknameAvailable] = useState<boolean | null>(
+    null,
+  );
+  const [checkedNickname, setCheckedNickname] = useState("");
+  const [emailCheckMessage, setEmailCheckMessage] = useState("");
+  const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
+  const [checkedEmail, setCheckedEmail] = useState("");
+
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    getValues,
+    trigger,
+    setError,
+    clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -72,6 +90,8 @@ export default function RegisterPage() {
     },
   });
 
+  const nicknameField = register("nickname");
+  const emailField = register("email");
   const terms = watch("terms");
 
   const allRequiredTermsChecked = terms.service && terms.privacy;
@@ -81,8 +101,120 @@ export default function RegisterPage() {
     setValue("terms.privacy", checked, { shouldValidate: true });
   };
 
+  const handleEmailCheck = async () => {
+    const isValid = await trigger("email");
+
+    if (!isValid) {
+      setEmailAvailable(null);
+      setCheckedEmail("");
+      setEmailCheckMessage("");
+      return;
+    }
+
+    const email = getValues("email").trim().toLowerCase();
+
+    setEmailCheckMessage("");
+    setEmailAvailable(null);
+    clearErrors("email");
+
+    try {
+      const result = await checkEmail(email);
+
+      setEmailAvailable(result.available);
+      setEmailCheckMessage(
+        result.available
+          ? "사용 가능한 이메일입니다."
+          : "이미 가입된 이메일입니다.",
+      );
+
+      if (result.available) {
+        setCheckedEmail(email);
+        clearErrors("email");
+      } else {
+        setCheckedEmail("");
+        setError("email", {
+          type: "manual",
+          message: "이미 가입된 이메일입니다.",
+        });
+      }
+    } catch (error) {
+      setEmailAvailable(false);
+      setEmailCheckMessage(
+        getApiErrorMessage(error, "이메일을 확인할 수 없습니다."),
+      );
+    }
+  };
+
+  const handleNicknameCheck = async () => {
+    const isValid = await trigger("nickname");
+
+    if (!isValid) {
+      setNicknameAvailable(null);
+      setCheckedNickname("");
+      setNicknameCheckMessage("");
+      return;
+    }
+
+    const nickname = getValues("nickname").trim();
+
+    setNicknameCheckMessage("");
+    setNicknameAvailable(null);
+    clearErrors("nickname");
+
+    try {
+      const result = await checkNickname(nickname);
+
+      setNicknameAvailable(result.available);
+      setNicknameCheckMessage(
+        result.available
+          ? "사용 가능한 닉네임입니다."
+          : "이미 사용 중인 닉네임입니다.",
+      );
+
+      if (result.available) {
+        setCheckedNickname(nickname);
+        clearErrors("nickname");
+      } else {
+        setCheckedNickname("");
+
+        setError("nickname", {
+          type: "manual",
+          message: "이미 사용 중인 닉네임입니다.",
+        });
+      }
+    } catch (error) {
+      setNicknameAvailable(false);
+      setNicknameCheckMessage(
+        getApiErrorMessage(error, "닉네임을 확인할 수 없습니다."),
+      );
+    }
+  };
+
   const onSubmit = async (values: RegisterFormValues) => {
     setApiError("");
+    const email = values.email.trim().toLowerCase();
+    const nickname = values.nickname.trim();
+    let hasCheckError = false;
+
+    if (emailAvailable !== true || checkedEmail !== email) {
+      setError("email", {
+        type: "manual",
+        message: "이메일 중복 확인을 완료해주세요.",
+      });
+      hasCheckError = true;
+    }
+
+    if (nicknameAvailable !== true || checkedNickname !== nickname) {
+      setError("nickname", {
+        type: "manual",
+        message: "닉네임 중복 확인을 완료해주세요.",
+      });
+      hasCheckError = true;
+    }
+
+    if (hasCheckError) {
+      return;
+    }
 
     try {
       const { passwordConfirm: _passwordConfirm, ...input } = values;
@@ -99,16 +231,22 @@ export default function RegisterPage() {
       setRegisteredEmail(values.email);
       setRegistered(true);
     } catch (error) {
-      setApiError(
-        error instanceof Error ? error.message : "회원가입에 실패했습니다.",
-      );
+      const message = getApiErrorMessage(error, "회원가입에 실패했습니다.");
+      if (message === "이미 가입된 이메일입니다.") {
+        setError("email", {
+          type: "server",
+          message,
+        });
+        return;
+      }
+      setApiError(getApiErrorMessage(error, "회원가입에 실패했습니다."));
     }
   };
 
   if (registered) {
     return (
       <main className="flex min-h-[calc(100vh-11rem)] items-center justify-center px-4 py-16">
-        <section className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.06] p-6 text-center shadow-2xl backdrop-blur-xl sm:p-8">
+        <section className="w-full max-w-md rounded-3xl border border-white/10 bg-white/6 p-6 text-center shadow-2xl backdrop-blur-xl sm:p-8">
           <p className="text-sm font-semibold tracking-[0.3em] text-cinemo-gold">
             CINEMO
           </p>
@@ -162,7 +300,19 @@ export default function RegisterPage() {
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-cinemo-muted" />
               <Input
-                {...register("email")}
+                {...emailField}
+                onChange={(event) => {
+                  emailField.onChange(event);
+
+                  setEmailAvailable(null);
+                  setCheckedEmail("");
+                  setEmailCheckMessage("");
+                  clearErrors("email");
+                }}
+                onBlur={async (event) => {
+                  emailField.onBlur(event);
+                  await handleEmailCheck();
+                }}
                 type="email"
                 placeholder="email@example.com"
                 autoComplete="email"
@@ -175,25 +325,61 @@ export default function RegisterPage() {
                 {errors.email.message}
               </p>
             )}
+            {!errors.email && emailCheckMessage && (
+              <p
+                className={`mt-2 text-sm ${
+                  emailAvailable ? "text-emerald-200/80" : "text-red-200/75"
+                }`}
+              >
+                {emailCheckMessage}
+              </p>
+            )}
           </label>
 
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-cinemo-text">
               닉네임
             </span>
-            <div className="relative">
-              <UserRound className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-cinemo-muted" />
-              <Input
-                {...register("nickname")}
-                placeholder="시네마광"
-                autoComplete="nickname"
-                aria-invalid={Boolean(errors.nickname)}
-                className="h-12 border-white/15 bg-white/5 pl-10 text-cinemo-text placeholder:text-white/35"
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <UserRound className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-cinemo-muted" />
+                <Input
+                  {...nicknameField}
+                  onChange={(event) => {
+                    nicknameField.onChange(event);
+
+                    setNicknameAvailable(null);
+                    setCheckedNickname("");
+                    setNicknameCheckMessage("");
+                    clearErrors("nickname");
+                  }}
+                  placeholder="시네마광"
+                  autoComplete="nickname"
+                  aria-invalid={Boolean(errors.nickname)}
+                  className="h-12 border-white/15 bg-white/5 pl-10 text-cinemo-text placeholder:text-white/35"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleNicknameCheck}
+                className="h-12 shrink-0 rounded-lg border border-cinemo-gold/40 px-4 text-sm font-semibold text-cinemo-gold transition hover:bg-cinemo-gold/10"
+              >
+                중복확인
+              </button>
             </div>
             {errors.nickname && (
               <p className="mt-2 text-sm text-red-200/75">
                 {errors.nickname.message}
+              </p>
+            )}
+            {!errors.nickname && nicknameCheckMessage && (
+              <p
+                className={`mt-2 text-sm ${
+                  nicknameAvailable ? "text-emerald-200/80" : "text-red-200/75"
+                }`}
+              >
+                {nicknameCheckMessage}
               </p>
             )}
           </label>

@@ -35,6 +35,8 @@ import { PasswordResetService } from "./password-reset.service";
 import { RequestPasswordResetRequestDto } from "./dto/requests/request-password-reset.request.dto";
 import { ResetPasswordRequestDto } from "./dto/requests/reset-password.request.dto";
 import { Throttle } from "@nestjs/throttler";
+import { CheckNicknameRequestDto } from "./dto/requests/check-nickname.request.dto";
+import { CheckEmailRequestDto } from "./dto/requests/check-email.request.dto";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -50,6 +52,18 @@ export class AuthController {
   @Get("me")
   getMe(@CurrentUser() user: SessionUser) {
     return user;
+  }
+
+  @Get("check-nickname")
+  @Public()
+  checkNickname(@Query() query: CheckNicknameRequestDto) {
+    return this.authService.checkNickname(query.nickname);
+  }
+
+  @Get("check-email")
+  @Public()
+  checkEmail(@Query() query: CheckEmailRequestDto) {
+    return this.authService.checkEmail(query.email);
   }
 
   @Public()
@@ -130,9 +144,8 @@ export class AuthController {
   ) {
     await this.emailVerificationService.verify(params.token);
 
-    const frontendUrl = this.configService.getOrThrow<string>(
-      "app.frontendUrl",
-    );
+    const frontendUrl =
+      this.configService.getOrThrow<string>("app.frontendUrl");
 
     return response.redirect(302, `${frontendUrl}/login?verified=true`);
   }

@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import {
   ApiBadRequestResponse,
+  ApiCookieAuth,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -18,6 +19,7 @@ import {
 } from "./dto/responses/kobis-daily-box-office.response.dto";
 
 @ApiTags("KOBIS")
+@ApiCookieAuth("cinemo_session")
 @Controller("kobis")
 export class KobisController {
   constructor(private readonly kobisService: KobisService) {}

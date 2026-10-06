@@ -2,6 +2,7 @@ import { Controller, Param, Post, Query } from "@nestjs/common";
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
+  ApiCookieAuth,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -21,6 +22,7 @@ import { GetKobisDailyBoxOfficeRequestDto } from "@/integrations/kobis/dto/reque
 import { GetTmdbMovieRequestDto } from "@/integrations/tmdb/dto/requests/get-tmdb-movie.request.dto";
 
 @ApiTags("Movie Imports")
+@ApiCookieAuth("cinemo_session")
 @Controller("movie-imports")
 export class MovieImportController {
   constructor(

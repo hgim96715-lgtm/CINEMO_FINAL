@@ -101,7 +101,7 @@ enum TermsType {
 model User {
     id              String     @id @default(uuid(7)) @db.Uuid
     email           String?    @unique
-    nickname        String
+    nickname        String     @unique
     status          UserStatus @default(ACTIVE)
     profileImageUrl String?    @db.Text
     profileImageKey String?    @db.Text

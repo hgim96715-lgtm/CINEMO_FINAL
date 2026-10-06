@@ -40,6 +40,14 @@ export type RegisterResponse = {
   emailVerificationRequired: boolean;
 };
 
+export type CheckNicknameResponse = {
+  available: boolean;
+};
+
+export type CheckEmailResponse = {
+  available: boolean;
+};
+
 export async function register(
   input: RegisterInput,
 ): Promise<RegisterResponse> {
@@ -84,4 +92,30 @@ export type ResetPasswordInput = {
 
 export async function resetPassword(input: ResetPasswordInput): Promise<void> {
   await apiClient.post("/auth/password-reset/confirm", input);
+}
+
+export async function checkNickname(
+  nickname: string,
+): Promise<CheckNicknameResponse> {
+  const { data } = await apiClient.get<CheckNicknameResponse>(
+    "/auth/check-nickname",
+    {
+      params: { nickname },
+    },
+  );
+
+  return data;
+}
+
+export async function checkEmail(
+  email: string,
+): Promise<CheckEmailResponse> {
+  const { data } = await apiClient.get<CheckEmailResponse>(
+    "/auth/check-email",
+    {
+      params: { email },
+    },
+  );
+
+  return data;
 }

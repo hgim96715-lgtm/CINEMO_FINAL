@@ -17,6 +17,7 @@ import { RegisterRequestDto } from "./dto/requests/register.request.dto";
 import { PasswordHasherService } from "./password-hasher.service";
 import { LoginRequestDto } from "./dto/requests/login.request.dto";
 import { MailService } from "./mail.service";
+import { normalizeNickname, validateNickname } from "./nickname.policy";
 
 const CURRENT_TERMS_VERSION = "1.0.0";
 const EMAIL_VERIFICATION_EXPIRES_IN_MS = 30 * 60 * 1000;
@@ -33,10 +34,11 @@ export class AuthService {
 
   async register(input: RegisterRequestDto) {
     const email = input.email.trim().toLowerCase();
-    const nickname = input.nickname.trim();
+    const nickname = normalizeNickname(input.nickname);
+    const nicknameError = validateNickname(nickname);
 
-    if (!nickname) {
-      throw new BadRequestException("닉네임을 입력해야 합니다.");
+    if (nicknameError) {
+      throw new BadRequestException(nicknameError);
     }
 
     const passwordHash = await this.passwordHasher.hash(input.password);
@@ -56,6 +58,18 @@ export class AuthService {
 
       if (existingUser) {
         throw new ConflictException("이미 가입된 이메일입니다.");
+      }
+
+      const existingNickname = await tx.user.findFirst({
+        where: {
+          nickname,
+        },
+        select: {
+          id: true,
+        },
+      });
+      if (existingNickname) {
+        throw new ConflictException("이미 사용 중인 닉네임입니다.");
       }
 
       return tx.user.create({
@@ -245,5 +259,36 @@ export class AuthService {
     }
 
     return session.user;
+  }
+
+  async checkNickname(nicknameInput: string) {
+    const nickname = normalizeNickname(nicknameInput);
+    const validationMessage = validateNickname(nickname);
+
+    if (validationMessage) {
+      throw new BadRequestException(validationMessage);
+    }
+
+    const existingUser = await this.prisma.user.findFirst({
+      where: { nickname },
+      select: { id: true },
+    });
+
+    return {
+      available: !existingUser,
+    };
+  }
+
+  async checkEmail(emailInput: string) {
+    const email = emailInput.trim().toLowerCase();
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    return {
+      available: !existingUser,
+    };
   }
 }
