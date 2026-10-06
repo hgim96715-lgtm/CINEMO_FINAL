@@ -8,6 +8,7 @@ import {
   Req,
   Res,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 
 import {
   ApiBadRequestResponse,
@@ -42,6 +43,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly emailVerificationService: EmailVerificationService,
     private readonly passwordResetService: PasswordResetService,
+    private readonly configService: ConfigService,
   ) {}
 
   @ApiCookieAuth("cinemo_session")
@@ -122,8 +124,17 @@ export class AuthController {
   @ApiBadRequestResponse({
     description: "유효하지 않거나 만료된 인증 링크",
   })
-  verifyEmail(@Query() params: VerifyEmailRequestDto) {
-    return this.emailVerificationService.verify(params.token);
+  async verifyEmail(
+    @Query() params: VerifyEmailRequestDto,
+    @Res() response: Response,
+  ) {
+    await this.emailVerificationService.verify(params.token);
+
+    const frontendUrl = this.configService.getOrThrow<string>(
+      "app.frontendUrl",
+    );
+
+    return response.redirect(302, `${frontendUrl}/login?verified=true`);
   }
 
   @Public()

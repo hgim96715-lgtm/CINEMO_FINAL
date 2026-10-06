@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { CINEMO_BRAND } from "@cinemo/shared";
 
 import "./globals.css";
-import { QueryProvider } from "../providers/query-provider";
+import { AuthSessionHydrator, QueryProvider } from "@/providers";
 import { Header } from "../components/common/Header";
 import { Footer } from "../components/common/Footer";
 import { Inter } from "next/font/google";
@@ -49,9 +49,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="ko" className={cn("font-sans", inter.variable)}>
       <body className="flex min-h-screen flex-col">
         <QueryProvider>
-          <Header />
-          <div className="flex-1">{children}</div>
-          <Footer />
+          <AuthSessionHydrator>
+            <Header />
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </AuthSessionHydrator>
         </QueryProvider>
       </body>
     </html>

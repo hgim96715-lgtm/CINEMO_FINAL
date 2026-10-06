@@ -24,6 +24,7 @@ export class MailService {
   private readonly resend: Resend;
   private readonly from: string;
   private readonly appUrl: string;
+  private readonly frontendUrl: string;
 
   private readonly koreanDateTimeFormatter = new Intl.DateTimeFormat("ko-KR", {
     dateStyle: "medium",
@@ -41,6 +42,9 @@ export class MailService {
     );
     this.from = this.configService.getOrThrow<string>("mail.from");
     this.appUrl = this.configService.getOrThrow<string>("mail.appUrl");
+    this.frontendUrl = this.configService.getOrThrow<string>(
+      "app.frontendUrl",
+    );
   }
 
   async sendSignupVerificationEmail(input: SendVerificationEmailInput) {
@@ -111,7 +115,7 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(input: SendPasswordResetEmailInput) {
-    const resetUrl = new URL("/reset-password", this.appUrl);
+    const resetUrl = new URL("/reset-password", this.frontendUrl);
     resetUrl.searchParams.set("token", input.token);
 
     const expiresAtLabel = this.formatExpiresAt(input.expiresAt);
