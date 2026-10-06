@@ -1,13 +1,6 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  Matches,
-  Max,
-  Min,
-} from "class-validator";
+import { IsEnum, IsInt, IsOptional, Matches, Max, Min } from "class-validator";
 
 export enum UpcomingMoviesPeriod {
   THIS_WEEK = "this-week",
@@ -33,16 +26,16 @@ export class GetUpcomingMoviesRequestDto {
   })
   yearMonth?: string;
 
-  @ApiPropertyOptional({ default: 1 })
+  @ApiPropertyOptional({ default: 1, type: Number })
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  page = 1;
+  page: number = 1;
 
-  @ApiPropertyOptional({ default: 10 })
+  @ApiPropertyOptional({ default: 10, type: Number })
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)
-  limit = 10;
+  limit: number = 10;
 }
