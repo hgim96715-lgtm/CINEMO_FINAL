@@ -27,14 +27,23 @@ export default async function MoviePage({ params }: MoviePageProps) {
     (item) => item.titleType === "ORIGINAL",
   );
 
-  const primaryRelease =
-    movie.releases.find((date) => date.isPrimary) ?? movie.releases[0];
+  const activeReleases = movie.releases.filter(
+    (release) => release.status !== "CANCELLED" && release.releaseDate,
+  );
 
-  const initialRelease = movie.releases
-    .filter(
-      (release) => release.releaseType === "INITIAL" && release.releaseDate,
-    )
-    .sort((a, b) => a.releaseDate!.localeCompare(b.releaseDate!))[0];
+  const primaryRelease =
+    activeReleases.find((release) => release.isPrimary) ?? activeReleases[0];
+
+  // 해외 최초 개봉일보다 한국 개봉일을 우선 표시
+  const initialRelease =
+    activeReleases.find(
+      (release) =>
+        release.releaseType === "INITIAL" && release.countryCode === "KR",
+    ) ??
+    activeReleases.find((release) => release.isPrimary) ??
+    activeReleases
+      .filter((release) => release.releaseType === "INITIAL")
+      .sort((a, b) => a.releaseDate!.localeCompare(b.releaseDate!))[0];
 
   const latestRerelease = movie.releases
     .filter(

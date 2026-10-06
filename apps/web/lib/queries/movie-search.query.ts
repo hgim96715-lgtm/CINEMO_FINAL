@@ -2,9 +2,11 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import {
   getMovieRankings,
   getPopularMovies,
+  getUpcomingMovies,
   searchMovies,
   SearchMoviesParams,
   searchTmdbMovies,
+  UpcomingMoviesParams,
 } from "../api/movies";
 
 export const movieSearchQueryOptions = ({
@@ -57,9 +59,7 @@ export const tmdbMovieSearchQueryOptions = ({
     staleTime: 5 * 60_000,
   });
 
-export const useMovieSearchWithTmdbFallback = (
-  params: SearchMoviesParams,
-) => {
+export const useMovieSearchWithTmdbFallback = (params: SearchMoviesParams) => {
   const dbQuery = useQuery(movieSearchQueryOptions(params));
   const dbLimit = params.limit ?? 10;
   const shouldFetchTmdb =
@@ -100,6 +100,36 @@ export const movieRankingQueryOptions = ({
   queryOptions({
     queryKey: ["movies", "rankings", page, limit],
     queryFn: ({ signal }) => getMovieRankings(page, limit, signal),
+    enabled,
+    staleTime: 5 * 60_000,
+  });
+
+export const upcomingMoviesQueryOptions = ({
+  period,
+  yearMonth,
+  page = 1,
+  limit = 10,
+  enabled = true,
+}: UpcomingMoviesParams & { enabled?: boolean } = {}) =>
+  queryOptions({
+    queryKey: [
+      "movies",
+      "upcoming",
+      period ?? null,
+      yearMonth ?? null,
+      page,
+      limit,
+    ],
+    queryFn: ({ signal }) =>
+      getUpcomingMovies(
+        {
+          period,
+          yearMonth,
+          page,
+          limit,
+        },
+        signal,
+      ),
     enabled,
     staleTime: 5 * 60_000,
   });

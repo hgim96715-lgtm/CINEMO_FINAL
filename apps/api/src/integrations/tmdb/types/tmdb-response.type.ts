@@ -38,6 +38,24 @@ export interface TmdbMovieListResponse {
   dates?: TmdbMovieDateRange;
 }
 
+export interface TmdbMovieReleaseDatesResponse {
+  id: number;
+  results: TmdbMovieReleaseCountry[];
+}
+
+export interface TmdbMovieReleaseCountry {
+  iso_3166_1: string;
+  release_dates: TmdbMovieReleaseDate[];
+}
+
+export interface TmdbMovieReleaseDate {
+  certification: string;
+  iso_639_1: string;
+  note: string | null;
+  release_date: string;
+  type: number;
+}
+
 export interface TmdbMovieVideosResponse {
   id: number;
   results: TmdbMovieVideo[];

@@ -16,6 +16,7 @@ import { SearchMoviesRequestDto } from "./dto/requests/search-movies.request.dto
 import { MovieSearchResponseDto } from "./dto/responses/movie-search.response.dto";
 import { MovieSitemapResponseDto } from "./dto/responses/movie-sitemap.response.dto";
 import { GetPopularMoviesRequestDto } from "./dto/requests/get-popular-movies.request.dto";
+import { GetUpcomingMoviesRequestDto } from "./dto/requests/get-upcoming-movies.request.dto";
 import { Public } from "../auth/decorators/public.decorator";
 import { UserMovieRecordService } from "./user-movie-record.service";
 import { UpdateMovieRecordRequestDto } from "../auth/dto/requests/update-movie-record.request.dto";
@@ -106,6 +107,25 @@ export class MoviesController {
   })
   getMovieRankings(@Query() params: GetPopularMoviesRequestDto) {
     return this.moviesService.getMovieRankings(params.page, params.limit);
+  }
+
+  @Public()
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
+  @Get("upcoming")
+  @ApiOperation({
+    summary: "개봉 예정 영화 조회",
+    description: "CINEMO DB에 저장된 개봉 예정 영화를 조회",
+  })
+  @ApiOkResponse({
+    type: MovieSearchResponseDto,
+  })
+  getUpcomingMovies(@Query() params: GetUpcomingMoviesRequestDto) {
+    return this.moviesService.getUpcomingMovies(params);
   }
 
   @ApiCookieAuth("cinemo_session")

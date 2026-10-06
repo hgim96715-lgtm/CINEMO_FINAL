@@ -173,7 +173,7 @@ export function MovieRankingCarousel() {
           {movies.map((movie, index) => (
             <li
               key={movie.id}
-              className="w-34 shrink-0 sm:w-42 max-sm:w-[72vw] max-sm:snap-center"
+              className="w-30 shrink-0 sm:w-36 max-sm:w-[42vw] max-sm:snap-center"
             >
               <Link href={`/movies/${movie.id}`} className="group block">
                 <div className="relative aspect-2/3 overflow-hidden rounded-2xl bg-card">

@@ -88,6 +88,10 @@ export type MovieSitemapResponseDto = {
     items: Array<MovieSitemapItemResponseDto>;
 };
 
+export type Object = {
+    [key: string]: unknown;
+};
+
 export type UserMovieRecordResponseDto = {
     /**
      * 영화 ID
@@ -998,6 +1002,10 @@ export type OauthSignupRequestDto = {
     terms: RegisterTermsDto;
 };
 
+export type ObjectWritable = {
+    [key: string]: unknown;
+};
+
 export type RegisterRequestDtoWritable = {
     /**
      * 로그인에 사용할 이메일
@@ -1149,6 +1157,30 @@ export type MoviesControllerGetMovieRankingsV1Responses = {
 
 export type MoviesControllerGetMovieRankingsV1Response = MoviesControllerGetMovieRankingsV1Responses[keyof MoviesControllerGetMovieRankingsV1Responses];
 
+export type MoviesControllerGetUpcomingMoviesV1Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * 기간 필터
+         */
+        period?: 'this-week';
+        /**
+         * 개봉 예정 월. YYYY-MM 형식
+         */
+        yearMonth?: string;
+        page?: ObjectWritable;
+        limit?: ObjectWritable;
+    };
+    url: '/v1/movies/upcoming';
+};
+
+export type MoviesControllerGetUpcomingMoviesV1Responses = {
+    200: MovieSearchResponseDto;
+};
+
+export type MoviesControllerGetUpcomingMoviesV1Response = MoviesControllerGetUpcomingMoviesV1Responses[keyof MoviesControllerGetUpcomingMoviesV1Responses];
+
 export type MoviesControllerGetMovieRecordV1Data = {
     body?: never;
     path: {
@@ -1291,6 +1323,19 @@ export type MovieImportControllerImportNowPlayingFromTmdbV1Responses = {
 };
 
 export type MovieImportControllerImportNowPlayingFromTmdbV1Response = MovieImportControllerImportNowPlayingFromTmdbV1Responses[keyof MovieImportControllerImportNowPlayingFromTmdbV1Responses];
+
+export type MovieImportControllerImportUpcomingFromTmdbV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/movie-imports/tmdb/upcoming';
+};
+
+export type MovieImportControllerImportUpcomingFromTmdbV1Responses = {
+    200: Array<string>;
+};
+
+export type MovieImportControllerImportUpcomingFromTmdbV1Response = MovieImportControllerImportUpcomingFromTmdbV1Responses[keyof MovieImportControllerImportUpcomingFromTmdbV1Responses];
 
 export type MovieImportControllerImportFromTmdbV1Data = {
     body?: never;
@@ -1508,6 +1553,24 @@ export type TmdbControllerGetNowPlayingMoviesV1Responses = {
 };
 
 export type TmdbControllerGetNowPlayingMoviesV1Response = TmdbControllerGetNowPlayingMoviesV1Responses[keyof TmdbControllerGetNowPlayingMoviesV1Responses];
+
+export type TmdbControllerGetUpcomingMoviesV1Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * 조회할 페이지 번호
+         */
+        page?: number;
+    };
+    url: '/v1/tmdb/movies/upcoming';
+};
+
+export type TmdbControllerGetUpcomingMoviesV1Responses = {
+    200: TmdbMovieListResponseDto;
+};
+
+export type TmdbControllerGetUpcomingMoviesV1Response = TmdbControllerGetUpcomingMoviesV1Responses[keyof TmdbControllerGetUpcomingMoviesV1Responses];
 
 export type TmdbControllerGetPopularMoviesV1Data = {
     body?: never;

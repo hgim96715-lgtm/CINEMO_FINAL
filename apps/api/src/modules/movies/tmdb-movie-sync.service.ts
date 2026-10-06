@@ -156,6 +156,11 @@ export class TmdbMovieSyncService {
               : tmdbMovie.original_language,
           },
         });
+      } else if (primaryTitle && primaryRelease) {
+        await tx.movieTitle.update({
+          where: { id: primaryTitle.id },
+          data: { releaseId: primaryRelease.id },
+        });
       }
 
       const originalTitle = await tx.movieTitle.findFirst({

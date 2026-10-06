@@ -1,7 +1,10 @@
 import { ConflictException, Injectable } from "@nestjs/common";
 import { SourceProvider } from "@prisma/client";
 
-import { TmdbService } from "@/integrations/tmdb/tmdb.service";
+import {
+  TmdbService,
+  TmdbUpcomingMovieDateRange,
+} from "@/integrations/tmdb/tmdb.service";
 
 import { toCreateMovieFromTmdbInput } from "./mappers/tmdb-movie-import.mapper";
 import { MoviesRepository } from "./movies.repository";
@@ -44,6 +47,35 @@ export class TmdbMovieBatchImportService {
       input,
       matchedCandidate?.id,
     );
+  }
+
+  private getUpcomingMonthRanges(monthCount: number): TmdbUpcomingMovieDateRange[] {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Seoul",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+    const year = Number(parts.find((part) => part.type === "year")?.value);
+    const month = Number(parts.find((part) => part.type === "month")?.value);
+    const day = Number(parts.find((part) => part.type === "day")?.value);
+    const today = new Date(Date.UTC(year, month - 1, day));
+
+    return Array.from({ length: monthCount }, (_, index) => {
+      const start = new Date(today);
+      start.setUTCDate(index === 0 ? today.getUTCDate() : 1);
+      start.setUTCMonth(today.getUTCMonth() + index);
+
+      const end = new Date(today);
+      end.setUTCDate(1);
+      end.setUTCMonth(today.getUTCMonth() + index + 1);
+      end.setUTCDate(0);
+
+      return {
+        startDate: start.toISOString().slice(0, 10),
+        endDate: end.toISOString().slice(0, 10),
+      };
+    });
   }
 
   async importPopularMovies(pageCount = 2): Promise<string[]> {
@@ -95,18 +127,24 @@ export class TmdbMovieBatchImportService {
 
   async importUpcomingMovies(pageCount = 2): Promise<string[]> {
     const movieIds = new Set<string>();
+    const monthRanges = this.getUpcomingMonthRanges(3);
 
-    for (let page = 1; page <= pageCount; page += 1) {
-      const response = await this.tmdbService.getUpcomingMovies(page);
-
-      for (const movie of response.results) {
-        const movieId = await this.getOrCreateTmdbMovie(
-          toCreateMovieFromTmdbInput(movie),
+    for (const monthRange of monthRanges) {
+      for (let page = 1; page <= pageCount; page += 1) {
+        const response = await this.tmdbService.getUpcomingMovies(
+          page,
+          monthRange,
         );
 
-        await this.tmdbMovieSyncService.syncMovieFromTmdb(movieId, movie.id);
+        for (const movie of response.results) {
+          const movieId = await this.getOrCreateTmdbMovie(
+            toCreateMovieFromTmdbInput(movie),
+          );
 
-        movieIds.add(movieId);
+          await this.tmdbMovieSyncService.syncMovieFromTmdb(movieId, movie.id);
+
+          movieIds.add(movieId);
+        }
       }
     }
 

@@ -6,15 +6,43 @@ import type {
   TmdbMovieDetailResponse,
   TmdbMovieCreditsResponse,
   TmdbMovieListResponse,
+  TmdbMovieReleaseDatesResponse,
   TmdbMovieSearchResponse,
   TmdbMovieVideo,
   TmdbMovieVideosResponse,
 } from "./types/tmdb-response.type";
 
+export interface TmdbUpcomingMovieDateRange {
+  startDate: string;
+  endDate: string;
+}
+
 @Injectable()
 export class TmdbService {
+  private static readonly CINEMO_TIME_ZONE = "Asia/Seoul";
+  private static readonly UPCOMING_LOOKAHEAD_MONTHS = 3;
+  private static readonly RELEASE_CHECK_CONCURRENCY = 5;
+
   // TMDB 전용 HTTP 설정은 tmdb.module.ts에서 등록
   constructor(private readonly httpService: HttpService) {}
+
+  private getDateInCinemoTimeZone(monthOffset = 0): string {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: TmdbService.CINEMO_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+
+    const year = Number(parts.find((part) => part.type === "year")?.value);
+    const month = Number(parts.find((part) => part.type === "month")?.value);
+    const day = Number(parts.find((part) => part.type === "day")?.value);
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    date.setUTCMonth(date.getUTCMonth() + monthOffset);
+
+    return date.toISOString().slice(0, 10);
+  }
 
   async searchMovies(
     query: string,
@@ -75,8 +103,81 @@ export class TmdbService {
     return data;
   }
 
-  async getUpcomingMovies(page = 1): Promise<TmdbMovieListResponse> {
+  async getUpcomingMovies(
+    page = 1,
+    dateRange?: TmdbUpcomingMovieDateRange,
+  ): Promise<TmdbMovieListResponse> {
+    const startDate = dateRange?.startDate ?? this.getDateInCinemoTimeZone();
+    const endDate =
+      dateRange?.endDate ??
+      this.getDateInCinemoTimeZone(TmdbService.UPCOMING_LOOKAHEAD_MONTHS);
+
     const { data } = await firstValueFrom(
+      this.httpService.get<TmdbMovieListResponse>("/discover/movie", {
+        params: {
+          page,
+          region: "KR",
+          language: "ko-KR",
+          include_adult: false,
+          include_video: false,
+          "with_runtime.gte": 31,
+          sort_by: "primary_release_date.asc",
+          "primary_release_date.gte": startDate,
+          "primary_release_date.lte": endDate,
+          with_release_type: "2|3",
+        },
+      }),
+    );
+
+    const verifiedResults: TmdbMovieListResponse["results"] = [];
+
+    for (
+      let index = 0;
+      index < data.results.length;
+      index += TmdbService.RELEASE_CHECK_CONCURRENCY
+    ) {
+      const batch = data.results.slice(
+        index,
+        index + TmdbService.RELEASE_CHECK_CONCURRENCY,
+      );
+
+      const verifiedBatch = await Promise.all(
+        batch.map(async (movie) => {
+          const releaseDates = await this.getMovieReleaseDates(movie.id);
+          const koreanReleases = releaseDates.results.find(
+            (country) => country.iso_3166_1 === "KR",
+          );
+
+          const hasUpcomingKoreanTheatricalRelease =
+            koreanReleases?.release_dates.some(
+              (release) =>
+                [2, 3].includes(release.type) &&
+                release.release_date.slice(0, 10) >= startDate &&
+                release.release_date.slice(0, 10) <= endDate,
+            ) ?? false;
+
+          return hasUpcomingKoreanTheatricalRelease ? movie : null;
+        }),
+      );
+
+      verifiedResults.push(
+        ...verifiedBatch.filter(
+          (movie): movie is TmdbMovieListResponse["results"][number] =>
+            movie !== null,
+        ),
+      );
+    }
+
+    if (verifiedResults.length > 0 || dateRange) {
+      return {
+        ...data,
+        results: verifiedResults,
+      };
+    }
+
+    // TMDB에 한국 개봉일이 아직 등록되지 않은 경우 discover 결과가
+    // 전부 탈락할 수 있으므로, TMDB가 제공하는 한국 upcoming 목록을 사용
+    const { data: fallback } = await firstValueFrom(
       this.httpService.get<TmdbMovieListResponse>("/movie/upcoming", {
         params: {
           page,
@@ -85,6 +186,19 @@ export class TmdbService {
         },
       }),
     );
+
+    return fallback;
+  }
+
+  async getMovieReleaseDates(
+    tmdbMovieId: number,
+  ): Promise<TmdbMovieReleaseDatesResponse> {
+    const { data } = await firstValueFrom(
+      this.httpService.get<TmdbMovieReleaseDatesResponse>(
+        `/movie/${tmdbMovieId}/release_dates`,
+      ),
+    );
+
     return data;
   }
 

@@ -258,24 +258,45 @@ export class MoviesRepository {
     matchedMovieId?: string,
   ): Promise<string> {
     return this.prisma.$transaction(async (tx) => {
-      const ensurePrimaryTitle = async (movieId: string) => {
+      const ensureMovieTitle = async (movieId: string) => {
+        const title = input.title.trim();
+
+        if (!title) {
+          return;
+        }
+
+        const existingTitle = await tx.movieTitle.findFirst({
+          where: {
+            movieId,
+            title: {
+              equals: title,
+              mode: "insensitive",
+            },
+          },
+        });
+
+        if (existingTitle) {
+          return;
+        }
+
         const primaryTitle = await tx.movieTitle.findFirst({
           where: {
             movieId,
             titleType: TitleType.PRIMARY,
           },
+          select: {
+            id: true,
+          },
         });
 
-        if (!primaryTitle && input.title.trim()) {
-          await tx.movieTitle.create({
-            data: {
-              movieId,
-              title: input.title.trim(),
-              titleType: TitleType.PRIMARY,
-              languageCode: input.languageCode,
-            },
-          });
-        }
+        await tx.movieTitle.create({
+          data: {
+            movieId,
+            title,
+            titleType: primaryTitle ? TitleType.ALIAS : TitleType.PRIMARY,
+            languageCode: input.languageCode,
+          },
+        });
       };
 
       const existingLink = await tx.movieProviderLink.findUnique({
@@ -291,7 +312,7 @@ export class MoviesRepository {
       });
 
       if (existingLink) {
-        await ensurePrimaryTitle(existingLink.movieId);
+        await ensureMovieTitle(existingLink.movieId);
         return existingLink.movieId;
       }
 
@@ -308,7 +329,7 @@ export class MoviesRepository {
           },
         });
 
-        await ensurePrimaryTitle(matchedMovieId);
+        await ensureMovieTitle(matchedMovieId);
         return matchedMovieId;
       }
 
@@ -677,6 +698,100 @@ export class MoviesRepository {
         const movie = moviesById.get(movieId);
         return movie ? [movie] : [];
       }),
+      totalCount,
+    };
+  }
+
+  async findUpcomingMovies(
+    page: number,
+    limit: number,
+    filter: {
+      startDate: Date;
+      endDate?: Date;
+    },
+  ): Promise<{
+    movies: MovieSearchWithDetails[];
+    totalCount: number;
+  }> {
+    const releaseDate: Prisma.DateTimeFilter = {
+      gte: filter.startDate,
+      ...(filter.endDate ? { lt: filter.endDate } : {}),
+    };
+
+    const where: Prisma.MovieWhereInput = {
+      AND: [
+        {
+          OR: [{ runtime: null }, { runtime: { gt: 30 } }],
+        },
+      ],
+      releases: {
+        some: {
+          releaseDate,
+          status: {
+            in: [ReleaseStatus.ANNOUNCED, ReleaseStatus.SCHEDULED],
+          },
+        },
+      },
+    };
+
+    const endDateCondition = filter.endDate
+      ? Prisma.sql`AND release."releaseDate" < ${filter.endDate}`
+      : Prisma.empty;
+
+    // Prisma는 to-many relation에서 _count 정렬만 지원하고,
+    // MIN / MAX 같은 날짜 집계 정렬은 지원하지 않음.
+    //
+    // 기존에는 createdAt 기준으로 먼저 10개를 자른 뒤 웹에서 정렬해서,
+    // 개봉일이 빠른 영화가 로비에 표시되지 않는 문제가 발생함.
+    //
+    // LIMIT / OFFSET 적용 전에 가장 빠른 예정 개봉일 기준으로 정렬하기 위해
+    // SQL로 영화 ID만 먼저 조회함.
+    const movieIds = await this.prisma.$queryRaw<
+      Array<{ id: string }>
+    >(Prisma.sql`
+      SELECT movie.id
+      FROM movies AS movie
+      WHERE (movie.runtime IS NULL OR movie.runtime > 30)
+        AND EXISTS (
+          SELECT 1
+          FROM movie_releases AS release
+          WHERE release."movieId" = movie.id
+            AND release."releaseDate" >= ${filter.startDate}
+            ${endDateCondition}
+            AND release.status IN ('ANNOUNCED', 'SCHEDULED')
+        )
+      ORDER BY (
+        SELECT MIN(release."releaseDate")
+        FROM movie_releases AS release
+        WHERE release."movieId" = movie.id
+          AND release."releaseDate" >= ${filter.startDate}
+          ${endDateCondition}
+          AND release.status IN ('ANNOUNCED', 'SCHEDULED')
+      ) ASC, movie.id ASC
+      OFFSET ${(page - 1) * limit}
+      LIMIT ${limit}
+    `);
+
+    const [movies, totalCount] = await Promise.all([
+      this.prisma.movie.findMany({
+        where: {
+          id: {
+            in: movieIds.map(({ id }) => id),
+          },
+        },
+        include: movieSearchInclude,
+      }),
+      this.prisma.movie.count({ where }),
+    ]);
+
+    const moviesById = new Map(movies.map((movie) => [movie.id, movie]));
+    const orderedMovies = movieIds.flatMap(({ id }) => {
+      const movie = moviesById.get(id);
+      return movie ? [movie] : [];
+    });
+
+    return {
+      movies: orderedMovies,
       totalCount,
     };
   }
