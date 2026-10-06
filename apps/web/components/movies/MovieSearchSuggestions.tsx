@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import {
   normalizeSearchText,
@@ -23,6 +24,20 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
   const router = useRouter();
   const closeSearch = useSearchStore((state) => state.closeSearch);
   const keyword = query.trim();
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
+
+  useEffect(() => {
+    if (!keyword) {
+      setDebouncedKeyword("");
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedKeyword(keyword);
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [keyword]);
 
   const popularQuery = useQuery(
     popularMoviesQueryOptions({
@@ -37,7 +52,7 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
     tmdbQuery,
     shouldFetchTmdb,
   } = useMovieSearchWithTmdbFallback({
-    query: keyword,
+    query: debouncedKeyword,
     page: 1,
     limit: 5,
   });
@@ -76,6 +91,10 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
           ))}
       </ul>
     );
+  }
+
+  if (!debouncedKeyword) {
+    return null;
   }
 
   if (searchQuery.isPending) {

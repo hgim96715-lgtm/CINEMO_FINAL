@@ -6,6 +6,7 @@ import { AuthController } from "./auth.controller";
 import { EmailVerificationService } from "./email-verification.service";
 import { MailService } from "./mail.service";
 import { PasswordResetService } from "./password-reset.service";
+import { AppleAuthService } from "./apple-auth.service";
 
 @Module({
   controllers: [AuthController],
@@ -15,6 +16,7 @@ import { PasswordResetService } from "./password-reset.service";
     PasswordHasherService,
     MailService,
     PasswordResetService,
+    AppleAuthService,
   ],
   exports: [
     AuthService,
@@ -22,6 +24,7 @@ import { PasswordResetService } from "./password-reset.service";
     PasswordHasherService,
     MailService,
     PasswordResetService,
+    AppleAuthService,
   ],
 })
 export class AuthModule {}

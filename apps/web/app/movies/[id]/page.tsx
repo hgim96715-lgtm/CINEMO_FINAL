@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 
 import { getMovie } from "../../../lib/api/movies";
-import { Bell, CircleCheck, Heart } from "lucide-react";
+import { Bell } from "lucide-react";
 import { MovieTrailerButton } from "@/components/movies/MovieTrailerButton";
+import { MovieRecordActions } from "@/components/movies/MovieRecordActions";
+import { MovieWatchedDate } from "@/components/movies/MovieWatchedDate";
 
 type MoviePageProps = {
   params: Promise<{
@@ -177,21 +179,8 @@ export default async function MoviePage({ params }: MoviePageProps) {
                 trailer={trailer}
               />
 
-              <button
-                type="button"
-                className="group inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 font-semibold text-cinemo-text backdrop-blur transition hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10"
-              >
-                <Heart className="size-4 transition group-hover:fill-cinemo-gold group-hover:text-cinemo-gold" />
-                찜하기
-              </button>
+              <MovieRecordActions movieId={id} />
 
-              <button
-                type="button"
-                className="group inline-flex items-center gap-2 rounded-xl border border-cinemo-teal-light/40 bg-cinemo-teal/30 px-5 py-3 font-semibold text-cinemo-text backdrop-blur transition hover:bg-cinemo-teal/55"
-              >
-                <CircleCheck className="size-4 text-cinemo-teal-light transition group-hover:scale-110" />
-                봤어요
-              </button>
               {isUpcoming && (
                 <button
                   type="button"
@@ -208,6 +197,7 @@ export default async function MoviePage({ params }: MoviePageProps) {
 
       <section className="mx-auto grid max-w-6xl gap-12 px-6 py-12 md:grid-cols-[1fr_280px]">
         <div>
+          <MovieWatchedDate movieId={id} />
           <h2 className="text-2xl font-bold">영화 소개</h2>
 
           {movie.overview ? (

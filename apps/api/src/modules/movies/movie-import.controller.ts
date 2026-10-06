@@ -107,6 +107,23 @@ export class MovieImportController {
     return this.tmdbMovieBatchImportService.importNowPlayingMovies(10);
   }
 
+  @Post("tmdb/upcoming")
+  @ApiOperation({
+    summary: "TMDB 개봉 예정 영화 일괄 저장",
+    description: "TMDB 개봉 예정 영화 10페이지를 조회해 CINEMO DB에 저장",
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "array",
+      items: {
+        type: "string",
+      },
+    },
+  })
+  importUpcomingFromTmdb() {
+    return this.tmdbMovieBatchImportService.importUpcomingMovies(10);
+  }
+
   @Post("tmdb/:tmdbMovieId")
   @ApiOperation({
     summary: "TMDB 영화 단건 저장",

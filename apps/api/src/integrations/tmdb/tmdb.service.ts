@@ -75,6 +75,19 @@ export class TmdbService {
     return data;
   }
 
+  async getUpcomingMovies(page = 1): Promise<TmdbMovieListResponse> {
+    const { data } = await firstValueFrom(
+      this.httpService.get<TmdbMovieListResponse>("/movie/upcoming", {
+        params: {
+          page,
+          region: "KR",
+          language: "ko-KR",
+        },
+      }),
+    );
+    return data;
+  }
+
   async getPopularMovies(page = 1): Promise<TmdbMovieListResponse> {
     const { data } = await firstValueFrom(
       this.httpService.get<TmdbMovieListResponse>("/movie/popular", {

@@ -88,6 +88,50 @@ export type MovieSitemapResponseDto = {
     items: Array<MovieSitemapItemResponseDto>;
 };
 
+export type UserMovieRecordResponseDto = {
+    /**
+     * 영화 ID
+     */
+    movieId: string;
+    /**
+     * 찜하기 여부
+     */
+    isFavorite: boolean;
+    /**
+     * 봤어요 여부
+     */
+    isWatched: boolean;
+    /**
+     * 봤어요 처리 시각
+     */
+    watchedAt: string | null;
+    /**
+     * 개인 평점
+     */
+    rating: string | null;
+};
+
+export type UpdateMovieRecordRequestDto = {
+    /**
+     * 찜하기 여부
+     */
+    isFavorite?: boolean;
+    /**
+     * 봤어요 여부
+     */
+    isWatched?: boolean;
+    /**
+     * 봤어요로 기록할 날짜. YYYY-MM-DD 형식
+     */
+    watchedAt?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * 개인 평점. 0.5~5.0, null이면 평점 삭제
+     */
+    rating?: string | null;
+};
+
 export type MovieTitleResponseDto = {
     /**
      * 영화 제목 레코드 식별자
@@ -939,6 +983,21 @@ export type LoginRequestDto = {
     email: string;
 };
 
+export type OauthSignupRequestDto = {
+    /**
+     * Apple 인증 후 발급된 일회성 가입 티켓
+     */
+    ticket: string;
+    /**
+     * CINEMO에서 사용할 닉네임
+     */
+    nickname: string;
+    /**
+     * 회원가입 약관 동의
+     */
+    terms: RegisterTermsDto;
+};
+
 export type RegisterRequestDtoWritable = {
     /**
      * 로그인에 사용할 이메일
@@ -1089,6 +1148,48 @@ export type MoviesControllerGetMovieRankingsV1Responses = {
 };
 
 export type MoviesControllerGetMovieRankingsV1Response = MoviesControllerGetMovieRankingsV1Responses[keyof MoviesControllerGetMovieRankingsV1Responses];
+
+export type MoviesControllerGetMovieRecordV1Data = {
+    body?: never;
+    path: {
+        /**
+         * CINEMO 내부 영화 UUID
+         */
+        movieId: string;
+    };
+    query?: never;
+    url: '/v1/movies/{movieId}/record';
+};
+
+export type MoviesControllerGetMovieRecordV1Responses = {
+    /**
+     * 사용자 영화 기록 조회 성공
+     */
+    200: UserMovieRecordResponseDto;
+};
+
+export type MoviesControllerGetMovieRecordV1Response = MoviesControllerGetMovieRecordV1Responses[keyof MoviesControllerGetMovieRecordV1Responses];
+
+export type MoviesControllerUpdateMovieRecordV1Data = {
+    body: UpdateMovieRecordRequestDto;
+    path: {
+        /**
+         * CINEMO 내부 영화 UUID
+         */
+        movieId: string;
+    };
+    query?: never;
+    url: '/v1/movies/{movieId}/record';
+};
+
+export type MoviesControllerUpdateMovieRecordV1Responses = {
+    /**
+     * 사용자 영화 기록 수정 성공
+     */
+    200: UserMovieRecordResponseDto;
+};
+
+export type MoviesControllerUpdateMovieRecordV1Response = MoviesControllerUpdateMovieRecordV1Responses[keyof MoviesControllerUpdateMovieRecordV1Responses];
 
 export type MoviesControllerFindByIdV1Data = {
     body?: never;
@@ -1544,6 +1645,38 @@ export type AuthControllerGetMeV1Responses = {
     200: unknown;
 };
 
+export type AuthControllerCheckNicknameV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 중복 확인할 닉네임
+         */
+        nickname: string;
+    };
+    url: '/v1/auth/check-nickname';
+};
+
+export type AuthControllerCheckNicknameV1Responses = {
+    200: unknown;
+};
+
+export type AuthControllerCheckEmailV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 중복 확인할 이메일
+         */
+        email: string;
+    };
+    url: '/v1/auth/check-email';
+};
+
+export type AuthControllerCheckEmailV1Responses = {
+    200: unknown;
+};
+
 export type AuthControllerRegisterV1Data = {
     body: RegisterRequestDtoWritable;
     path?: never;
@@ -1651,4 +1784,37 @@ export type AuthControllerLogoutV1Responses = {
      * 로그아웃 성공
      */
     200: unknown;
+};
+
+export type AuthControllerAppleLoginV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/apple';
+};
+
+export type AuthControllerAppleLoginV1Responses = {
+    200: unknown;
+};
+
+export type AuthControllerAppleCallbackV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/apple/callback';
+};
+
+export type AuthControllerAppleCallbackV1Responses = {
+    201: unknown;
+};
+
+export type AuthControllerRegisterWithOauthV1Data = {
+    body: OauthSignupRequestDto;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/oauth/register';
+};
+
+export type AuthControllerRegisterWithOauthV1Responses = {
+    201: unknown;
 };

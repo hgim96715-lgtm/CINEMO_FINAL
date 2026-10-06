@@ -93,6 +93,26 @@ export class TmdbMovieBatchImportService {
     return [...movieIds];
   }
 
+  async importUpcomingMovies(pageCount = 2): Promise<string[]> {
+    const movieIds = new Set<string>();
+
+    for (let page = 1; page <= pageCount; page += 1) {
+      const response = await this.tmdbService.getUpcomingMovies(page);
+
+      for (const movie of response.results) {
+        const movieId = await this.getOrCreateTmdbMovie(
+          toCreateMovieFromTmdbInput(movie),
+        );
+
+        await this.tmdbMovieSyncService.syncMovieFromTmdb(movieId, movie.id);
+
+        movieIds.add(movieId);
+      }
+    }
+
+    return [...movieIds];
+  }
+
   async importMovie(tmdbMovieId: number): Promise<string> {
     const tmdbMovie = await this.tmdbService.getMovieDetail(tmdbMovieId);
     const movieId = await this.getOrCreateTmdbMovie(

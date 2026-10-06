@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import {
   EmailVerificationPurpose,
+  AuthProvider,
   TermsType,
   UserStatus,
 } from "@prisma/client";
@@ -23,6 +24,7 @@ const CURRENT_TERMS_VERSION = "1.0.0";
 const EMAIL_VERIFICATION_EXPIRES_IN_MS = 30 * 60 * 1000;
 
 const SESSION_EXPIRES_IN_MS = 24 * 60 * 60 * 1000;
+const OAUTH_SIGNUP_TICKET_EXPIRES_IN_MS = 10 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -290,5 +292,268 @@ export class AuthService {
     return {
       available: !existingUser,
     };
+  }
+
+  async loginWithApple(input: {
+    providerUserId: string;
+    email: string | null;
+    emailVerified: boolean;
+  }) {
+    if (!input.email || !input.emailVerified) {
+      throw new UnauthorizedException("Apple 이메일 인증 정보가 필요합니다.");
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const existingIdentity = await tx.userIdentity.findUnique({
+        where: {
+          provider_providerUserId: {
+            provider: AuthProvider.APPLE,
+            providerUserId: input.providerUserId,
+          },
+        },
+        include: {
+          user: true,
+        },
+      });
+
+      if (existingIdentity) {
+        return {
+          type: "login" as const,
+          user: existingIdentity.user,
+        };
+      }
+
+      const existingUser = await tx.user.findUnique({
+        where: {
+          email: input.email!,
+        },
+      });
+
+      if (!existingUser) {
+        const signupToken = randomBytes(32).toString("base64url");
+        const tokenHash = createHash("sha256")
+          .update(signupToken)
+          .digest("hex");
+
+        await tx.oauthSignupTicket.create({
+          data: {
+            tokenHash,
+            provider: AuthProvider.APPLE,
+            providerUserId: input.providerUserId,
+            providerEmail: input.email,
+            expiresAt: new Date(
+              Date.now() + OAUTH_SIGNUP_TICKET_EXPIRES_IN_MS,
+            ),
+          },
+        });
+
+        return {
+          type: "signup" as const,
+          signupToken,
+        };
+      }
+
+      await tx.userIdentity.upsert({
+        where: {
+          provider_providerUserId: {
+            provider: AuthProvider.APPLE,
+            providerUserId: input.providerUserId,
+          },
+        },
+        update: {
+          providerEmail: input.email,
+        },
+        create: {
+          userId: existingUser.id,
+          provider: AuthProvider.APPLE,
+          providerUserId: input.providerUserId,
+          providerEmail: input.email,
+        },
+      });
+
+      return {
+        type: "login" as const,
+        user: existingUser,
+      };
+    });
+
+    if (result.type === "signup") {
+      return {
+        requiresRegistration: true as const,
+        signupToken: result.signupToken,
+      };
+    }
+
+    const user = result.user;
+
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException("로그인할 수 없는 계정입니다.");
+    }
+
+    const sessionToken = randomBytes(32).toString("base64url");
+    const tokenHash = createHash("sha256").update(sessionToken).digest("hex");
+
+    const expiresAt = new Date(Date.now() + SESSION_EXPIRES_IN_MS);
+
+    await this.prisma.authSession.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+      },
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        status: user.status,
+        profileImageUrl: user.profileImageUrl,
+      },
+      sessionToken,
+      sessionExpiresAt: expiresAt,
+    };
+  }
+
+  async completeOauthSignup(input: {
+    ticket: string;
+    nickname: string;
+    terms: {
+      service: boolean;
+      privacy: boolean;
+      marketing?: boolean;
+    };
+  }) {
+    const nickname = normalizeNickname(input.nickname);
+    const nicknameError = validateNickname(nickname);
+
+    if (nicknameError) {
+      throw new BadRequestException(nicknameError);
+    }
+
+    const tokenHash = createHash("sha256")
+      .update(input.ticket)
+      .digest("hex");
+
+    return this.prisma.$transaction(async (tx) => {
+      const ticket = await tx.oauthSignupTicket.findUnique({
+        where: { tokenHash },
+      });
+
+      if (
+        !ticket ||
+        ticket.consumedAt ||
+        ticket.expiresAt <= new Date()
+      ) {
+        throw new BadRequestException(
+          "OAuth 가입 티켓이 만료되었거나 유효하지 않습니다.",
+        );
+      }
+
+      const existingIdentity = await tx.userIdentity.findUnique({
+        where: {
+          provider_providerUserId: {
+            provider: ticket.provider,
+            providerUserId: ticket.providerUserId,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (existingIdentity) {
+        throw new ConflictException("이미 연결된 계정입니다.");
+      }
+
+      const existingEmail = ticket.providerEmail
+        ? await tx.user.findUnique({
+            where: { email: ticket.providerEmail },
+            select: { id: true },
+          })
+        : null;
+
+      if (existingEmail) {
+        throw new ConflictException("이미 가입된 이메일입니다.");
+      }
+
+      const existingNickname = await tx.user.findUnique({
+        where: { nickname },
+        select: { id: true },
+      });
+
+      if (existingNickname) {
+        throw new ConflictException("이미 사용 중인 닉네임입니다.");
+      }
+
+      const user = await tx.user.create({
+        data: {
+          email: ticket.providerEmail,
+          nickname,
+          lastLoginAt: new Date(),
+          identities: {
+            create: {
+              provider: ticket.provider,
+              providerUserId: ticket.providerUserId,
+              providerEmail: ticket.providerEmail,
+              providerImageUrl: ticket.providerImageUrl,
+            },
+          },
+          termsAgreements: {
+            create: [
+              {
+                termsType: TermsType.SERVICE,
+                version: CURRENT_TERMS_VERSION,
+              },
+              {
+                termsType: TermsType.PRIVACY,
+                version: CURRENT_TERMS_VERSION,
+              },
+              ...(input.terms.marketing
+                ? [
+                    {
+                      termsType: TermsType.MARKETING,
+                      version: CURRENT_TERMS_VERSION,
+                    },
+                  ]
+                : []),
+            ],
+          },
+        },
+        select: {
+          id: true,
+          email: true,
+          nickname: true,
+          status: true,
+          profileImageUrl: true,
+        },
+      });
+
+      await tx.oauthSignupTicket.update({
+        where: { id: ticket.id },
+        data: { consumedAt: new Date() },
+      });
+
+      const sessionToken = randomBytes(32).toString("base64url");
+      const sessionTokenHash = createHash("sha256")
+        .update(sessionToken)
+        .digest("hex");
+      const sessionExpiresAt = new Date(
+        Date.now() + SESSION_EXPIRES_IN_MS,
+      );
+
+      await tx.authSession.create({
+        data: {
+          userId: user.id,
+          tokenHash: sessionTokenHash,
+          expiresAt: sessionExpiresAt,
+        },
+      });
+
+      return {
+        user,
+        sessionToken,
+        sessionExpiresAt,
+      };
+    });
   }
 }

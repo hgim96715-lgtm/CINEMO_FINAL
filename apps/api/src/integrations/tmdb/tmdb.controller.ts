@@ -1,5 +1,6 @@
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 
 import { GetTmdbMovieListRequestDto } from "./dto/requests/get-tmdb-movie-list.request.dto";
 import { GetTmdbMovieRequestDto } from "./dto/requests/get-tmdb-movie.request.dto";
@@ -21,6 +22,12 @@ export class TmdbController {
   constructor(private readonly tmdbService: TmdbService) {}
 
   @Get("movies/search")
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
   @ApiOperation({ summary: "TMDB 영화 검색" })
   @ApiOkResponse({
     type: SearchTmdbMoviesResponseDto,
@@ -38,6 +45,16 @@ export class TmdbController {
   @Public()
   getNowPlayingMovies(@Query() query: GetTmdbMovieListRequestDto) {
     return this.tmdbService.getNowPlayingMovies(query.page);
+  }
+
+  @Get("movies/upcoming")
+  @ApiOperation({ summary: "개봉 예정 영화 조회" })
+  @ApiOkResponse({
+    type: TmdbMovieListResponseDto,
+  })
+  @Public()
+  getUpcomingMovies(@Query() query: GetTmdbMovieListRequestDto) {
+    return this.tmdbService.getUpcomingMovies(query.page);
   }
 
   @Get("movies/popular")

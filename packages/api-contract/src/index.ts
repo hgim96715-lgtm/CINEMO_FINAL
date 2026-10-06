@@ -6,4 +6,5 @@ export type {
   MovieSearchResponseDto as MovieSearchResponse,
   MovieResponseDto as MovieResponse,
   SearchTmdbMoviesResponseDto as SearchTmdbMoviesResponse,
+  UserMovieRecordResponseDto as UserMovieRecordResponse,
 } from "./generated/types.gen";

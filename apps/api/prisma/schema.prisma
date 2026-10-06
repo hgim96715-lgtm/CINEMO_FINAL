@@ -115,6 +115,7 @@ model User {
     passwordResetTokens PasswordResetToken[]
     termsAgreements     UserTermsAgreement[]
     sessions            AuthSession[]
+    userMovieRecords    UserMovieRecord[]
 
     @@index([nickname])
     @@index([status])
@@ -136,6 +137,22 @@ model UserIdentity {
     @@unique([provider, providerUserId])
     @@index([userId])
     @@map("user_identities")
+}
+
+model OauthSignupTicket {
+    id               String       @id @default(uuid(7)) @db.Uuid
+    tokenHash        String       @unique @db.Text
+    provider         AuthProvider
+    providerUserId   String       @db.Text
+    providerEmail    String?
+    providerImageUrl String?      @db.Text
+    expiresAt        DateTime     @db.Timestamptz(3)
+    consumedAt       DateTime?    @db.Timestamptz(3)
+    createdAt        DateTime     @default(now()) @db.Timestamptz(3)
+
+    @@index([provider, providerUserId])
+    @@index([expiresAt])
+    @@map("oauth_signup_tickets")
 }
 
 model UserPasswordCredential {
@@ -215,6 +232,25 @@ model AuthSession {
     @@map("auth_sessions")
 }
 
+model UserMovieRecord {
+    id         String    @id @default(uuid(7)) @db.Uuid
+    userId     String    @db.Uuid
+    movieId    String    @db.Uuid
+    isFavorite Boolean   @default(false)
+    watchedAt  DateTime? @db.Timestamptz(3)
+    rating     Decimal?  @db.Decimal(2, 1)
+    createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+    updatedAt  DateTime  @updatedAt @db.Timestamptz(3)
+
+    user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+    movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, movieId])
+    @@index([userId, isFavorite])
+    @@index([userId, watchedAt])
+    @@map("user_movie_records")
+}
+
 model Movie {
     id                     String   @id @default(uuid(7)) @db.Uuid
     createdAt              DateTime @default(now()) @db.Timestamptz(3)
@@ -236,6 +272,7 @@ model Movie {
     movieCredits        MovieCredit[]
     movieGenres         MovieGenre[]
     movieCertifications MovieCertification[]
+    userMovieRecords    UserMovieRecord[]
 
     @@map("movies")
 }

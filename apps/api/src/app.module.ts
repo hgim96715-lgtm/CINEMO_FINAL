@@ -18,6 +18,7 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { APP_GUARD } from "@nestjs/core";
 import { SessionAuthGuard } from "./modules/auth/session-auth.guard";
 import { mailConfig } from "./config/mail.config";
+import { oauthConfig } from "./config/oauth.config";
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { mailConfig } from "./config/mail.config";
         tmdbConfig,
         kmdbConfig,
         mailConfig,
+        oauthConfig,
       ],
       validationSchema: envValidationSchema,
       validationOptions: {

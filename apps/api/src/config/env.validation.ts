@@ -32,4 +32,24 @@ export const envValidationSchema = Joi.object({
     .required(),
   [EnvKeys.RESEND_API_KEY]: Joi.string().trim().min(1).required(),
   [EnvKeys.MAIL_FROM]: Joi.string().trim().min(1).required(),
+
+  [EnvKeys.GOOGLE_CLIENT_ID]: Joi.string().trim().min(1).required(),
+  [EnvKeys.GOOGLE_CLIENT_SECRET]: Joi.string().trim().min(1).required(),
+  [EnvKeys.GOOGLE_CALLBACK_URL]: Joi.string()
+    .uri({ scheme: ["http", "https"] })
+    .required(),
+
+  [EnvKeys.APPLE_CLIENT_ID]: Joi.string().trim().min(1).required(),
+  [EnvKeys.APPLE_TEAM_ID]: Joi.string().trim().min(1).required(),
+  [EnvKeys.APPLE_KEY_ID]: Joi.string().trim().min(1).required(),
+  [EnvKeys.APPLE_PRIVATE_KEY]: Joi.string().trim().min(1).required(),
+  [EnvKeys.APPLE_CALLBACK_URL]: Joi.string()
+    .uri({ scheme: ["http", "https"] })
+    .required(),
+
+  [EnvKeys.NAVER_CLIENT_ID]: Joi.string().trim().min(1).required(),
+  [EnvKeys.NAVER_CLIENT_SECRET]: Joi.string().trim().min(1).required(),
+  [EnvKeys.NAVER_CALLBACK_URL]: Joi.string()
+    .uri({ scheme: ["http", "https"] })
+    .required(),
 });

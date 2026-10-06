@@ -86,6 +86,7 @@ export default function LoginPage() {
               이메일 인증이 완료되었습니다. 로그인해주세요.
             </p>
           )}
+
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

@@ -15,6 +15,8 @@ import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
 import { KmdbModule } from "@/integrations/kmdb/kmdb.module";
 import { TmdbMovieBatchImportService } from "./tmdb-movie-batch-import.service";
 import { MovieImportController } from "./movie-import.controller";
+import { UserMovieRecordRepository } from "./user-movie-record.repository";
+import { UserMovieRecordService } from "./user-movie-record.service";
 
 @Module({
   imports: [KobisModule, TmdbModule, KmdbModule],
@@ -29,6 +31,8 @@ import { MovieImportController } from "./movie-import.controller";
     TmdbMovieBatchImportService,
     KmdbMovieEnrichmentService,
     MoviePersonService,
+    UserMovieRecordRepository,
+    UserMovieRecordService,
   ],
   exports: [
     MoviesService,
@@ -39,6 +43,7 @@ import { MovieImportController } from "./movie-import.controller";
     TmdbMovieBatchImportService,
     KmdbMovieEnrichmentService,
     MoviePersonService,
+    UserMovieRecordService,
   ],
 })
 export class MoviesModule {}

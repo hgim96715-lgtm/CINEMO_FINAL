@@ -37,6 +37,8 @@ import { ResetPasswordRequestDto } from "./dto/requests/reset-password.request.d
 import { Throttle } from "@nestjs/throttler";
 import { CheckNicknameRequestDto } from "./dto/requests/check-nickname.request.dto";
 import { CheckEmailRequestDto } from "./dto/requests/check-email.request.dto";
+import { AppleAuthService } from "./apple-auth.service";
+import { OauthSignupRequestDto } from "./dto/requests/oauth-signup.request.dto";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -46,6 +48,7 @@ export class AuthController {
     private readonly emailVerificationService: EmailVerificationService,
     private readonly passwordResetService: PasswordResetService,
     private readonly configService: ConfigService,
+    private readonly appleAuthService: AppleAuthService,
   ) {}
 
   @ApiCookieAuth("cinemo_session")
@@ -226,6 +229,106 @@ export class AuthController {
 
     return {
       deleted: true,
+    };
+  }
+
+  @Public()
+  @Get("apple")
+  @ApiOperation({
+    summary: "Apple 로그인 시작",
+  })
+  appleLogin(@Res() response: Response) {
+    const { authorizationUrl, state, nonce } =
+      this.appleAuthService.createAuthorizationRequest();
+
+    const isProduction = process.env.NODE_ENV === "production";
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? ("none" as const) : ("lax" as const),
+      maxAge: 10 * 60 * 1000,
+      path: "/v1/auth/apple",
+    };
+
+    response.cookie("apple_oauth_state", state, cookieOptions);
+    response.cookie("apple_oauth_nonce", nonce, cookieOptions);
+
+    return response.redirect(302, authorizationUrl);
+  }
+
+  @Public()
+  @Post("apple/callback")
+  @ApiOperation({
+    summary: "Apple 로그인 콜백",
+  })
+  async appleCallback(@Req() request: Request, @Res() response: Response) {
+    const result = await this.appleAuthService.completeLogin({
+      ...(request.body as {
+        code?: string;
+        state?: string;
+        error?: string;
+      }),
+      savedState: request.cookies?.apple_oauth_state,
+      savedNonce: request.cookies?.apple_oauth_nonce,
+    });
+
+    const frontendUrl =
+      this.configService.getOrThrow<string>("app.frontendUrl");
+
+    if (result.requiresRegistration) {
+      return response.redirect(
+        302,
+        `${frontendUrl}/register?oauth=apple&ticket=${encodeURIComponent(
+          result.signupToken,
+        )}`,
+      );
+    }
+
+    const isProduction = process.env.NODE_ENV === "production";
+
+    response.cookie("cinemo_session", result.sessionToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+      path: "/",
+    });
+
+    response.clearCookie("apple_oauth_state", {
+      path: "/v1/auth/apple",
+    });
+
+    response.clearCookie("apple_oauth_nonce", {
+      path: "/v1/auth/apple",
+    });
+
+    return response.redirect(302, `${frontendUrl}/lobby`);
+  }
+
+  @Public()
+  @Post("oauth/register")
+  @ApiOperation({
+    summary: "OAuth 회원가입 완료",
+    description: "OAuth 가입 티켓과 닉네임·약관 동의로 회원가입 완료",
+  })
+  async registerWithOauth(
+    @Body() input: OauthSignupRequestDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.authService.completeOauthSignup(input);
+
+    response.cookie("cinemo_session", result.sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+      path: "/",
+    });
+
+    return {
+      user: result.user,
+      sessionExpiresAt: result.sessionExpiresAt,
     };
   }
 }

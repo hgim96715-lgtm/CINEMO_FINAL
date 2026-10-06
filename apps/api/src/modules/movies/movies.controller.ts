@@ -1,14 +1,13 @@
-// apps/api/src/modules/movies/movies.controller.ts
-
-import { Controller, Get, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Query } from "@nestjs/common";
 import {
-  ApiBadRequestResponse,
   ApiConflictResponse,
+  ApiCookieAuth,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from "@nestjs/swagger";
+import { Throttle } from "@nestjs/throttler";
 
 import { MovieResponseDto } from "./dto/responses/movie.response.dto";
 import { MoviesService } from "./movies.service";
@@ -18,11 +17,19 @@ import { MovieSearchResponseDto } from "./dto/responses/movie-search.response.dt
 import { MovieSitemapResponseDto } from "./dto/responses/movie-sitemap.response.dto";
 import { GetPopularMoviesRequestDto } from "./dto/requests/get-popular-movies.request.dto";
 import { Public } from "../auth/decorators/public.decorator";
+import { UserMovieRecordService } from "./user-movie-record.service";
+import { UpdateMovieRecordRequestDto } from "../auth/dto/requests/update-movie-record.request.dto";
+import { UserMovieRecordResponseDto } from "./dto/responses/user-movie-record.response.dto";
+import type { SessionUser } from "../auth/types/session-user.type";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
 
 @ApiTags("Movies")
 @Controller("movies")
 export class MoviesController {
-  constructor(private readonly moviesService: MoviesService) {}
+  constructor(
+    private readonly moviesService: MoviesService,
+    private readonly userMovieRecordService: UserMovieRecordService,
+  ) {}
 
   @ApiConflictResponse({
     description:
@@ -40,6 +47,12 @@ export class MoviesController {
     },
   })
   @Public()
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
   @Get("search")
   @ApiOperation({
     summary: "CINEMO 영화 통합 검색",
@@ -95,7 +108,63 @@ export class MoviesController {
     return this.moviesService.getMovieRankings(params.page, params.limit);
   }
 
+  @ApiCookieAuth("cinemo_session")
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
+  @Get(":movieId/record")
+  @ApiOperation({
+    summary: "사용자 영화 기록 조회",
+    description: "찜하기·봤어요·개인 평점 상태 조회",
+  })
+  @ApiOkResponse({
+    type: UserMovieRecordResponseDto,
+    description: "사용자 영화 기록 조회 성공",
+  })
+  getMovieRecord(
+    @Param() params: GetMovieRequestDto,
+    @CurrentUser() user: SessionUser,
+  ) {
+    return this.userMovieRecordService.findByUserAndMovie(
+      user.id,
+      params.movieId,
+    );
+  }
+
+  @ApiCookieAuth("cinemo_session")
+  @Throttle({
+    default: {
+      limit: 30,
+      ttl: 60_000,
+    },
+  })
+  @Patch(":movieId/record")
+  @ApiOperation({
+    summary: "사용자 영화 기록 수정",
+    description: "찜하기·봤어요·개인 평점 상태를 수정",
+  })
+  @ApiOkResponse({
+    type: UserMovieRecordResponseDto,
+    description: "사용자 영화 기록 수정 성공",
+  })
+  updateMovieRecord(
+    @Param() params: GetMovieRequestDto,
+    @Body() input: UpdateMovieRecordRequestDto,
+    @CurrentUser() user: SessionUser,
+  ) {
+    return this.userMovieRecordService.upsert(user.id, params.movieId, input);
+  }
+
   @Public()
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
   @Get(":movieId")
   @ApiOperation({
     summary: "영화 상세 조회",

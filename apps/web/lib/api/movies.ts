@@ -2,6 +2,7 @@ import type {
   MovieResponse,
   MovieSearchResponse,
   SearchTmdbMoviesResponse,
+  UserMovieRecordResponse,
 } from "@cinemo/api-contract";
 import { apiClient } from "./apiClient";
 
@@ -88,6 +89,35 @@ export async function getMovieRankings(
       params: { page, limit },
       signal,
     },
+  );
+
+  return data;
+}
+
+export type UpdateMovieRecordInput = {
+  isFavorite?: boolean;
+  isWatched?: boolean;
+  watchedAt?: string | null;
+  rating?: string | null;
+};
+
+export async function getMovieRecord(
+  movieId: string,
+): Promise<UserMovieRecordResponse> {
+  const { data } = await apiClient.get<UserMovieRecordResponse>(
+    `/movies/${movieId}/record`,
+  );
+
+  return data;
+}
+
+export async function updateMovieRecord(
+  movieId: string,
+  input: UpdateMovieRecordInput,
+): Promise<UserMovieRecordResponse> {
+  const { data } = await apiClient.patch<UserMovieRecordResponse>(
+    `/movies/${movieId}/record`,
+    input,
   );
 
   return data;
