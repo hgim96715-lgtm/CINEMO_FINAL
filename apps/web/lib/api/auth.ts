@@ -59,7 +59,7 @@ export async function register(
   return data;
 }
 
-export async function getMe(): Promise<AuthUser> {
+export async function getMe(): Promise<AuthUser | null> {
   const { data } = await apiClient.get<AuthUser>("/auth/me");
 
   return data;

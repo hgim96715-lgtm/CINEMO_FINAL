@@ -16,9 +16,14 @@ export function AuthSessionHydrator({ children }: AuthSessionHydratorProps) {
   const meQuery = useQuery(authMeQueryOptions());
 
   useEffect(() => {
-    if (meQuery.isSuccess) {
+    if (meQuery.isSuccess && meQuery.data) {
       setUser(meQuery.data);
     }
+
+    if (meQuery.isSuccess && !meQuery.data) {
+      clearUser();
+    }
+
     if (meQuery.isError) {
       clearUser();
     }

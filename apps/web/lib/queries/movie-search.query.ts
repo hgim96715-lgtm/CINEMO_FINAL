@@ -2,7 +2,9 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import {
   getMovieRankings,
   getPopularMovies,
+  getReleasedMovies,
   getUpcomingMovies,
+  ReleasedMoviesParams,
   searchMovies,
   SearchMoviesParams,
   searchTmdbMovies,
@@ -124,6 +126,27 @@ export const upcomingMoviesQueryOptions = ({
       getUpcomingMovies(
         {
           period,
+          yearMonth,
+          page,
+          limit,
+        },
+        signal,
+      ),
+    enabled,
+    staleTime: 5 * 60_000,
+  });
+
+export const releasedMoviesQueryOptions = ({
+  yearMonth,
+  page = 1,
+  limit = 10,
+  enabled = true,
+}: ReleasedMoviesParams & { enabled?: boolean } = {}) =>
+  queryOptions({
+    queryKey: ["movies", "released", yearMonth ?? null, page, limit],
+    queryFn: ({ signal }) =>
+      getReleasedMovies(
+        {
           yearMonth,
           page,
           limit,

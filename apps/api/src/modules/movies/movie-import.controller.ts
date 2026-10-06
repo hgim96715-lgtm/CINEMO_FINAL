@@ -12,6 +12,7 @@ import { GetKobisMovieInfoRequestDto } from "@/integrations/kobis/dto/requests/g
 
 import { EnrichKmdbMovieRequestDto } from "./dto/requests/enrich-kmdb-movie.request.dto";
 import { EnrichTmdbMovieRequestDto } from "./dto/requests/enrich-tmdb-movie.request.dto";
+import { GetMovieRequestDto } from "./dto/requests/get-movie.request.dto";
 import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
 import { KobisMovieImportService } from "./kobis-movie-import.service";
 import { TmdbMovieBatchImportService } from "./tmdb-movie-batch-import.service";
@@ -52,6 +53,24 @@ export class MovieImportController {
     );
   }
 
+  @Post("kobis/upcoming")
+  @ApiOperation({
+    summary: "KOBIS 개봉 예정 영화 일괄 저장",
+    description:
+      "오늘부터 3개월 이내 개봉 예정이며 KOBIS 상태가 개봉예정인 영화를 저장",
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "array",
+      items: {
+        type: "string",
+      },
+    },
+  })
+  importUpcomingFromKobis() {
+    return this.kobisMovieBatchImportService.importUpcomingMovies();
+  }
+
   @Post("kobis/:movieCd")
   @ApiOperation({
     summary: "KOBIS 영화 저장",
@@ -90,23 +109,6 @@ export class MovieImportController {
     return this.tmdbMovieBatchImportService.importPopularMovies(10);
   }
 
-  @Post("tmdb/now-playing")
-  @ApiOperation({
-    summary: "TMDB 현재 상영 영화 일괄 저장",
-    description: "TMDB 현재 상영 중인 영화 2페이지를 조회해 CINEMO DB에 저장",
-  })
-  @ApiOkResponse({
-    schema: {
-      type: "array",
-      items: {
-        type: "string",
-      },
-    },
-  })
-  importNowPlayingFromTmdb() {
-    return this.tmdbMovieBatchImportService.importNowPlayingMovies(10);
-  }
-
   @Post("tmdb/upcoming")
   @ApiOperation({
     summary: "TMDB 개봉 예정 영화 일괄 저장",
@@ -139,6 +141,33 @@ export class MovieImportController {
     return this.tmdbMovieBatchImportService.importMovie(params.tmdbMovieId);
   }
 
+  @Post("tmdb/:tmdbMovieId/enrich/kmdb")
+  @ApiOperation({
+    summary: "TMDB 영화 저장 및 KMDb 정보 자동 보완",
+    description:
+      "TMDB 영화 ID만 받아 CINEMO 영화 저장 후 제목·개봉연도로 KMDb 정보를 자동 보완",
+  })
+  @ApiConflictResponse({
+    description: "KMDb에서 일치하는 후보가 여러 개 발견되어 수동 확인이 필요함",
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "string",
+      example: "01a0f063-d740-7084-a1ea-ed5c020640bb",
+    },
+  })
+  async importFromTmdbAndEnrichFromKmdb(
+    @Param() params: GetTmdbMovieRequestDto,
+  ) {
+    const movieId = await this.tmdbMovieBatchImportService.importMovie(
+      params.tmdbMovieId,
+    );
+
+    await this.kmdbMovieEnrichmentService.enrichMovieByMovieId(movieId);
+
+    return movieId;
+  }
+
   @Post(":movieId/enrich/tmdb/:tmdbMovieId")
   @ApiOperation({
     summary: "TMDB 영화 정보 보완",
@@ -154,6 +183,23 @@ export class MovieImportController {
     return this.tmdbMovieSyncService.syncMovieFromTmdb(
       params.movieId,
       params.tmdbMovieId,
+    );
+  }
+
+  @Post(":movieId/enrich/kmdb")
+  @ApiOperation({
+    summary: "KMDb 영화 정보 자동 보완",
+    description: "CINEMO 영화 제목·개봉연도로 KMDb 영화를 찾아 자동 보완",
+  })
+  @ApiOkResponse({
+    schema: {
+      type: "string",
+      example: "01a0f063-d740-7084-a1ea-ed5c020640bb",
+    },
+  })
+  enrichFromKmdbAutomatically(@Param() params: GetMovieRequestDto) {
+    return this.kmdbMovieEnrichmentService.enrichMovieByMovieId(
+      params.movieId,
     );
   }
 

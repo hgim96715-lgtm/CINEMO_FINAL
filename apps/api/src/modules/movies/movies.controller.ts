@@ -23,6 +23,7 @@ import { UpdateMovieRecordRequestDto } from "../auth/dto/requests/update-movie-r
 import { UserMovieRecordResponseDto } from "./dto/responses/user-movie-record.response.dto";
 import type { SessionUser } from "../auth/types/session-user.type";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { GetReleasedMoviesRequestDto } from "./dto/requests/get-released-movies.request.dto";
 
 @ApiTags("Movies")
 @Controller("movies")
@@ -126,6 +127,25 @@ export class MoviesController {
   })
   getUpcomingMovies(@Query() params: GetUpcomingMoviesRequestDto) {
     return this.moviesService.getUpcomingMovies(params);
+  }
+
+  @Public()
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
+  @Get("released")
+  @ApiOperation({
+    summary: "올해 개봉 영화 조회",
+    description: "올해 개봉한 영화를 조회하며 yearMonth로 월별 필터링 가능",
+  })
+  @ApiOkResponse({
+    type: MovieSearchResponseDto,
+  })
+  getReleasedMovies(@Query() params: GetReleasedMoviesRequestDto) {
+    return this.moviesService.getReleasedMovies(params);
   }
 
   @ApiCookieAuth("cinemo_session")

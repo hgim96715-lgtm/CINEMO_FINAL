@@ -90,19 +90,6 @@ export class TmdbService {
     return data;
   }
 
-  async getNowPlayingMovies(page = 1): Promise<TmdbMovieListResponse> {
-    const { data } = await firstValueFrom(
-      this.httpService.get<TmdbMovieListResponse>("/movie/now_playing", {
-        params: {
-          page,
-          region: "KR",
-          language: "ko-KR",
-        },
-      }),
-    );
-    return data;
-  }
-
   async getUpcomingMovies(
     page = 1,
     dateRange?: TmdbUpcomingMovieDateRange,

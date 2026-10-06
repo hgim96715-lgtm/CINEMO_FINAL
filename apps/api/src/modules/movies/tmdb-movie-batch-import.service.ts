@@ -49,7 +49,9 @@ export class TmdbMovieBatchImportService {
     );
   }
 
-  private getUpcomingMonthRanges(monthCount: number): TmdbUpcomingMovieDateRange[] {
+  private getUpcomingMonthRanges(
+    monthCount: number,
+  ): TmdbUpcomingMovieDateRange[] {
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: "Asia/Seoul",
       year: "numeric",
@@ -97,26 +99,6 @@ export class TmdbMovieBatchImportService {
           rank: (page - 1) * 20 + index + 1,
           collectedAt,
         });
-
-        movieIds.add(movieId);
-      }
-    }
-
-    return [...movieIds];
-  }
-
-  async importNowPlayingMovies(pageCount = 2): Promise<string[]> {
-    const movieIds = new Set<string>();
-
-    for (let page = 1; page <= pageCount; page += 1) {
-      const response = await this.tmdbService.getNowPlayingMovies(page);
-
-      for (const movie of response.results) {
-        const movieId = await this.getOrCreateTmdbMovie(
-          toCreateMovieFromTmdbInput(movie),
-        );
-
-        await this.tmdbMovieSyncService.syncMovieFromTmdb(movieId, movie.id);
 
         movieIds.add(movieId);
       }

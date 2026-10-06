@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { SourceProvider } from "@prisma/client";
 
 import { KobisService } from "@/integrations/kobis/kobis.service";
@@ -9,8 +9,35 @@ import { MoviesRepository } from "./movies.repository";
 import { toKobisRankingSnapshotInput } from "./mappers/kobis-ranking.mapper";
 import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
 
+const getSeoulDate = (dayOffset = 0): string => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const day = Number(parts.find((part) => part.type === "day")?.value);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  date.setUTCDate(date.getUTCDate() + dayOffset);
+
+  return date.toISOString().slice(0, 10).replaceAll("-", "");
+};
+
+const toTmdbDate = (value?: string | null): string | null => {
+  if (!value || !/^\d{8}$/.test(value)) {
+    return null;
+  }
+
+  return `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`;
+};
+
 @Injectable()
 export class KobisMovieBatchImportService {
+  private readonly logger = new Logger(KobisMovieBatchImportService.name);
+
   constructor(
     private readonly kobisService: KobisService,
     private readonly kobisMovieImportService: KobisMovieImportService,
@@ -41,6 +68,81 @@ export class KobisMovieBatchImportService {
         );
 
         movieIds.add(movieId);
+      }
+    }
+
+    return [...movieIds];
+  }
+
+  async importUpcomingMovies(limit = 100): Promise<string[]> {
+    // 오늘 개봉작은 개봉 예정에서 제외하고, 내일부터 90일 뒤까지 조회함.
+    const startDate = getSeoulDate(1);
+    const endDate = getSeoulDate(90);
+    const movieIds = new Set<string>();
+    const firstPage = await this.kobisService.searchMoviesByReleaseDate(
+      startDate.slice(0, 4),
+      endDate.slice(0, 4),
+      1,
+      limit,
+    );
+    const totalPages = Math.min(Math.ceil(firstPage.totalCount / limit), 50);
+
+    for (let page = 1; page <= totalPages; page += 1) {
+      const response =
+        page === 1
+          ? firstPage
+          : await this.kobisService.searchMoviesByReleaseDate(
+              startDate.slice(0, 4),
+              endDate.slice(0, 4),
+              page,
+              limit,
+            );
+
+      for (const movie of response.results) {
+        const releaseDate = movie.releaseDate?.trim();
+
+        if (
+          movie.productionStatus?.trim() !== "개봉예정" ||
+          !releaseDate ||
+          releaseDate < startDate ||
+          releaseDate > endDate
+        ) {
+          continue;
+        }
+
+        try {
+          const tmdbMovie = await this.findTmdbMovie(
+            movie.title,
+            releaseDate,
+          );
+          const tmdbLinkedMovieId = tmdbMovie
+            ? await this.moviesRepository.findMovieIdByProviderLink(
+                SourceProvider.TMDB,
+                String(tmdbMovie.id),
+              )
+            : null;
+
+          const movieId = await this.kobisMovieImportService.importMovie(
+            movie.movieCd,
+            movie.title,
+            tmdbLinkedMovieId ?? undefined,
+          );
+
+          if (tmdbMovie) {
+            await this.tmdbMovieSyncService.syncMovieFromTmdb(
+              movieId,
+              tmdbMovie.id,
+            );
+          }
+
+          movieIds.add(movieId);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+
+          this.logger.warn(
+            `KOBIS 개봉 예정 영화 저장을 건너뜀: ${movie.movieCd} ${movie.title} - ${message}`,
+          );
+        }
       }
     }
 
@@ -97,15 +199,26 @@ export class KobisMovieBatchImportService {
     title: string,
     releaseDate?: string | null,
   ) {
-    const response = await this.tmdbService.searchMovies(title, 1);
+    let response;
+
+    try {
+      response = await this.tmdbService.searchMovies(title, 1);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      this.logger.warn(`TMDB 보완 조회 실패: ${title} - ${message}`);
+      return null;
+    }
+
     const normalizedTitle = title.trim().toLocaleLowerCase();
+    const tmdbReleaseDate = toTmdbDate(releaseDate);
 
     return (
       response.results.find(
         (movie) =>
           movie.poster_path &&
-          releaseDate &&
-          movie.release_date === releaseDate,
+          tmdbReleaseDate &&
+          movie.release_date === tmdbReleaseDate,
       ) ??
       response.results.find(
         (movie) =>

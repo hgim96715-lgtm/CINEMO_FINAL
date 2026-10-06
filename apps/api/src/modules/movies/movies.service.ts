@@ -13,6 +13,7 @@ import {
   GetUpcomingMoviesRequestDto,
   UpcomingMoviesPeriod,
 } from "./dto/requests/get-upcoming-movies.request.dto";
+import { GetReleasedMoviesRequestDto } from "./dto/requests/get-released-movies.request.dto";
 
 type UpcomingDateRange = {
   startDate: Date;
@@ -45,13 +46,16 @@ const getUpcomingDateRange = (
     );
   }
   const today = getTodayInCinemoTimeZone();
+  const tomorrow = new Date(today);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 
   if (params.period === UpcomingMoviesPeriod.THIS_WEEK) {
     const dayOfWeek = today.getUTCDay();
     const daysFromMonday = (dayOfWeek + 6) % 7;
-    const startDate = new Date(today);
-    startDate.setUTCDate(startDate.getUTCDate() - daysFromMonday);
-    const endDate = new Date(startDate);
+    const weekStart = new Date(today);
+    weekStart.setUTCDate(weekStart.getUTCDate() - daysFromMonday);
+    const startDate = weekStart < tomorrow ? tomorrow : weekStart;
+    const endDate = new Date(weekStart);
     endDate.setUTCDate(endDate.getUTCDate() + 7);
 
     return {
@@ -66,6 +70,13 @@ const getUpcomingDateRange = (
     const startDate = new Date(Date.UTC(year, month - 1, 1));
     const endDate = new Date(Date.UTC(year, month, 1));
 
+    if (
+      startDate.getUTCFullYear() === today.getUTCFullYear() &&
+      startDate.getUTCMonth() === today.getUTCMonth()
+    ) {
+      startDate.setTime(tomorrow.getTime());
+    }
+
     return {
       startDate,
       endDate,
@@ -73,7 +84,43 @@ const getUpcomingDateRange = (
   }
 
   return {
-    startDate: today,
+    startDate: tomorrow,
+  };
+};
+
+const getReleasedDateRange = (
+  params: GetReleasedMoviesRequestDto,
+): { startDate: Date; endDate: Date } => {
+  const today = getTodayInCinemoTimeZone();
+  const tomorrow = new Date(today);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+  if (params.yearMonth) {
+    const [year, month] = params.yearMonth.split("-").map(Number);
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month, 1));
+
+    // 이번 달은 내일 이후의 개봉일이 아직 지나지 않았으므로 제외함.
+    if (
+      startDate.getUTCFullYear() === today.getUTCFullYear() &&
+      startDate.getUTCMonth() === today.getUTCMonth()
+    ) {
+      endDate.setTime(tomorrow.getTime());
+    }
+
+    return { startDate, endDate };
+  }
+
+  const startDate = new Date(Date.UTC(today.getUTCFullYear(), 0, 1));
+  // 현재 월과 지난달은 개봉일 데이터가 아직 변동될 수 있으므로
+  // 두 달 전까지의 영화만 올해 개봉작으로 확정해서 조회함.
+  const cutoffDate = new Date(
+    Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1),
+  );
+
+  return {
+    startDate,
+    endDate: cutoffDate > startDate ? cutoffDate : startDate,
   };
 };
 
@@ -163,6 +210,25 @@ export class MoviesService {
     const dateRange = getUpcomingDateRange(params);
     const { movies, totalCount } =
       await this.movieRepository.findUpcomingMovies(
+        params.page,
+        params.limit,
+        dateRange,
+      );
+
+    return {
+      items: movies.map((movie) => toMovieSearchItemResponseDto(movie)),
+      totalCount,
+      page: params.page,
+      limit: params.limit,
+    };
+  }
+
+  async getReleasedMovies(
+    params: GetReleasedMoviesRequestDto,
+  ): Promise<MovieSearchResponseDto> {
+    const dateRange = getReleasedDateRange(params);
+    const { movies, totalCount } =
+      await this.movieRepository.findReleasedMovies(
         params.page,
         params.limit,
         dateRange,

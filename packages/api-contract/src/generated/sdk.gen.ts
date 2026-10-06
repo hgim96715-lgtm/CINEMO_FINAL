@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthControllerAppleCallbackV1Data, AuthControllerAppleCallbackV1Responses, AuthControllerAppleLoginV1Data, AuthControllerAppleLoginV1Responses, AuthControllerCheckEmailV1Data, AuthControllerCheckEmailV1Responses, AuthControllerCheckNicknameV1Data, AuthControllerCheckNicknameV1Responses, AuthControllerDeleteAccountV1Data, AuthControllerDeleteAccountV1Responses, AuthControllerGetMeV1Data, AuthControllerGetMeV1Responses, AuthControllerLoginV1Data, AuthControllerLoginV1Errors, AuthControllerLoginV1Responses, AuthControllerLogoutV1Data, AuthControllerLogoutV1Responses, AuthControllerRegisterV1Data, AuthControllerRegisterV1Errors, AuthControllerRegisterV1Responses, AuthControllerRegisterWithOauthV1Data, AuthControllerRegisterWithOauthV1Responses, AuthControllerRequestPasswordResetV1Data, AuthControllerRequestPasswordResetV1Responses, AuthControllerResetPasswordV1Data, AuthControllerResetPasswordV1Responses, AuthControllerVerifyEmailV1Data, AuthControllerVerifyEmailV1Errors, AuthControllerVerifyEmailV1Responses, HealthControllerCheckV1Data, HealthControllerCheckV1Responses, KmdbControllerSearchMoviesV1Data, KmdbControllerSearchMoviesV1Responses, KobisControllerGetDailyBoxOfficeV1Data, KobisControllerGetDailyBoxOfficeV1Responses, KobisControllerGetMovieInfoV1Data, KobisControllerGetMovieInfoV1Errors, KobisControllerGetMovieInfoV1Responses, KobisControllerSearchMoviesV1Data, KobisControllerSearchMoviesV1Errors, KobisControllerSearchMoviesV1Responses, MovieImportControllerEnrichFromKmdbV1Data, MovieImportControllerEnrichFromKmdbV1Responses, MovieImportControllerImportDailyBoxOfficeV1Data, MovieImportControllerImportDailyBoxOfficeV1Responses, MovieImportControllerImportFromKobisV1Data, MovieImportControllerImportFromKobisV1Errors, MovieImportControllerImportFromKobisV1Responses, MovieImportControllerImportFromTmdbV1Data, MovieImportControllerImportFromTmdbV1Responses, MovieImportControllerImportMoviesFromKobisV1Data, MovieImportControllerImportMoviesFromKobisV1Responses, MovieImportControllerImportNowPlayingFromTmdbV1Data, MovieImportControllerImportNowPlayingFromTmdbV1Responses, MovieImportControllerImportPopularFromTmdbV1Data, MovieImportControllerImportPopularFromTmdbV1Responses, MovieImportControllerImportUpcomingFromTmdbV1Data, MovieImportControllerImportUpcomingFromTmdbV1Responses, MovieImportControllerSyncFromTmdbV1Data, MovieImportControllerSyncFromTmdbV1Responses, MoviesControllerFindByIdV1Data, MoviesControllerFindByIdV1Errors, MoviesControllerFindByIdV1Responses, MoviesControllerGetMovieRankingsV1Data, MoviesControllerGetMovieRankingsV1Responses, MoviesControllerGetMovieRecordV1Data, MoviesControllerGetMovieRecordV1Responses, MoviesControllerGetPopularMoviesV1Data, MoviesControllerGetPopularMoviesV1Responses, MoviesControllerGetSitemapMoviesV1Data, MoviesControllerGetSitemapMoviesV1Responses, MoviesControllerGetUpcomingMoviesV1Data, MoviesControllerGetUpcomingMoviesV1Responses, MoviesControllerSearchV1Data, MoviesControllerSearchV1Errors, MoviesControllerSearchV1Responses, MoviesControllerUpdateMovieRecordV1Data, MoviesControllerUpdateMovieRecordV1Responses, TmdbControllerGetMovieDetailV1Data, TmdbControllerGetMovieDetailV1Responses, TmdbControllerGetMovieGenresV1Data, TmdbControllerGetMovieGenresV1Responses, TmdbControllerGetMovieVideosV1Data, TmdbControllerGetMovieVideosV1Responses, TmdbControllerGetNowPlayingMoviesV1Data, TmdbControllerGetNowPlayingMoviesV1Responses, TmdbControllerGetOfficialTrailerV1Data, TmdbControllerGetOfficialTrailerV1Responses, TmdbControllerGetPopularMoviesV1Data, TmdbControllerGetPopularMoviesV1Responses, TmdbControllerGetUpcomingMoviesV1Data, TmdbControllerGetUpcomingMoviesV1Responses, TmdbControllerSearchMoviesV1Data, TmdbControllerSearchMoviesV1Responses } from './types.gen';
+import type { AuthControllerAppleCallbackV1Data, AuthControllerAppleCallbackV1Responses, AuthControllerAppleLoginV1Data, AuthControllerAppleLoginV1Responses, AuthControllerCheckEmailV1Data, AuthControllerCheckEmailV1Responses, AuthControllerCheckNicknameV1Data, AuthControllerCheckNicknameV1Responses, AuthControllerDeleteAccountV1Data, AuthControllerDeleteAccountV1Responses, AuthControllerGetMeV1Data, AuthControllerGetMeV1Responses, AuthControllerLoginV1Data, AuthControllerLoginV1Errors, AuthControllerLoginV1Responses, AuthControllerLogoutV1Data, AuthControllerLogoutV1Responses, AuthControllerRegisterV1Data, AuthControllerRegisterV1Errors, AuthControllerRegisterV1Responses, AuthControllerRegisterWithOauthV1Data, AuthControllerRegisterWithOauthV1Responses, AuthControllerRequestPasswordResetV1Data, AuthControllerRequestPasswordResetV1Responses, AuthControllerResetPasswordV1Data, AuthControllerResetPasswordV1Responses, AuthControllerVerifyEmailV1Data, AuthControllerVerifyEmailV1Errors, AuthControllerVerifyEmailV1Responses, HealthControllerCheckV1Data, HealthControllerCheckV1Responses, KmdbControllerSearchMoviesV1Data, KmdbControllerSearchMoviesV1Responses, KobisControllerGetDailyBoxOfficeV1Data, KobisControllerGetDailyBoxOfficeV1Responses, KobisControllerGetMovieInfoV1Data, KobisControllerGetMovieInfoV1Errors, KobisControllerGetMovieInfoV1Responses, KobisControllerSearchMoviesV1Data, KobisControllerSearchMoviesV1Errors, KobisControllerSearchMoviesV1Responses, MovieImportControllerEnrichFromKmdbAutomaticallyV1Data, MovieImportControllerEnrichFromKmdbAutomaticallyV1Responses, MovieImportControllerEnrichFromKmdbV1Data, MovieImportControllerEnrichFromKmdbV1Responses, MovieImportControllerImportDailyBoxOfficeV1Data, MovieImportControllerImportDailyBoxOfficeV1Responses, MovieImportControllerImportFromKobisV1Data, MovieImportControllerImportFromKobisV1Errors, MovieImportControllerImportFromKobisV1Responses, MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Data, MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Errors, MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Responses, MovieImportControllerImportFromTmdbV1Data, MovieImportControllerImportFromTmdbV1Responses, MovieImportControllerImportMoviesFromKobisV1Data, MovieImportControllerImportMoviesFromKobisV1Responses, MovieImportControllerImportPopularFromTmdbV1Data, MovieImportControllerImportPopularFromTmdbV1Responses, MovieImportControllerImportUpcomingFromKobisV1Data, MovieImportControllerImportUpcomingFromKobisV1Responses, MovieImportControllerImportUpcomingFromTmdbV1Data, MovieImportControllerImportUpcomingFromTmdbV1Responses, MovieImportControllerSyncFromTmdbV1Data, MovieImportControllerSyncFromTmdbV1Responses, MoviesControllerFindByIdV1Data, MoviesControllerFindByIdV1Errors, MoviesControllerFindByIdV1Responses, MoviesControllerGetMovieRankingsV1Data, MoviesControllerGetMovieRankingsV1Responses, MoviesControllerGetMovieRecordV1Data, MoviesControllerGetMovieRecordV1Responses, MoviesControllerGetPopularMoviesV1Data, MoviesControllerGetPopularMoviesV1Responses, MoviesControllerGetReleasedMoviesV1Data, MoviesControllerGetReleasedMoviesV1Responses, MoviesControllerGetSitemapMoviesV1Data, MoviesControllerGetSitemapMoviesV1Responses, MoviesControllerGetUpcomingMoviesV1Data, MoviesControllerGetUpcomingMoviesV1Responses, MoviesControllerSearchV1Data, MoviesControllerSearchV1Errors, MoviesControllerSearchV1Responses, MoviesControllerUpdateMovieRecordV1Data, MoviesControllerUpdateMovieRecordV1Responses, TmdbControllerGetMovieDetailV1Data, TmdbControllerGetMovieDetailV1Responses, TmdbControllerGetMovieGenresV1Data, TmdbControllerGetMovieGenresV1Responses, TmdbControllerGetMovieVideosV1Data, TmdbControllerGetMovieVideosV1Responses, TmdbControllerGetOfficialTrailerV1Data, TmdbControllerGetOfficialTrailerV1Responses, TmdbControllerGetPopularMoviesV1Data, TmdbControllerGetPopularMoviesV1Responses, TmdbControllerGetUpcomingMoviesV1Data, TmdbControllerGetUpcomingMoviesV1Responses, TmdbControllerSearchMoviesV1Data, TmdbControllerSearchMoviesV1Responses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -61,6 +61,13 @@ export const moviesControllerGetMovieRankingsV1 = <ThrowOnError extends boolean 
 export const moviesControllerGetUpcomingMoviesV1 = <ThrowOnError extends boolean = false>(options?: Options<MoviesControllerGetUpcomingMoviesV1Data, ThrowOnError>): RequestResult<MoviesControllerGetUpcomingMoviesV1Responses, unknown, ThrowOnError> => (options?.client ?? client).get<MoviesControllerGetUpcomingMoviesV1Responses, unknown, ThrowOnError>({ url: '/v1/movies/upcoming', ...options });
 
 /**
+ * 올해 개봉 영화 조회
+ *
+ * 올해 개봉한 영화를 조회하며 yearMonth로 월별 필터링 가능
+ */
+export const moviesControllerGetReleasedMoviesV1 = <ThrowOnError extends boolean = false>(options?: Options<MoviesControllerGetReleasedMoviesV1Data, ThrowOnError>): RequestResult<MoviesControllerGetReleasedMoviesV1Responses, unknown, ThrowOnError> => (options?.client ?? client).get<MoviesControllerGetReleasedMoviesV1Responses, unknown, ThrowOnError>({ url: '/v1/movies/released', ...options });
+
+/**
  * 사용자 영화 기록 조회
  *
  * 찜하기·봤어요·개인 평점 상태 조회
@@ -96,6 +103,13 @@ export const moviesControllerFindByIdV1 = <ThrowOnError extends boolean = false>
 export const movieImportControllerImportDailyBoxOfficeV1 = <ThrowOnError extends boolean = false>(options: Options<MovieImportControllerImportDailyBoxOfficeV1Data, ThrowOnError>): RequestResult<MovieImportControllerImportDailyBoxOfficeV1Responses, unknown, ThrowOnError> => (options.client ?? client).post<MovieImportControllerImportDailyBoxOfficeV1Responses, unknown, ThrowOnError>({ url: '/v1/movie-imports/kobis/box-office', ...options });
 
 /**
+ * KOBIS 개봉 예정 영화 일괄 저장
+ *
+ * 오늘부터 3개월 이내 개봉 예정이며 KOBIS 상태가 개봉예정인 영화를 저장
+ */
+export const movieImportControllerImportUpcomingFromKobisV1 = <ThrowOnError extends boolean = false>(options?: Options<MovieImportControllerImportUpcomingFromKobisV1Data, ThrowOnError>): RequestResult<MovieImportControllerImportUpcomingFromKobisV1Responses, unknown, ThrowOnError> => (options?.client ?? client).post<MovieImportControllerImportUpcomingFromKobisV1Responses, unknown, ThrowOnError>({ url: '/v1/movie-imports/kobis/upcoming', ...options });
+
+/**
  * KOBIS 영화 저장
  *
  * KOBIS 영화 정보를 CINEMO DB에 저장하거나 기존 영화와 연결
@@ -108,13 +122,6 @@ export const movieImportControllerImportFromKobisV1 = <ThrowOnError extends bool
  * TMDB 인기 영화 2페이지를 조회해 CINEMO DB에 저장
  */
 export const movieImportControllerImportPopularFromTmdbV1 = <ThrowOnError extends boolean = false>(options?: Options<MovieImportControllerImportPopularFromTmdbV1Data, ThrowOnError>): RequestResult<MovieImportControllerImportPopularFromTmdbV1Responses, unknown, ThrowOnError> => (options?.client ?? client).post<MovieImportControllerImportPopularFromTmdbV1Responses, unknown, ThrowOnError>({ url: '/v1/movie-imports/tmdb/popular', ...options });
-
-/**
- * TMDB 현재 상영 영화 일괄 저장
- *
- * TMDB 현재 상영 중인 영화 2페이지를 조회해 CINEMO DB에 저장
- */
-export const movieImportControllerImportNowPlayingFromTmdbV1 = <ThrowOnError extends boolean = false>(options?: Options<MovieImportControllerImportNowPlayingFromTmdbV1Data, ThrowOnError>): RequestResult<MovieImportControllerImportNowPlayingFromTmdbV1Responses, unknown, ThrowOnError> => (options?.client ?? client).post<MovieImportControllerImportNowPlayingFromTmdbV1Responses, unknown, ThrowOnError>({ url: '/v1/movie-imports/tmdb/now-playing', ...options });
 
 /**
  * TMDB 개봉 예정 영화 일괄 저장
@@ -131,11 +138,25 @@ export const movieImportControllerImportUpcomingFromTmdbV1 = <ThrowOnError exten
 export const movieImportControllerImportFromTmdbV1 = <ThrowOnError extends boolean = false>(options: Options<MovieImportControllerImportFromTmdbV1Data, ThrowOnError>): RequestResult<MovieImportControllerImportFromTmdbV1Responses, unknown, ThrowOnError> => (options.client ?? client).post<MovieImportControllerImportFromTmdbV1Responses, unknown, ThrowOnError>({ url: '/v1/movie-imports/tmdb/{tmdbMovieId}', ...options });
 
 /**
+ * TMDB 영화 저장 및 KMDb 정보 자동 보완
+ *
+ * TMDB 영화 ID만 받아 CINEMO 영화 저장 후 제목·개봉연도로 KMDb 정보를 자동 보완
+ */
+export const movieImportControllerImportFromTmdbAndEnrichFromKmdbV1 = <ThrowOnError extends boolean = false>(options: Options<MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Data, ThrowOnError>): RequestResult<MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Responses, MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Errors, ThrowOnError> => (options.client ?? client).post<MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Responses, MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Errors, ThrowOnError>({ url: '/v1/movie-imports/tmdb/{tmdbMovieId}/enrich/kmdb', ...options });
+
+/**
  * TMDB 영화 정보 보완
  *
  * 기존 영화에 TMDB 상세 정보와 인물·미디어 정보를 보완
  */
 export const movieImportControllerSyncFromTmdbV1 = <ThrowOnError extends boolean = false>(options: Options<MovieImportControllerSyncFromTmdbV1Data, ThrowOnError>): RequestResult<MovieImportControllerSyncFromTmdbV1Responses, unknown, ThrowOnError> => (options.client ?? client).post<MovieImportControllerSyncFromTmdbV1Responses, unknown, ThrowOnError>({ url: '/v1/movie-imports/{movieId}/enrich/tmdb/{tmdbMovieId}', ...options });
+
+/**
+ * KMDb 영화 정보 자동 보완
+ *
+ * CINEMO 영화 제목·개봉연도로 KMDb 영화를 찾아 자동 보완
+ */
+export const movieImportControllerEnrichFromKmdbAutomaticallyV1 = <ThrowOnError extends boolean = false>(options: Options<MovieImportControllerEnrichFromKmdbAutomaticallyV1Data, ThrowOnError>): RequestResult<MovieImportControllerEnrichFromKmdbAutomaticallyV1Responses, unknown, ThrowOnError> => (options.client ?? client).post<MovieImportControllerEnrichFromKmdbAutomaticallyV1Responses, unknown, ThrowOnError>({ url: '/v1/movie-imports/{movieId}/enrich/kmdb', ...options });
 
 /**
  * KMDb 영화 정보 보완
@@ -176,11 +197,6 @@ export const kobisControllerGetDailyBoxOfficeV1 = <ThrowOnError extends boolean 
  * TMDB 영화 검색
  */
 export const tmdbControllerSearchMoviesV1 = <ThrowOnError extends boolean = false>(options: Options<TmdbControllerSearchMoviesV1Data, ThrowOnError>): RequestResult<TmdbControllerSearchMoviesV1Responses, unknown, ThrowOnError> => (options.client ?? client).get<TmdbControllerSearchMoviesV1Responses, unknown, ThrowOnError>({ url: '/v1/tmdb/movies/search', ...options });
-
-/**
- * 현재 상영 중인 영화 조회
- */
-export const tmdbControllerGetNowPlayingMoviesV1 = <ThrowOnError extends boolean = false>(options?: Options<TmdbControllerGetNowPlayingMoviesV1Data, ThrowOnError>): RequestResult<TmdbControllerGetNowPlayingMoviesV1Responses, unknown, ThrowOnError> => (options?.client ?? client).get<TmdbControllerGetNowPlayingMoviesV1Responses, unknown, ThrowOnError>({ url: '/v1/tmdb/movies/now-playing', ...options });
 
 /**
  * 개봉 예정 영화 조회

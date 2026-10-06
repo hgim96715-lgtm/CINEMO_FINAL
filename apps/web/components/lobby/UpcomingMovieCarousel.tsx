@@ -21,8 +21,6 @@ const formatReleaseDate = (releaseDate: string | null) => {
   const targetDate = new Date(`${releaseDate}T00:00:00Z`);
   const days = Math.round((targetDate.getTime() - today.getTime()) / DAY_IN_MS);
 
-  if (days === 0) return "오늘 개봉";
-
   const releaseYear = targetDate.getUTCFullYear();
   const currentYear = today.getUTCFullYear();
 

@@ -796,6 +796,131 @@ export class MoviesRepository {
     };
   }
 
+  async findReleasedMovies(
+    page: number,
+    limit: number,
+    filter: {
+      startDate: Date;
+      endDate: Date;
+    },
+  ): Promise<{
+    movies: MovieSearchWithDetails[];
+    totalCount: number;
+  }> {
+    const releaseDate: Prisma.DateTimeFilter = {
+      gte: filter.startDate,
+      lt: filter.endDate,
+    };
+    const releasedReleaseWhere: Prisma.MovieReleaseWhereInput = {
+      releaseDate,
+      status: ReleaseStatus.RELEASED,
+      OR: [
+        { countryCode: "KR" },
+        { countryCode: null, isPrimary: true },
+      ],
+    };
+
+    const where: Prisma.MovieWhereInput = {
+      AND: [
+        { OR: [{ runtime: null }, { runtime: { gt: 30 } }] },
+        {
+          titles: {
+            some: {
+              titleType: TitleType.PRIMARY,
+              languageCode: {
+                startsWith: "ko",
+              },
+            },
+          },
+        },
+      ],
+      releases: {
+        some: {
+          ...releasedReleaseWhere,
+        },
+      },
+    };
+
+    // 개봉일이 빠른 순서가 아니라 최근 개봉작부터 보여주기 위해
+    // 페이지를 자르기 전에 해당 기간의 가장 늦은 개봉일로 정렬함!!! 여기서 해야함!!
+    const movieIds = await this.prisma.$queryRaw<Array<{ id: string }>>(
+      Prisma.sql`
+        SELECT movie.id
+        FROM movies AS movie
+        WHERE (movie.runtime IS NULL OR movie.runtime > 30)
+          AND EXISTS (
+            SELECT 1
+            FROM movie_titles AS title
+            WHERE title."movieId" = movie.id
+              AND title."titleType" = 'PRIMARY'
+              AND title."languageCode" LIKE 'ko%'
+          )
+          AND EXISTS (
+            SELECT 1
+            FROM movie_releases AS release
+            WHERE release."movieId" = movie.id
+              AND release."releaseDate" >= ${filter.startDate}
+              AND release."releaseDate" < ${filter.endDate}
+              AND release.status = 'RELEASED'
+              AND (
+                release."countryCode" = 'KR'
+                OR (
+                  release."countryCode" IS NULL
+                  AND release."isPrimary" = true
+                )
+              )
+          )
+        ORDER BY (
+          SELECT MAX(release."releaseDate")
+          FROM movie_releases AS release
+          WHERE release."movieId" = movie.id
+            AND release."releaseDate" >= ${filter.startDate}
+            AND release."releaseDate" < ${filter.endDate}
+            AND release.status = 'RELEASED'
+            AND (
+              release."countryCode" = 'KR'
+              OR (
+                release."countryCode" IS NULL
+                AND release."isPrimary" = true
+              )
+            )
+          ) DESC, movie.id ASC
+        OFFSET ${(page - 1) * limit}
+        LIMIT ${limit}
+      `,
+    );
+
+    const [movies, totalCount] = await Promise.all([
+      this.prisma.movie.findMany({
+        where: {
+          id: {
+            in: movieIds.map(({ id }) => id),
+          },
+        },
+        include: {
+          ...movieSearchInclude,
+          releases: {
+            where: releasedReleaseWhere,
+            orderBy: [{ isPrimary: "desc" }, { releaseDate: "desc" }],
+            take: 1,
+          },
+        },
+      }),
+      this.prisma.movie.count({ where }),
+    ]);
+
+    const moviesById = new Map(movies.map((movie) => [movie.id, movie]));
+    const orderedMovies = movieIds.flatMap(({ id }) => {
+      const movie = moviesById.get(id);
+      return movie ? [movie] : [];
+    });
+
+    return {
+      movies: orderedMovies,
+      totalCount,
+    };
+  }
+
   async findMovieRankings(
     page: number,
     limit: number,

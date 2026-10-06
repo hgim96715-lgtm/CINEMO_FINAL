@@ -149,3 +149,28 @@ export async function getUpcomingMovies(
 
   return data;
 }
+
+export type ReleasedMoviesParams = {
+  yearMonth?: string;
+  page?: number;
+  limit?: number;
+};
+
+export async function getReleasedMovies(
+  params: ReleasedMoviesParams = {},
+  signal?: AbortSignal,
+): Promise<MovieSearchResponse> {
+  const { data } = await apiClient.get<MovieSearchResponse>(
+    "/movies/released",
+    {
+      params: {
+        yearMonth: params.yearMonth,
+        page: params.page ?? 1,
+        limit: params.limit ?? 10,
+      },
+      signal,
+    },
+  );
+
+  return data;
+}

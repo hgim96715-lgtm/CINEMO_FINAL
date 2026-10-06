@@ -1,5 +1,6 @@
 import { MovieHeroCarousel } from "@/components/lobby/MovieHeroCarousel";
 import { MovieRankingCarousel } from "@/components/lobby/MovieRankingCarousel";
+import { ReleasedMovieCarousel } from "@/components/lobby/ReleasedMovieCarousel";
 import { UpcomingMovieCarousel } from "@/components/lobby/UpcomingMovieCarousel";
 
 export default function LobbyPage() {
@@ -8,6 +9,7 @@ export default function LobbyPage() {
       <MovieHeroCarousel />
       <MovieRankingCarousel />
       <UpcomingMovieCarousel />
+      <ReleasedMovieCarousel />
     </main>
   );
 }

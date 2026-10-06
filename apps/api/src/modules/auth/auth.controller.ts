@@ -39,6 +39,7 @@ import { CheckNicknameRequestDto } from "./dto/requests/check-nickname.request.d
 import { CheckEmailRequestDto } from "./dto/requests/check-email.request.dto";
 import { AppleAuthService } from "./apple-auth.service";
 import { OauthSignupRequestDto } from "./dto/requests/oauth-signup.request.dto";
+import { OptionalAuth } from "./decorators/optional-auth.decorator";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -52,9 +53,10 @@ export class AuthController {
   ) {}
 
   @ApiCookieAuth("cinemo_session")
+  @OptionalAuth()
   @Get("me")
-  getMe(@CurrentUser() user: SessionUser) {
-    return user;
+  getMe(@Req() request: Request & { user?: SessionUser }) {
+    return request.user ?? null;
   }
 
   @Get("check-nickname")

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+} from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 
@@ -66,6 +70,53 @@ export class KobisService {
         },
       ),
     );
+
+    return {
+      totalCount: Number(data.movieListResult.totCnt),
+      results: data.movieListResult.movieList.map(
+        toKobisMovieSearchItemResponse,
+      ),
+    };
+  }
+
+  async searchMoviesByReleaseDate(
+    releaseStartYear: string,
+    releaseEndYear: string,
+    page = 1,
+    limit = 20,
+  ): Promise<KobisMovieSearchResponseDto> {
+    if (
+      !/^\d{4}$/.test(releaseStartYear) ||
+      !/^\d{4}$/.test(releaseEndYear)
+    ) {
+      throw new BadRequestException(
+        "KOBIS 개봉 연도는 YYYY 형식이어야 합니다.",
+      );
+    }
+
+    const { data } = await firstValueFrom(
+      this.httpService.get<KobisMovieListResponse>(
+        "/movie/searchMovieList.json",
+        {
+          params: {
+            openStartDt: releaseStartYear,
+            openEndDt: releaseEndYear,
+            curPage: page,
+            itemPerPage: limit,
+          },
+        },
+      ),
+    );
+
+    if (!data.movieListResult) {
+      const faultInfo = (
+        data as unknown as { faultInfo?: { message?: string } }
+      ).faultInfo;
+
+      throw new BadGatewayException(
+        faultInfo?.message ?? "KOBIS 영화 목록 응답이 올바르지 않습니다.",
+      );
+    }
 
     return {
       totalCount: Number(data.movieListResult.totCnt),

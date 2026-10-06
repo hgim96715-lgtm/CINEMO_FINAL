@@ -37,16 +37,6 @@ export class TmdbController {
     return this.tmdbService.searchMovies(query.query, query.page);
   }
 
-  @Get("movies/now-playing")
-  @ApiOperation({ summary: "현재 상영 중인 영화 조회" })
-  @ApiOkResponse({
-    type: TmdbMovieListResponseDto,
-  })
-  @Public()
-  getNowPlayingMovies(@Query() query: GetTmdbMovieListRequestDto) {
-    return this.tmdbService.getNowPlayingMovies(query.page);
-  }
-
   @Get("movies/upcoming")
   @ApiOperation({ summary: "개봉 예정 영화 조회" })
   @ApiOkResponse({

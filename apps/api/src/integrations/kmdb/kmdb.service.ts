@@ -32,26 +32,53 @@ export class KmdbService {
     return toKmdbMovieSearchResponseDto(data);
   }
 
-  async getMovieByDocId(
-    docId: string,
-    title: string,
-  ): Promise<KmdbMovieResult | null> {
+  async searchMovieResults(
+    query: string,
+    limit = 100,
+  ): Promise<KmdbMovieResult[]> {
     const { data } = await firstValueFrom(
       this.httpService.get<KmdbSearchResponse>("", {
         params: {
           collection: "kmdb_new2",
           detail: "Y",
-          title,
-          listCount: 100,
+          title: query,
+          listCount: limit,
           startCount: 0,
         },
       }),
     );
 
-    return (
-      data.Data?.flatMap((item) => item.Result ?? []).find(
-        (movie) => movie.DOCID === docId,
-      ) ?? null
+    return data.Data?.flatMap((item) => item.Result ?? []) ?? [];
+  }
+
+  async searchMovieResultsByReleaseDate(
+    releaseDts: string,
+    releaseDte: string,
+    limit = 100,
+  ): Promise<KmdbMovieResult[]> {
+    const { data } = await firstValueFrom(
+      this.httpService.get<KmdbSearchResponse>("", {
+        params: {
+          collection: "kmdb_new2",
+          detail: "Y",
+          releaseDts,
+          releaseDte,
+          sort: "RANK,1",
+          listCount: limit,
+          startCount: 0,
+        },
+      }),
     );
+
+    return data.Data?.flatMap((item) => item.Result ?? []) ?? [];
+  }
+
+  async getMovieByDocId(
+    docId: string,
+    title: string,
+  ): Promise<KmdbMovieResult | null> {
+    const results = await this.searchMovieResults(title);
+
+    return results.find((movie) => movie.DOCID === docId) ?? null;
   }
 }

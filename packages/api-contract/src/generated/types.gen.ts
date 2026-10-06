@@ -88,10 +88,6 @@ export type MovieSitemapResponseDto = {
     items: Array<MovieSitemapItemResponseDto>;
 };
 
-export type Object = {
-    [key: string]: unknown;
-};
-
 export type UserMovieRecordResponseDto = {
     /**
      * 영화 ID
@@ -1002,10 +998,6 @@ export type OauthSignupRequestDto = {
     terms: RegisterTermsDto;
 };
 
-export type ObjectWritable = {
-    [key: string]: unknown;
-};
-
 export type RegisterRequestDtoWritable = {
     /**
      * 로그인에 사용할 이메일
@@ -1169,8 +1161,8 @@ export type MoviesControllerGetUpcomingMoviesV1Data = {
          * 개봉 예정 월. YYYY-MM 형식
          */
         yearMonth?: string;
-        page?: ObjectWritable;
-        limit?: ObjectWritable;
+        page?: number;
+        limit?: number;
     };
     url: '/v1/movies/upcoming';
 };
@@ -1180,6 +1172,26 @@ export type MoviesControllerGetUpcomingMoviesV1Responses = {
 };
 
 export type MoviesControllerGetUpcomingMoviesV1Response = MoviesControllerGetUpcomingMoviesV1Responses[keyof MoviesControllerGetUpcomingMoviesV1Responses];
+
+export type MoviesControllerGetReleasedMoviesV1Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * 개봉 월. YYYY-MM 형식
+         */
+        yearMonth?: string;
+        page?: number;
+        limit?: number;
+    };
+    url: '/v1/movies/released';
+};
+
+export type MoviesControllerGetReleasedMoviesV1Responses = {
+    200: MovieSearchResponseDto;
+};
+
+export type MoviesControllerGetReleasedMoviesV1Response = MoviesControllerGetReleasedMoviesV1Responses[keyof MoviesControllerGetReleasedMoviesV1Responses];
 
 export type MoviesControllerGetMovieRecordV1Data = {
     body?: never;
@@ -1269,6 +1281,19 @@ export type MovieImportControllerImportDailyBoxOfficeV1Responses = {
 
 export type MovieImportControllerImportDailyBoxOfficeV1Response = MovieImportControllerImportDailyBoxOfficeV1Responses[keyof MovieImportControllerImportDailyBoxOfficeV1Responses];
 
+export type MovieImportControllerImportUpcomingFromKobisV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/movie-imports/kobis/upcoming';
+};
+
+export type MovieImportControllerImportUpcomingFromKobisV1Responses = {
+    200: Array<string>;
+};
+
+export type MovieImportControllerImportUpcomingFromKobisV1Response = MovieImportControllerImportUpcomingFromKobisV1Responses[keyof MovieImportControllerImportUpcomingFromKobisV1Responses];
+
 export type MovieImportControllerImportFromKobisV1Data = {
     body?: never;
     path: {
@@ -1311,19 +1336,6 @@ export type MovieImportControllerImportPopularFromTmdbV1Responses = {
 
 export type MovieImportControllerImportPopularFromTmdbV1Response = MovieImportControllerImportPopularFromTmdbV1Responses[keyof MovieImportControllerImportPopularFromTmdbV1Responses];
 
-export type MovieImportControllerImportNowPlayingFromTmdbV1Data = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/movie-imports/tmdb/now-playing';
-};
-
-export type MovieImportControllerImportNowPlayingFromTmdbV1Responses = {
-    200: Array<string>;
-};
-
-export type MovieImportControllerImportNowPlayingFromTmdbV1Response = MovieImportControllerImportNowPlayingFromTmdbV1Responses[keyof MovieImportControllerImportNowPlayingFromTmdbV1Responses];
-
 export type MovieImportControllerImportUpcomingFromTmdbV1Data = {
     body?: never;
     path?: never;
@@ -1355,6 +1367,31 @@ export type MovieImportControllerImportFromTmdbV1Responses = {
 
 export type MovieImportControllerImportFromTmdbV1Response = MovieImportControllerImportFromTmdbV1Responses[keyof MovieImportControllerImportFromTmdbV1Responses];
 
+export type MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Data = {
+    body?: never;
+    path: {
+        /**
+         * TMDB 외부 영화 식별자
+         */
+        tmdbMovieId: number;
+    };
+    query?: never;
+    url: '/v1/movie-imports/tmdb/{tmdbMovieId}/enrich/kmdb';
+};
+
+export type MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Errors = {
+    /**
+     * KMDb에서 일치하는 후보가 여러 개 발견되어 수동 확인이 필요함
+     */
+    409: unknown;
+};
+
+export type MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Responses = {
+    200: string;
+};
+
+export type MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Response = MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Responses[keyof MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Responses];
+
 export type MovieImportControllerSyncFromTmdbV1Data = {
     body?: never;
     path: {
@@ -1376,6 +1413,24 @@ export type MovieImportControllerSyncFromTmdbV1Responses = {
 };
 
 export type MovieImportControllerSyncFromTmdbV1Response = MovieImportControllerSyncFromTmdbV1Responses[keyof MovieImportControllerSyncFromTmdbV1Responses];
+
+export type MovieImportControllerEnrichFromKmdbAutomaticallyV1Data = {
+    body?: never;
+    path: {
+        /**
+         * CINEMO 내부 영화 UUID
+         */
+        movieId: string;
+    };
+    query?: never;
+    url: '/v1/movie-imports/{movieId}/enrich/kmdb';
+};
+
+export type MovieImportControllerEnrichFromKmdbAutomaticallyV1Responses = {
+    200: string;
+};
+
+export type MovieImportControllerEnrichFromKmdbAutomaticallyV1Response = MovieImportControllerEnrichFromKmdbAutomaticallyV1Responses[keyof MovieImportControllerEnrichFromKmdbAutomaticallyV1Responses];
 
 export type MovieImportControllerEnrichFromKmdbV1Data = {
     body?: never;
@@ -1535,24 +1590,6 @@ export type TmdbControllerSearchMoviesV1Responses = {
 };
 
 export type TmdbControllerSearchMoviesV1Response = TmdbControllerSearchMoviesV1Responses[keyof TmdbControllerSearchMoviesV1Responses];
-
-export type TmdbControllerGetNowPlayingMoviesV1Data = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * 조회할 페이지 번호
-         */
-        page?: number;
-    };
-    url: '/v1/tmdb/movies/now-playing';
-};
-
-export type TmdbControllerGetNowPlayingMoviesV1Responses = {
-    200: TmdbMovieListResponseDto;
-};
-
-export type TmdbControllerGetNowPlayingMoviesV1Response = TmdbControllerGetNowPlayingMoviesV1Responses[keyof TmdbControllerGetNowPlayingMoviesV1Responses];
 
 export type TmdbControllerGetUpcomingMoviesV1Data = {
     body?: never;

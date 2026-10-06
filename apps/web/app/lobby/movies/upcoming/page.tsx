@@ -55,12 +55,13 @@ export default function UpcomingMoviesPage() {
       yearMonth:
         filter !== "all" && filter !== "this-week" ? filter : undefined,
       page: 1,
-      limit: 24,
+      limit: 100,
     }),
   );
   const movies = [...(upcomingQuery.data?.items ?? [])].sort((a, b) =>
     (a.releaseDate ?? "9999").localeCompare(b.releaseDate ?? "9999"),
   );
+  const totalCount = upcomingQuery.data?.totalCount ?? 0;
 
   return (
     <main className="mx-auto w-full max-w-[120rem] px-4 pb-20 pt-8 sm:px-6 lg:px-10">
@@ -80,6 +81,12 @@ export default function UpcomingMoviesPage() {
         <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">
           개봉 예정작
         </h1>
+
+        {!upcomingQuery.isPending && !upcomingQuery.isError && (
+          <p className="mt-3 text-sm text-muted-foreground">
+            전체 {totalCount}편 중 {movies.length}편 표시 중
+          </p>
+        )}
       </div>
 
       <div className="mb-8 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
@@ -129,11 +136,11 @@ export default function UpcomingMoviesPage() {
         </p>
       ) : upcomingQuery.isError ? (
         <p className="py-20 text-center text-cinemo-red">
-          개봉 예정작을 불러오지 못했음
+          개봉 예정작을 불러오지 못했습니다.
         </p>
       ) : movies.length === 0 ? (
         <p className="py-20 text-center text-muted-foreground">
-          해당 조건의 개봉 예정작이 없음
+          해당 조건의 개봉 예정작이 없습니다.
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 lg:grid-cols-6">

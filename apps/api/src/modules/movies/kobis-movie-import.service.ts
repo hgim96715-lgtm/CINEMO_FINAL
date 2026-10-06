@@ -56,7 +56,10 @@ export class KobisMovieImportService {
 
     // 이미 실패한 이전 수집에서 KOBIS 링크가 임시 영화에 남아 있어서 같은영화가 있다는 에러
     // TMDB 연결 영화가 확인되면 그 영화를 기준으로 KOBIS 정보를 재연결로 수정
-    let movieId = preferredMovieId ?? linkedMovieId;
+    // 이미 KOBIS 코드가 연결된 영화가 있으면 기존 연결을 우선함.
+    // TMDB 제목 매칭을 먼저 사용하면 재개봉·개봉일 변경 시 다른 영화에
+    // KOBIS 정보를 덮어쓰거나 기존 영화의 개봉일이 갱신되지 않을 수 있음.
+    let movieId = linkedMovieId ?? preferredMovieId;
 
     if (!movieId) {
       const candidates = await this.movieMatcher.findCandidates(
