@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 
-import { getMovie } from "../../../lib/api/movies";
 import { MovieTrailerButton } from "@/components/movies/MovieTrailerButton";
 import { MovieRecordActions } from "@/components/movies/MovieRecordActions";
 import { MovieRecordSummary } from "@/components/movies/MovieRecordSummary";
 import { MovieNotificationButton } from "@/components/movies/MovieNotificationButton";
+import { getCachedMovie } from "@/lib/api/server-movies";
 
 type MoviePageProps = {
   params: Promise<{
@@ -14,7 +14,7 @@ type MoviePageProps = {
 
 export default async function MoviePage({ params }: MoviePageProps) {
   const { id } = await params;
-  const movie = await getMovie(id);
+  const movie = await getCachedMovie(id);
 
   if (!movie) {
     notFound();
@@ -131,12 +131,13 @@ export default async function MoviePage({ params }: MoviePageProps) {
       >
         <div className="absolute inset-0 bg-[#071619]/45" />
 
-        <div className="relative mx-auto flex min-h-[30rem] max-w-6xl items-end gap-10 px-6 py-16 md:min-h-170">
+        <div className="relative mx-auto flex min-h-120 max-w-6xl items-end gap-10 px-6 py-16 md:min-h-170">
           <div className="hidden w-64 shrink-0 overflow-hidden rounded-2xl bg-white/5 shadow-2xl md:block">
             {poster ? (
               <img
                 src={poster.url}
                 alt={`${primaryTitle?.title ?? "영화"} 포스터`}
+                loading="eager"
                 className="aspect-2/3 h-full w-full object-cover"
               />
             ) : (

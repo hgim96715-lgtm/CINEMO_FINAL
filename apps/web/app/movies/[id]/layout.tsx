@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { CINEMO_BRAND } from "@cinemo/shared";
 
-import { getMovie } from "../../../lib/api/movies";
+import { getCachedMovie } from "@/lib/api/server-movies";
 
 type MovieLayoutProps = {
   children: ReactNode;
@@ -16,7 +16,7 @@ export async function generateMetadata({
   params,
 }: MovieLayoutProps): Promise<Metadata> {
   const { id } = await params;
-  const movie = await getMovie(id);
+  const movie = await getCachedMovie(id);
 
   const primaryTitle =
     movie?.titles.find((item) => item.titleType === "PRIMARY") ??
