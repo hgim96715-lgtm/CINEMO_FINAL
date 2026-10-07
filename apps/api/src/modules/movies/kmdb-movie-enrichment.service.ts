@@ -221,8 +221,9 @@ export class KmdbMovieEnrichmentService {
     );
     const overview = getKmdbOverview(kmdbMovie);
 
-    return this.prisma.$transaction(async (tx) => {
-      await tx.movie.findUniqueOrThrow({
+    return this.prisma.$transaction(
+      async (tx) => {
+        await tx.movie.findUniqueOrThrow({
         where: { id: movieId },
       });
 
@@ -522,7 +523,12 @@ export class KmdbMovieEnrichmentService {
         });
       }
 
-      return movieId;
-    });
+        return movieId;
+      },
+      {
+        maxWait: 10_000,
+        timeout: 30_000,
+      },
+    );
   }
 }
