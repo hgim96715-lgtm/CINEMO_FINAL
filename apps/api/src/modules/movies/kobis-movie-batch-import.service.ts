@@ -34,18 +34,6 @@ const toTmdbDate = (value?: string | null): string | null => {
   return `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`;
 };
 
-const TMDB_RELEASE_MATCH_WINDOW_DAYS = 365;
-
-const normalizeMovieTitle = (value: string): string =>
-  value.trim().toLocaleLowerCase();
-
-const getDateDistanceInDays = (left: string, right: string): number =>
-  Math.abs(
-    (Date.parse(`${left}T00:00:00.000Z`) -
-      Date.parse(`${right}T00:00:00.000Z`)) /
-      86_400_000,
-  );
-
 @Injectable()
 export class KobisMovieBatchImportService {
   private readonly logger = new Logger(KobisMovieBatchImportService.name);
@@ -548,38 +536,33 @@ export class KobisMovieBatchImportService {
       return null;
     }
 
-    const normalizedTitle = normalizeMovieTitle(title);
+    const normalizedTitle = title.trim().toLocaleLowerCase();
     const tmdbReleaseDate = toTmdbDate(releaseDate);
-    const titleMatchedResults = response.results.filter(
-      (movie) => normalizeMovieTitle(movie.title) === normalizedTitle,
-    );
 
-    if (tmdbReleaseDate) {
-      const exactDateMatch = titleMatchedResults.find(
-        (movie) => movie.release_date === tmdbReleaseDate,
+    if (releaseDate) {
+      return (
+        response.results.find(
+          (movie) =>
+            movie.poster_path &&
+            tmdbReleaseDate &&
+            movie.release_date === tmdbReleaseDate,
+        ) ?? null
       );
-
-      if (exactDateMatch) {
-        return exactDateMatch;
-      }
-
-      const nearbyDateMatch = titleMatchedResults
-        .filter((movie) => movie.release_date)
-        .map((movie) => ({
-          movie,
-          distance: getDateDistanceInDays(
-            movie.release_date,
-            tmdbReleaseDate,
-          ),
-        }))
-        .filter(
-          ({ distance }) => distance <= TMDB_RELEASE_MATCH_WINDOW_DAYS,
-        )
-        .sort((left, right) => left.distance - right.distance)[0];
-
-      return nearbyDateMatch?.movie ?? null;
     }
 
-    return titleMatchedResults[0] ?? null;
+    return (
+      response.results.find(
+        (movie) =>
+          movie.poster_path &&
+          tmdbReleaseDate &&
+          movie.release_date === tmdbReleaseDate,
+      ) ??
+      response.results.find(
+        (movie) =>
+          movie.poster_path &&
+          movie.title.trim().toLocaleLowerCase() === normalizedTitle,
+      ) ??
+      null
+    );
   }
 }

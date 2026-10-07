@@ -10,7 +10,6 @@ import { GetKobisDailyBoxOfficeRequestDto } from "@/integrations/kobis/dto/reque
 import { Public } from "../auth/decorators/public.decorator";
 import { ImportKobisMoviesRequestDto } from "./dto/requests/import-kobis-movies.request.dto";
 import { ImportKobisReleasedMoviesRequestDto } from "./dto/requests/import-kobis-released-movies.request.dto";
-import { ImportTmdbPostersRequestDto } from "./dto/requests/import-tmdb-posters.request.dto";
 import { KobisMovieBatchImportService } from "./kobis-movie-batch-import.service";
 import { TmdbMovieBatchImportService } from "./tmdb-movie-batch-import.service";
 
@@ -84,12 +83,6 @@ export class MovieCatalogSyncController {
   @ApiOkResponse({ schema: { type: "array", items: { type: "string" } } })
   syncUpcomingMoviesFromTmdb() {
     return this.tmdbMovieBatchImportService.importUpcomingMovies(10);
-  }
-
-  @Post("tmdb/posters")
-  @ApiOperation({ summary: "TMDB 포스터 일괄 보강" })
-  syncMissingPosters(@Query() query: ImportTmdbPostersRequestDto) {
-    return this.tmdbMovieBatchImportService.syncMissingPosters(query.limit);
   }
 
   @Post("kobis/reconcile-releases")
