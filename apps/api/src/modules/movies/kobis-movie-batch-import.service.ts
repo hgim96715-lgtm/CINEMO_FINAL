@@ -111,10 +111,7 @@ export class KobisMovieBatchImportService {
         }
 
         try {
-          const tmdbMovie = await this.findTmdbMovie(
-            movie.title,
-            releaseDate,
-          );
+          const tmdbMovie = await this.findTmdbMovie(movie.title, releaseDate);
           const tmdbLinkedMovieId = tmdbMovie
             ? await this.moviesRepository.findMovieIdByProviderLink(
                 SourceProvider.TMDB,
@@ -138,7 +135,8 @@ export class KobisMovieBatchImportService {
 
           movieIds.add(movieId);
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
+          const message =
+            error instanceof Error ? error.message : String(error);
 
           this.logger.warn(
             `KOBIS 개봉 예정 영화 저장을 건너뜀: ${movie.movieCd} ${movie.title} - ${message}`,
@@ -206,10 +204,7 @@ export class KobisMovieBatchImportService {
         }
 
         try {
-          const tmdbMovie = await this.findTmdbMovie(
-            movie.title,
-            releaseDate,
-          );
+          const tmdbMovie = await this.findTmdbMovie(movie.title, releaseDate);
           const tmdbLinkedMovieId = tmdbMovie
             ? await this.moviesRepository.findMovieIdByProviderLink(
                 SourceProvider.TMDB,
@@ -259,10 +254,7 @@ export class KobisMovieBatchImportService {
     const boxOffice = await this.kobisService.getDailyBoxOffice(targetDt);
 
     for (const movie of boxOffice.results) {
-      const tmdbMovie = await this.findTmdbMovie(
-        movie.movieNm,
-        movie.openDt,
-      );
+      const tmdbMovie = await this.findTmdbMovie(movie.movieNm, movie.openDt);
 
       const tmdbLinkedMovieId = tmdbMovie
         ? await this.moviesRepository.findMovieIdByProviderLink(
@@ -275,11 +267,11 @@ export class KobisMovieBatchImportService {
 
       try {
         movieId = await this.kobisMovieImportService.importMovie(
-        movie.movieCd,
-        movie.movieNm,
-        tmdbLinkedMovieId ?? undefined,
-        { releaseDate: movie.openDt },
-      );
+          movie.movieCd,
+          movie.movieNm,
+          tmdbLinkedMovieId ?? undefined,
+          { releaseDate: movie.openDt },
+        );
       } catch (error) {
         if (error instanceof BadRequestException) {
           this.logger.warn(
@@ -382,7 +374,8 @@ export class KobisMovieBatchImportService {
     }>;
     failures: Array<{ movieId: string; message: string }>;
   }> {
-    const movies = await this.moviesRepository.findMoviesWithKobisAndTmdbLinks();
+    const movies =
+      await this.moviesRepository.findMoviesWithKobisAndTmdbLinks();
     const splitCandidates: Array<{
       movieId: string;
       kobisMovieCd: string;
@@ -476,7 +469,9 @@ export class KobisMovieBatchImportService {
       kobisMovieCd: string;
       tmdbMovieId: string;
     }>;
-    review: Awaited<ReturnType<KobisMovieBatchImportService["auditProviderCollisions"]>>["review"];
+    review: Awaited<
+      ReturnType<KobisMovieBatchImportService["auditProviderCollisions"]>
+    >["review"];
     failures: Array<{ movieId: string; message: string }>;
   }> {
     const audit = await this.auditProviderCollisions();
@@ -521,10 +516,7 @@ export class KobisMovieBatchImportService {
     };
   }
 
-  private async findTmdbMovie(
-    title: string,
-    releaseDate?: string | null,
-  ) {
+  private async findTmdbMovie(title: string, releaseDate?: string | null) {
     let response;
 
     try {
@@ -536,33 +528,55 @@ export class KobisMovieBatchImportService {
       return null;
     }
 
-    const normalizedTitle = title.trim().toLocaleLowerCase();
+    const normalizeTitle = (value: string) =>
+      value
+        .trim()
+        .toLocaleLowerCase()
+        .normalize("NFKC")
+        .replace(/[^\p{L}\p{N}]+/gu, "");
+
+    const normalizedTitle = normalizeTitle(title);
     const tmdbReleaseDate = toTmdbDate(releaseDate);
 
-    if (releaseDate) {
+    const titleMatches = response.results.filter((movie) => {
+      const movieTitle = normalizeTitle(movie.title);
+      const originalTitle = normalizeTitle(movie.original_title);
+
       return (
-        response.results.find(
-          (movie) =>
-            movie.poster_path &&
-            tmdbReleaseDate &&
-            movie.release_date === tmdbReleaseDate,
-        ) ?? null
+        movie.poster_path &&
+        (movieTitle === normalizedTitle || originalTitle === normalizedTitle)
       );
+    });
+
+    if (titleMatches.length === 0) {
+      return null;
     }
 
-    return (
-      response.results.find(
-        (movie) =>
-          movie.poster_path &&
-          tmdbReleaseDate &&
-          movie.release_date === tmdbReleaseDate,
-      ) ??
-      response.results.find(
-        (movie) =>
-          movie.poster_path &&
-          movie.title.trim().toLocaleLowerCase() === normalizedTitle,
-      ) ??
-      null
-    );
+    if (tmdbReleaseDate) {
+      const exactDateMatch = titleMatches.find(
+        (movie) => movie.release_date === tmdbReleaseDate,
+      );
+
+      if (exactDateMatch) {
+        return exactDateMatch;
+      }
+
+      const targetTime = Date.parse(`${tmdbReleaseDate}T00:00:00.000Z`);
+
+      const nearbyMatch = titleMatches
+        .filter((movie) => movie.release_date)
+        .map((movie) => ({
+          movie,
+          distance: Math.abs(
+            Date.parse(`${movie.release_date}T00:00:00.000Z`) - targetTime,
+          ),
+        }))
+        .filter(({ distance }) => distance <= 365 * 24 * 60 * 60 * 1000)
+        .sort((a, b) => a.distance - b.distance)[0];
+
+      return nearbyMatch?.movie ?? null;
+    }
+
+    return titleMatches[0] ?? null;
   }
 }
