@@ -24,6 +24,13 @@ type UpcomingDateRange = {
 
 const CINEMO_TIME_ZONE = "Asia/Seoul";
 
+const normalizeMovieTitle = (title: string): string =>
+  title
+    .trim()
+    .toLocaleLowerCase()
+    .normalize("NFKC")
+    .replace(/[^\p{L}\p{N}]+/gu, "");
+
 const getTodayInCinemoTimeZone = (): Date => {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: CINEMO_TIME_ZONE,
@@ -124,6 +131,49 @@ const getReleasedDateRange = (
 @Injectable()
 export class MoviesService {
   constructor(private readonly movieRepository: MoviesRepository) {}
+
+  async getDuplicateMovieCandidates() {
+    const movies = await this.movieRepository.findMoviesForDuplicateAudit();
+    const groups = new Map<string, typeof movies>();
+
+    for (const movie of movies) {
+      const title = movie.titles[0]?.title;
+      if (!title) {
+        continue;
+      }
+
+      const primaryRelease =
+        movie.releases.find((release) => release.isPrimary) ??
+        movie.releases[0];
+      const releaseYear = primaryRelease?.releaseDate
+        ? primaryRelease.releaseDate.getUTCFullYear()
+        : null;
+
+      // 제목이 같아도 개봉연도가 다르면 원작·리메이크일 수 있으므로
+      // 자동 중복 후보로 묶지 않음.
+      if (releaseYear === null) {
+        continue;
+      }
+
+      const key = `${normalizeMovieTitle(title)}:${releaseYear}`;
+      const group = groups.get(key) ?? [];
+      group.push(movie);
+      groups.set(key, group);
+    }
+
+    return [...groups.entries()]
+      .filter(([, moviesInGroup]) => moviesInGroup.length > 1)
+      .map(([key, moviesInGroup]) => {
+        const [normalizedTitle, releaseYear] = key.split(":");
+
+        return {
+          normalizedTitle,
+          releaseYear: Number(releaseYear),
+          reason: "동일 제목·동일 최초 개봉연도",
+          movies: moviesInGroup,
+        };
+      });
+  }
 
   async findById(movieId: string): Promise<MovieResponseDto> {
     const movie = await this.movieRepository.findById(movieId);

@@ -11,7 +11,6 @@ import { KmdbMovieSearchResponseDto } from "./dto/responses/kmdb-movie-search.re
 import { KmdbService } from "./kmdb.service";
 
 @ApiTags("KMDb")
-@ApiCookieAuth("cinemo_session")
 @Controller("kmdb")
 export class KmdbController {
   constructor(private readonly kmdbService: KmdbService) {}

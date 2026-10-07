@@ -187,48 +187,56 @@ export class MoviesRepository {
         publicMovieWhere,
         {
           OR: [
-        {
-          titles: {
-            some: {
-              title: {
-                contains: query,
-                mode: "insensitive",
-              },
-            },
-          },
-        },
-        {
-          movieGenres: {
-            some: {
-              name: {
-                contains: query,
-                mode: "insensitive",
-              },
-            },
-          },
-        },
-        {
-          movieCredits: {
-            some: {
-              person: {
-                OR: [
-                  {
-                    name: {
-                      contains: query,
-                      mode: "insensitive",
-                    },
+            {
+              titles: {
+                some: {
+                  titleType: {
+                    in: [
+                      TitleType.PRIMARY,
+                      TitleType.ALIAS,
+                      TitleType.ORIGINAL,
+                      TitleType.RERELEASE,
+                    ],
                   },
-                  {
-                    nameEn: {
-                      contains: query,
-                      mode: "insensitive",
-                    },
+                  title: {
+                    contains: query.trim(),
+                    mode: "insensitive",
                   },
-                ],
+                },
               },
             },
-          },
-        },
+            {
+              movieGenres: {
+                some: {
+                  name: {
+                    contains: query,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            },
+            {
+              movieCredits: {
+                some: {
+                  person: {
+                    OR: [
+                      {
+                        name: {
+                          contains: query,
+                          mode: "insensitive",
+                        },
+                      },
+                      {
+                        nameEn: {
+                          contains: query,
+                          mode: "insensitive",
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
           ],
         },
       ],
@@ -511,64 +519,144 @@ export class MoviesRepository {
     });
   }
 
+  async findApprovedProviderLinksForMovie(movieId: string) {
+    return this.prisma.movieProviderLink.findMany({
+      where: {
+        movieId,
+        matchStatus: MatchStatus.APPROVED,
+        sourceProvider: {
+          in: [SourceProvider.KOBIS, SourceProvider.TMDB],
+        },
+      },
+      select: {
+        sourceProvider: true,
+        externalId: true,
+      },
+    });
+  }
+
+  async findMoviesForDuplicateAudit() {
+    return this.prisma.movie.findMany({
+      select: {
+        id: true,
+        createdAt: true,
+        updatedAt: true,
+        titles: {
+          where: { titleType: TitleType.PRIMARY },
+          select: {
+            title: true,
+            languageCode: true,
+          },
+        },
+        releases: {
+          select: {
+            releaseDate: true,
+            releaseType: true,
+            countryCode: true,
+            isPrimary: true,
+          },
+          orderBy: [{ isPrimary: "desc" }, { releaseDate: "asc" }],
+        },
+        providerLinks: {
+          where: { matchStatus: MatchStatus.APPROVED },
+          select: {
+            sourceProvider: true,
+            externalId: true,
+          },
+        },
+        _count: {
+          select: {
+            media: true,
+            userMovieRecords: true,
+            userMovieNotifications: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+  }
+
   async splitTmdbLinkToNewMovie(
     movieId: string,
     tmdbExternalId: string,
   ): Promise<string> {
-    return this.prisma.$transaction(async (tx) => {
-      const newMovie = await tx.movie.create({
-        data: {},
-        select: { id: true },
-      });
-
-      const nonKoreanReleases = await tx.movieRelease.findMany({
-        where: {
-          movieId,
-          countryCode: null,
-        },
-        select: { id: true },
-      });
-      const releaseIds = nonKoreanReleases.map((release) => release.id);
-
-      if (releaseIds.length > 0) {
-        await tx.movieRelease.updateMany({
-          where: { id: { in: releaseIds } },
-          data: { movieId: newMovie.id },
+    return this.prisma.$transaction(
+      async (tx) => {
+        const newMovie = await tx.movie.create({
+          data: {},
+          select: { id: true },
         });
-        await tx.movieTitle.updateMany({
+
+        // 기존 Movie는 KOBIS 기준의 한국 리메이크로 남기고,
+        // TMDB 원작 데이터는 새 Movie로 분리함.
+        await tx.movie.update({
+          where: { id: movieId },
+          data: {
+            overview: null,
+            tmdbVoteAverage: null,
+            tmdbVoteCount: null,
+            productionCountryCodes: [],
+          },
+        });
+        await tx.movieCredit.deleteMany({ where: { movieId } });
+        await tx.movieGenre.deleteMany({ where: { movieId } });
+        await tx.movieTitle.deleteMany({
           where: {
             movieId,
-            releaseId: { in: releaseIds },
+            titleType: TitleType.ORIGINAL,
+          },
+        });
+
+        const nonKoreanReleases = await tx.movieRelease.findMany({
+          where: {
+            movieId,
+            countryCode: null,
+          },
+          select: { id: true },
+        });
+        const releaseIds = nonKoreanReleases.map((release) => release.id);
+
+        if (releaseIds.length > 0) {
+          await tx.movieRelease.updateMany({
+            where: { id: { in: releaseIds } },
+            data: { movieId: newMovie.id },
+          });
+          await tx.movieTitle.updateMany({
+            where: {
+              movieId,
+              releaseId: { in: releaseIds },
+            },
+            data: { movieId: newMovie.id },
+          });
+        }
+
+        await tx.movieMedia.updateMany({
+          where: {
+            movieId,
+            sourceProvider: {
+              in: [SourceProvider.TMDB, SourceProvider.YOUTUBE],
+            },
           },
           data: { movieId: newMovie.id },
         });
-      }
 
-      await tx.movieMedia.updateMany({
-        where: {
-          movieId,
-          sourceProvider: {
-            in: [SourceProvider.TMDB, SourceProvider.YOUTUBE],
+        await tx.movieProviderLink.update({
+          where: {
+            sourceProvider_externalId: {
+              sourceProvider: SourceProvider.TMDB,
+              externalId: tmdbExternalId,
+            },
           },
-        },
-        data: { movieId: newMovie.id },
-      });
+          data: { movieId: newMovie.id },
+        });
 
-      await tx.movieProviderLink.update({
-        where: {
-          sourceProvider_externalId: {
-            sourceProvider: SourceProvider.TMDB,
-            externalId: tmdbExternalId,
-          },
-        },
-        data: { movieId: newMovie.id },
-      });
-
-      return newMovie.id;
-    }, {
-      maxWait: 10_000,
-      timeout: 30_000,
-    });
+        return newMovie.id;
+      },
+      {
+        maxWait: 10_000,
+        timeout: 30_000,
+      },
+    );
   }
 
   async createMovieRoot(): Promise<string> {
@@ -586,255 +674,259 @@ export class MoviesRepository {
     movieId: string,
     input: KobisMovieImportInput,
   ): Promise<string> {
-    return this.prisma.$transaction(async (tx) => {
-      const movie = await tx.movie.findUniqueOrThrow({
-        where: { id: movieId },
-      });
-
-      // 관리자가 검토한 영화는 이후 재수집에서 자동 분류로 덮어쓰지 않음.
-      if (!movie.reviewedAt) {
-        await tx.movie.update({
-          where: { id: movie.id },
-          data: {
-            visibility: input.visibility,
-            moderationReason: input.moderationReason,
-          },
+    return this.prisma.$transaction(
+      async (tx) => {
+        const movie = await tx.movie.findUniqueOrThrow({
+          where: { id: movieId },
         });
-      }
-      if (input.productionCountryCodes.length > 0) {
-        const productionCountryCodes = [
-          ...new Set([
-            ...movie.productionCountryCodes,
-            ...input.productionCountryCodes,
-          ]),
-        ];
-        await tx.movie.update({
-          where: { id: movie.id },
-          data: {
-            productionCountryCodes,
-          },
-        });
-      }
 
-      if (input.runningTime !== null && input.runningTime > 0) {
-        await tx.movie.update({
-          where: { id: movie.id },
-          data: { runtime: input.runningTime },
-        });
-      }
-
-      const releaseStatus = input.releaseDate
-        ? input.releaseDate.getTime() > Date.now()
-          ? ReleaseStatus.SCHEDULED
-          : ReleaseStatus.RELEASED
-        : ReleaseStatus.ANNOUNCED;
-
-      const initialRelease = await tx.movieRelease.findFirst({
-        where: {
-          movieId: movie.id,
-          releaseType: ReleaseType.INITIAL,
-          countryCode: "KR",
-        },
-      });
-      const matchingRelease = input.releaseDate
-        ? await tx.movieRelease.findFirst({
-            where: {
-              movieId: movie.id,
-              countryCode: "KR",
-              releaseDate: input.releaseDate,
+        // 관리자가 검토한 영화는 이후 재수집에서 자동 분류로 덮어쓰지 않음.
+        if (!movie.reviewedAt) {
+          await tx.movie.update({
+            where: { id: movie.id },
+            data: {
+              visibility: input.visibility,
+              moderationReason: input.moderationReason,
             },
-          })
-        : null;
-      const release =
-        matchingRelease ??
-        (initialRelease
-          ? !initialRelease.releaseDate ||
-            !input.releaseDate ||
-            initialRelease.releaseDate.getTime() === input.releaseDate.getTime()
-            ? initialRelease
+          });
+        }
+        if (input.productionCountryCodes.length > 0) {
+          const productionCountryCodes = [
+            ...new Set([
+              ...movie.productionCountryCodes,
+              ...input.productionCountryCodes,
+            ]),
+          ];
+          await tx.movie.update({
+            where: { id: movie.id },
+            data: {
+              productionCountryCodes,
+            },
+          });
+        }
+
+        if (input.runningTime !== null && input.runningTime > 0) {
+          await tx.movie.update({
+            where: { id: movie.id },
+            data: { runtime: input.runningTime },
+          });
+        }
+
+        const releaseStatus = input.releaseDate
+          ? input.releaseDate.getTime() > Date.now()
+            ? ReleaseStatus.SCHEDULED
+            : ReleaseStatus.RELEASED
+          : ReleaseStatus.ANNOUNCED;
+
+        const initialRelease = await tx.movieRelease.findFirst({
+          where: {
+            movieId: movie.id,
+            releaseType: ReleaseType.INITIAL,
+            countryCode: "KR",
+          },
+        });
+        const matchingRelease = input.releaseDate
+          ? await tx.movieRelease.findFirst({
+              where: {
+                movieId: movie.id,
+                countryCode: "KR",
+                releaseDate: input.releaseDate,
+              },
+            })
+          : null;
+        const release =
+          matchingRelease ??
+          (initialRelease
+            ? !initialRelease.releaseDate ||
+              !input.releaseDate ||
+              initialRelease.releaseDate.getTime() ===
+                input.releaseDate.getTime()
+              ? initialRelease
+              : await tx.movieRelease.create({
+                  data: {
+                    movieId: movie.id,
+                    releaseDate: input.releaseDate,
+                    releaseType: ReleaseType.RERELEASE,
+                    status: releaseStatus,
+                    countryCode: "KR",
+                    isPrimary: true,
+                  },
+                })
             : await tx.movieRelease.create({
                 data: {
                   movieId: movie.id,
                   releaseDate: input.releaseDate,
-                  releaseType: ReleaseType.RERELEASE,
+                  releaseType: ReleaseType.INITIAL,
                   status: releaseStatus,
                   countryCode: "KR",
                   isPrimary: true,
                 },
-              })
-          : await tx.movieRelease.create({
-              data: {
-                movieId: movie.id,
-                releaseDate: input.releaseDate,
-                releaseType: ReleaseType.INITIAL,
-                status: releaseStatus,
-                countryCode: "KR",
-                isPrimary: true,
-              },
-            }));
+              }));
 
-      await tx.movieRelease.updateMany({
-        where: {
-          movieId: movie.id,
-          id: { not: release.id },
-        },
-        data: {
-          isPrimary: false,
-        },
-      });
-
-      await tx.movieRelease.update({
-        where: { id: release.id },
-        data: {
-          releaseDate: input.releaseDate,
-          status: releaseStatus,
-          countryCode: "KR",
-          isPrimary: true,
-        },
-      });
-
-      await tx.movieProviderLink.upsert({
-        where: {
-          sourceProvider_externalId: {
-            sourceProvider: SourceProvider.KOBIS,
-            externalId: input.movieCd,
-          },
-        },
-        create: {
-          movieId: movie.id,
-          sourceProvider: SourceProvider.KOBIS,
-          externalId: input.movieCd,
-          matchMethod: MatchMethod.AUTO,
-          matchStatus: MatchStatus.APPROVED,
-          confidence: new Prisma.Decimal("1.0000"),
-          verifiedAt: new Date(),
-        },
-        update: {
-          movieId: movie.id,
-          matchStatus: MatchStatus.APPROVED,
-          confidence: new Prisma.Decimal("1.0000"),
-          verifiedAt: new Date(),
-        },
-      });
-
-      const primaryTitle = await tx.movieTitle.findFirst({
-        where: {
-          movieId: movie.id,
-          titleType: TitleType.PRIMARY,
-        },
-      });
-
-      if (primaryTitle) {
-        await tx.movieTitle.update({
-          where: { id: primaryTitle.id },
-          data: {
-            title: input.title,
-            releaseId: release.id,
-            languageCode: "ko",
-          },
-        });
-      } else {
-        await tx.movieTitle.create({
-          data: {
-            movieId: movie.id,
-            releaseId: release.id,
-            title: input.title,
-            titleType: TitleType.PRIMARY,
-            languageCode: "ko",
-          },
-        });
-      }
-
-      for (const [index, genreName] of input.genres.entries()) {
-        await tx.movieGenre.upsert({
+        await tx.movieRelease.updateMany({
           where: {
-            movieId_name: {
-              movieId: movie.id,
-              name: genreName,
+            movieId: movie.id,
+            id: { not: release.id },
+          },
+          data: {
+            isPrimary: false,
+          },
+        });
+
+        await tx.movieRelease.update({
+          where: { id: release.id },
+          data: {
+            releaseDate: input.releaseDate,
+            status: releaseStatus,
+            countryCode: "KR",
+            isPrimary: true,
+          },
+        });
+
+        await tx.movieProviderLink.upsert({
+          where: {
+            sourceProvider_externalId: {
+              sourceProvider: SourceProvider.KOBIS,
+              externalId: input.movieCd,
             },
           },
           create: {
             movieId: movie.id,
-            name: genreName,
-            code: `KOBIS_${index + 1}`,
+            sourceProvider: SourceProvider.KOBIS,
+            externalId: input.movieCd,
+            matchMethod: MatchMethod.AUTO,
+            matchStatus: MatchStatus.APPROVED,
+            confidence: new Prisma.Decimal("1.0000"),
+            verifiedAt: new Date(),
           },
           update: {
-            code: `KOBIS_${index + 1}`,
+            movieId: movie.id,
+            matchStatus: MatchStatus.APPROVED,
+            confidence: new Prisma.Decimal("1.0000"),
+            verifiedAt: new Date(),
           },
         });
-      }
 
-      const certifications = [
-        ...new Set(
-          input.certifications
-            .map((certification) => certification.trim())
-            .filter(Boolean),
-        ),
-      ];
-
-      await tx.movieCertification.deleteMany({
-        where: {
-          movieId: movie.id,
-          sourceProvider: SourceProvider.KOBIS,
-        },
-      });
-
-      if (certifications.length > 0) {
-        await tx.movieCertification.createMany({
-          data: certifications.map((watchGradeName, index) => ({
-            movieId: movie.id,
-            auditNo: `${input.movieCd}:${index}`,
-            watchGradeName,
-            sourceProvider: SourceProvider.KOBIS,
-            verifiedAt: new Date(),
-          })),
-        });
-      }
-
-      const credits = [
-        ...input.directors.map((person) => ({
-          ...person,
-          creditType: CreditType.DIRECTOR,
-        })),
-        ...input.actors.map((person) => ({
-          ...person,
-          creditType: CreditType.ACTOR,
-        })),
-      ];
-
-      for (const [index, credit] of credits.entries()) {
-        const person = await this.moviePersonService.resolve(tx, {
-          name: credit.name,
-          nameEn: credit.nameEn,
-          movieId: movie.id,
-          creditType: credit.creditType,
-        });
-
-        await tx.movieCredit.upsert({
+        const primaryTitle = await tx.movieTitle.findFirst({
           where: {
-            movieId_personId_creditType: {
+            movieId: movie.id,
+            titleType: TitleType.PRIMARY,
+          },
+        });
+
+        if (primaryTitle) {
+          await tx.movieTitle.update({
+            where: { id: primaryTitle.id },
+            data: {
+              title: input.title,
+              releaseId: release.id,
+              languageCode: "ko",
+            },
+          });
+        } else {
+          await tx.movieTitle.create({
+            data: {
+              movieId: movie.id,
+              releaseId: release.id,
+              title: input.title,
+              titleType: TitleType.PRIMARY,
+              languageCode: "ko",
+            },
+          });
+        }
+
+        for (const [index, genreName] of input.genres.entries()) {
+          await tx.movieGenre.upsert({
+            where: {
+              movieId_name: {
+                movieId: movie.id,
+                name: genreName,
+              },
+            },
+            create: {
+              movieId: movie.id,
+              name: genreName,
+              code: `KOBIS_${index + 1}`,
+            },
+            update: {
+              code: `KOBIS_${index + 1}`,
+            },
+          });
+        }
+
+        const certifications = [
+          ...new Set(
+            input.certifications
+              .map((certification) => certification.trim())
+              .filter(Boolean),
+          ),
+        ];
+
+        await tx.movieCertification.deleteMany({
+          where: {
+            movieId: movie.id,
+            sourceProvider: SourceProvider.KOBIS,
+          },
+        });
+
+        if (certifications.length > 0) {
+          await tx.movieCertification.createMany({
+            data: certifications.map((watchGradeName, index) => ({
+              movieId: movie.id,
+              auditNo: `${input.movieCd}:${index}`,
+              watchGradeName,
+              sourceProvider: SourceProvider.KOBIS,
+              verifiedAt: new Date(),
+            })),
+          });
+        }
+
+        const credits = [
+          ...input.directors.map((person) => ({
+            ...person,
+            creditType: CreditType.DIRECTOR,
+          })),
+          ...input.actors.map((person) => ({
+            ...person,
+            creditType: CreditType.ACTOR,
+          })),
+        ];
+
+        for (const [index, credit] of credits.entries()) {
+          const person = await this.moviePersonService.resolve(tx, {
+            name: credit.name,
+            nameEn: credit.nameEn,
+            movieId: movie.id,
+            creditType: credit.creditType,
+          });
+
+          await tx.movieCredit.upsert({
+            where: {
+              movieId_personId_creditType: {
+                movieId: movie.id,
+                personId: person.id,
+                creditType: credit.creditType,
+              },
+            },
+            create: {
               movieId: movie.id,
               personId: person.id,
               creditType: credit.creditType,
+              displayOrder: index,
             },
-          },
-          create: {
-            movieId: movie.id,
-            personId: person.id,
-            creditType: credit.creditType,
-            displayOrder: index,
-          },
-          update: {
-            displayOrder: index,
-          },
-        });
-      }
+            update: {
+              displayOrder: index,
+            },
+          });
+        }
 
-      return movie.id;
-    }, {
-      maxWait: 10_000,
-      timeout: 30_000,
-    });
+        return movie.id;
+      },
+      {
+        maxWait: 10_000,
+        timeout: 30_000,
+      },
+    );
   }
 
   async findPopularMovies(
@@ -976,10 +1068,7 @@ export class MoviesRepository {
     const [movies, totalCount] = await Promise.all([
       this.prisma.movie.findMany({
         where: {
-          AND: [
-            publicMovieWhere,
-            { id: { in: movieIds.map(({ id }) => id) } },
-          ],
+          AND: [publicMovieWhere, { id: { in: movieIds.map(({ id }) => id) } }],
         },
         include: movieSearchInclude,
       }),
@@ -1016,10 +1105,7 @@ export class MoviesRepository {
     const releasedReleaseWhere: Prisma.MovieReleaseWhereInput = {
       releaseDate,
       status: ReleaseStatus.RELEASED,
-      OR: [
-        { countryCode: "KR" },
-        { countryCode: null, isPrimary: true },
-      ],
+      OR: [{ countryCode: "KR" }, { countryCode: null, isPrimary: true }],
     };
 
     const where: Prisma.MovieWhereInput = {
@@ -1097,10 +1183,7 @@ export class MoviesRepository {
     const [movies, totalCount] = await Promise.all([
       this.prisma.movie.findMany({
         where: {
-          AND: [
-            publicMovieWhere,
-            { id: { in: movieIds.map(({ id }) => id) } },
-          ],
+          AND: [publicMovieWhere, { id: { in: movieIds.map(({ id }) => id) } }],
         },
         include: {
           ...movieSearchInclude,

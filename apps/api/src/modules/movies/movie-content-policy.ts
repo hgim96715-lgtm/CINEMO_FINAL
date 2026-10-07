@@ -1,3 +1,5 @@
+import { MovieVisibility } from "@prisma/client";
+
 const EXPLICIT_TITLE_MARKERS = [
   "체액",
   "섹스",
@@ -49,7 +51,9 @@ const isAdultCertification = (certifications: string[] = []): boolean =>
 const isRomanceGenre = (genres: string[] = []): boolean =>
   genres.some((genre) => {
     const normalizedGenre = normalize(genre);
-    return normalizedGenre.includes("멜로") || normalizedGenre.includes("로맨스");
+    return (
+      normalizedGenre.includes("멜로") || normalizedGenre.includes("로맨스")
+    );
   });
 
 export const getKobisMovieVisibility = (input: {
@@ -58,7 +62,10 @@ export const getKobisMovieVisibility = (input: {
   genres?: string[];
   certifications?: string[];
 }): { visibility: MovieVisibility; moderationReason: string | null } => {
-  if (isAdultCertification(input.certifications) && isRomanceGenre(input.genres)) {
+  if (
+    isAdultCertification(input.certifications) &&
+    isRomanceGenre(input.genres)
+  ) {
     return {
       visibility: MovieVisibility.HIDDEN,
       moderationReason: "자동 분류: 19금 멜로/로맨스",
@@ -77,4 +84,3 @@ export const getKobisMovieVisibility = (input: {
     moderationReason: null,
   };
 };
-import { MovieVisibility } from "@prisma/client";

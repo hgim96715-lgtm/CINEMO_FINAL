@@ -493,18 +493,14 @@ export class KobisMovieBatchImportService {
 
     for (const candidate of audit.splitCandidates) {
       try {
-        const newMovieId = await this.moviesRepository.splitTmdbLinkToNewMovie(
+        const result = await this.splitProviderCollision(
           candidate.movieId,
           candidate.tmdbMovieId,
+          candidate.kobisMovieCd,
         );
-        await this.tmdbMovieSyncService.syncMovieFromTmdb(
-          newMovieId,
-          Number(candidate.tmdbMovieId),
-        );
-        await this.kobisMovieImportService.importMovie(candidate.kobisMovieCd);
         split.push({
           oldMovieId: candidate.movieId,
-          newMovieId,
+          newMovieId: result.newMovieId,
           kobisMovieCd: candidate.kobisMovieCd,
           tmdbMovieId: candidate.tmdbMovieId,
         });
@@ -521,6 +517,54 @@ export class KobisMovieBatchImportService {
       split,
       review: audit.review,
       failures,
+    };
+  }
+
+  async splitProviderCollision(
+    movieId: string,
+    tmdbMovieId: string,
+    kobisMovieCd?: string,
+  ): Promise<{
+    oldMovieId: string;
+    newMovieId: string;
+    kobisMovieCd: string;
+    tmdbMovieId: string;
+  }> {
+    const links = await this.moviesRepository.findApprovedProviderLinksForMovie(
+      movieId,
+    );
+    const kobisLink = links.find(
+      (link) => link.sourceProvider === SourceProvider.KOBIS,
+    );
+    const tmdbLink = links.find(
+      (link) =>
+        link.sourceProvider === SourceProvider.TMDB &&
+        link.externalId === tmdbMovieId,
+    );
+
+    if (!kobisLink || !tmdbLink) {
+      throw new BadRequestException(
+        "같은 영화에 승인된 KOBIS·TMDB 연결이 모두 있어야 분리할 수 있습니다.",
+      );
+    }
+
+    const newMovieId = await this.moviesRepository.splitTmdbLinkToNewMovie(
+      movieId,
+      tmdbMovieId,
+    );
+    await this.tmdbMovieSyncService.syncMovieFromTmdb(
+      newMovieId,
+      Number(tmdbMovieId),
+    );
+    await this.kobisMovieImportService.importMovie(
+      kobisMovieCd ?? kobisLink.externalId,
+    );
+
+    return {
+      oldMovieId: movieId,
+      newMovieId,
+      kobisMovieCd: kobisMovieCd ?? kobisLink.externalId,
+      tmdbMovieId,
     };
   }
 
@@ -569,10 +613,9 @@ export class KobisMovieBatchImportService {
       ? titleMatches.filter((movie) => {
           const tmdbYear = movie.release_date?.slice(0, 4);
 
-          return (
-            tmdbYear !== undefined &&
-            Math.abs(Number(tmdbYear) - Number(normalizedProductionYear)) <= 1
-          );
+          // 제목이 같은 리메이크·원작을 잘못 연결하지 않도록
+          // KOBIS 제작연도와 TMDB 개봉연도가 정확히 같은 후보만 자동 매칭함.
+          return tmdbYear === normalizedProductionYear;
         })
       : titleMatches;
 

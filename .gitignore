@@ -45,3 +45,5 @@ apps/api/skills-lock.json
 # Workspace metadata must stay at the repository root
 apps/*/pnpm-lock.yaml
 apps/*/pnpm-workspace.yaml
+.vercel
+.env*

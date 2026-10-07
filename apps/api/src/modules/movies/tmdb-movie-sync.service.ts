@@ -20,6 +20,8 @@ import { MoviePersonService } from "./movie-person.service";
 const TMDB_ACTOR_LIMIT = 10;
 
 const hasKoreanName = (name: string): boolean => /[가-힣]/.test(name);
+const normalizeTitle = (title: string): string =>
+  title.trim().replace(/\s+/g, " ").toLocaleLowerCase();
 
 @Injectable()
 export class TmdbMovieSyncService {
@@ -171,7 +173,18 @@ export class TmdbMovieSyncService {
           title: tmdbMovie.original_title,
         },
       });
-      if (!originalTitle && tmdbMovie.original_title) {
+
+      const hasSamePrimaryTitle =
+        !!primaryTitle &&
+        !!tmdbMovie.original_title &&
+        normalizeTitle(primaryTitle.title) ===
+          normalizeTitle(tmdbMovie.original_title);
+
+      if (originalTitle && hasSamePrimaryTitle) {
+        await tx.movieTitle.delete({
+          where: { id: originalTitle.id },
+        });
+      } else if (!originalTitle && tmdbMovie.original_title && !hasSamePrimaryTitle) {
         await tx.movieTitle.create({
           data: {
             movieId,

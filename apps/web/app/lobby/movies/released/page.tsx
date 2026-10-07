@@ -134,6 +134,16 @@ export default function ReleasedMoviesPage() {
                     포스터 준비중
                   </div>
                 )}
+
+                {movie.isAdultOnly && (
+                  <span
+                    aria-label="청소년관람불가"
+                    title="청소년관람불가"
+                    className="absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-md border-2 border-red-300/70 bg-red-500/55 text-base font-black leading-none text-red-50 shadow-[0_0_10px_rgba(239,68,68,0.14)] backdrop-blur-sm"
+                  >
+                    <span className="relative top-px">19</span>
+                  </span>
+                )}
               </div>
 
               <h2 className="mt-3 truncate text-sm font-medium text-foreground">
