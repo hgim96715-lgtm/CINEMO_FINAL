@@ -12,6 +12,7 @@ async function bootstrap() {
   const logger = new Logger("Bootstrap");
 
   app.use(cookieParser());
+  app.getHttpAdapter().getInstance().set("trust proxy", 1);
 
   const configService = app.get(ConfigService);
   const port = configService.getOrThrow<number>("app.port");
