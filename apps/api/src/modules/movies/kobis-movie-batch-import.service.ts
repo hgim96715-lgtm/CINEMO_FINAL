@@ -111,7 +111,11 @@ export class KobisMovieBatchImportService {
         }
 
         try {
-          const tmdbMovie = await this.findTmdbMovie(movie.title, releaseDate);
+          const tmdbMovie = await this.findTmdbMovie(
+            movie.title,
+            releaseDate,
+            movie.productionYear,
+          );
           const tmdbLinkedMovieId = tmdbMovie
             ? await this.moviesRepository.findMovieIdByProviderLink(
                 SourceProvider.TMDB,
@@ -204,7 +208,11 @@ export class KobisMovieBatchImportService {
         }
 
         try {
-          const tmdbMovie = await this.findTmdbMovie(movie.title, releaseDate);
+          const tmdbMovie = await this.findTmdbMovie(
+            movie.title,
+            releaseDate,
+            movie.productionYear,
+          );
           const tmdbLinkedMovieId = tmdbMovie
             ? await this.moviesRepository.findMovieIdByProviderLink(
                 SourceProvider.TMDB,
@@ -516,7 +524,11 @@ export class KobisMovieBatchImportService {
     };
   }
 
-  private async findTmdbMovie(title: string, releaseDate?: string | null) {
+  private async findTmdbMovie(
+    title: string,
+    releaseDate?: string | null,
+    productionYear?: string | null,
+  ) {
     let response;
 
     try {
@@ -537,6 +549,7 @@ export class KobisMovieBatchImportService {
 
     const normalizedTitle = normalizeTitle(title);
     const tmdbReleaseDate = toTmdbDate(releaseDate);
+    const normalizedProductionYear = productionYear?.trim();
 
     const titleMatches = response.results.filter((movie) => {
       const movieTitle = normalizeTitle(movie.title);
@@ -552,8 +565,23 @@ export class KobisMovieBatchImportService {
       return null;
     }
 
+    const yearMatchedTitles = normalizedProductionYear
+      ? titleMatches.filter((movie) => {
+          const tmdbYear = movie.release_date?.slice(0, 4);
+
+          return (
+            tmdbYear !== undefined &&
+            Math.abs(Number(tmdbYear) - Number(normalizedProductionYear)) <= 1
+          );
+        })
+      : titleMatches;
+
+    if (yearMatchedTitles.length === 0) {
+      return null;
+    }
+
     if (tmdbReleaseDate) {
-      const exactDateMatch = titleMatches.find(
+      const exactDateMatch = yearMatchedTitles.find(
         (movie) => movie.release_date === tmdbReleaseDate,
       );
 
@@ -563,7 +591,7 @@ export class KobisMovieBatchImportService {
 
       const targetTime = Date.parse(`${tmdbReleaseDate}T00:00:00.000Z`);
 
-      const nearbyMatch = titleMatches
+      const nearbyMatch = yearMatchedTitles
         .filter((movie) => movie.release_date)
         .map((movie) => ({
           movie,
