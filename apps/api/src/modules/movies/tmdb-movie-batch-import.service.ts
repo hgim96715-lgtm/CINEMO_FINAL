@@ -5,6 +5,7 @@ import {
   TmdbService,
   TmdbUpcomingMovieDateRange,
 } from "@/integrations/tmdb/tmdb.service";
+import { KobisService } from "@/integrations/kobis/kobis.service";
 
 import { toCreateMovieFromTmdbInput } from "./mappers/tmdb-movie-import.mapper";
 import { MoviesRepository } from "./repositories/movies.repository";
@@ -12,11 +13,26 @@ import { MovieMatcherService } from "./movie-matcher.service";
 import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
 
 const TMDB_SYNC_CONCURRENCY = 3;
+const TMDB_RELEASE_MATCH_WINDOW_DAYS = 365;
+const TMDB_RUNTIME_MATCH_WINDOW_MINUTES = 10;
+
+const normalizeMovieTitle = (value: string): string =>
+  value
+    .trim()
+    .toLocaleLowerCase()
+    .normalize("NFKC")
+    .replace(/[^\p{L}\p{N}]+/gu, "");
+
+const getDateDistanceInDays = (left: string, right: Date): number =>
+  Math.abs(
+    (Date.parse(`${left}T00:00:00.000Z`) - right.getTime()) / 86_400_000,
+  );
 
 @Injectable()
 export class TmdbMovieBatchImportService {
   constructor(
     private readonly tmdbService: TmdbService,
+    private readonly kobisService: KobisService,
     private readonly moviesRepository: MoviesRepository,
     private readonly movieMatcher: MovieMatcherService,
     private readonly tmdbMovieSyncService: TmdbMovieSyncService,
@@ -110,6 +126,69 @@ export class TmdbMovieBatchImportService {
     return results;
   }
 
+  private async findTmdbMovieForExistingMovie(
+    searchTitles: string[],
+    releaseDates: Date[],
+    runtime: number | null,
+  ) {
+    for (const searchTitle of searchTitles) {
+      const response = await this.tmdbService.searchMovies(searchTitle, 1);
+      const normalizedTitle = normalizeMovieTitle(searchTitle);
+      const titleMatches = response.results.filter(
+        (movie) =>
+          normalizeMovieTitle(movie.title) === normalizedTitle ||
+          normalizeMovieTitle(movie.original_title) === normalizedTitle,
+      );
+
+      const exactDateMatch = titleMatches.find((movie) =>
+        releaseDates.some(
+          (releaseDate) =>
+            movie.release_date &&
+            getDateDistanceInDays(movie.release_date, releaseDate) === 0,
+        ),
+      );
+
+      if (exactDateMatch) {
+        return exactDateMatch;
+      }
+
+      const dateCandidates =
+        titleMatches.length > 0 ? titleMatches : response.results;
+      const nearbyDateMatches = dateCandidates
+        .flatMap((movie) =>
+          releaseDates.map((releaseDate) => ({
+            movie,
+            distance: movie.release_date
+              ? getDateDistanceInDays(movie.release_date, releaseDate)
+              : Number.POSITIVE_INFINITY,
+          })),
+        )
+        .filter(({ distance }) => distance <= TMDB_RELEASE_MATCH_WINDOW_DAYS)
+        .sort((left, right) => left.distance - right.distance);
+
+      const nearbyDateMatch = nearbyDateMatches[0];
+
+      if (nearbyDateMatch && nearbyDateMatches.length === 1) {
+        return nearbyDateMatch.movie;
+      }
+
+      if (titleMatches.length !== 1 || runtime === null) {
+        continue;
+      }
+
+      const detail = await this.tmdbService.getMovieDetail(titleMatches[0].id);
+
+      if (
+        detail.runtime !== null &&
+        Math.abs(detail.runtime - runtime) <= TMDB_RUNTIME_MATCH_WINDOW_MINUTES
+      ) {
+        return detail;
+      }
+    }
+
+    return null;
+  }
+
   async importPopularMovies(pageCount = 2): Promise<string[]> {
     const movieIds = new Set<string>();
     const collectedAt = new Date();
@@ -179,6 +258,7 @@ export class TmdbMovieBatchImportService {
   async syncMissingPosters(limit = 100) {
     const movies = await this.moviesRepository.findMoviesMissingPosters(limit);
     const updated: Array<{ movieId: string; title: string }> = [];
+    const linked: Array<{ movieId: string; title: string }> = [];
     const skipped: Array<{
       movieId: string;
       title: string;
@@ -187,7 +267,8 @@ export class TmdbMovieBatchImportService {
     const review: Array<{
       movieId: string;
       title: string;
-      reason: "TMDB_LINK_NOT_FOUND";
+      reason: "TMDB_MOVIE_NOT_FOUND" | "TMDB_LINK_CONFLICT";
+      existingMovieId?: string;
     }> = [];
     const failures: Array<{
       movieId: string;
@@ -197,21 +278,57 @@ export class TmdbMovieBatchImportService {
 
     await this.mapWithConcurrency(movies, async (movie) => {
       const title = movie.titles[0]?.title ?? "제목 없음";
-      const tmdbMovieId = movie.providerLinks[0]?.externalId;
-
-      if (!tmdbMovieId) {
-        review.push({
-          movieId: movie.id,
-          title,
-          reason: "TMDB_LINK_NOT_FOUND",
-        });
-        return movie.id;
-      }
 
       try {
-        const tmdbMovie = await this.tmdbService.getMovieDetail(
-          Number(tmdbMovieId),
-        );
+        const existingTmdbMovieId = movie.providerLinks[0]?.externalId;
+        const kobisMovieId = movie.providerLinks.find(
+          (link) => link.sourceProvider === SourceProvider.KOBIS,
+        )?.externalId;
+        const kobisMovie = kobisMovieId
+          ? await this.kobisService.getMovieInfo(kobisMovieId)
+          : null;
+        const searchTitles = [
+          title,
+          kobisMovie?.foreignTitle,
+          kobisMovie?.originalTitle,
+        ].filter((value): value is string => Boolean(value?.trim()));
+        const tmdbMovie = existingTmdbMovieId
+          ? await this.tmdbService.getMovieDetail(Number(existingTmdbMovieId))
+          : await this.findTmdbMovieForExistingMovie(
+              [...new Set(searchTitles)],
+              movie.releases
+                .map((release) => release.releaseDate)
+                .filter((releaseDate): releaseDate is Date => Boolean(releaseDate)),
+              movie.runtime,
+            );
+
+        if (!tmdbMovie) {
+          review.push({
+            movieId: movie.id,
+            title,
+            reason: "TMDB_MOVIE_NOT_FOUND",
+          });
+          return movie.id;
+        }
+
+        if (!existingTmdbMovieId) {
+          const linkResult = await this.moviesRepository.ensureTmdbProviderLink(
+            movie.id,
+            tmdbMovie.id,
+          );
+
+          if (!linkResult.linked) {
+            review.push({
+              movieId: movie.id,
+              title,
+              reason: "TMDB_LINK_CONFLICT",
+              existingMovieId: linkResult.existingMovieId,
+            });
+            return movie.id;
+          }
+
+          linked.push({ movieId: movie.id, title });
+        }
 
         if (!tmdbMovie.poster_path) {
           skipped.push({
@@ -240,6 +357,7 @@ export class TmdbMovieBatchImportService {
 
     return {
       inspected: movies.length,
+      linked: linked.length,
       updated: updated.length,
       skipped,
       review,

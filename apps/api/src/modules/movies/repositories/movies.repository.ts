@@ -532,16 +532,76 @@ export class MoviesRepository {
           take: 1,
           select: { title: true },
         },
+        runtime: true,
+        releases: {
+          select: { releaseDate: true },
+          orderBy: [{ isPrimary: "desc" }, { releaseDate: "desc" }],
+        },
         providerLinks: {
           where: {
-            sourceProvider: SourceProvider.TMDB,
+            sourceProvider: {
+              in: [SourceProvider.KOBIS, SourceProvider.TMDB],
+            },
             matchStatus: MatchStatus.APPROVED,
           },
           take: 1,
-          select: { externalId: true },
+          select: {
+            sourceProvider: true,
+            externalId: true,
+          },
         },
       },
     });
+  }
+
+  async ensureTmdbProviderLink(
+    movieId: string,
+    tmdbMovieId: number,
+  ): Promise<{ linked: boolean; existingMovieId?: string }> {
+    const externalId = String(tmdbMovieId);
+    const existingLink = await this.prisma.movieProviderLink.findUnique({
+      where: {
+        sourceProvider_externalId: {
+          sourceProvider: SourceProvider.TMDB,
+          externalId,
+        },
+      },
+      select: { movieId: true },
+    });
+
+    if (existingLink && existingLink.movieId !== movieId) {
+      return {
+        linked: false,
+        existingMovieId: existingLink.movieId,
+      };
+    }
+
+    await this.prisma.movieProviderLink.upsert({
+      where: {
+        sourceProvider_externalId: {
+          sourceProvider: SourceProvider.TMDB,
+          externalId,
+        },
+      },
+      create: {
+        movieId,
+        sourceProvider: SourceProvider.TMDB,
+        externalId,
+        matchMethod: MatchMethod.AUTO,
+        matchStatus: MatchStatus.APPROVED,
+        confidence: new Prisma.Decimal("1.0000"),
+        verifiedAt: new Date(),
+      },
+      update: {
+        movieId,
+        matchMethod: MatchMethod.AUTO,
+        matchStatus: MatchStatus.APPROVED,
+        confidence: new Prisma.Decimal("1.0000"),
+        verifiedAt: new Date(),
+      },
+    });
+
+    return { linked: true };
   }
 
   async upsertTmdbPoster(
