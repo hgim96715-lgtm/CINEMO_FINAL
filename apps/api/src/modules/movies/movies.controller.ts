@@ -272,7 +272,7 @@ export class MoviesController {
   @Public()
   @Throttle({
     default: {
-      limit: 60,
+      limit: 300,
       ttl: 60_000,
     },
   })
