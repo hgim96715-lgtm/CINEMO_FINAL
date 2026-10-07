@@ -18,17 +18,6 @@ export const getCurrentYearAndMonth = () => {
   };
 };
 
-export const getReleasedCutoffYearMonth = () => {
-  const { year, month } = getCurrentYearAndMonth();
-  const cutoffMonth = month - 2;
-
-  if (cutoffMonth < 1) {
-    return null;
-  }
-
-  return `${year}-${String(cutoffMonth).padStart(2, "0")}`;
-};
-
 const hash = (value: string) => {
   let result = 2166136261;
 

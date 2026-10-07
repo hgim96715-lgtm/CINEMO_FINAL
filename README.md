@@ -23,19 +23,23 @@ CINEMO 아이콘은 둥근 `C` 안쪽으로 한 아이가 걸어 들어가는 �
 
 CINEMO의 기본 색상은 어두운 블루 그린 배경에 골드 포인트를 조합한 구성.
 
-| 토큰 | 색상 | 용도 |
-| --- | --- | --- |
-| `cinemo-bg` | `#0B181B` | 홈·상세 페이지 기본 배경 |
-| `cinemo-bg-deep` | `#081113` | 헤더 스크롤 상태·어두운 오버레이 |
-| `cinemo-surface` | `rgb(255 255 255 / 5%)` | 카드·콘텐츠 영역의 반투명 글래스 배경 |
-| `cinemo-teal` | `#176B68` | 블루 그린 포인트·버튼 배경 |
-| `cinemo-teal-deep` | `#0F514F` | 버튼 active 상태 |
-| `cinemo-teal-light` | `#9AD8D1` | 아이콘·보조 강조 색상 |
-| `cinemo-gold` | `#C6A15B` | 대표 포인트·제목·테두리·링크 |
-| `cinemo-gold-light` | `#D4B56A` | hover 상태·밝은 골드 강조 |
-| `cinemo-text` | `#F3EFE6` | 기본 텍스트 |
-| `cinemo-muted` | `#B0B8B4` | 설명·보조 텍스트 |
-| `cinemo-placeholder` | `#8FB8B3` | 빈 상태·placeholder 텍스트 |
+
+| 토큰                   | 색상                      | 용도                    |
+| -------------------- | ----------------------- | --------------------- |
+| `cinemo-bg`          | `#0B181B`               | 홈·상세 페이지 기본 배경        |
+| `cinemo-bg-deep`     | `#081113`               | 헤더 스크롤 상태·어두운 오버레이    |
+| `cinemo-surface`     | `rgb(255 255 255 / 5%)` | 카드·콘텐츠 영역의 반투명 글래스 배경 |
+| `cinemo-teal`        | `#176B68`               | 블루 그린 포인트·버튼 배경       |
+| `cinemo-teal-deep`   | `#0F514F`               | 버튼 active 상태          |
+| `cinemo-teal-light`  | `#9AD8D1`               | 아이콘·보조 강조 색상          |
+| `cinemo-gold`        | `#C6A15B`               | 대표 포인트·제목·테두리·링크      |
+| `cinemo-gold-light`  | `#D4B56A`               | hover 상태·밝은 골드 강조     |
+| `cinemo-text`        | `#F3EFE6`               | 기본 텍스트                |
+| `cinemo-muted`       | `#B0B8B4`               | 설명·보조 텍스트             |
+| `cinemo-placeholder` | `#8FB8B3`               | 빈 상태·placeholder 텍스트  |
+
+
+
 
 ### 사용 규칙
 
@@ -45,6 +49,8 @@ CINEMO의 기본 색상은 어두운 블루 그린 배경에 골드 포인트를
 - 주요 버튼은 알약 형태보다 `rounded-lg` 기반의 직사각형 형태 우선.
 - 콘텐츠 영역은 불투명한 박스보다 `cinemo-surface`와 `backdrop-blur` 조합 우선.
 - 전역 CSS 변수와 Tailwind 토큰의 기준 파일은 `apps/web/app/globals.css`.
+
+
 
 ## 외부 API
 
@@ -105,12 +111,26 @@ Try it out으로 요청·응답 확인
 - OpenAPI JSON은 `packages/api-contract`의 OpenAPI Codegen 입력으로 사용.
 - Web은 `http://localhost:3051`에서 확인.
 
+## 실행 환경
+
+- Web 로컬: `http://localhost:3051`
+- API 로컬: `http://localhost:3050`
+- Web 배포: Vercel
+- API 배포: Google Cloud Run
+- Database: Neon PostgreSQL
+
+
 
 ## 배포 주소
 
 ```text
 https://www.cinemo.site
 ```
+
+## 이메일 발송
+
+`CINEMO <hello@cinemo.site>`
+
 
 
 ## Mobile App Identifier
@@ -124,3 +144,17 @@ https://www.cinemo.site
 | Android Package   | `site.cinemo.app`         |
 | Custom URL Scheme | `cinemo`                  |
 | Web Domain        | `https://www.cinemo.site` |
+
+
+
+
+## Web Identifier
+
+Sign in with Apple 웹 인증에 사용하는 Services ID. 모바일 App ID와 구분해서 관리하며, 기존 Sign in with Apple Primary App ID와 연결
+
+
+| 구분                   | 값                                |
+| -------------------- | -------------------------------- |
+| Services ID          | `com.cinemo.web`                 |
+| 환경변수                 | `APPLE_CLIENT_ID=com.cinemo.web` |
+| 연결 대상 Primary App ID | `site.cinemo.app`                |

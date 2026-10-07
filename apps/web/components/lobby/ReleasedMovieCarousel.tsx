@@ -12,7 +12,6 @@ import {
 } from "@/lib/queries/movie-search.query";
 import {
   getCurrentYearAndMonth,
-  getReleasedCutoffYearMonth,
   formatReleasedDate,
   sortMoviesForToday,
 } from "@/lib/released-movies";
@@ -35,12 +34,6 @@ export function ReleasedMovieCarousel() {
   const movies = useMemo(() => {
     const { year } = getCurrentYearAndMonth();
 
-    const cutoffYearMonth = getReleasedCutoffYearMonth();
-
-    if (!cutoffYearMonth) {
-      return [];
-    }
-
     const rankedMovieIds = new Set(
       rankingQuery.data?.items.map((movie) => movie.id) ?? [],
     );
@@ -48,11 +41,8 @@ export function ReleasedMovieCarousel() {
     const candidates = (releasedQuery.data?.items ?? []).filter((movie) => {
       if (!movie.releaseDate) return false;
 
-      const releaseYearMonth = movie.releaseDate.slice(0, 7);
-
       return (
-        releaseYearMonth.startsWith(`${year}-`) &&
-        releaseYearMonth <= cutoffYearMonth &&
+        movie.releaseDate.startsWith(`${year}-`) &&
         !rankedMovieIds.has(movie.id)
       );
     });

@@ -1,0 +1,17 @@
+**/.env
+**/.env.*
+!**/.env.example
+
+node_modules
+dist
+build
+.next
+.expo
+.git
+.gitignore
+Dockerfile*
+docker-compose*.yml
+docker-compose*.yaml
+*.log
+coverage
+docs

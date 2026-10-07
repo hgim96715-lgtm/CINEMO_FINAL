@@ -10,20 +10,15 @@ import { releasedMoviesQueryOptions } from "@/lib/queries/movie-search.query";
 import {
   formatReleasedDate,
   getCurrentYearAndMonth,
-  getReleasedCutoffYearMonth,
   sortMoviesForToday,
 } from "@/lib/released-movies";
 
 type FilterValue = "all" | string;
 
 const getMonthOptions = () => {
-  const { year } = getCurrentYearAndMonth();
-  const cutoffYearMonth = getReleasedCutoffYearMonth();
-  const cutoffMonth = cutoffYearMonth
-    ? Number(cutoffYearMonth.slice(5, 7))
-    : 0;
+  const { year, month } = getCurrentYearAndMonth();
 
-  return Array.from({ length: cutoffMonth }, (_, index) => {
+  return Array.from({ length: month }, (_, index) => {
     const monthNumber = index + 1;
     const value = `${year}-${String(monthNumber).padStart(2, "0")}`;
 
@@ -47,19 +42,13 @@ export default function ReleasedMoviesPage() {
     }),
   );
 
-  const cutoffYearMonth = getReleasedCutoffYearMonth();
-
   const movies = sortMoviesForToday(
     (releasedQuery.data?.items ?? []).filter((movie) => {
       if (filter !== "all") {
         return true;
       }
 
-      return Boolean(
-        cutoffYearMonth &&
-          movie.releaseDate &&
-          movie.releaseDate.slice(0, 7) <= cutoffYearMonth,
-      );
+      return Boolean(movie.releaseDate);
     }),
   );
 

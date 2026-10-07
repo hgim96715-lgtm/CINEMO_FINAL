@@ -10,6 +10,7 @@ export default defineConfig({
   },
 
   datasource: {
-    url: env("DATABASE_URL"),
+    // Prisma CLI 마이그레이션은 Neon direct connection 사용
+    url: env("DIRECT_URL"),
   },
 });

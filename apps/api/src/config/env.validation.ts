@@ -6,6 +6,9 @@ export const envValidationSchema = Joi.object({
   [EnvKeys.DATABASE_URL]: Joi.string()
     .uri({ scheme: ["postgresql", "postgres"] })
     .required(),
+  [EnvKeys.DIRECT_URL]: Joi.string().uri({
+    scheme: ["postgresql", "postgres"],
+  }),
 
   [EnvKeys.API_PORT]: Joi.number().port().default(3050),
 

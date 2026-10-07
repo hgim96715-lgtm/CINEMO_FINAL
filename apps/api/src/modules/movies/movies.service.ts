@@ -112,15 +112,10 @@ const getReleasedDateRange = (
   }
 
   const startDate = new Date(Date.UTC(today.getUTCFullYear(), 0, 1));
-  // 현재 월과 지난달은 개봉일 데이터가 아직 변동될 수 있으므로
-  // 두 달 전까지의 영화만 올해 개봉작으로 확정해서 조회함.
-  const cutoffDate = new Date(
-    Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1),
-  );
-
   return {
     startDate,
-    endDate: cutoffDate > startDate ? cutoffDate : startDate,
+    // 오늘 개봉작까지 포함하고, 미래 날짜는 제외함.
+    endDate: tomorrow,
   };
 };
 
