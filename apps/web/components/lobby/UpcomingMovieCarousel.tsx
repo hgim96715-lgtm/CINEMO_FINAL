@@ -1,10 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Bell, CalendarDays, Heart } from "lucide-react";
+import { ArrowRight, CalendarDays } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { UpcomingMovieActions } from "@/components/lobby/UpcomingMovieActions";
 import { upcomingMoviesQueryOptions } from "@/lib/queries/movie-search.query";
 
 const CINEMO_TIME_ZONE = "Asia/Seoul";
@@ -102,23 +103,7 @@ export function UpcomingMovieCarousel() {
                   )}
                 </Link>
 
-                <div className="absolute right-2 top-2 z-10 flex gap-1.5">
-                  <button
-                    type="button"
-                    aria-label="찜하기"
-                    className="inline-flex size-8 items-center justify-center rounded-full border border-white/20 bg-cinemo-bg/70 text-white/80 backdrop-blur-md transition hover:border-cinemo-gold/60 hover:text-cinemo-gold-light"
-                  >
-                    <Heart className="size-4" />
-                  </button>
-
-                  <button
-                    type="button"
-                    aria-label="개봉 알림 신청"
-                    className="inline-flex size-8 items-center justify-center rounded-full border border-white/20 bg-cinemo-bg/70 text-white/80 backdrop-blur-md transition hover:border-cinemo-gold/60 hover:text-cinemo-gold-light"
-                  >
-                    <Bell className="size-4" />
-                  </button>
-                </div>
+                <UpcomingMovieActions movieId={movie.id} />
               </div>
 
               <Link href={`/movies/${movie.id}`} className="block">

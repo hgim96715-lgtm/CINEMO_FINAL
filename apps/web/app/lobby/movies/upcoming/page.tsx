@@ -6,6 +6,7 @@ import { ArrowLeft, CalendarDays } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { UpcomingMovieActions } from "@/components/lobby/UpcomingMovieActions";
 import { upcomingMoviesQueryOptions } from "@/lib/queries/movie-search.query";
 
 type FilterValue = "all" | "this-week" | string;
@@ -145,36 +146,44 @@ export default function UpcomingMoviesPage() {
       ) : (
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 lg:grid-cols-6">
           {movies.map((movie) => (
-            <Link
+            <article
               key={movie.id}
-              href={`/movies/${movie.id}`}
               className="group block"
             >
               <div className="relative aspect-2/3 overflow-hidden rounded-2xl bg-card">
-                {movie.posterUrl ? (
-                  <Image
-                    src={movie.posterUrl}
-                    alt={`${movie.title} 포스터`}
-                    fill
-                    sizes="(min-width: 1024px) 180px, (min-width: 640px)  twenty-twovw, 45vw"
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                    포스터 준비중
-                  </div>
-                )}
+                <Link
+                  href={`/movies/${movie.id}`}
+                  aria-label={`${movie.title} 상세 보기`}
+                >
+                  {movie.posterUrl ? (
+                    <Image
+                      src={movie.posterUrl}
+                      alt={`${movie.title} 포스터`}
+                      fill
+                      sizes="(min-width: 1024px) 180px, (min-width: 640px) 22vw, 45vw"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                      포스터 준비중
+                    </div>
+                  )}
+                </Link>
+
+                <UpcomingMovieActions movieId={movie.id} />
               </div>
 
-              <h2 className="mt-3 truncate text-sm font-medium text-foreground">
-                {movie.title}
-              </h2>
+              <Link href={`/movies/${movie.id}`} className="block">
+                <h2 className="mt-3 truncate text-sm font-medium text-foreground">
+                  {movie.title}
+                </h2>
 
-              <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                <CalendarDays className="size-3.5" />
-                {formatReleaseDate(movie.releaseDate)}
-              </p>
-            </Link>
+                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                  <CalendarDays className="size-3.5" />
+                  {formatReleaseDate(movie.releaseDate)}
+                </p>
+              </Link>
+            </article>
           ))}
         </div>
       )}

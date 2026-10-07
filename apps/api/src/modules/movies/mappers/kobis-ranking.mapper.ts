@@ -2,7 +2,7 @@ import { SourceProvider } from "@prisma/client";
 
 import type { KobisDailyBoxOfficeItemResponseDto } from "@/integrations/kobis/dto/responses/kobis-daily-box-office.response.dto";
 
-import type { SaveMovieRankingSnapshotInput } from "../movies.repository";
+import type { SaveMovieRankingSnapshotInput } from "../repositories/movies.repository";
 
 function parseKobisNumber(value?: string | null): number | null {
   if (!value?.trim()) return null;

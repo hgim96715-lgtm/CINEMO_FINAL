@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 
 import { getMovie } from "../../../lib/api/movies";
-import { Bell } from "lucide-react";
 import { MovieTrailerButton } from "@/components/movies/MovieTrailerButton";
 import { MovieRecordActions } from "@/components/movies/MovieRecordActions";
-import { MovieWatchedDate } from "@/components/movies/MovieWatchedDate";
+import { MovieRecordSummary } from "@/components/movies/MovieRecordSummary";
+import { MovieNotificationButton } from "@/components/movies/MovieNotificationButton";
 
 type MoviePageProps = {
   params: Promise<{
@@ -131,7 +131,7 @@ export default async function MoviePage({ params }: MoviePageProps) {
       >
         <div className="absolute inset-0 bg-[#071619]/45" />
 
-        <div className="relative mx-auto flex min-h-170 max-w-6xl items-end gap-10 px-6 py-16">
+        <div className="relative mx-auto flex min-h-[30rem] max-w-6xl items-end gap-10 px-6 py-16 md:min-h-170">
           <div className="hidden w-64 shrink-0 overflow-hidden rounded-2xl bg-white/5 shadow-2xl md:block">
             {poster ? (
               <img
@@ -182,7 +182,7 @@ export default async function MoviePage({ params }: MoviePageProps) {
               </p>
             )}
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap gap-2 sm:gap-3">
               <MovieTrailerButton
                 title={primaryTitle?.title ?? "영화"}
                 trailer={trailer}
@@ -190,23 +190,16 @@ export default async function MoviePage({ params }: MoviePageProps) {
 
               <MovieRecordActions movieId={id} />
 
-              {isUpcoming && (
-                <button
-                  type="button"
-                  className="group inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 font-semibold text-cinemo-muted backdrop-blur transition hover:border-cinemo-gold/40 hover:text-cinemo-gold-light"
-                >
-                  <Bell className="size-4 transition group-hover:scale-110" />
-                  알림
-                </button>
-              )}
+              {isUpcoming && <MovieNotificationButton movieId={id} />}
             </div>
+
+            <MovieRecordSummary movieId={id} />
           </div>
         </div>
       </section>
 
       <section className="mx-auto grid max-w-6xl gap-12 px-6 py-12 md:grid-cols-[1fr_280px]">
         <div>
-          <MovieWatchedDate movieId={id} />
           <h2 className="text-2xl font-bold">영화 소개</h2>
 
           {movie.overview ? (

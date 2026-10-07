@@ -9,7 +9,7 @@ import { KobisService } from "@/integrations/kobis/kobis.service";
 
 import { toKobisMovieImportInput } from "./mappers/kobis-movie-import.mapper";
 import { MovieMatcherService } from "./movie-matcher.service";
-import { MoviesRepository } from "./movies.repository";
+import { MoviesRepository } from "./repositories/movies.repository";
 
 @Injectable()
 export class KobisMovieImportService {

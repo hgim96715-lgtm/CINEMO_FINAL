@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Query } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Query,
+  Post,
+} from "@nestjs/common";
 import {
   ApiConflictResponse,
   ApiCookieAuth,
@@ -24,6 +33,7 @@ import { UserMovieRecordResponseDto } from "./dto/responses/user-movie-record.re
 import type { SessionUser } from "../auth/types/session-user.type";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { GetReleasedMoviesRequestDto } from "./dto/requests/get-released-movies.request.dto";
+import { UserMovieNotificationService } from "./user-movie-notification.service";
 
 @ApiTags("Movies")
 @Controller("movies")
@@ -31,6 +41,7 @@ export class MoviesController {
   constructor(
     private readonly moviesService: MoviesService,
     private readonly userMovieRecordService: UserMovieRecordService,
+    private readonly userMovieNotificationService: UserMovieNotificationService,
   ) {}
 
   @ApiConflictResponse({
@@ -169,6 +180,66 @@ export class MoviesController {
     @CurrentUser() user: SessionUser,
   ) {
     return this.userMovieRecordService.findByUserAndMovie(
+      user.id,
+      params.movieId,
+    );
+  }
+
+  @ApiCookieAuth("cinemo_session")
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
+  @Get(":movieId/notification")
+  @ApiOperation({
+    summary: "영화 개봉 알림 상태 조회",
+  })
+  getMovieNotification(
+    @Param() params: GetMovieRequestDto,
+    @CurrentUser() user: SessionUser,
+  ) {
+    return this.userMovieNotificationService.findStatus(
+      user.id,
+      params.movieId,
+    );
+  }
+
+  @ApiCookieAuth("cinemo_session")
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
+  @Post(":movieId/notification")
+  @ApiOperation({
+    summary: "영화 개봉 알림 신청",
+  })
+  subscribeMovieNotification(
+    @Param() params: GetMovieRequestDto,
+    @CurrentUser() user: SessionUser,
+  ) {
+    return this.userMovieNotificationService.subscribe(user.id, params.movieId);
+  }
+
+  @ApiCookieAuth("cinemo_session")
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
+  @Delete(":movieId/notification")
+  @ApiOperation({
+    summary: "영화 개봉 알림 해제",
+  })
+  unsubscribeMovieNotification(
+    @Param() params: GetMovieRequestDto,
+    @CurrentUser() user: SessionUser,
+  ) {
+    return this.userMovieNotificationService.unsubscribe(
       user.id,
       params.movieId,
     );

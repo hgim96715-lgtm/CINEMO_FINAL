@@ -37,13 +37,15 @@ export function MovieTrailerButton({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="group inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 font-semibold text-cinemo-text backdrop-blur transition hover:border-cinemo-gold/50 hover:bg-white/10 active:bg-cinemo-gold/15"
+        aria-label="예고편 보기"
+        title="예고편 보기"
+        className="group inline-flex h-11 w-11 items-center justify-center gap-0 rounded-xl border border-white/20 bg-white/5 px-0 py-0 font-semibold text-cinemo-text backdrop-blur transition hover:border-cinemo-gold/50 hover:bg-white/10 active:bg-cinemo-gold/15 sm:h-auto sm:w-auto sm:gap-2 sm:px-5 sm:py-3"
       >
         <Play
           className={`size-4 transition-[color,transform] group-hover:scale-110 group-hover:text-cinemo-gold group-active:text-cinemo-gold ${isOpen ? "text-cinemo-gold" : "text-cinemo-muted"}`}
           fill="currentColor"
         />
-        예고편
+        <span className="hidden sm:inline">예고편</span>
       </button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

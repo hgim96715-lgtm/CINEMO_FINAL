@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { KobisModule } from "@/integrations/kobis/kobis.module";
 
 import { MoviesController } from "./movies.controller";
-import { MoviesRepository } from "./movies.repository";
+import { MoviesRepository } from "./repositories/movies.repository";
 import { MoviesService } from "./movies.service";
 import { MovieMatcherService } from "./movie-matcher.service";
 import { KobisMovieImportService } from "./kobis-movie-import.service";
@@ -15,8 +15,10 @@ import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
 import { KmdbModule } from "@/integrations/kmdb/kmdb.module";
 import { TmdbMovieBatchImportService } from "./tmdb-movie-batch-import.service";
 import { MovieImportController } from "./movie-import.controller";
-import { UserMovieRecordRepository } from "./user-movie-record.repository";
+import { UserMovieRecordRepository } from "./repositories/user-movie-record.repository";
 import { UserMovieRecordService } from "./user-movie-record.service";
+import { UserMovieNotificationService } from "./user-movie-notification.service";
+import { UserMovieNotificationRepository } from "./repositories/user-movie-notification.repository";
 
 @Module({
   imports: [KobisModule, TmdbModule, KmdbModule],
@@ -33,6 +35,8 @@ import { UserMovieRecordService } from "./user-movie-record.service";
     MoviePersonService,
     UserMovieRecordRepository,
     UserMovieRecordService,
+    UserMovieNotificationRepository,
+    UserMovieNotificationService,
   ],
   exports: [
     MoviesService,
@@ -44,6 +48,7 @@ import { UserMovieRecordService } from "./user-movie-record.service";
     KmdbMovieEnrichmentService,
     MoviePersonService,
     UserMovieRecordService,
+    UserMovieNotificationService,
   ],
 })
 export class MoviesModule {}

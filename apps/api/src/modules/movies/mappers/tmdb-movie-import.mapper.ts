@@ -1,7 +1,7 @@
 import { SourceProvider } from "@prisma/client";
 
 import { TmdbMovieListItem } from "@/integrations/tmdb/types/tmdb-response.type";
-import { CreateMovieFromProviderInput } from "../movies.repository";
+import { CreateMovieFromProviderInput } from "../repositories/movies.repository";
 
 const parseReleaseDate = (value: string): Date | null => {
   if (!value) return null;

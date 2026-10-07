@@ -5,7 +5,7 @@ import { KobisService } from "@/integrations/kobis/kobis.service";
 import { TmdbService } from "@/integrations/tmdb/tmdb.service";
 
 import { KobisMovieImportService } from "./kobis-movie-import.service";
-import { MoviesRepository } from "./movies.repository";
+import { MoviesRepository } from "./repositories/movies.repository";
 import { toKobisRankingSnapshotInput } from "./mappers/kobis-ranking.mapper";
 import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
 

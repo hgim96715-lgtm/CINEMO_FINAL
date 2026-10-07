@@ -174,3 +174,31 @@ export async function getReleasedMovies(
 
   return data;
 }
+
+export type MovieNotificationStatus = {
+  movieId: string;
+  enabled: boolean;
+  releaseDate: string | null;
+};
+
+export async function getMovieNotification(
+  movieId: string,
+): Promise<MovieNotificationStatus> {
+  const { data } = await apiClient.get<MovieNotificationStatus>(
+    `/movies/${movieId}/notification`,
+  );
+
+  return data;
+}
+
+export async function subscribeMovieNotification(
+  movieId: string,
+): Promise<void> {
+  await apiClient.post(`/movies/${movieId}/notification`);
+}
+
+export async function unsubscribeMovieNotification(
+  movieId: string,
+): Promise<void> {
+  await apiClient.delete(`/movies/${movieId}/notification`);
+}

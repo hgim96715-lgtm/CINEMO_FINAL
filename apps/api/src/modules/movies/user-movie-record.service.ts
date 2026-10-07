@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 
 import { MovieNotFoundException } from "@/common/exceptions/movie-not-found.exception";
 
-import { UserMovieRecordRepository } from "./user-movie-record.repository";
+import { UserMovieRecordRepository } from "./repositories/user-movie-record.repository";
 import { UpdateMovieRecordRequestDto } from "../auth/dto/requests/update-movie-record.request.dto";
 
 @Injectable()
@@ -76,7 +76,7 @@ export class UserMovieRecordService {
     return {
       movieId,
       isFavorite: record?.isFavorite ?? false,
-      isWatched: record?.watchedAt !== null,
+      isWatched: Boolean(record?.watchedAt),
       watchedAt: record?.watchedAt ?? null,
       rating: record?.rating?.toString() ?? null,
     };

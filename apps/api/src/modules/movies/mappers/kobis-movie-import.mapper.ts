@@ -1,6 +1,6 @@
 import type { KobisMovieInfoResponseDto } from "@/integrations/kobis/dto/responses/kobis-movie-info.response.dto";
 
-import type { KobisMovieImportInput } from "../movies.repository";
+import type { KobisMovieImportInput } from "../repositories/movies.repository";
 
 const parseKobisDate = (value: string | null): Date | null => {
   if (!value || !/^\d{8}$/.test(value)) {

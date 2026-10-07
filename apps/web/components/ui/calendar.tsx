@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker, getDefaultClassNames } from "@daypicker/react";
 import type { ComponentProps } from "react";
 
@@ -25,8 +25,28 @@ function Calendar({ className, classNames, ...props }: CalendarProps) {
           defaultClassNames.month_caption,
         ),
         caption_label: cn(
-          "text-sm font-semibold text-cinemo-text",
+          "pointer-events-none inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-sm font-semibold text-cinemo-text",
           defaultClassNames.caption_label,
+        ),
+        dropdowns: cn(
+          "relative z-10 inline-flex items-center gap-2",
+          defaultClassNames.dropdowns,
+        ),
+        dropdown_root: cn(
+          "relative inline-flex items-center",
+          defaultClassNames.dropdown_root,
+        ),
+        dropdown: cn(
+          "absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none opacity-0",
+          defaultClassNames.dropdown,
+        ),
+        months_dropdown: cn(
+          "min-w-14",
+          defaultClassNames.months_dropdown,
+        ),
+        years_dropdown: cn(
+          "min-w-20",
+          defaultClassNames.years_dropdown,
         ),
         nav: cn(
           "absolute inset-x-0 flex items-center justify-between",
@@ -73,7 +93,9 @@ function Calendar({ className, classNames, ...props }: CalendarProps) {
       }}
       components={{
         Chevron: ({ orientation, className: chevronClassName }) =>
-          orientation === "left" ? (
+          orientation === "down" ? (
+            <ChevronDown className={cn("size-4", chevronClassName)} />
+          ) : orientation === "left" ? (
             <ChevronLeft className={cn("size-4", chevronClassName)} />
           ) : (
             <ChevronRight className={cn("size-4", chevronClassName)} />

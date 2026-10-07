@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Eye, EyeClosed, Heart, Star, X } from "lucide-react";
+import { Eye, EyeClosed, Heart, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ko } from "@daypicker/react/locale";
@@ -64,6 +64,9 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
   const record = recordQuery.data;
   const isFavorite = record?.isFavorite ?? false;
   const isWatched = record?.isWatched ?? false;
+  const selectedRating = record?.rating
+    ? Number(record.rating).toFixed(1)
+    : null;
 
   const requireLogin = () => {
     setLoginRequired(true);
@@ -151,150 +154,147 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
         }
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-
-      <button
-        type="button"
-        onClick={toggleFavorite}
-        disabled={isDisabled}
-        aria-pressed={isFavorite}
-        aria-label={isFavorite ? "찜하기 해제" : "찜하기"}
-        className={`group inline-flex items-center gap-2 rounded-xl border px-5 py-3 font-semibold backdrop-blur transition disabled:opacity-50 ${
-          isFavorite
-            ? "border-cinemo-gold/60 bg-cinemo-gold/15 text-cinemo-gold-light"
-            : "border-white/20 bg-white/5 text-cinemo-text hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10"
-        }`}
+      <AppModal
+        open={watchedDateOpen}
+        onOpenChange={setWatchedDateOpen}
+        title="언제 봤나요?"
+        description="관람 날짜를 선택하면 봤어요 기록이 저장됩니다."
+        className="w-[calc(100%-2rem)] sm:max-w-md"
       >
-        <Heart
-          className={`size-4 ${
-            isFavorite ? "fill-cinemo-gold text-cinemo-gold" : ""
-          }`}
+        <Calendar
+          mode="single"
+          locale={ko}
+          captionLayout="dropdown"
+          startMonth={new Date(new Date().getFullYear() - 100, 0, 1)}
+          month={calendarMonth}
+          selected={parseDateValue(watchedDate)}
+          onMonthChange={setCalendarMonth}
+          onSelect={(date) => {
+            if (date) {
+              selectWatchedDate(formatDateValue(date));
+            }
+          }}
+          disabled={{ after: parseDateValue(getLocalDateValue()) }}
+          endMonth={parseDateValue(getLocalDateValue())}
+          className="mx-auto w-full"
         />
-        찜하기
-      </button>
+      </AppModal>
 
-      <div className="relative flex flex-col items-start">
+      <AppModal
+        open={ratingOpen}
+        onOpenChange={setRatingOpen}
+        title="평점 선택"
+        description="이 영화에 대한 나의 평점을 선택하세요."
+        className="w-[calc(100%-2rem)] sm:max-w-sm"
+      >
+        <div
+          role="listbox"
+          aria-label="평점 선택 목록"
+          className="grid grid-cols-2 gap-1.5"
+        >
+          <button
+            type="button"
+            role="option"
+            aria-selected={!selectedRating}
+            onClick={() => selectRating(null)}
+            className="col-span-2 rounded-lg px-3 py-2 text-left text-sm text-cinemo-muted transition hover:bg-white/10 hover:text-cinemo-text"
+          >
+            평점 없음
+          </button>
+
+          {ratingOptions.map((rating) => (
+            <button
+              key={rating}
+              type="button"
+              role="option"
+              aria-selected={selectedRating === rating}
+              onClick={() => selectRating(rating)}
+              className={`rounded-lg px-3 py-2.5 text-sm transition ${
+                selectedRating === rating
+                  ? "bg-cinemo-gold/20 font-semibold text-cinemo-gold-light"
+                  : "text-cinemo-text hover:bg-cinemo-gold/10 hover:text-cinemo-gold-light"
+              }`}
+            >
+              {rating}점
+            </button>
+          ))}
+        </div>
+      </AppModal>
+
+      <div className="flex w-37 flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
         <button
           type="button"
-          onClick={toggleWatched}
+          onClick={toggleFavorite}
           disabled={isDisabled}
-          aria-pressed={isWatched}
-          aria-expanded={watchedDateOpen}
-          aria-label={isWatched ? "봤어요 해제" : "봤어요 날짜 선택"}
-          className={`group inline-flex items-center gap-2 rounded-xl border px-5 py-3 font-semibold backdrop-blur transition disabled:opacity-50 ${
-            isWatched
+          aria-pressed={isFavorite}
+          aria-label={isFavorite ? "찜하기 해제" : "찜하기"}
+          title={isFavorite ? "찜하기 해제" : "찜하기"}
+          className={`group inline-flex h-11 w-11 items-center justify-center gap-0 rounded-xl border px-0 py-0 font-semibold backdrop-blur transition disabled:opacity-50 sm:h-[52px] sm:w-28 sm:min-w-28 sm:max-w-28 sm:flex-none sm:gap-2 sm:px-3 sm:py-0 ${
+            isFavorite
               ? "border-cinemo-gold/60 bg-cinemo-gold/15 text-cinemo-gold-light"
               : "border-white/20 bg-white/5 text-cinemo-text hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10"
           }`}
         >
-          {isWatched ? (
-            <Eye className="size-4 text-cinemo-gold" />
-          ) : (
-            <EyeClosed className="size-4 text-white/70" />
-          )}
-          봤어요
-        </button>
-
-        {watchedDateOpen && (
-          <div
-            role="dialog"
-            aria-label="관람 날짜 선택"
-            className="absolute left-0 bottom-full z-30 mb-2 w-72 rounded-2xl border border-cinemo-gold/25 bg-[#102326]/98 p-4 shadow-2xl shadow-black/35 backdrop-blur-xl"
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-semibold text-cinemo-text">
-                <CalendarDays className="size-4 text-cinemo-gold" />
-                언제 봤나요?
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setWatchedDateOpen(false)}
-                aria-label="달력 닫기"
-                className="rounded-md p-1 text-cinemo-muted transition hover:bg-white/10 hover:text-cinemo-text"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-
-            <Calendar
-              mode="single"
-              locale={ko}
-              month={calendarMonth}
-              selected={parseDateValue(watchedDate)}
-              onMonthChange={setCalendarMonth}
-              onSelect={(date) => {
-                if (date) {
-                  selectWatchedDate(formatDateValue(date));
-                }
-              }}
-              disabled={{ after: parseDateValue(getLocalDateValue()) }}
-              endMonth={parseDateValue(getLocalDateValue())}
-              className="mx-auto"
-            />
-
-            <p className="mt-3 border-t border-white/10 pt-3 text-center text-[11px] text-cinemo-muted">
-              선택한 날짜에 봤어요 기록이 저장됨
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="relative">
-        <button
-          type="button"
-          onClick={toggleRatingMenu}
-          disabled={isDisabled}
-          aria-haspopup="listbox"
-          aria-expanded={ratingOpen}
-          aria-label="평점 선택"
-          className="inline-flex items-center gap-2 rounded-xl border border-cinemo-gold/30 bg-white/5 px-4 py-3 text-sm text-cinemo-muted transition hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10 disabled:opacity-50"
-        >
-          <Star
-            className={`size-4 text-cinemo-gold ${
-              record?.rating ? "fill-cinemo-gold" : ""
+          <Heart
+            className={`size-4 ${
+              isFavorite ? "fill-cinemo-gold text-cinemo-gold" : ""
             }`}
           />
-          <span className={record?.rating ? "text-cinemo-text" : undefined}>
-            {record?.rating ? `${record.rating}점` : "평점"}
-          </span>
+          <span className="hidden sm:inline">찜하기</span>
         </button>
 
-        {ratingOpen && (
-          <div
-            role="listbox"
-            aria-label="평점 선택 목록"
-            className="absolute right-0 bottom-full z-30 mb-2 grid w-52 grid-cols-2 gap-1.5 rounded-xl border border-cinemo-gold/25 bg-[#102326]/95 p-2 shadow-2xl shadow-black/30 backdrop-blur-xl"
+        <div className="relative flex flex-col items-start">
+          <button
+            type="button"
+            onClick={toggleWatched}
+            disabled={isDisabled}
+            aria-pressed={isWatched}
+            aria-expanded={watchedDateOpen}
+            aria-label={isWatched ? "봤어요 해제" : "봤어요 날짜 선택"}
+            title={isWatched ? "봤어요 해제" : "봤어요 날짜 선택"}
+            className={`group inline-flex h-11 w-11 items-center justify-center gap-0 rounded-xl border px-0 py-0 font-semibold backdrop-blur transition disabled:opacity-50 sm:h-[52px] sm:w-28 sm:min-w-28 sm:max-w-28 sm:flex-none sm:gap-2 sm:px-3 sm:py-0 ${
+              isWatched
+                ? "border-cinemo-gold/60 bg-cinemo-gold/15 text-cinemo-gold-light"
+                : "border-white/20 bg-white/5 text-cinemo-text hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10"
+            }`}
           >
-            <button
-              type="button"
-              role="option"
-              aria-selected={!record?.rating}
-              onClick={() => selectRating(null)}
-              className="col-span-2 rounded-lg px-3 py-2 text-left text-xs text-cinemo-muted transition hover:bg-white/10 hover:text-cinemo-text"
-            >
-              평점 없음
-            </button>
+            {isWatched ? (
+              <Eye className="size-4 text-cinemo-gold" />
+            ) : (
+              <EyeClosed className="size-4 text-white/70" />
+            )}
+            <span className="hidden sm:inline">봤어요</span>
+          </button>
+        </div>
 
-            {ratingOptions.map((rating) => (
-              <button
-                key={rating}
-                type="button"
-                role="option"
-                aria-selected={record?.rating === rating}
-                onClick={() => selectRating(rating)}
-                className={`rounded-lg px-3 py-2 text-sm transition ${
-                  record?.rating === rating
-                    ? "bg-cinemo-gold/20 font-semibold text-cinemo-gold-light"
-                    : "text-cinemo-text hover:bg-cinemo-gold/10 hover:text-cinemo-gold-light"
-                }`}
-              >
-                {rating}점
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+        <div>
+          <button
+            type="button"
+            onClick={toggleRatingMenu}
+            disabled={isDisabled}
+            aria-haspopup="listbox"
+            aria-expanded={ratingOpen}
+            aria-label="평점 선택"
+            title="평점 선택"
+            className={`inline-flex h-11 w-11 items-center justify-center gap-0 rounded-xl border px-0 py-0 text-sm transition disabled:opacity-50 sm:h-[52px] sm:w-28 sm:min-w-28 sm:max-w-28 sm:flex-none sm:justify-center sm:gap-2 sm:px-3 sm:py-0 ${
+              selectedRating
+                ? "border-cinemo-gold/60 bg-cinemo-gold/15 text-cinemo-gold-light"
+                : "border-white/20 bg-white/5 text-cinemo-text hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10"
+            }`}
+          >
+            <Star
+              className={`size-4 ${
+                record?.rating
+                  ? "fill-cinemo-gold text-cinemo-gold"
+                  : "text-cinemo-muted"
+              }`}
+            />
+            <span className="hidden sm:inline">
+              {selectedRating ? `${selectedRating}점` : "평점"}
+            </span>
+          </button>
+
+        </div>
       </div>
     </>
   );

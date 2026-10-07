@@ -13,7 +13,7 @@ import {
 } from "@prisma/client";
 
 import { PrismaService } from "@/prisma/prisma.service";
-import { MoviePersonService } from "./movie-person.service";
+import { MoviePersonService } from "../movie-person.service";
 
 const movieInclude = {
   titles: {

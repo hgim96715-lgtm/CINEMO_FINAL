@@ -4,7 +4,7 @@ import { MovieNotFoundException } from "@/common/exceptions/movie-not-found.exce
 
 import { MovieResponseDto } from "./dto/responses/movie.response.dto";
 import { MovieSitemapResponseDto } from "./dto/responses/movie-sitemap.response.dto";
-import { MoviesRepository } from "./movies.repository";
+import { MoviesRepository } from "./repositories/movies.repository";
 import { toMovieResponseDto } from "./mappers/movie-response.mapper";
 import { MovieSearchResponseDto } from "./dto/responses/movie-search.response.dto";
 import { toMovieSearchItemResponseDto } from "./mappers/movie-search-response.mapper";

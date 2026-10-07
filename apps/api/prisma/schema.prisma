@@ -98,6 +98,10 @@ enum TermsType {
     MARKETING
 }
 
+enum MovieNotificationType {
+    RELEASE
+}
+
 model User {
     id              String     @id @default(uuid(7)) @db.Uuid
     email           String?    @unique
@@ -109,13 +113,14 @@ model User {
     createdAt       DateTime   @default(now()) @db.Timestamptz(3)
     updatedAt       DateTime   @updatedAt @db.Timestamptz(3)
 
-    identities          UserIdentity[]
-    passwordCredential  UserPasswordCredential?
-    emailVerifications  EmailVerification[]
-    passwordResetTokens PasswordResetToken[]
-    termsAgreements     UserTermsAgreement[]
-    sessions            AuthSession[]
-    userMovieRecords    UserMovieRecord[]
+    identities             UserIdentity[]
+    passwordCredential     UserPasswordCredential?
+    emailVerifications     EmailVerification[]
+    passwordResetTokens    PasswordResetToken[]
+    termsAgreements        UserTermsAgreement[]
+    sessions               AuthSession[]
+    userMovieRecords       UserMovieRecord[]
+    userMovieNotifications UserMovieNotification[]
 
     @@index([nickname])
     @@index([status])
@@ -251,6 +256,27 @@ model UserMovieRecord {
     @@map("user_movie_records")
 }
 
+model UserMovieNotification {
+    id               String                @id @default(uuid(7)) @db.Uuid
+    userId           String                @db.Uuid
+    movieId          String                @db.Uuid
+    releaseId        String?               @db.Uuid
+    notificationType MovieNotificationType
+    enabled          Boolean               @default(true)
+    notifiedAt       DateTime?             @db.Timestamptz(3)
+    createdAt        DateTime              @default(now()) @db.Timestamptz(3)
+    updatedAt        DateTime              @updatedAt @db.Timestamptz(3)
+
+    user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+    movie   Movie         @relation(fields: [movieId], references: [id], onDelete: Cascade)
+    release MovieRelease? @relation(fields: [releaseId], references: [id], onDelete: SetNull)
+
+    @@unique([userId, movieId, notificationType])
+    @@index([movieId, notificationType, enabled])
+    @@index([releaseId])
+    @@map("user_movie_notifications")
+}
+
 model Movie {
     id                     String   @id @default(uuid(7)) @db.Uuid
     createdAt              DateTime @default(now()) @db.Timestamptz(3)
@@ -262,17 +288,18 @@ model Movie {
     tmdbVoteAverage Decimal? @db.Decimal(3, 1)
     tmdbVoteCount   Int?
 
-    titles              MovieTitle[]
-    releases            MovieRelease[]
-    providerLinks       MovieProviderLink[]
-    media               MovieMedia[]
-    watchOptions        MovieWatchOption[]
-    rankingSnapshots    MovieRankingSnapshot[]
-    popularitySnapshots MoviePopularitySnapshot[]
-    movieCredits        MovieCredit[]
-    movieGenres         MovieGenre[]
-    movieCertifications MovieCertification[]
-    userMovieRecords    UserMovieRecord[]
+    titles                 MovieTitle[]
+    releases               MovieRelease[]
+    providerLinks          MovieProviderLink[]
+    media                  MovieMedia[]
+    watchOptions           MovieWatchOption[]
+    rankingSnapshots       MovieRankingSnapshot[]
+    popularitySnapshots    MoviePopularitySnapshot[]
+    movieCredits           MovieCredit[]
+    movieGenres            MovieGenre[]
+    movieCertifications    MovieCertification[]
+    userMovieRecords       UserMovieRecord[]
+    userMovieNotifications UserMovieNotification[]
 
     @@map("movies")
 }
@@ -306,9 +333,10 @@ model MovieRelease {
     createdAt   DateTime      @default(now()) @db.Timestamptz(3)
     updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
 
-    movie       Movie        @relation(fields: [movieId], references: [id], onDelete: Cascade)
-    titles      MovieTitle[]
-    movieMedias MovieMedia[]
+    movie                  Movie                   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+    titles                 MovieTitle[]
+    movieMedias            MovieMedia[]
+    userMovieNotifications UserMovieNotification[]
 
     @@index([movieId, isPrimary])
     @@index([status, releaseDate])

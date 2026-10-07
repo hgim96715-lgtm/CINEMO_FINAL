@@ -7,7 +7,7 @@ import {
 } from "@/integrations/tmdb/tmdb.service";
 
 import { toCreateMovieFromTmdbInput } from "./mappers/tmdb-movie-import.mapper";
-import { MoviesRepository } from "./movies.repository";
+import { MoviesRepository } from "./repositories/movies.repository";
 import { MovieMatcherService } from "./movie-matcher.service";
 import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
 
