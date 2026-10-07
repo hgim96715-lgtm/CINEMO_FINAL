@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { getMovieForPage } from "./movie-page-data";
+import { getMovie } from "../../../lib/api/movies";
 import { MovieTrailerButton } from "@/components/movies/MovieTrailerButton";
 import { MovieRecordActions } from "@/components/movies/MovieRecordActions";
 import { MovieRecordSummary } from "@/components/movies/MovieRecordSummary";
@@ -14,7 +14,7 @@ type MoviePageProps = {
 
 export default async function MoviePage({ params }: MoviePageProps) {
   const { id } = await params;
-  const movie = await getMovieForPage(id);
+  const movie = await getMovie(id);
 
   if (!movie) {
     notFound();

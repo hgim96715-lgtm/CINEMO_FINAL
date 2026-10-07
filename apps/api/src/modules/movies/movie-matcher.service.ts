@@ -3,34 +3,19 @@ import { Prisma, TitleType } from "@prisma/client";
 
 import { PrismaService } from "@/prisma/prisma.service";
 
-const RELEASE_DATE_MATCH_WINDOW_DAYS = 365;
-
 @Injectable()
 export class MovieMatcherService {
   constructor(private readonly prisma: PrismaService) {}
   findCandidates(title: string, releaseDate: Date | null) {
-    const releaseCondition: Prisma.MovieWhereInput = {};
-
-    if (releaseDate) {
-      const releaseDateFrom = new Date(releaseDate);
-      releaseDateFrom.setUTCDate(
-        releaseDateFrom.getUTCDate() - RELEASE_DATE_MATCH_WINDOW_DAYS,
-      );
-
-      const releaseDateTo = new Date(releaseDate);
-      releaseDateTo.setUTCDate(
-        releaseDateTo.getUTCDate() + RELEASE_DATE_MATCH_WINDOW_DAYS,
-      );
-
-      releaseCondition.releases = {
-        some: {
-          releaseDate: {
-            gte: releaseDateFrom,
-            lte: releaseDateTo,
+    const releaseCondition: Prisma.MovieWhereInput = releaseDate
+      ? {
+          releases: {
+            some: {
+              releaseDate,
+            },
           },
-        },
-      };
-    }
+        }
+      : {};
 
     return this.prisma.movie.findMany({
       where: {

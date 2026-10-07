@@ -350,9 +350,6 @@ export class TmdbMovieSyncService {
       });
 
       return movieId;
-    }, {
-      maxWait: 10_000,
-      timeout: 30_000,
     });
   }
 }

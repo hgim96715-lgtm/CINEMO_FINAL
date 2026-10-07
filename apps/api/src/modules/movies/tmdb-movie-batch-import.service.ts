@@ -11,8 +11,6 @@ import { MoviesRepository } from "./repositories/movies.repository";
 import { MovieMatcherService } from "./movie-matcher.service";
 import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
 
-const TMDB_SYNC_CONCURRENCY = 3;
-
 @Injectable()
 export class TmdbMovieBatchImportService {
   constructor(
@@ -82,34 +80,6 @@ export class TmdbMovieBatchImportService {
     });
   }
 
-  private async mapWithConcurrency<T, R>(
-    items: T[],
-    worker: (item: T, index: number) => Promise<R>,
-  ): Promise<R[]> {
-    const results = new Array<R>(items.length);
-    let nextIndex = 0;
-
-    const runWorker = async () => {
-      while (true) {
-        const index = nextIndex++;
-
-        if (index >= items.length) {
-          return;
-        }
-
-        results[index] = await worker(items[index], index);
-      }
-    };
-
-    const workerCount = Math.min(TMDB_SYNC_CONCURRENCY, items.length);
-
-    await Promise.all(
-      Array.from({ length: workerCount }, () => runWorker()),
-    );
-
-    return results;
-  }
-
   async importPopularMovies(pageCount = 2): Promise<string[]> {
     const movieIds = new Set<string>();
     const collectedAt = new Date();
@@ -117,26 +87,21 @@ export class TmdbMovieBatchImportService {
     for (let page = 1; page <= pageCount; page += 1) {
       const response = await this.tmdbService.getPopularMovies(page);
 
-      const pageMovieIds = await this.mapWithConcurrency(
-        response.results,
-        async (movie, index) => {
-          const movieId = await this.getOrCreateTmdbMovie(
-            toCreateMovieFromTmdbInput(movie),
-          );
+      for (const [index, movie] of response.results.entries()) {
+        const movieId = await this.getOrCreateTmdbMovie(
+          toCreateMovieFromTmdbInput(movie),
+        );
 
-          await this.tmdbMovieSyncService.syncMovieFromTmdb(movieId, movie.id);
+        await this.tmdbMovieSyncService.syncMovieFromTmdb(movieId, movie.id);
 
-          await this.moviesRepository.saveMoviePopularitySnapshot({
-            movieId,
-            rank: (page - 1) * 20 + index + 1,
-            collectedAt,
-          });
+        await this.moviesRepository.saveMoviePopularitySnapshot({
+          movieId,
+          rank: (page - 1) * 20 + index + 1,
+          collectedAt,
+        });
 
-          return movieId;
-        },
-      );
-
-      pageMovieIds.forEach((movieId) => movieIds.add(movieId));
+        movieIds.add(movieId);
+      }
     }
 
     return [...movieIds];
@@ -153,23 +118,15 @@ export class TmdbMovieBatchImportService {
           monthRange,
         );
 
-        const pageMovieIds = await this.mapWithConcurrency(
-          response.results,
-          async (movie) => {
-            const movieId = await this.getOrCreateTmdbMovie(
-              toCreateMovieFromTmdbInput(movie),
-            );
+        for (const movie of response.results) {
+          const movieId = await this.getOrCreateTmdbMovie(
+            toCreateMovieFromTmdbInput(movie),
+          );
 
-            await this.tmdbMovieSyncService.syncMovieFromTmdb(
-              movieId,
-              movie.id,
-            );
+          await this.tmdbMovieSyncService.syncMovieFromTmdb(movieId, movie.id);
 
-            return movieId;
-          },
-        );
-
-        pageMovieIds.forEach((movieId) => movieIds.add(movieId));
+          movieIds.add(movieId);
+        }
       }
     }
 

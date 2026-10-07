@@ -22,7 +22,6 @@ import { Public } from "../auth/decorators/public.decorator";
 
 @ApiTags("Movie Imports")
 // @ApiCookieAuth("cinemo_session")
-@Public()
 @Controller("movie-imports")
 export class MovieImportController {
   constructor(
