@@ -14,6 +14,8 @@ import {
   UpcomingMoviesPeriod,
 } from "./dto/requests/get-upcoming-movies.request.dto";
 import { GetReleasedMoviesRequestDto } from "./dto/requests/get-released-movies.request.dto";
+import { GetMovieModerationRequestDto } from "./dto/requests/get-movie-moderation.request.dto";
+import { MovieVisibility } from "@prisma/client";
 
 type UpcomingDateRange = {
   startDate: Date;
@@ -235,5 +237,45 @@ export class MoviesService {
       page: params.page,
       limit: params.limit,
     };
+  }
+
+  async getModerationMovies(params: GetMovieModerationRequestDto) {
+    const result = await this.movieRepository.findMoviesForModeration(
+      params.visibility,
+      params.page,
+      params.limit,
+    );
+
+    return {
+      items: result.movies.map((movie) => ({
+        id: movie.id,
+        title:
+          movie.titles.find((title) => title.titleType === "PRIMARY")?.title ??
+          movie.titles[0]?.title ??
+          "",
+        visibility: movie.visibility,
+        moderationReason: movie.moderationReason,
+        releaseDate: movie.releases[0]?.releaseDate ?? null,
+        posterUrl:
+          movie.media.find((media) => media.mediaType === "POSTER")?.url ??
+          null,
+      })),
+      totalCount: result.totalCount,
+      page: params.page,
+      limit: params.limit,
+      visibility: params.visibility,
+    };
+  }
+
+  updateMovieVisibility(
+    movieId: string,
+    visibility: MovieVisibility,
+    moderationReason?: string | null,
+  ) {
+    return this.movieRepository.updateMovieVisibility(
+      movieId,
+      visibility,
+      moderationReason,
+    );
   }
 }

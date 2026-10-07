@@ -102,11 +102,18 @@ enum MovieNotificationType {
     RELEASE
 }
 
+enum MovieVisibility {
+    PUBLIC
+    REVIEW
+    HIDDEN
+}
+
 model User {
     id              String     @id @default(uuid(7)) @db.Uuid
     email           String?    @unique
     nickname        String     @unique
     status          UserStatus @default(ACTIVE)
+    isAdmin         Boolean    @default(false)
     profileImageUrl String?    @db.Text
     profileImageKey String?    @db.Text
     lastLoginAt     DateTime?  @db.Timestamptz(3)
@@ -282,6 +289,9 @@ model Movie {
     createdAt              DateTime @default(now()) @db.Timestamptz(3)
     updatedAt              DateTime @updatedAt @db.Timestamptz(3)
     productionCountryCodes String[] @default([]) @map("production_country_codes")
+    visibility              MovieVisibility @default(PUBLIC)
+    moderationReason        String?         @db.Text
+    reviewedAt              DateTime?       @db.Timestamptz(3)
 
     overview        String?  @db.Text
     runtime         Int?
@@ -300,6 +310,8 @@ model Movie {
     movieCertifications    MovieCertification[]
     userMovieRecords       UserMovieRecord[]
     userMovieNotifications UserMovieNotification[]
+
+    @@index([visibility])
 
     @@map("movies")
 }

@@ -15,6 +15,9 @@ import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
 import { KmdbModule } from "@/integrations/kmdb/kmdb.module";
 import { TmdbMovieBatchImportService } from "./tmdb-movie-batch-import.service";
 import { MovieImportController } from "./movie-import.controller";
+import { MovieModerationController } from "./movie-moderation.controller";
+import { MovieCatalogSyncController } from "./movie-catalog-sync.controller";
+import { AdminGuard } from "../auth/admin.guard";
 import { UserMovieRecordRepository } from "./repositories/user-movie-record.repository";
 import { UserMovieRecordService } from "./user-movie-record.service";
 import { UserMovieNotificationService } from "./user-movie-notification.service";
@@ -22,7 +25,12 @@ import { UserMovieNotificationRepository } from "./repositories/user-movie-notif
 
 @Module({
   imports: [KobisModule, TmdbModule, KmdbModule],
-  controllers: [MoviesController, MovieImportController],
+  controllers: [
+    MoviesController,
+    MovieImportController,
+    MovieModerationController,
+    MovieCatalogSyncController,
+  ],
   providers: [
     MoviesRepository,
     MoviesService,
@@ -37,6 +45,7 @@ import { UserMovieNotificationRepository } from "./repositories/user-movie-notif
     UserMovieRecordService,
     UserMovieNotificationRepository,
     UserMovieNotificationService,
+    AdminGuard,
   ],
   exports: [
     MoviesService,

@@ -62,8 +62,6 @@ export default function UpcomingMoviesPage() {
   const movies = [...(upcomingQuery.data?.items ?? [])].sort((a, b) =>
     (a.releaseDate ?? "9999").localeCompare(b.releaseDate ?? "9999"),
   );
-  const totalCount = upcomingQuery.data?.totalCount ?? 0;
-
   return (
     <main className="mx-auto w-full max-w-[120rem] px-4 pb-20 pt-8 sm:px-6 lg:px-10">
       <Link
@@ -83,21 +81,16 @@ export default function UpcomingMoviesPage() {
           개봉 예정작
         </h1>
 
-        {!upcomingQuery.isPending && !upcomingQuery.isError && (
-          <p className="mt-3 text-sm text-muted-foreground">
-            전체 {totalCount}편 중 {movies.length}편 표시 중
-          </p>
-        )}
       </div>
 
       <div className="mb-8 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
         <button
           type="button"
           onClick={() => setFilter("all")}
-          className={`shrink-0 rounded-full border px-4 py-2 text-sm transition ${
+          className={`shrink-0 rounded-xl border px-4 py-2 text-sm transition ${
             filter === "all"
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border text-muted-foreground hover:border-primary/60 hover:text-primary"
+              ? "border-cinemo-gold/60 bg-cinemo-gold/15 text-cinemo-gold-light"
+              : "border-white/20 bg-white/5 text-cinemo-muted hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10 hover:text-cinemo-gold-light"
           }`}
         >
           전체
@@ -106,10 +99,10 @@ export default function UpcomingMoviesPage() {
         <button
           type="button"
           onClick={() => setFilter("this-week")}
-          className={`shrink-0 rounded-full border px-4 py-2 text-sm transition ${
+          className={`shrink-0 rounded-xl border px-4 py-2 text-sm transition ${
             filter === "this-week"
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border text-muted-foreground hover:border-primary/60 hover:text-primary"
+              ? "border-cinemo-gold/60 bg-cinemo-gold/15 text-cinemo-gold-light"
+              : "border-white/20 bg-white/5 text-cinemo-muted hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10 hover:text-cinemo-gold-light"
           }`}
         >
           이번 주
@@ -120,10 +113,10 @@ export default function UpcomingMoviesPage() {
             key={month.value}
             type="button"
             onClick={() => setFilter(month.value)}
-            className={`shrink-0 rounded-full border px-4 py-2 text-sm transition ${
+            className={`shrink-0 rounded-xl border px-4 py-2 text-sm transition ${
               filter === month.value
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border text-muted-foreground hover:border-primary/60 hover:text-primary"
+                ? "border-cinemo-gold/60 bg-cinemo-gold/15 text-cinemo-gold-light"
+                : "border-white/20 bg-white/5 text-cinemo-muted hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10 hover:text-cinemo-gold-light"
             }`}
           >
             {month.label}

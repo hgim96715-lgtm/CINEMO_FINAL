@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { SourceProvider } from "@prisma/client";
 
 import { KobisService } from "@/integrations/kobis/kobis.service";
@@ -126,6 +126,7 @@ export class KobisMovieBatchImportService {
             movie.movieCd,
             movie.title,
             tmdbLinkedMovieId ?? undefined,
+            { releaseDate },
           );
 
           if (tmdbMovie) {
@@ -149,6 +150,108 @@ export class KobisMovieBatchImportService {
     return [...movieIds];
   }
 
+  async importReleasedMovies(
+    releaseYear: number,
+    limit = 100,
+  ): Promise<{
+    releaseYear: number;
+    fetched: number;
+    imported: number;
+    skipped: number;
+    failed: number;
+    movieIds: string[];
+    failures: Array<{ movieCd: string; title: string; message: string }>;
+  }> {
+    const year = String(releaseYear);
+    const today = getSeoulDate();
+    const movieIds = new Set<string>();
+    const failures: Array<{
+      movieCd: string;
+      title: string;
+      message: string;
+    }> = [];
+    let fetched = 0;
+    let skipped = 0;
+
+    const firstPage = await this.kobisService.searchMoviesByReleaseDate(
+      year,
+      year,
+      1,
+      limit,
+    );
+    const totalPages = Math.min(Math.ceil(firstPage.totalCount / limit), 100);
+
+    for (let page = 1; page <= totalPages; page += 1) {
+      const response =
+        page === 1
+          ? firstPage
+          : await this.kobisService.searchMoviesByReleaseDate(
+              year,
+              year,
+              page,
+              limit,
+            );
+
+      for (const movie of response.results) {
+        fetched += 1;
+        const releaseDate = movie.releaseDate?.trim();
+
+        if (
+          !releaseDate ||
+          !releaseDate.startsWith(year) ||
+          releaseDate > today
+        ) {
+          skipped += 1;
+          continue;
+        }
+
+        try {
+          const tmdbMovie = await this.findTmdbMovie(
+            movie.title,
+            releaseDate,
+          );
+          const tmdbLinkedMovieId = tmdbMovie
+            ? await this.moviesRepository.findMovieIdByProviderLink(
+                SourceProvider.TMDB,
+                String(tmdbMovie.id),
+              )
+            : null;
+          const movieId = await this.kobisMovieImportService.importMovie(
+            movie.movieCd,
+            movie.title,
+            tmdbLinkedMovieId ?? undefined,
+            { releaseDate },
+          );
+
+          if (tmdbMovie) {
+            await this.tmdbMovieSyncService.syncMovieFromTmdb(
+              movieId,
+              tmdbMovie.id,
+            );
+          }
+
+          movieIds.add(movieId);
+        } catch (error) {
+          failures.push({
+            movieCd: movie.movieCd,
+            title: movie.title,
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+    }
+
+    return {
+      releaseYear,
+      fetched,
+      imported: movieIds.size,
+      skipped,
+      failed: failures.length,
+      movieIds: [...movieIds],
+      failures,
+    };
+  }
+
   async importDailyBoxOffice(targetDt: string): Promise<string[]> {
     const movieIds: string[] = [];
     const collectedAt = new Date();
@@ -168,11 +271,25 @@ export class KobisMovieBatchImportService {
           )
         : null;
 
-      const movieId = await this.kobisMovieImportService.importMovie(
+      let movieId: string;
+
+      try {
+        movieId = await this.kobisMovieImportService.importMovie(
         movie.movieCd,
         movie.movieNm,
         tmdbLinkedMovieId ?? undefined,
+        { releaseDate: movie.openDt },
       );
+      } catch (error) {
+        if (error instanceof BadRequestException) {
+          this.logger.warn(
+            `공개 목록에서 제외되는 영화를 건너뜀: ${movie.movieCd} ${movie.movieNm}`,
+          );
+          continue;
+        }
+
+        throw error;
+      }
 
       if (tmdbMovie) {
         await this.tmdbMovieSyncService.syncMovieFromTmdb(
@@ -195,6 +312,215 @@ export class KobisMovieBatchImportService {
     return movieIds;
   }
 
+  async reconcileKobisReleases(): Promise<{
+    total: number;
+    succeeded: number;
+    failed: number;
+    failures: Array<{ movieId: string; movieCd: string; message: string }>;
+  }> {
+    const links = await this.moviesRepository.findProviderLinks(
+      SourceProvider.KOBIS,
+    );
+    const failures: Array<{
+      movieId: string;
+      movieCd: string;
+      message: string;
+    }> = [];
+    let succeeded = 0;
+
+    for (const link of links) {
+      try {
+        await this.kobisMovieImportService.importMovie(link.externalId);
+        succeeded += 1;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+
+        failures.push({
+          movieId: link.movieId,
+          movieCd: link.externalId,
+          message,
+        });
+        this.logger.warn(
+          `KOBIS 개봉일 보정 실패: ${link.externalId} - ${message}`,
+        );
+      }
+    }
+
+    return {
+      total: links.length,
+      succeeded,
+      failed: failures.length,
+      failures,
+    };
+  }
+
+  async auditProviderCollisions(): Promise<{
+    inspected: number;
+    splitCandidates: Array<{
+      movieId: string;
+      kobisMovieCd: string;
+      tmdbMovieId: string;
+      kobisTitle: string;
+      tmdbTitle: string;
+      kobisProductionYear: string | null;
+      tmdbReleaseYear: number | null;
+      kobisRuntime: number | null;
+      tmdbRuntime: number | null;
+      reason: string;
+    }>;
+    review: Array<{
+      movieId: string;
+      kobisMovieCd: string;
+      tmdbMovieId: string;
+      kobisTitle: string;
+      tmdbTitle: string;
+      kobisProductionYear: string | null;
+      tmdbReleaseYear: number | null;
+      kobisRuntime: number | null;
+      tmdbRuntime: number | null;
+      reason: string;
+    }>;
+    failures: Array<{ movieId: string; message: string }>;
+  }> {
+    const movies = await this.moviesRepository.findMoviesWithKobisAndTmdbLinks();
+    const splitCandidates: Array<{
+      movieId: string;
+      kobisMovieCd: string;
+      tmdbMovieId: string;
+      kobisTitle: string;
+      tmdbTitle: string;
+      kobisProductionYear: string | null;
+      tmdbReleaseYear: number | null;
+      kobisRuntime: number | null;
+      tmdbRuntime: number | null;
+      reason: string;
+    }> = [];
+    const review: typeof splitCandidates = [];
+    const failures: Array<{ movieId: string; message: string }> = [];
+
+    for (const movie of movies) {
+      const kobisLink = movie.providerLinks.find(
+        (link) => link.sourceProvider === SourceProvider.KOBIS,
+      );
+      const tmdbLink = movie.providerLinks.find(
+        (link) => link.sourceProvider === SourceProvider.TMDB,
+      );
+
+      if (!kobisLink || !tmdbLink) {
+        continue;
+      }
+
+      try {
+        const [kobisMovie, tmdbMovie] = await Promise.all([
+          this.kobisService.getMovieInfo(kobisLink.externalId),
+          this.tmdbService.getMovieDetail(Number(tmdbLink.externalId)),
+        ]);
+        const kobisYear = kobisMovie.productionYear?.trim() || null;
+        const tmdbYear = tmdbMovie.release_date
+          ? Number(tmdbMovie.release_date.slice(0, 4))
+          : null;
+        const yearConflict =
+          kobisYear && tmdbYear
+            ? Math.abs(Number(kobisYear) - tmdbYear) >= 2
+            : false;
+        const kobisYearIsNewer =
+          kobisYear && tmdbYear ? Number(kobisYear) > tmdbYear : false;
+        const runtimeConflict =
+          kobisMovie.runningTime !== null &&
+          kobisMovie.runningTime > 0 &&
+          tmdbMovie.runtime !== null &&
+          tmdbMovie.runtime > 0 &&
+          Math.abs(kobisMovie.runningTime - tmdbMovie.runtime) >= 60;
+
+        if (yearConflict || runtimeConflict) {
+          const item = {
+            movieId: movie.id,
+            kobisMovieCd: kobisLink.externalId,
+            tmdbMovieId: tmdbLink.externalId,
+            kobisTitle: kobisMovie.title,
+            tmdbTitle: tmdbMovie.title,
+            kobisProductionYear: kobisYear,
+            tmdbReleaseYear: tmdbYear,
+            kobisRuntime: kobisMovie.runningTime,
+            tmdbRuntime: tmdbMovie.runtime,
+            reason: [
+              yearConflict ? "제작연도 차이" : null,
+              runtimeConflict ? "러닝타임 차이" : null,
+            ]
+              .filter(Boolean)
+              .join(", "),
+          };
+
+          if (kobisYearIsNewer || runtimeConflict) {
+            splitCandidates.push(item);
+          } else {
+            review.push(item);
+          }
+        }
+      } catch (error) {
+        failures.push({
+          movieId: movie.id,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    return { inspected: movies.length, splitCandidates, review, failures };
+  }
+
+  async splitProviderCollisions(): Promise<{
+    inspected: number;
+    split: Array<{
+      oldMovieId: string;
+      newMovieId: string;
+      kobisMovieCd: string;
+      tmdbMovieId: string;
+    }>;
+    review: Awaited<ReturnType<KobisMovieBatchImportService["auditProviderCollisions"]>>["review"];
+    failures: Array<{ movieId: string; message: string }>;
+  }> {
+    const audit = await this.auditProviderCollisions();
+    const split: Array<{
+      oldMovieId: string;
+      newMovieId: string;
+      kobisMovieCd: string;
+      tmdbMovieId: string;
+    }> = [];
+    const failures = [...audit.failures];
+
+    for (const candidate of audit.splitCandidates) {
+      try {
+        const newMovieId = await this.moviesRepository.splitTmdbLinkToNewMovie(
+          candidate.movieId,
+          candidate.tmdbMovieId,
+        );
+        await this.tmdbMovieSyncService.syncMovieFromTmdb(
+          newMovieId,
+          Number(candidate.tmdbMovieId),
+        );
+        await this.kobisMovieImportService.importMovie(candidate.kobisMovieCd);
+        split.push({
+          oldMovieId: candidate.movieId,
+          newMovieId,
+          kobisMovieCd: candidate.kobisMovieCd,
+          tmdbMovieId: candidate.tmdbMovieId,
+        });
+      } catch (error) {
+        failures.push({
+          movieId: candidate.movieId,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    return {
+      inspected: audit.inspected,
+      split,
+      review: audit.review,
+      failures,
+    };
+  }
+
   private async findTmdbMovie(
     title: string,
     releaseDate?: string | null,
@@ -212,6 +538,17 @@ export class KobisMovieBatchImportService {
 
     const normalizedTitle = title.trim().toLocaleLowerCase();
     const tmdbReleaseDate = toTmdbDate(releaseDate);
+
+    if (releaseDate) {
+      return (
+        response.results.find(
+          (movie) =>
+            movie.poster_path &&
+            tmdbReleaseDate &&
+            movie.release_date === tmdbReleaseDate,
+        ) ?? null
+      );
+    }
 
     return (
       response.results.find(

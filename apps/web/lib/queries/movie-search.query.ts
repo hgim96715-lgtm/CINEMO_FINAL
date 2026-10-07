@@ -132,6 +132,7 @@ export const upcomingMoviesQueryOptions = ({
         },
         signal,
       ),
+    placeholderData: (previousData) => previousData,
     enabled,
     staleTime: 5 * 60_000,
   });
@@ -153,6 +154,7 @@ export const releasedMoviesQueryOptions = ({
         },
         signal,
       ),
+    placeholderData: (previousData) => previousData,
     enabled,
     staleTime: 5 * 60_000,
   });

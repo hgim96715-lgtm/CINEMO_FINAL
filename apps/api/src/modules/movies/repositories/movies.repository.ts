@@ -10,10 +10,15 @@ import {
   ReleaseType,
   SourceProvider,
   TitleType,
+  MovieVisibility,
 } from "@prisma/client";
 
 import { PrismaService } from "@/prisma/prisma.service";
 import { MoviePersonService } from "../movie-person.service";
+
+const publicMovieWhere: Prisma.MovieWhereInput = {
+  visibility: MovieVisibility.PUBLIC,
+};
 
 const movieInclude = {
   titles: {
@@ -124,6 +129,8 @@ export type KobisMovieImportInput = {
   genres: string[];
   productionCountryCodes: string[];
   certifications: string[];
+  visibility: MovieVisibility;
+  moderationReason: string | null;
   directors: Array<{
     name: string;
     nameEn: string | null;
@@ -158,9 +165,10 @@ export class MoviesRepository {
   ) {}
 
   findById(movieId: string): Prisma.PrismaPromise<MovieWithDetails | null> {
-    return this.prisma.movie.findUnique({
+    return this.prisma.movie.findFirst({
       where: {
         id: movieId,
+        ...publicMovieWhere,
       },
       include: movieInclude,
     });
@@ -175,7 +183,10 @@ export class MoviesRepository {
     totalCount: number;
   }> {
     const where: Prisma.MovieWhereInput = {
-      OR: [
+      AND: [
+        publicMovieWhere,
+        {
+          OR: [
         {
           titles: {
             some: {
@@ -218,6 +229,8 @@ export class MoviesRepository {
             },
           },
         },
+          ],
+        },
       ],
     };
 
@@ -243,6 +256,7 @@ export class MoviesRepository {
   // Web SEO용 sitemap 생성을 위해 영화 ID와 수정 시각만 조회
   findSitemapMovies(): Prisma.PrismaPromise<MovieSitemapItem[]> {
     return this.prisma.movie.findMany({
+      where: publicMovieWhere,
       select: {
         id: true,
         updatedAt: true,
@@ -412,6 +426,151 @@ export class MoviesRepository {
     return providerLink?.movieId ?? null;
   }
 
+  async findProviderLinks(sourceProvider: SourceProvider) {
+    return this.prisma.movieProviderLink.findMany({
+      where: {
+        sourceProvider,
+        matchStatus: MatchStatus.APPROVED,
+      },
+      select: {
+        movieId: true,
+        externalId: true,
+      },
+      orderBy: {
+        externalId: "asc",
+      },
+    });
+  }
+
+  async findMoviesForModeration(
+    visibility: MovieVisibility,
+    page: number,
+    limit: number,
+  ) {
+    const where: Prisma.MovieWhereInput = { visibility };
+    const [movies, totalCount] = await Promise.all([
+      this.prisma.movie.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { updatedAt: "desc" },
+        include: movieSearchInclude,
+      }),
+      this.prisma.movie.count({ where }),
+    ]);
+
+    return { movies, totalCount };
+  }
+
+  async updateMovieVisibility(
+    movieId: string,
+    visibility: MovieVisibility,
+    moderationReason?: string | null,
+  ) {
+    return this.prisma.movie.update({
+      where: { id: movieId },
+      data: {
+        visibility,
+        moderationReason: moderationReason ?? null,
+        reviewedAt: new Date(),
+      },
+      select: {
+        id: true,
+        visibility: true,
+        moderationReason: true,
+        reviewedAt: true,
+      },
+    });
+  }
+
+  async findMoviesWithKobisAndTmdbLinks() {
+    return this.prisma.movie.findMany({
+      where: {
+        providerLinks: {
+          some: {
+            sourceProvider: SourceProvider.KOBIS,
+            matchStatus: MatchStatus.APPROVED,
+          },
+        },
+      },
+      select: {
+        id: true,
+        providerLinks: {
+          where: {
+            sourceProvider: {
+              in: [SourceProvider.KOBIS, SourceProvider.TMDB],
+            },
+            matchStatus: MatchStatus.APPROVED,
+          },
+          select: {
+            sourceProvider: true,
+            externalId: true,
+          },
+        },
+      },
+    });
+  }
+
+  async splitTmdbLinkToNewMovie(
+    movieId: string,
+    tmdbExternalId: string,
+  ): Promise<string> {
+    return this.prisma.$transaction(async (tx) => {
+      const newMovie = await tx.movie.create({
+        data: {},
+        select: { id: true },
+      });
+
+      const nonKoreanReleases = await tx.movieRelease.findMany({
+        where: {
+          movieId,
+          countryCode: null,
+        },
+        select: { id: true },
+      });
+      const releaseIds = nonKoreanReleases.map((release) => release.id);
+
+      if (releaseIds.length > 0) {
+        await tx.movieRelease.updateMany({
+          where: { id: { in: releaseIds } },
+          data: { movieId: newMovie.id },
+        });
+        await tx.movieTitle.updateMany({
+          where: {
+            movieId,
+            releaseId: { in: releaseIds },
+          },
+          data: { movieId: newMovie.id },
+        });
+      }
+
+      await tx.movieMedia.updateMany({
+        where: {
+          movieId,
+          sourceProvider: {
+            in: [SourceProvider.TMDB, SourceProvider.YOUTUBE],
+          },
+        },
+        data: { movieId: newMovie.id },
+      });
+
+      await tx.movieProviderLink.update({
+        where: {
+          sourceProvider_externalId: {
+            sourceProvider: SourceProvider.TMDB,
+            externalId: tmdbExternalId,
+          },
+        },
+        data: { movieId: newMovie.id },
+      });
+
+      return newMovie.id;
+    }, {
+      maxWait: 10_000,
+      timeout: 30_000,
+    });
+  }
+
   async createMovieRoot(): Promise<string> {
     const movie = await this.prisma.movie.create({
       data: {},
@@ -431,6 +590,17 @@ export class MoviesRepository {
       const movie = await tx.movie.findUniqueOrThrow({
         where: { id: movieId },
       });
+
+      // 관리자가 검토한 영화는 이후 재수집에서 자동 분류로 덮어쓰지 않음.
+      if (!movie.reviewedAt) {
+        await tx.movie.update({
+          where: { id: movie.id },
+          data: {
+            visibility: input.visibility,
+            moderationReason: input.moderationReason,
+          },
+        });
+      }
       if (input.productionCountryCodes.length > 0) {
         const productionCountryCodes = [
           ...new Set([
@@ -459,22 +629,49 @@ export class MoviesRepository {
           : ReleaseStatus.RELEASED
         : ReleaseStatus.ANNOUNCED;
 
+      const initialRelease = await tx.movieRelease.findFirst({
+        where: {
+          movieId: movie.id,
+          releaseType: ReleaseType.INITIAL,
+          countryCode: "KR",
+        },
+      });
+      const matchingRelease = input.releaseDate
+        ? await tx.movieRelease.findFirst({
+            where: {
+              movieId: movie.id,
+              countryCode: "KR",
+              releaseDate: input.releaseDate,
+            },
+          })
+        : null;
       const release =
-        (await tx.movieRelease.findFirst({
-          where: {
-            movieId: movie.id,
-            releaseType: ReleaseType.INITIAL,
-          },
-        })) ??
-        (await tx.movieRelease.create({
-          data: {
-            movieId: movie.id,
-            releaseDate: input.releaseDate,
-            releaseType: ReleaseType.INITIAL,
-            status: releaseStatus,
-            isPrimary: true,
-          },
-        }));
+        matchingRelease ??
+        (initialRelease
+          ? !initialRelease.releaseDate ||
+            !input.releaseDate ||
+            initialRelease.releaseDate.getTime() === input.releaseDate.getTime()
+            ? initialRelease
+            : await tx.movieRelease.create({
+                data: {
+                  movieId: movie.id,
+                  releaseDate: input.releaseDate,
+                  releaseType: ReleaseType.RERELEASE,
+                  status: releaseStatus,
+                  countryCode: "KR",
+                  isPrimary: true,
+                },
+              })
+          : await tx.movieRelease.create({
+              data: {
+                movieId: movie.id,
+                releaseDate: input.releaseDate,
+                releaseType: ReleaseType.INITIAL,
+                status: releaseStatus,
+                countryCode: "KR",
+                isPrimary: true,
+              },
+            }));
 
       await tx.movieRelease.updateMany({
         where: {
@@ -491,6 +688,7 @@ export class MoviesRepository {
         data: {
           releaseDate: input.releaseDate,
           status: releaseStatus,
+          countryCode: "KR",
           isPrimary: true,
         },
       });
@@ -633,6 +831,9 @@ export class MoviesRepository {
       }
 
       return movie.id;
+    }, {
+      maxWait: 10_000,
+      timeout: 30_000,
     });
   }
 
@@ -684,9 +885,7 @@ export class MoviesRepository {
 
     const movies = await this.prisma.movie.findMany({
       where: {
-        id: {
-          in: movieIds,
-        },
+        AND: [publicMovieWhere, { id: { in: movieIds } }],
       },
       include: movieSearchInclude,
     });
@@ -720,6 +919,7 @@ export class MoviesRepository {
 
     const where: Prisma.MovieWhereInput = {
       AND: [
+        publicMovieWhere,
         {
           OR: [{ runtime: null }, { runtime: { gt: 30 } }],
         },
@@ -752,6 +952,7 @@ export class MoviesRepository {
       SELECT movie.id
       FROM movies AS movie
       WHERE (movie.runtime IS NULL OR movie.runtime > 30)
+        AND movie."visibility" = 'PUBLIC'
         AND EXISTS (
           SELECT 1
           FROM movie_releases AS release
@@ -775,9 +976,10 @@ export class MoviesRepository {
     const [movies, totalCount] = await Promise.all([
       this.prisma.movie.findMany({
         where: {
-          id: {
-            in: movieIds.map(({ id }) => id),
-          },
+          AND: [
+            publicMovieWhere,
+            { id: { in: movieIds.map(({ id }) => id) } },
+          ],
         },
         include: movieSearchInclude,
       }),
@@ -822,6 +1024,7 @@ export class MoviesRepository {
 
     const where: Prisma.MovieWhereInput = {
       AND: [
+        publicMovieWhere,
         { OR: [{ runtime: null }, { runtime: { gt: 30 } }] },
         {
           titles: {
@@ -848,6 +1051,7 @@ export class MoviesRepository {
         SELECT movie.id
         FROM movies AS movie
         WHERE (movie.runtime IS NULL OR movie.runtime > 30)
+          AND movie."visibility" = 'PUBLIC'
           AND EXISTS (
             SELECT 1
             FROM movie_titles AS title
@@ -893,9 +1097,10 @@ export class MoviesRepository {
     const [movies, totalCount] = await Promise.all([
       this.prisma.movie.findMany({
         where: {
-          id: {
-            in: movieIds.map(({ id }) => id),
-          },
+          AND: [
+            publicMovieWhere,
+            { id: { in: movieIds.map(({ id }) => id) } },
+          ],
         },
         include: {
           ...movieSearchInclude,
@@ -981,9 +1186,10 @@ export class MoviesRepository {
 
     const movies = await this.prisma.movie.findMany({
       where: {
-        id: {
-          in: rankings.map((ranking) => ranking.movieId),
-        },
+        AND: [
+          publicMovieWhere,
+          { id: { in: rankings.map((ranking) => ranking.movieId) } },
+        ],
       },
       include: movieSearchInclude,
     });

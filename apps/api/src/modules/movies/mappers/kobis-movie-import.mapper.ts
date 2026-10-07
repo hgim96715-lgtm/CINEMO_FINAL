@@ -1,15 +1,24 @@
+import { MovieVisibility } from "@prisma/client";
+
 import type { KobisMovieInfoResponseDto } from "@/integrations/kobis/dto/responses/kobis-movie-info.response.dto";
 
 import type { KobisMovieImportInput } from "../repositories/movies.repository";
+import { getKobisMovieVisibility } from "../movie-content-policy";
 
 const parseKobisDate = (value: string | null): Date | null => {
-  if (!value || !/^\d{8}$/.test(value)) {
+  if (!value) {
     return null;
   }
 
-  const year = Number(value.slice(0, 4));
-  const month = Number(value.slice(4, 6)) - 1;
-  const day = Number(value.slice(6, 8));
+  const normalizedValue = value.replaceAll("-", "");
+
+  if (!/^\d{8}$/.test(normalizedValue)) {
+    return null;
+  }
+
+  const year = Number(normalizedValue.slice(0, 4));
+  const month = Number(normalizedValue.slice(4, 6)) - 1;
+  const day = Number(normalizedValue.slice(6, 8));
 
   return new Date(Date.UTC(year, month, day));
 };
@@ -32,20 +41,36 @@ const toProductionCountryCodes = (nations: string[]): string[] => [
 
 export const toKobisMovieImportInput = (
   movie: KobisMovieInfoResponseDto,
-): KobisMovieImportInput => ({
-  movieCd: movie.movieCd,
-  title: movie.title,
-  runningTime: movie.runningTime,
-  releaseDate: parseKobisDate(movie.releaseDate),
-  productionCountryCodes: toProductionCountryCodes(movie.nations),
-  certifications: movie.certifications,
-  genres: movie.genres,
-  directors: movie.directors.map((person) => ({
-    name: person.name,
-    nameEn: person.nameEn,
-  })),
-  actors: movie.actors.map((person) => ({
-    name: person.name,
-    nameEn: person.nameEn,
-  })),
-});
+  options: { releaseDate?: string | null } = {},
+): KobisMovieImportInput => {
+  const moderation = getKobisMovieVisibility({
+    title: movie.title,
+    typeName: movie.typeName,
+    genres: movie.genres,
+    certifications: movie.certifications,
+  });
+
+  return {
+    movieCd: movie.movieCd,
+    title: movie.title,
+    runningTime: movie.runningTime,
+    releaseDate: parseKobisDate(
+      options.releaseDate !== undefined
+        ? options.releaseDate
+        : movie.releaseDate,
+    ),
+    productionCountryCodes: toProductionCountryCodes(movie.nations),
+    certifications: movie.certifications,
+    genres: movie.genres,
+    visibility: moderation.visibility,
+    moderationReason: moderation.moderationReason,
+    directors: movie.directors.map((person) => ({
+      name: person.name,
+      nameEn: person.nameEn,
+    })),
+    actors: movie.actors.map((person) => ({
+      name: person.name,
+      nameEn: person.nameEn,
+    })),
+  };
+};

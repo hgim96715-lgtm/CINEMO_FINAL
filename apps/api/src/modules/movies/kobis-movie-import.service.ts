@@ -11,6 +11,10 @@ import { toKobisMovieImportInput } from "./mappers/kobis-movie-import.mapper";
 import { MovieMatcherService } from "./movie-matcher.service";
 import { MoviesRepository } from "./repositories/movies.repository";
 
+export type KobisMovieImportOptions = {
+  releaseDate?: string | null;
+};
+
 @Injectable()
 export class KobisMovieImportService {
   constructor(
@@ -23,12 +27,15 @@ export class KobisMovieImportService {
     movieCd: string,
     fallbackTitle?: string,
     preferredMovieId?: string,
+    options: KobisMovieImportOptions = {},
   ): Promise<string> {
     const normalizedMovieCd = movieCd.trim();
 
     const kobisMovie = await this.kobisService.getMovieInfo(normalizedMovieCd);
 
-    const mappedInput = toKobisMovieImportInput(kobisMovie);
+    const mappedInput = toKobisMovieImportInput(kobisMovie, {
+      releaseDate: options.releaseDate,
+    });
 
     const titleFromKobis =
       typeof mappedInput.title === "string" ? mappedInput.title.trim() : "";

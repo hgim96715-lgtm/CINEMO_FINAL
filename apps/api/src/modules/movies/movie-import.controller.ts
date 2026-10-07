@@ -2,7 +2,6 @@ import { Controller, Param, Post, Query } from "@nestjs/common";
 import {
   ApiBadRequestResponse,
   ApiConflictResponse,
-  ApiCookieAuth,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -15,62 +14,24 @@ import { EnrichTmdbMovieRequestDto } from "./dto/requests/enrich-tmdb-movie.requ
 import { GetMovieRequestDto } from "./dto/requests/get-movie.request.dto";
 import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
 import { KobisMovieImportService } from "./kobis-movie-import.service";
-import { TmdbMovieBatchImportService } from "./tmdb-movie-batch-import.service";
 import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
-import { ImportKobisMoviesRequestDto } from "./dto/requests/import-kobis-movies.request.dto";
-import { KobisMovieBatchImportService } from "./kobis-movie-batch-import.service";
-import { GetKobisDailyBoxOfficeRequestDto } from "@/integrations/kobis/dto/requests/get-kobis-daily-box-office.request.dto";
+import { TmdbMovieBatchImportService } from "./tmdb-movie-batch-import.service";
 import { GetTmdbMovieRequestDto } from "@/integrations/tmdb/dto/requests/get-tmdb-movie.request.dto";
+import { ImportKobisMovieRequestDto } from "./dto/requests/import-kobis-movie.request.dto";
+import { Public } from "../auth/decorators/public.decorator";
 
 @ApiTags("Movie Imports")
-@ApiCookieAuth("cinemo_session")
+// @ApiCookieAuth("cinemo_session")
 @Controller("movie-imports")
 export class MovieImportController {
   constructor(
     private readonly kobisMovieImportService: KobisMovieImportService,
-    private readonly kobisMovieBatchImportService: KobisMovieBatchImportService,
     private readonly tmdbMovieBatchImportService: TmdbMovieBatchImportService,
     private readonly tmdbMovieSyncService: TmdbMovieSyncService,
     private readonly kmdbMovieEnrichmentService: KmdbMovieEnrichmentService,
   ) {}
 
-  @Post("kobis/box-office")
-  @ApiOperation({
-    summary: "KOBIS 일별 박스오피스 저장",
-    description: "KOBIS 박스오피스를 영화와 순위 스냅샷으로 저장",
-  })
-  @ApiOkResponse({
-    schema: {
-      type: "array",
-      items: {
-        type: "string",
-      },
-    },
-  })
-  importDailyBoxOffice(@Query() query: GetKobisDailyBoxOfficeRequestDto) {
-    return this.kobisMovieBatchImportService.importDailyBoxOffice(
-      query.targetDt,
-    );
-  }
-
-  @Post("kobis/upcoming")
-  @ApiOperation({
-    summary: "KOBIS 개봉 예정 영화 일괄 저장",
-    description:
-      "오늘부터 3개월 이내 개봉 예정이며 KOBIS 상태가 개봉예정인 영화를 저장",
-  })
-  @ApiOkResponse({
-    schema: {
-      type: "array",
-      items: {
-        type: "string",
-      },
-    },
-  })
-  importUpcomingFromKobis() {
-    return this.kobisMovieBatchImportService.importUpcomingMovies();
-  }
-
+  @Public()
   @Post("kobis/:movieCd")
   @ApiOperation({
     summary: "KOBIS 영화 저장",
@@ -88,42 +49,16 @@ export class MovieImportController {
       example: "01a0f063-d740-7084-a1ea-ed5c020640bb",
     },
   })
-  importFromKobis(@Param() params: GetKobisMovieInfoRequestDto) {
-    return this.kobisMovieImportService.importMovie(params.movieCd);
-  }
-
-  @Post("tmdb/popular")
-  @ApiOperation({
-    summary: "TMDB 인기 영화 일괄 저장",
-    description: "TMDB 인기 영화 2페이지를 조회해 CINEMO DB에 저장",
-  })
-  @ApiOkResponse({
-    schema: {
-      type: "array",
-      items: {
-        type: "string",
-      },
-    },
-  })
-  importPopularFromTmdb() {
-    return this.tmdbMovieBatchImportService.importPopularMovies(10);
-  }
-
-  @Post("tmdb/upcoming")
-  @ApiOperation({
-    summary: "TMDB 개봉 예정 영화 일괄 저장",
-    description: "TMDB 개봉 예정 영화 10페이지를 조회해 CINEMO DB에 저장",
-  })
-  @ApiOkResponse({
-    schema: {
-      type: "array",
-      items: {
-        type: "string",
-      },
-    },
-  })
-  importUpcomingFromTmdb() {
-    return this.tmdbMovieBatchImportService.importUpcomingMovies(10);
+  importFromKobis(
+    @Param() params: GetKobisMovieInfoRequestDto,
+    @Query() query: ImportKobisMovieRequestDto,
+  ) {
+    return this.kobisMovieImportService.importMovie(
+      params.movieCd,
+      undefined,
+      undefined,
+      { releaseDate: query.releaseDate },
+    );
   }
 
   @Post("tmdb/:tmdbMovieId")
@@ -198,9 +133,7 @@ export class MovieImportController {
     },
   })
   enrichFromKmdbAutomatically(@Param() params: GetMovieRequestDto) {
-    return this.kmdbMovieEnrichmentService.enrichMovieByMovieId(
-      params.movieId,
-    );
+    return this.kmdbMovieEnrichmentService.enrichMovieByMovieId(params.movieId);
   }
 
   @Post(":movieId/enrich/kmdb/:docId")
@@ -221,26 +154,4 @@ export class MovieImportController {
     );
   }
 
-  @Post("kobis")
-  @ApiOperation({
-    summary: "KOBIS 영화 일괄 저장",
-    description:
-      "제작 연도 범위 기준으로 KOBIS 영화 목록을 여러 페이지 조회해 저장",
-  })
-  @ApiOkResponse({
-    schema: {
-      type: "array",
-      items: {
-        type: "string",
-      },
-    },
-  })
-  importMoviesFromKobis(@Query() params: ImportKobisMoviesRequestDto) {
-    return this.kobisMovieBatchImportService.importMovies(
-      params.productionStartYear,
-      params.productionEndYear,
-      params.pageCount,
-      params.limit,
-    );
-  }
 }
