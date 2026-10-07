@@ -36,7 +36,8 @@ export class TmdbMovieSyncService {
     const tmdbMovie = await this.tmdbService.getMovieDetail(tmdbMovieId);
     const tmdbCredits = await this.tmdbService.getMovieCredits(tmdbMovieId);
     const trailer = await this.tmdbService.getOfficialTrailer(tmdbMovieId);
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(
+      async (tx) => {
       await tx.movie.findUniqueOrThrow({
         where: { id: movieId },
       });
@@ -349,7 +350,12 @@ export class TmdbMovieSyncService {
         },
       });
 
-      return movieId;
-    });
+        return movieId;
+      },
+      {
+        maxWait: 10_000,
+        timeout: 30_000,
+      },
+    );
   }
 }
