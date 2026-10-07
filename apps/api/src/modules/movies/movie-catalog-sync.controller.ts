@@ -12,9 +12,11 @@ import { ImportKobisMoviesRequestDto } from "./dto/requests/import-kobis-movies.
 import { ImportKobisReleasedMoviesRequestDto } from "./dto/requests/import-kobis-released-movies.request.dto";
 import { KobisMovieBatchImportService } from "./kobis-movie-batch-import.service";
 import { TmdbMovieBatchImportService } from "./tmdb-movie-batch-import.service";
+import { Public } from "../auth/decorators/public.decorator";
 
 @ApiTags("Movie Catalog Sync")
 @ApiCookieAuth("cinemo_session")
+@Public()
 @Controller("catalog-sync")
 export class MovieCatalogSyncController {
   constructor(
