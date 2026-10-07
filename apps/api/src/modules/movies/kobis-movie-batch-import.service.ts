@@ -577,6 +577,8 @@ export class KobisMovieBatchImportService {
       return nearbyMatch?.movie ?? null;
     }
 
-    return titleMatches[0] ?? null;
+    // 개봉일을 확인할 수 없을 때 제목만으로 자동 연결하면
+    // 같은 제목의 리메이크·재개봉 작품을 잘못 연결할 수 있음.
+    return null;
   }
 }
