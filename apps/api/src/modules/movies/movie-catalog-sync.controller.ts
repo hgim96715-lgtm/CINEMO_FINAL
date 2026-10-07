@@ -1,6 +1,5 @@
 import { Controller, Post, Query } from "@nestjs/common";
 import {
-  ApiCookieAuth,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -8,13 +7,14 @@ import {
 
 import { GetKobisDailyBoxOfficeRequestDto } from "@/integrations/kobis/dto/requests/get-kobis-daily-box-office.request.dto";
 
+import { Public } from "../auth/decorators/public.decorator";
 import { ImportKobisMoviesRequestDto } from "./dto/requests/import-kobis-movies.request.dto";
 import { ImportKobisReleasedMoviesRequestDto } from "./dto/requests/import-kobis-released-movies.request.dto";
 import { KobisMovieBatchImportService } from "./kobis-movie-batch-import.service";
 import { TmdbMovieBatchImportService } from "./tmdb-movie-batch-import.service";
 
 @ApiTags("Movie Catalog Sync")
-@ApiCookieAuth("cinemo_session")
+@Public()
 @Controller("catalog-sync")
 export class MovieCatalogSyncController {
   constructor(
