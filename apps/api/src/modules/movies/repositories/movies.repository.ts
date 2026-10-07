@@ -511,6 +511,93 @@ export class MoviesRepository {
     });
   }
 
+  async findMoviesMissingPosters(limit: number) {
+    return this.prisma.movie.findMany({
+      where: {
+        ...publicMovieWhere,
+        media: {
+          none: {
+            mediaType: MediaType.POSTER,
+            status: MediaStatus.ACTIVE,
+          },
+        },
+      },
+      orderBy: [{ updatedAt: "asc" }, { id: "asc" }],
+      take: limit,
+      select: {
+        id: true,
+        titles: {
+          where: { titleType: TitleType.PRIMARY },
+          orderBy: { createdAt: "asc" },
+          take: 1,
+          select: { title: true },
+        },
+        providerLinks: {
+          where: {
+            sourceProvider: SourceProvider.TMDB,
+            matchStatus: MatchStatus.APPROVED,
+          },
+          take: 1,
+          select: { externalId: true },
+        },
+      },
+    });
+  }
+
+  async upsertTmdbPoster(
+    movieId: string,
+    posterPath: string,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const existingMedia = await tx.movieMedia.findFirst({
+        where: {
+          movieId,
+          mediaType: MediaType.POSTER,
+          sourceProvider: SourceProvider.TMDB,
+          externalId: posterPath,
+        },
+      });
+
+      const existingPrimaryMedia = await tx.movieMedia.findFirst({
+        where: {
+          movieId,
+          mediaType: MediaType.POSTER,
+          status: MediaStatus.ACTIVE,
+          isPrimary: true,
+        },
+        select: { id: true },
+      });
+
+      const mediaData = {
+        url: `https://image.tmdb.org/t/p/w500${posterPath}`,
+        externalId: posterPath,
+        isPrimary: existingMedia?.isPrimary ?? !existingPrimaryMedia,
+        status: MediaStatus.ACTIVE,
+        verifiedAt: new Date(),
+      };
+
+      if (existingMedia) {
+        await tx.movieMedia.update({
+          where: { id: existingMedia.id },
+          data: mediaData,
+        });
+        return;
+      }
+
+      await tx.movieMedia.create({
+        data: {
+          movieId,
+          mediaType: MediaType.POSTER,
+          sourceProvider: SourceProvider.TMDB,
+          ...mediaData,
+        },
+      });
+    }, {
+      maxWait: 10_000,
+      timeout: 10_000,
+    });
+  }
+
   async splitTmdbLinkToNewMovie(
     movieId: string,
     tmdbExternalId: string,

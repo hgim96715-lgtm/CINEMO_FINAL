@@ -176,6 +176,77 @@ export class TmdbMovieBatchImportService {
     return [...movieIds];
   }
 
+  async syncMissingPosters(limit = 100) {
+    const movies = await this.moviesRepository.findMoviesMissingPosters(limit);
+    const updated: Array<{ movieId: string; title: string }> = [];
+    const skipped: Array<{
+      movieId: string;
+      title: string;
+      reason: "TMDB_POSTER_NOT_FOUND";
+    }> = [];
+    const review: Array<{
+      movieId: string;
+      title: string;
+      reason: "TMDB_LINK_NOT_FOUND";
+    }> = [];
+    const failures: Array<{
+      movieId: string;
+      title: string;
+      message: string;
+    }> = [];
+
+    await this.mapWithConcurrency(movies, async (movie) => {
+      const title = movie.titles[0]?.title ?? "제목 없음";
+      const tmdbMovieId = movie.providerLinks[0]?.externalId;
+
+      if (!tmdbMovieId) {
+        review.push({
+          movieId: movie.id,
+          title,
+          reason: "TMDB_LINK_NOT_FOUND",
+        });
+        return movie.id;
+      }
+
+      try {
+        const tmdbMovie = await this.tmdbService.getMovieDetail(
+          Number(tmdbMovieId),
+        );
+
+        if (!tmdbMovie.poster_path) {
+          skipped.push({
+            movieId: movie.id,
+            title,
+            reason: "TMDB_POSTER_NOT_FOUND",
+          });
+          return movie.id;
+        }
+
+        await this.moviesRepository.upsertTmdbPoster(
+          movie.id,
+          tmdbMovie.poster_path,
+        );
+        updated.push({ movieId: movie.id, title });
+      } catch (error) {
+        failures.push({
+          movieId: movie.id,
+          title,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+
+      return movie.id;
+    });
+
+    return {
+      inspected: movies.length,
+      updated: updated.length,
+      skipped,
+      review,
+      failures,
+    };
+  }
+
   async importMovie(tmdbMovieId: number): Promise<string> {
     const tmdbMovie = await this.tmdbService.getMovieDetail(tmdbMovieId);
     const movieId = await this.getOrCreateTmdbMovie(
