@@ -896,6 +896,7 @@ export class MoviesRepository {
           const person = await this.moviePersonService.resolve(tx, {
             name: credit.name,
             nameEn: credit.nameEn,
+            sourceProvider: SourceProvider.KOBIS,
             movieId: movie.id,
             creditType: credit.creditType,
           });

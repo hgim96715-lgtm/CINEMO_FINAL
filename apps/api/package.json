@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
+    "backfill:directors": "pnpm build && node dist/scripts/backfill-duplicate-directors.js",
     "typecheck": "../../node_modules/typescript/bin/tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
