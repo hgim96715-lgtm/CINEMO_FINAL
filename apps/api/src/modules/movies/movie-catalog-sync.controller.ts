@@ -1,9 +1,5 @@
 import { Controller, Post, Query } from "@nestjs/common";
-import {
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from "@nestjs/swagger";
+import { ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
 
 import { GetKobisDailyBoxOfficeRequestDto } from "@/integrations/kobis/dto/requests/get-kobis-daily-box-office.request.dto";
 
