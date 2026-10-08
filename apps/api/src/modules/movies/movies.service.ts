@@ -6,6 +6,7 @@ import { MovieResponseDto } from "./dto/responses/movie.response.dto";
 import { MovieSitemapResponseDto } from "./dto/responses/movie-sitemap.response.dto";
 import { MoviesRepository } from "./repositories/movies.repository";
 import { toMovieResponseDto } from "./mappers/movie-response.mapper";
+import { toMovieManagementItem } from "./mappers/movie-management.mapper";
 import { MovieSearchResponseDto } from "./dto/responses/movie-search.response.dto";
 import { toMovieSearchItemResponseDto } from "./mappers/movie-search-response.mapper";
 import { toMovieSitemapItemResponseDto } from "./mappers/movie-sitemap.mapper";
@@ -297,19 +298,7 @@ export class MoviesService {
     );
 
     return {
-      items: result.movies.map((movie) => ({
-        id: movie.id,
-        title:
-          movie.titles.find((title) => title.titleType === "PRIMARY")?.title ??
-          movie.titles[0]?.title ??
-          "",
-        visibility: movie.visibility,
-        moderationReason: movie.moderationReason,
-        releaseDate: movie.releases[0]?.releaseDate ?? null,
-        posterUrl:
-          movie.media.find((media) => media.mediaType === "POSTER")?.url ??
-          null,
-      })),
+      items: result.movies.map(toMovieManagementItem),
       totalCount: result.totalCount,
       page: params.page,
       limit: params.limit,

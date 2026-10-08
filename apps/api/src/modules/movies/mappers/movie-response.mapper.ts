@@ -2,35 +2,35 @@ import { Prisma } from "@prisma/client";
 
 import { MovieResponseDto } from "@/modules/movies/dto/responses/movie.response.dto";
 
-const movieInclude = {
-  titles: true,
-  releases: true,
-  media: true,
-  providerLinks: true,
-  watchOptions: true,
-  movieGenres: {
-    orderBy: {
-      name: "asc",
+const movieArgs = Prisma.validator<Prisma.MovieDefaultArgs>()({
+  include: {
+    titles: true,
+    releases: true,
+    media: true,
+    providerLinks: true,
+    watchOptions: true,
+    movieGenres: {
+      orderBy: {
+        name: "asc",
+      },
+    },
+    movieCertifications: {
+      orderBy: {
+        verifiedAt: "desc",
+      },
+    },
+    movieCredits: {
+      orderBy: {
+        displayOrder: "asc",
+      },
+      include: {
+        person: true,
+      },
     },
   },
-  movieCertifications: {
-    orderBy: {
-      verifiedAt: "desc",
-    },
-  },
-  movieCredits: {
-    orderBy: {
-      displayOrder: "asc",
-    },
-    include: {
-      person: true,
-    },
-  },
-} satisfies Prisma.MovieInclude;
+});
 
-export type MovieWithDetails = Prisma.MovieGetPayload<{
-  include: typeof movieInclude;
-}>;
+export type MovieWithDetails = Prisma.MovieGetPayload<typeof movieArgs>;
 
 function toIsoString(value: Date | null | undefined) {
   return value ? value.toISOString() : null;

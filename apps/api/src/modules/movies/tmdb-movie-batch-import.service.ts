@@ -8,7 +8,7 @@ import {
 
 import { toCreateMovieFromTmdbInput } from "./mappers/tmdb-movie-import.mapper";
 import { MoviesRepository } from "./repositories/movies.repository";
-import { MovieMatcherService } from "./movie-matcher.service";
+import { MovieMatcherRepository } from "./repositories/movie-matcher.repository";
 import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
 
 @Injectable()
@@ -16,14 +16,14 @@ export class TmdbMovieBatchImportService {
   constructor(
     private readonly tmdbService: TmdbService,
     private readonly moviesRepository: MoviesRepository,
-    private readonly movieMatcher: MovieMatcherService,
+    private readonly movieMatcherRepository: MovieMatcherRepository,
     private readonly tmdbMovieSyncService: TmdbMovieSyncService,
   ) {}
 
   private async getOrCreateTmdbMovie(
     input: Parameters<MoviesRepository["getOrCreateMovieByProviderLink"]>[0],
   ): Promise<string> {
-    const candidates = await this.movieMatcher.findCandidates(
+    const candidates = await this.movieMatcherRepository.findCandidates(
       input.title,
       input.releaseDate,
     );

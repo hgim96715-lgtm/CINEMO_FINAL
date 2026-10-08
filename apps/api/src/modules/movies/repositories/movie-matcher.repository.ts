@@ -3,9 +3,36 @@ import { Prisma, TitleType } from "@prisma/client";
 
 import { PrismaService } from "@/prisma/prisma.service";
 
+const movieMatcherArgs = Prisma.validator<Prisma.MovieDefaultArgs>()({
+  select: {
+    id: true,
+    titles: {
+      where: {
+        titleType: TitleType.PRIMARY,
+      },
+      select: {
+        title: true,
+      },
+    },
+    releases: {
+      select: {
+        releaseDate: true,
+        releaseType: true,
+      },
+    },
+    providerLinks: {
+      select: {
+        sourceProvider: true,
+        externalId: true,
+      },
+    },
+  },
+});
+
 @Injectable()
-export class MovieMatcherService {
+export class MovieMatcherRepository {
   constructor(private readonly prisma: PrismaService) {}
+
   findCandidates(title: string, releaseDate: Date | null) {
     const releaseCondition: Prisma.MovieWhereInput = releaseDate
       ? {
@@ -30,29 +57,7 @@ export class MovieMatcherService {
         },
         ...releaseCondition,
       },
-      select: {
-        id: true,
-        titles: {
-          where: {
-            titleType: TitleType.PRIMARY,
-          },
-          select: {
-            title: true,
-          },
-        },
-        releases: {
-          select: {
-            releaseDate: true,
-            releaseType: true,
-          },
-        },
-        providerLinks: {
-          select: {
-            sourceProvider: true,
-            externalId: true,
-          },
-        },
-      },
+      ...movieMatcherArgs,
       take: 2,
     });
   }

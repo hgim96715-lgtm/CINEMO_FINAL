@@ -4,15 +4,18 @@ import { KobisModule } from "@/integrations/kobis/kobis.module";
 
 import { MoviesController } from "./movies.controller";
 import { MoviesRepository } from "./repositories/movies.repository";
+import { MovieMatcherRepository } from "./repositories/movie-matcher.repository";
 import { MoviesService } from "./movies.service";
-import { MovieMatcherService } from "./movie-matcher.service";
 import { KobisMovieImportService } from "./kobis-movie-import.service";
 import { KobisMovieBatchImportService } from "./kobis-movie-batch-import.service";
 import { TmdbModule } from "@/integrations/tmdb/tmdb.module";
 import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
 import { MoviePersonService } from "./movie-person.service";
+import { MoviePersonRepository } from "./repositories/movie-person.repository";
 import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
 import { KmdbModule } from "@/integrations/kmdb/kmdb.module";
+import { KmdbMovieEnrichmentRepository } from "./repositories/kmdb-movie-enrichment.repository";
+import { TmdbMovieSyncRepository } from "./repositories/tmdb-movie-sync.repository";
 import { TmdbMovieBatchImportService } from "./tmdb-movie-batch-import.service";
 import { MovieImportController } from "./movie-import.controller";
 import { MovieManagementController } from "./movie-management.controller";
@@ -21,6 +24,9 @@ import { UserMovieRecordRepository } from "./repositories/user-movie-record.repo
 import { UserMovieRecordService } from "./user-movie-record.service";
 import { UserMovieNotificationService } from "./user-movie-notification.service";
 import { UserMovieNotificationRepository } from "./repositories/user-movie-notification.repository";
+import { PeopleRepository } from "./repositories/people.repository";
+import { PeopleService } from "./people.service";
+import { PeopleController } from "./people.controller";
 
 @Module({
   imports: [KobisModule, TmdbModule, KmdbModule],
@@ -29,25 +35,30 @@ import { UserMovieNotificationRepository } from "./repositories/user-movie-notif
     MovieImportController,
     MovieManagementController,
     MovieCatalogSyncController,
+    PeopleController,
   ],
   providers: [
     MoviesRepository,
+    MovieMatcherRepository,
     MoviesService,
-    MovieMatcherService,
     KobisMovieImportService,
     KobisMovieBatchImportService,
     TmdbMovieSyncService,
+    TmdbMovieSyncRepository,
     TmdbMovieBatchImportService,
+    KmdbMovieEnrichmentRepository,
     KmdbMovieEnrichmentService,
     MoviePersonService,
+    MoviePersonRepository,
     UserMovieRecordRepository,
     UserMovieRecordService,
     UserMovieNotificationRepository,
     UserMovieNotificationService,
+    PeopleRepository,
+    PeopleService,
   ],
   exports: [
     MoviesService,
-    MovieMatcherService,
     KobisMovieImportService,
     KobisMovieBatchImportService,
     TmdbMovieSyncService,
@@ -56,6 +67,7 @@ import { UserMovieNotificationRepository } from "./repositories/user-movie-notif
     MoviePersonService,
     UserMovieRecordService,
     UserMovieNotificationService,
+    PeopleService,
   ],
 })
 export class MoviesModule {}

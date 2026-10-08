@@ -8,7 +8,7 @@ import { SourceProvider } from "@prisma/client";
 import { KobisService } from "@/integrations/kobis/kobis.service";
 
 import { toKobisMovieImportInput } from "./mappers/kobis-movie-import.mapper";
-import { MovieMatcherService } from "./movie-matcher.service";
+import { MovieMatcherRepository } from "./repositories/movie-matcher.repository";
 import { MoviesRepository } from "./repositories/movies.repository";
 
 export type KobisMovieImportOptions = {
@@ -19,7 +19,7 @@ export type KobisMovieImportOptions = {
 export class KobisMovieImportService {
   constructor(
     private readonly kobisService: KobisService,
-    private readonly movieMatcher: MovieMatcherService,
+    private readonly movieMatcherRepository: MovieMatcherRepository,
     private readonly moviesRepository: MoviesRepository,
   ) {}
 
@@ -69,7 +69,7 @@ export class KobisMovieImportService {
     let movieId = linkedMovieId ?? preferredMovieId;
 
     if (!movieId) {
-      const candidates = await this.movieMatcher.findCandidates(
+      const candidates = await this.movieMatcherRepository.findCandidates(
         input.title,
         input.releaseDate,
       );

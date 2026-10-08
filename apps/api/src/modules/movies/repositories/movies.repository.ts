@@ -20,90 +20,92 @@ const publicMovieWhere: Prisma.MovieWhereInput = {
   visibility: MovieVisibility.PUBLIC,
 };
 
-const movieInclude = {
-  titles: {
-    orderBy: {
-      titleType: "asc",
-    },
-  },
-  releases: {
-    orderBy: [{ isPrimary: "desc" }, { releaseDate: "desc" }],
-  },
-  media: {
-    where: {
-      status: MediaStatus.ACTIVE,
-    },
-    orderBy: [{ isPrimary: "desc" }, { verifiedAt: "desc" }],
-  },
-  providerLinks: {
-    where: {
-      matchStatus: MatchStatus.APPROVED,
-    },
-  },
-  watchOptions: {
-    where: {
-      regionCode: "KR",
-    },
-    orderBy: [{ watchProvider: "asc" }, { availabilityType: "asc" }],
-  },
-  movieGenres: {
-    orderBy: {
-      name: "asc",
-    },
-  },
-  movieCertifications: {
-    orderBy: {
-      verifiedAt: "desc",
-    },
-  },
-  movieCredits: {
-    orderBy: {
-      displayOrder: "asc",
-    },
-    include: {
-      person: true,
-    },
-  },
-} satisfies Prisma.MovieInclude;
-
-type MovieWithDetails = Prisma.MovieGetPayload<{
-  include: typeof movieInclude;
-}>;
-
-const movieSearchInclude = {
-  titles: {
-    orderBy: {
-      createdAt: "asc",
-    },
-  },
-  releases: {
-    orderBy: [{ isPrimary: "desc" }, { releaseDate: "desc" }],
-    take: 1,
-  },
-  media: {
-    where: {
-      mediaType: {
-        in: [MediaType.POSTER, MediaType.TRAILER],
+const movieInclude = Prisma.validator<Prisma.MovieDefaultArgs>()({
+  include: {
+    titles: {
+      orderBy: {
+        titleType: "asc",
       },
-      status: MediaStatus.ACTIVE,
     },
-    orderBy: [{ isPrimary: "desc" }, { verifiedAt: "desc" }],
-  },
-  movieGenres: {
-    orderBy: {
-      name: "asc",
+    releases: {
+      orderBy: [{ isPrimary: "desc" }, { releaseDate: "desc" }],
+    },
+    media: {
+      where: {
+        status: MediaStatus.ACTIVE,
+      },
+      orderBy: [{ isPrimary: "desc" }, { verifiedAt: "desc" }],
+    },
+    providerLinks: {
+      where: {
+        matchStatus: MatchStatus.APPROVED,
+      },
+    },
+    watchOptions: {
+      where: {
+        regionCode: "KR",
+      },
+      orderBy: [{ watchProvider: "asc" }, { availabilityType: "asc" }],
+    },
+    movieGenres: {
+      orderBy: {
+        name: "asc",
+      },
+    },
+    movieCertifications: {
+      orderBy: {
+        verifiedAt: "desc",
+      },
+    },
+    movieCredits: {
+      orderBy: {
+        displayOrder: "asc",
+      },
+      include: {
+        person: true,
+      },
     },
   },
-  movieCertifications: {
-    orderBy: {
-      verifiedAt: "desc",
-    },
-  },
-} satisfies Prisma.MovieInclude;
+});
 
-export type MovieSearchWithDetails = Prisma.MovieGetPayload<{
-  include: typeof movieSearchInclude;
-}>;
+type MovieWithDetails = Prisma.MovieGetPayload<typeof movieInclude>;
+
+const movieSearchInclude = Prisma.validator<Prisma.MovieDefaultArgs>()({
+  include: {
+    titles: {
+      orderBy: {
+        createdAt: "asc",
+      },
+    },
+    releases: {
+      orderBy: [{ isPrimary: "desc" }, { releaseDate: "desc" }],
+      take: 1,
+    },
+    media: {
+      where: {
+        mediaType: {
+          in: [MediaType.POSTER, MediaType.TRAILER],
+        },
+        status: MediaStatus.ACTIVE,
+      },
+      orderBy: [{ isPrimary: "desc" }, { verifiedAt: "desc" }],
+    },
+    movieGenres: {
+      orderBy: {
+        name: "asc",
+      },
+    },
+    movieCertifications: {
+      orderBy: {
+        verifiedAt: "desc",
+      },
+    },
+  },
+});
+
+export type MovieSearchWithDetails = Prisma.MovieGetPayload<
+  typeof movieSearchInclude
+>;
 
 type MovieSitemapItem = {
   id: string;
@@ -170,7 +172,7 @@ export class MoviesRepository {
         id: movieId,
         ...publicMovieWhere,
       },
-      include: movieInclude,
+      ...movieInclude,
     });
   }
 
@@ -250,7 +252,7 @@ export class MoviesRepository {
         orderBy: {
           updatedAt: "desc",
         },
-        include: movieSearchInclude,
+        ...movieSearchInclude,
       }),
       this.prisma.movie.count({ where }),
     ]);
@@ -462,7 +464,7 @@ export class MoviesRepository {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { updatedAt: "desc" },
-        include: movieSearchInclude,
+        ...movieSearchInclude,
       }),
       this.prisma.movie.count({ where }),
     ]);
@@ -980,7 +982,7 @@ export class MoviesRepository {
       where: {
         AND: [publicMovieWhere, { id: { in: movieIds } }],
       },
-      include: movieSearchInclude,
+      ...movieSearchInclude,
     });
 
     const moviesById = new Map(movies.map((movie) => [movie.id, movie]));
@@ -1071,7 +1073,7 @@ export class MoviesRepository {
         where: {
           AND: [publicMovieWhere, { id: { in: movieIds.map(({ id }) => id) } }],
         },
-        include: movieSearchInclude,
+        ...movieSearchInclude,
       }),
       this.prisma.movie.count({ where }),
     ]);
@@ -1187,7 +1189,7 @@ export class MoviesRepository {
           AND: [publicMovieWhere, { id: { in: movieIds.map(({ id }) => id) } }],
         },
         include: {
-          ...movieSearchInclude,
+          ...movieSearchInclude.include,
           releases: {
             where: releasedReleaseWhere,
             orderBy: [{ isPrimary: "desc" }, { releaseDate: "desc" }],
@@ -1275,7 +1277,7 @@ export class MoviesRepository {
           { id: { in: rankings.map((ranking) => ranking.movieId) } },
         ],
       },
-      include: movieSearchInclude,
+      ...movieSearchInclude,
     });
 
     const moviesById = new Map(movies.map((movie) => [movie.id, movie]));

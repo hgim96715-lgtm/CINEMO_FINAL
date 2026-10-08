@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { CreditType, Prisma, SourceProvider } from "@prisma/client";
 
+import { MoviePersonRepository } from "./repositories/movie-person.repository";
+
 interface ResolveMoviePersonInput {
   name: string;
   nameEn?: string | null;
@@ -56,31 +58,21 @@ const isSamePersonName = (
 
 @Injectable()
 export class MoviePersonService {
+  constructor(private readonly repository: MoviePersonRepository) {}
+
   async resolve(tx: Prisma.TransactionClient, input: ResolveMoviePersonInput) {
     const providerLink =
       input.sourceProvider && input.externalId
-        ? await tx.moviePersonProviderLink.findUnique({
-            where: {
-              sourceProvider_externalId: {
-                sourceProvider: input.sourceProvider,
-                externalId: input.externalId,
-              },
-            },
-          })
+        ? await this.repository.findProviderLink(
+            tx,
+            input.sourceProvider,
+            input.externalId,
+          )
         : null;
 
     let matchedPerson = providerLink
-      ? await tx.moviePerson.findUniqueOrThrow({
-          where: { id: providerLink.personId },
-        })
-      : await tx.moviePerson.findFirst({
-          where: {
-            OR: [
-              { name: input.name },
-              ...(input.nameEn ? [{ nameEn: input.nameEn }] : []),
-            ],
-          },
-        });
+      ? await this.repository.findByIdOrThrow(tx, providerLink.personId)
+      : await this.repository.findByName(tx, input.name, input.nameEn);
 
     const originallyMatchedPersonId = matchedPerson?.id;
 
@@ -92,19 +84,10 @@ export class MoviePersonService {
       input.sourceProvider === SourceProvider.TMDB &&
       input.nameEn
     ) {
-      const existingDirectors = await tx.movieCredit.findMany({
-        where: {
-          movieId: input.movieId,
-          creditType: CreditType.DIRECTOR,
-        },
-        include: {
-          person: {
-            include: {
-              providerLinks: true,
-            },
-          },
-        },
-      });
+      const existingDirectors = await this.repository.findMovieDirectors(
+        tx,
+        input.movieId,
+      );
 
       const matchingDirectors = existingDirectors
         .filter(
@@ -145,19 +128,10 @@ export class MoviePersonService {
       input.movieId &&
       input.creditType === CreditType.DIRECTOR
     ) {
-      const existingDirectors = await tx.movieCredit.findMany({
-        where: {
-          movieId: input.movieId,
-          creditType: CreditType.DIRECTOR,
-        },
-        include: {
-          person: {
-            include: {
-              providerLinks: true,
-            },
-          },
-        },
-      });
+      const existingDirectors = await this.repository.findMovieDirectors(
+        tx,
+        input.movieId,
+      );
 
       const candidate =
         existingDirectors.length === 1 ? existingDirectors[0].person : null;
@@ -175,37 +149,22 @@ export class MoviePersonService {
     }
 
     const person = matchedPerson
-      ? await tx.moviePerson.update({
-          where: { id: matchedPerson.id },
-          data: {
-            nameEn:
-              matchedPerson.nameEn || !input.nameEn ? undefined : input.nameEn,
-          },
-        })
-      : await tx.moviePerson.create({
-          data: {
-            name: input.name,
-            nameEn: input.nameEn,
-          },
-        });
+      ? matchedPerson.nameEn || !input.nameEn
+        ? matchedPerson
+        : await this.repository.updateNameEn(
+            tx,
+            matchedPerson.id,
+            input.nameEn,
+          )
+      : await this.repository.create(tx, input.name, input.nameEn);
 
     if (input.sourceProvider && input.externalId) {
-      await tx.moviePersonProviderLink.upsert({
-        where: {
-          sourceProvider_externalId: {
-            sourceProvider: input.sourceProvider,
-            externalId: input.externalId,
-          },
-        },
-        create: {
-          personId: person.id,
-          sourceProvider: input.sourceProvider,
-          externalId: input.externalId,
-        },
-        update: {
-          personId: person.id,
-        },
-      });
+      await this.repository.upsertProviderLink(
+        tx,
+        person.id,
+        input.sourceProvider,
+        input.externalId,
+      );
     }
 
     if (
@@ -214,13 +173,12 @@ export class MoviePersonService {
       input.movieId &&
       input.creditType
     ) {
-      await tx.movieCredit.deleteMany({
-        where: {
-          movieId: input.movieId,
-          personId: originallyMatchedPersonId,
-          creditType: input.creditType,
-        },
-      });
+      await this.repository.deleteCredit(
+        tx,
+        input.movieId,
+        originallyMatchedPersonId,
+        input.creditType,
+      );
     }
 
     return person;
