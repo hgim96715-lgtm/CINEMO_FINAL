@@ -128,6 +128,7 @@ model User {
     sessions               AuthSession[]
     userMovieRecords       UserMovieRecord[]
     userMovieNotifications UserMovieNotification[]
+    userPersonBookmarks    UserPersonBookmark[]
 
     @@index([nickname])
     @@index([status])
@@ -263,6 +264,20 @@ model UserMovieRecord {
     @@map("user_movie_records")
 }
 
+model UserPersonBookmark {
+    id        String   @id @default(uuid(7)) @db.Uuid
+    userId    String   @db.Uuid
+    personId  String   @db.Uuid
+    createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+    user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+    person MoviePerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, personId])
+    @@index([personId])
+    @@map("user_person_bookmarks")
+}
+
 model UserMovieNotification {
     id               String                @id @default(uuid(7)) @db.Uuid
     userId           String                @db.Uuid
@@ -285,13 +300,13 @@ model UserMovieNotification {
 }
 
 model Movie {
-    id                     String   @id @default(uuid(7)) @db.Uuid
-    createdAt              DateTime @default(now()) @db.Timestamptz(3)
-    updatedAt              DateTime @updatedAt @db.Timestamptz(3)
-    productionCountryCodes String[] @default([]) @map("production_country_codes")
-    visibility              MovieVisibility @default(PUBLIC)
-    moderationReason        String?         @db.Text
-    reviewedAt              DateTime?       @db.Timestamptz(3)
+    id                     String          @id @default(uuid(7)) @db.Uuid
+    createdAt              DateTime        @default(now()) @db.Timestamptz(3)
+    updatedAt              DateTime        @updatedAt @db.Timestamptz(3)
+    productionCountryCodes String[]        @default([]) @map("production_country_codes")
+    visibility             MovieVisibility @default(PUBLIC)
+    moderationReason       String?         @db.Text
+    reviewedAt             DateTime?       @db.Timestamptz(3)
 
     overview        String?  @db.Text
     runtime         Int?
@@ -312,7 +327,6 @@ model Movie {
     userMovieNotifications UserMovieNotification[]
 
     @@index([visibility])
-
     @@map("movies")
 }
 
@@ -448,14 +462,20 @@ model MoviePopularitySnapshot {
 }
 
 model MoviePerson {
-    id        String   @id @default(uuid(7)) @db.Uuid
-    name      String   @db.Text
-    nameEn    String?  @db.Text
-    createdAt DateTime @default(now()) @db.Timestamptz(3)
-    updatedAt DateTime @updatedAt @db.Timestamptz(3)
+    id          String    @id @default(uuid(7)) @db.Uuid
+    name        String    @db.Text
+    nameEn      String?   @db.Text
+    profileUrl  String?   @db.Text
+    biography   String?   @db.Text
+    birthDate   DateTime? @db.Date
+    birthPlace  String?   @db.Text
+    nationality String?   @db.Text
+    createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+    updatedAt   DateTime  @updatedAt @db.Timestamptz(3)
 
-    credits       MovieCredit[]
-    providerLinks MoviePersonProviderLink[]
+    credits             MovieCredit[]
+    providerLinks       MoviePersonProviderLink[]
+    userPersonBookmarks UserPersonBookmark[]
 
     @@index([name])
     @@index([nameEn])

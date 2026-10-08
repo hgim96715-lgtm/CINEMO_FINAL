@@ -1,5 +1,5 @@
 import { HttpService } from "@nestjs/axios";
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { firstValueFrom } from "rxjs";
 import type {
   TmdbGenreListResponse,
@@ -10,6 +10,8 @@ import type {
   TmdbMovieSearchResponse,
   TmdbMovieVideo,
   TmdbMovieVideosResponse,
+  TmdbPersonDetailResponse,
+  TmdbPersonSearchResponse,
 } from "./types/tmdb-response.type";
 
 export interface TmdbUpcomingMovieDateRange {
@@ -254,5 +256,46 @@ export class TmdbService {
     const response = await this.getMovieVideos(tmdbMovieId);
 
     return this.findOfficialTrailer(response);
+  }
+
+  async getPersonDetail(
+    tmdbPersonId: number,
+  ): Promise<TmdbPersonDetailResponse> {
+    const { data } = await firstValueFrom(
+      this.httpService.get<TmdbPersonDetailResponse>(
+        `/person/${tmdbPersonId}`,
+        {
+          params: {
+            language: "ko-KR",
+          },
+        },
+      ),
+    );
+
+    return data;
+  }
+
+  async searchPeople(
+    query: string,
+    page = 1,
+  ): Promise<TmdbPersonSearchResponse> {
+    const normalizedQuery = query.trim();
+
+    if (!normalizedQuery) {
+      throw new BadRequestException("인물 검색어가 필요합니다.");
+    }
+
+    const { data } = await firstValueFrom(
+      this.httpService.get<TmdbPersonSearchResponse>("/search/person", {
+        params: {
+          query: normalizedQuery,
+          page,
+          language: "ko-KR",
+          include_adult: false,
+        },
+      }),
+    );
+
+    return data;
   }
 }

@@ -145,3 +145,30 @@ export interface TmdbMovieCrew {
   job: string;
   department: string;
 }
+
+export interface TmdbPersonDetailResponse {
+  id: number;
+  name: string;
+  original_name: string;
+  biography: string;
+  birthday: string | null;
+  place_of_birth: string | null;
+  profile_path: string | null;
+  known_for_department: string | null;
+  deathday: string | null;
+}
+
+export interface TmdbPersonSearchResponse {
+  page: number;
+  results: TmdbPersonSearchItem[];
+  total_pages: number;
+  total_results: number;
+}
+
+export interface TmdbPersonSearchItem {
+  id: number;
+  name: string;
+  original_name: string;
+  profile_path: string | null;
+  known_for_department: string | null;
+}
