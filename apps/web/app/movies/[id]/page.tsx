@@ -6,6 +6,7 @@ import { MovieRecordSummary } from "@/components/movies/MovieRecordSummary";
 import { MovieNotificationButton } from "@/components/movies/MovieNotificationButton";
 import { MovieBackButton } from "@/components/movies/MovieBackButton";
 import { getCachedMovie } from "@/lib/api/server-movies";
+import Link from "next/link";
 
 type MoviePageProps = {
   params: Promise<{
@@ -106,8 +107,6 @@ export default async function MoviePage({ params }: MoviePageProps) {
           .filter(Boolean)
           .join("") || "0분"
       : "정보 없음 ";
-
-  console.log(movie.runtime);
 
   const isAdultOnly = movie.certifications.some((certification) => {
     const normalizedCertification = certification.replace(/\s/g, "");
@@ -246,12 +245,13 @@ export default async function MoviePage({ params }: MoviePageProps) {
             <div className="mt-4 flex flex-wrap gap-3">
               {directors.length > 0 ? (
                 directors.map((credit) => (
-                  <button
+                  <Link
                     key={credit.id}
+                    href={`/people/${credit.person.id}`}
                     className="rounded-lg bg-white/10 px-4 py-2 text-white/80 transition hover:bg-white/20"
                   >
                     {credit.person.name}
-                  </button>
+                  </Link>
                 ))
               ) : (
                 <span className="text-white/50">정보 없음</span>
@@ -265,12 +265,13 @@ export default async function MoviePage({ params }: MoviePageProps) {
             <div className="mt-4 flex flex-wrap gap-3">
               {actors.length > 0 ? (
                 actors.slice(0, 10).map((credit) => (
-                  <button
+                  <Link
                     key={credit.id}
+                    href={`/people/${credit.person.id}`}
                     className="rounded-lg bg-white/10 px-4 py-2 text-white/80 transition hover:bg-white/20"
                   >
                     {credit.person.name}
-                  </button>
+                  </Link>
                 ))
               ) : (
                 <span className="text-white/50">정보 없음</span>
