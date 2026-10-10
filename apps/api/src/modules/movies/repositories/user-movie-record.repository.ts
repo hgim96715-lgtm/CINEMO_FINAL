@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { MediaType, Prisma, TitleType } from "@prisma/client";
 
 import { PrismaService } from "@/prisma/prisma.service";
 
@@ -63,6 +63,69 @@ export class UserMovieRecordRepository {
         userId_movieId: {
           userId,
           movieId,
+        },
+      },
+    });
+  }
+  async findAllByUser(userId: string) {
+    return this.prisma.userMovieRecord.findMany({
+      where: {
+        userId,
+        OR: [
+          { isFavorite: true },
+          { watchedAt: { not: null } },
+          { rating: { not: null } },
+        ],
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+      select: {
+        id: true,
+        isFavorite: true,
+        watchedAt: true,
+        rating: true,
+        movie: {
+          select: {
+            id: true,
+            titles: {
+              where: {
+                titleType: TitleType.PRIMARY,
+              },
+              orderBy: {
+                createdAt: "asc",
+              },
+              take: 1,
+              select: {
+                title: true,
+              },
+            },
+            releases: {
+              where: {
+                isPrimary: true,
+              },
+              orderBy: {
+                releaseDate: "asc",
+              },
+              take: 1,
+              select: {
+                releaseDate: true,
+              },
+            },
+            media: {
+              where: {
+                mediaType: MediaType.POSTER,
+                isPrimary: true,
+              },
+              orderBy: {
+                createdAt: "asc",
+              },
+              take: 1,
+              select: {
+                url: true,
+              },
+            },
+          },
         },
       },
     });

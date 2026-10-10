@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Eye, EyeClosed, Heart, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -8,9 +9,9 @@ import { ko } from "@daypicker/react/locale";
 import { AppModal } from "@/components/ui/app-modal";
 import { Calendar } from "@/components/ui/calendar";
 import {
-  useMovieRecord,
-  useUpdateMovieRecord,
+  movieRecordQueryOptions,
 } from "@/lib/queries/movie-record.query";
+import { useUpdateMovieRecord } from "@/lib/queries/movie-record.mutation";
 import { useAuthStore } from "@/stores/auth.store";
 
 type MovieRecordActionsProps = {
@@ -53,7 +54,10 @@ const parseDateValue = (dateValue: string) => {
 export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const recordQuery = useMovieRecord(movieId, Boolean(user));
+  const recordQuery = useQuery({
+    ...movieRecordQueryOptions(movieId),
+    enabled: Boolean(user),
+  });
   const updateRecord = useUpdateMovieRecord(movieId);
   const [loginRequired, setLoginRequired] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);

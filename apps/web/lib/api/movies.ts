@@ -103,9 +103,11 @@ export type UpdateMovieRecordInput = {
 
 export async function getMovieRecord(
   movieId: string,
+  signal?: AbortSignal,
 ): Promise<UserMovieRecordResponse> {
   const { data } = await apiClient.get<UserMovieRecordResponse>(
     `/movies/${movieId}/record`,
+    { signal },
   );
 
   return data;
@@ -183,9 +185,11 @@ export type MovieNotificationStatus = {
 
 export async function getMovieNotification(
   movieId: string,
+  signal?: AbortSignal,
 ): Promise<MovieNotificationStatus> {
   const { data } = await apiClient.get<MovieNotificationStatus>(
     `/movies/${movieId}/notification`,
+    { signal },
   );
 
   return data;
@@ -201,4 +205,26 @@ export async function unsubscribeMovieNotification(
   movieId: string,
 ): Promise<void> {
   await apiClient.delete(`/movies/${movieId}/notification`);
+}
+
+export type MyMovie = {
+  id: string;
+  movieId: string;
+  title: string;
+  posterUrl: string | null;
+  releaseDate: string | null;
+  isFavorite: boolean;
+  isWatched: boolean;
+  watchedAt: string | null;
+  rating: string | null;
+};
+
+export async function getMyMovies(
+  signal?: AbortSignal,
+): Promise<MyMovie[]> {
+  const { data } = await apiClient.get<MyMovie[]>("/movies/my", {
+    signal,
+  });
+
+  return data;
 }

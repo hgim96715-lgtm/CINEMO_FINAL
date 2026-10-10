@@ -81,4 +81,19 @@ export class UserMovieRecordService {
       rating: record?.rating?.toString() ?? null,
     };
   }
+  async findAllByUser(userId: string) {
+    const records = await this.userMovieRecordRepository.findAllByUser(userId);
+
+    return records.map((record) => ({
+      id: record.id,
+      movieId: record.movie.id,
+      title: record.movie.titles[0]?.title ?? "",
+      posterUrl: record.movie.media[0]?.url ?? null,
+      releaseDate: record.movie.releases[0]?.releaseDate ?? null,
+      isFavorite: record.isFavorite,
+      isWatched: Boolean(record.watchedAt),
+      watchedAt: record.watchedAt,
+      rating: record.rating?.toString() ?? null,
+    }));
+  }
 }

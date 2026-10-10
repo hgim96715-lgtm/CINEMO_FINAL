@@ -1,8 +1,9 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Star } from "lucide-react";
 
-import { useMovieRecord } from "@/lib/queries/movie-record.query";
+import { movieRecordQueryOptions } from "@/lib/queries/movie-record.query";
 import { useAuthStore } from "@/stores/auth.store";
 
 type MovieRecordSummaryProps = {
@@ -11,7 +12,10 @@ type MovieRecordSummaryProps = {
 
 export function MovieRecordSummary({ movieId }: MovieRecordSummaryProps) {
   const user = useAuthStore((state) => state.user);
-  const { data: record } = useMovieRecord(movieId, Boolean(user));
+  const { data: record } = useQuery({
+    ...movieRecordQueryOptions(movieId),
+    enabled: Boolean(user),
+  });
 
   const hasWatchedDate = Boolean(record?.isWatched && record.watchedAt);
 

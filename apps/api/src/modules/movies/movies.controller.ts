@@ -166,6 +166,22 @@ export class MoviesController {
       ttl: 60_000,
     },
   })
+  @Get("my")
+  @ApiOperation({
+    summary: "내 영화 목록 조회",
+    description: "찜한 영화·본 영화·평점이 있는 영화 목록 조회",
+  })
+  async getMyMovies(@CurrentUser() user: SessionUser) {
+    return this.userMovieRecordService.findAllByUser(user.id);
+  }
+
+  @ApiCookieAuth("cinemo_session")
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
   @Get(":movieId/record")
   @ApiOperation({
     summary: "사용자 영화 기록 조회",
