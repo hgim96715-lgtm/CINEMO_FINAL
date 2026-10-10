@@ -30,6 +30,8 @@ export const EnvKeys = {
   NAVER_CLIENT_ID: "NAVER_CLIENT_ID",
   NAVER_CLIENT_SECRET: "NAVER_CLIENT_SECRET",
   NAVER_CALLBACK_URL: "NAVER_CALLBACK_URL",
+
+  KAKAO_REST_API_KEY:'KAKAO_REST_API_KEY',
 };
 
 export type EnvKey = (typeof EnvKeys)[keyof typeof EnvKeys];

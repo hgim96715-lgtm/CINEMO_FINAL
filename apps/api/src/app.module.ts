@@ -1,24 +1,27 @@
-import { Module } from "@nestjs/common";
+import {Module} from "@nestjs/common";
 
-import { ConfigModule } from "@nestjs/config";
-import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
-import { PrismaModule } from "@/prisma/prisma.module";
-import { envValidationSchema } from "@/config/env.validation";
-import { appConfig } from "@/config/app.config";
-import { databaseConfig } from "@/config/database.config";
-import { HealthModule } from "@/health/health.module";
-import { MoviesModule } from "@/modules/movies/movies.module";
-import { kobisConfig } from "@/config/kobis.config";
-import { KobisModule } from "@/integrations/kobis/kobis.module";
-import { tmdbConfig } from "./config/tmdb.config";
-import { TmdbModule } from "./integrations/tmdb/tmdb.module";
-import { kmdbConfig } from "./config/kmdb.config";
-import { KmdbModule } from "./integrations/kmdb/kmdb.module";
-import { AuthModule } from "./modules/auth/auth.module";
-import { APP_GUARD } from "@nestjs/core";
-import { SessionAuthGuard } from "./modules/auth/session-auth.guard";
-import { mailConfig } from "./config/mail.config";
-import { oauthConfig } from "./config/oauth.config";
+import {ConfigModule} from "@nestjs/config";
+import {ThrottlerGuard, ThrottlerModule} from "@nestjs/throttler";
+import {PrismaModule} from "@/prisma/prisma.module";
+import {envValidationSchema} from "@/config/env.validation";
+import {appConfig} from "@/config/app.config";
+import {databaseConfig} from "@/config/database.config";
+import {HealthModule} from "@/health/health.module";
+import {MoviesModule} from "@/modules/movies/movies.module";
+import {kobisConfig} from "@/config/kobis.config";
+import {KobisModule} from "@/integrations/kobis/kobis.module";
+import {tmdbConfig} from "./config/tmdb.config";
+import {TmdbModule} from "./integrations/tmdb/tmdb.module";
+import {kmdbConfig} from "./config/kmdb.config";
+import {KmdbModule} from "./integrations/kmdb/kmdb.module";
+import {AuthModule} from "./modules/auth/auth.module";
+import {APP_GUARD} from "@nestjs/core";
+import {SessionAuthGuard} from "./modules/auth/session-auth.guard";
+import {mailConfig} from "./config/mail.config";
+import {oauthConfig} from "./config/oauth.config";
+import {mapConfig} from "@/config/map.config";
+import {KakaoModule} from "@/integrations/kakao/kakao.module";
+
 
 @Module({
   imports: [
@@ -40,6 +43,7 @@ import { oauthConfig } from "./config/oauth.config";
         kmdbConfig,
         mailConfig,
         oauthConfig,
+        mapConfig
       ],
       validationSchema: envValidationSchema,
       validationOptions: {
@@ -55,6 +59,7 @@ import { oauthConfig } from "./config/oauth.config";
     TmdbModule,
     KmdbModule,
     AuthModule,
+    KakaoModule,
   ],
   providers: [
     {

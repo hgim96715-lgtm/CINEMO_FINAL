@@ -108,6 +108,10 @@ enum MovieVisibility {
     HIDDEN
 }
 
+enum MapProvider {
+    KAKAO
+}
+
 model User {
     id              String     @id @default(uuid(7)) @db.Uuid
     email           String?    @unique
@@ -544,4 +548,39 @@ model MovieCertification {
     @@unique([sourceProvider, auditNo])
     @@index([movieId])
     @@map("movie_certifications")
+}
+
+model CinemaVenue {
+    id           String      @id @default(uuid(7)) @db.Uuid
+    provider     MapProvider
+    externalId   String      @map("external_id") @db.Text
+
+    name         String      @db.Text
+    brandName    String?     @map("brand_name") @db.Text
+
+    region1Code  String      @map("region1_code") @db.Text
+    region1Name  String      @map("region1_name") @db.Text
+    region2Code  String?     @map("region2_code") @db.Text
+    region2Name  String?     @map("region2_name") @db.Text
+    region3Code  String?     @map("region3_code") @db.Text
+    region3Name  String?     @map("region3_name") @db.Text
+
+    roadAddress  String?     @map("road_address") @db.Text
+    jibunAddress String?     @map("jibun_address") @db.Text
+
+    latitude     Decimal     @db.Decimal(10, 7)
+    longitude    Decimal     @db.Decimal(10, 7)
+
+    phone        String?     @db.Text
+    placeUrl     String?     @map("place_url") @db.Text
+
+    checkedAt    DateTime    @default(now()) @map("checked_at") @db.Timestamptz(3)
+    createdAt    DateTime    @default(now()) @db.Timestamptz(3)
+    updatedAt    DateTime    @updatedAt @db.Timestamptz(3)
+
+    @@unique([provider, externalId])
+    @@index([region1Code, region2Code, region3Code])
+    @@index([name])
+    @@index([brandName])
+    @@map("cinema_venues")
 }
