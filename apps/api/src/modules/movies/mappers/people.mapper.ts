@@ -1,7 +1,8 @@
-import { MediaType, TitleType } from "@prisma/client";
+import {MediaType, TitleType} from "@prisma/client";
 
-import type { PersonDetailResponseDto } from "../dto/responses/person-detail.response.dto";
-import type { PersonWithDetails } from "../repositories/people.repository";
+import type {PersonDetailResponseDto} from "../dto/responses/person-detail.response.dto";
+import type {PersonWithDetails} from "../repositories/people.repository";
+import type {BookmarkedPersonWithRoles,} from "../repositories/user-person-bookmark.repository";
 
 export const toPersonDetailResponse = (
   person: PersonWithDetails,
@@ -35,3 +36,18 @@ export const toPersonDetailResponse = (
     },
   })),
 });
+
+export const toBookmarkedPeopleResponse = (
+    bookmarks: BookmarkedPersonWithRoles[],
+) =>
+    bookmarks.map(({ id, createdAt, person }) => ({
+      id,
+      createdAt,
+      person: {
+        id: person.id,
+        name: person.name,
+        nameEn: person.nameEn,
+        profileUrl: person.profileUrl,
+        roles: [...new Set(person.credits.map((credit) => credit.creditType))],
+      },
+    }));

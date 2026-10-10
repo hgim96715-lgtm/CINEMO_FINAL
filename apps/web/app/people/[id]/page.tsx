@@ -8,6 +8,7 @@ import type { PersonDetail } from "@/lib/api/people";
 import { personDetailQueryOptions } from "@/lib/queries/person-detail.query";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import { PersonBookmarkButton } from "@/components/people/PersonBookmarkButton";
 
 export default function PersonDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +17,7 @@ export default function PersonDetailPage() {
   const personQuery = useQuery(personDetailQueryOptions(id));
 
   const [showFullBiography, setShowFullBiography] = useState(false);
+  const [showFullCredits, setShowFullCredits] = useState(false);
 
   if (personQuery.isPending) {
     return (
@@ -45,20 +47,17 @@ export default function PersonDetailPage() {
       ? `${biography.slice(0, 240)}...`
       : biography;
 
+  const visibleCredits = showFullCredits
+    ? person.credits
+    : person.credits.slice(0, 3);
+
+  console.log(person);
+
   const birthDate = person.birthDate ? person.birthDate.slice(0, 10) : null;
 
   return (
     <main className="min-h-screen bg-[#071619] px-6 py-10 text-white">
       <div className="mx-auto max-w-5xl">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          aria-label="이전 페이지로 이동"
-          className="inline-flex items-center text-white/60 transition hover:text-white"
-        >
-          <ArrowLeft className="size-5" />
-        </button>
-
         <section className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 md:flex md:gap-8">
           <div className="mx-auto w-40 shrink-0 md:mx-0">
             {person.profileUrl ? (
@@ -75,14 +74,18 @@ export default function PersonDetailPage() {
           </div>
 
           <div className="mt-6 md:mt-0">
-            {person.name ? (
-              <h1 className="text-3xl font-bold">{person.name}</h1>
-            ) : (
-              <div
-                aria-label="인물 이름 없음"
-                className="h-9 w-48 rounded bg-white/10"
-              />
-            )}
+            <div className="flex items-center gap-3">
+              {person.name ? (
+                <h1 className="text-3xl font-bold">{person.name}</h1>
+              ) : (
+                <div
+                  aria-label="인물 이름 없음"
+                  className="h-9 w-48 rounded bg-white/10"
+                />
+              )}
+
+              <PersonBookmarkButton personId={person.id} />
+            </div>
 
             {person.nameEn && (
               <p className="mt-2 text-lg text-white/55">{person.nameEn}</p>
@@ -139,7 +142,7 @@ export default function PersonDetailPage() {
             <p className="mt-6 text-white/45">필모그래피 정보가 없습니다.</p>
           ) : (
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              {person.credits.map((credit) => (
+              {visibleCredits.map((credit) => (
                 <Link
                   key={credit.id}
                   href={`/movies/${credit.movie.id}`}
@@ -177,6 +180,15 @@ export default function PersonDetailPage() {
                   </div>
                 </Link>
               ))}
+              {person.credits.length > 3 && (
+                <button
+                  type="button"
+                  onClick={() => setShowFullCredits((previous) => !previous)}
+                  className="mt-5 text-sm font-semibold text-cinemo-gold-light transition hover:text-cinemo-gold"
+                >
+                  {showFullCredits ? "접기" : "필모그래피 더보기"}
+                </button>
+              )}
             </div>
           )}
         </section>

@@ -1,24 +1,47 @@
-import { Controller, Get, Param, Post } from "@nestjs/common";
+import {Controller, Delete, Get, Param, Post} from "@nestjs/common";
 import {
   ApiConflictResponse,
+  ApiCookieAuth,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from "@nestjs/swagger";
 
-import { Public } from "../auth/decorators/public.decorator";
+import {Public} from "../auth/decorators/public.decorator";
 
-import { EnrichTmdbPersonRequestDto } from "./dto/requests/enrich-tmdb-person.request.dto";
-import { PersonDetailResponseDto } from "./dto/responses/person-detail.response.dto";
-import { toPersonDetailResponse } from "./mappers/people.mapper";
-import { PeopleService } from "./people.service";
-import { Throttle } from "node_modules/@nestjs/throttler/dist";
+import {EnrichTmdbPersonRequestDto} from "./dto/requests/enrich-tmdb-person.request.dto";
+import {PersonDetailResponseDto} from "./dto/responses/person-detail.response.dto";
+import {toBookmarkedPeopleResponse, toPersonDetailResponse} from "./mappers/people.mapper";
+import {PeopleService} from "./people.service";
+import {Throttle} from "node_modules/@nestjs/throttler/dist";
+import {UserPersonBookmarkService} from "./user-person-bookmark.service";
+import {CurrentUser} from "../auth/decorators/current-user.decorator";
+import type {SessionUser} from "../auth/types/session-user.type";
 
 @ApiTags("People")
 @Controller("people")
 export class PeopleController {
-  constructor(private readonly peopleService: PeopleService) {}
+  constructor(
+    private readonly peopleService: PeopleService,
+    private readonly userPersonBookmarkService: UserPersonBookmarkService,
+  ) {}
+
+  @ApiCookieAuth("cinemo_session")
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
+  @Get("bookmarks")
+  @ApiOperation({
+    summary: "저장한 인물 목록 조회",
+  })
+  async findBookmarkedPeople(@CurrentUser() user: SessionUser) {
+    const bookmarks= await this.userPersonBookmarkService.findAllByUser(user.id);
+    return toBookmarkedPeopleResponse(bookmarks);
+  }
 
   @Public()
   @Throttle({
@@ -27,7 +50,6 @@ export class PeopleController {
       ttl: 60_000,
     },
   })
-  @Get(":personId")
   @Get(":personId")
   @ApiOperation({
     summary: "인물 상세 정보 조회",
@@ -72,5 +94,59 @@ export class PeopleController {
     const person = await this.peopleService.findById(params.personId);
 
     return toPersonDetailResponse(person);
+  }
+
+  @ApiCookieAuth("cinemo_session")
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
+  @Get(":personId/bookmark")
+  @ApiOperation({
+    summary: "인물 북마크 상태 조회",
+  })
+  async getBookmarkStatus(
+    @Param("personId") personId: string,
+    @CurrentUser() user: SessionUser,
+  ) {
+    return this.userPersonBookmarkService.findStatus(user.id, personId);
+  }
+
+  @ApiCookieAuth("cinemo_session")
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
+  @Post(":personId/bookmark")
+  @ApiOperation({
+    summary: "인물 북마크 추가",
+  })
+  async addBookmark(
+    @Param("personId") personId: string,
+    @CurrentUser() user: SessionUser,
+  ) {
+    return this.userPersonBookmarkService.add(user.id, personId);
+  }
+
+  @ApiCookieAuth("cinemo_session")
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
+  @Delete(":personId/bookmark")
+  @ApiOperation({
+    summary: "인물 북마크 삭제",
+  })
+  async removeBookmark(
+    @Param("personId") personId: string,
+    @CurrentUser() user: SessionUser,
+  ) {
+    return this.userPersonBookmarkService.remove(user.id, personId);
   }
 }

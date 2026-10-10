@@ -1,4 +1,4 @@
-import { apiClient } from "./apiClient";
+import {apiClient} from "./apiClient";
 
 export type PersonMovie = {
   id: string;
@@ -33,6 +33,66 @@ export async function getPerson(
   signal?: AbortSignal,
 ): Promise<PersonDetail> {
   const { data } = await apiClient.get<PersonDetail>(`/people/${personId}`, {
+    signal,
+  });
+
+  return data;
+}
+export type PersonBookmarkResponse = {
+  personId: string;
+  bookmarked: boolean;
+};
+
+export async function getPersonBookmark(
+  personId: string,
+  signal?: AbortSignal,
+): Promise<PersonBookmarkResponse> {
+  const { data } = await apiClient.get<PersonBookmarkResponse>(
+    `/people/${personId}/bookmark`,
+    { signal },
+  );
+
+  return data;
+}
+
+export async function addPersonBookmark(
+  personId: string,
+): Promise<PersonBookmarkResponse> {
+  const { data } = await apiClient.post<PersonBookmarkResponse>(
+    `/people/${personId}/bookmark`,
+  );
+
+  return data;
+}
+
+export async function removePersonBookmark(
+  personId: string,
+): Promise<PersonBookmarkResponse> {
+  const { data } = await apiClient.delete<PersonBookmarkResponse>(
+    `/people/${personId}/bookmark`,
+  );
+
+  return data;
+}
+
+export type PersonRole='DIRECTOR' | 'ACTOR';
+
+export type BookmarkedPerson = {
+  id: string;
+  createdAt: string;
+  person: {
+    id: string;
+    name: string;
+    nameEn: string | null;
+    profileUrl: string | null;
+    roles: PersonRole[];
+  };
+};
+
+export async function getBookmarkedPeople(
+  signal?: AbortSignal,
+): Promise<BookmarkedPerson[]> {
+  const { data } = await apiClient.get<BookmarkedPerson[]>("/people/bookmarks", {
     signal,
   });
 

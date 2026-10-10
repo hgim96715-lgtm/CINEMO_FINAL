@@ -27,6 +27,8 @@ import { UserMovieNotificationRepository } from "./repositories/user-movie-notif
 import { PeopleRepository } from "./repositories/people.repository";
 import { PeopleService } from "./people.service";
 import { PeopleController } from "./people.controller";
+import { UserPersonBookmarkService } from "./user-person-bookmark.service";
+import { UserPersonBookmarkRepository } from "./repositories/user-person-bookmark.repository";
 
 @Module({
   imports: [KobisModule, TmdbModule, KmdbModule],
@@ -56,6 +58,8 @@ import { PeopleController } from "./people.controller";
     UserMovieNotificationService,
     PeopleRepository,
     PeopleService,
+    UserPersonBookmarkRepository,
+    UserPersonBookmarkService,
   ],
   exports: [
     MoviesService,
@@ -68,6 +72,7 @@ import { PeopleController } from "./people.controller";
     UserMovieRecordService,
     UserMovieNotificationService,
     PeopleService,
+    UserPersonBookmarkService,
   ],
 })
 export class MoviesModule {}
