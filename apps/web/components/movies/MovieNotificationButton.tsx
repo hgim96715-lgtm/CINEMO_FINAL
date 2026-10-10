@@ -1,15 +1,16 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Bell, BellRing } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AppModal } from "@/components/ui/app-modal";
 import {
-  useMovieNotification,
   useSubscribeMovieNotification,
   useUnsubscribeMovieNotification,
-} from "@/lib/queries/movie-notification.query";
+} from "@/lib/queries/movie-notification.mutation";
+import { movieNotificationQueryOptions } from "@/lib/queries/movie-notification.query";
 import { useAuthStore } from "@/stores/auth.store";
 
 type MovieNotificationButtonProps = {
@@ -24,7 +25,10 @@ export function MovieNotificationButton({
   const [loginRequired, setLoginRequired] = useState(false);
   const [notificationSuccess, setNotificationSuccess] = useState(false);
 
-  const notificationQuery = useMovieNotification(movieId, Boolean(user));
+  const notificationQuery = useQuery({
+    ...movieNotificationQueryOptions(movieId),
+    enabled: Boolean(user),
+  });
   const subscribeMutation = useSubscribeMovieNotification(movieId);
   const unsubscribeMutation = useUnsubscribeMovieNotification(movieId);
 

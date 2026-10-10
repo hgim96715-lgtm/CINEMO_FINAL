@@ -3,17 +3,18 @@
 import { Bell, BellRing, Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { AppModal } from "@/components/ui/app-modal";
 import {
-  useMovieRecord,
-  useUpdateMovieRecord,
+  movieRecordQueryOptions,
 } from "@/lib/queries/movie-record.query";
+import { useUpdateMovieRecord } from "@/lib/queries/movie-record.mutation";
 import {
-  useMovieNotification,
   useSubscribeMovieNotification,
   useUnsubscribeMovieNotification,
-} from "@/lib/queries/movie-notification.query";
+} from "@/lib/queries/movie-notification.mutation";
+import { movieNotificationQueryOptions } from "@/lib/queries/movie-notification.query";
 import { useAuthStore } from "@/stores/auth.store";
 
 type UpcomingMovieActionsProps = {
@@ -26,9 +27,15 @@ export function UpcomingMovieActions({ movieId }: UpcomingMovieActionsProps) {
   const [loginRequired, setLoginRequired] = useState(false);
   const [notificationSuccess, setNotificationSuccess] = useState(false);
 
-  const recordQuery = useMovieRecord(movieId, Boolean(user));
+  const recordQuery = useQuery({
+    ...movieRecordQueryOptions(movieId),
+    enabled: Boolean(user),
+  });
   const updateRecordMutation = useUpdateMovieRecord(movieId);
-  const notificationQuery = useMovieNotification(movieId, Boolean(user));
+  const notificationQuery = useQuery({
+    ...movieNotificationQueryOptions(movieId),
+    enabled: Boolean(user),
+  });
   const subscribeMutation = useSubscribeMovieNotification(movieId);
   const unsubscribeMutation = useUnsubscribeMovieNotification(movieId);
 
