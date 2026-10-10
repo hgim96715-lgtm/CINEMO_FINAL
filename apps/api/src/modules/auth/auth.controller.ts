@@ -34,7 +34,7 @@ import type { SessionUser } from "./types/session-user.type";
 import { PasswordResetService } from "./password-reset.service";
 import { RequestPasswordResetRequestDto } from "./dto/requests/request-password-reset.request.dto";
 import { ResetPasswordRequestDto } from "./dto/requests/reset-password.request.dto";
-import { Throttle } from "@nestjs/throttler";
+import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { CheckNicknameRequestDto } from "./dto/requests/check-nickname.request.dto";
 import { CheckEmailRequestDto } from "./dto/requests/check-email.request.dto";
 import { AppleAuthService } from "./apple-auth.service";
@@ -54,6 +54,7 @@ export class AuthController {
 
   @ApiCookieAuth("cinemo_session")
   @OptionalAuth()
+  @SkipThrottle()
   @Get("me")
   getMe(@Req() request: Request & { user?: SessionUser }) {
     return request.user ?? null;

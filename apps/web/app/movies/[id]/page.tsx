@@ -4,7 +4,6 @@ import { MovieTrailerButton } from "@/components/movies/MovieTrailerButton";
 import { MovieRecordActions } from "@/components/movies/MovieRecordActions";
 import { MovieRecordSummary } from "@/components/movies/MovieRecordSummary";
 import { MovieNotificationButton } from "@/components/movies/MovieNotificationButton";
-import { MovieBackButton } from "@/components/movies/MovieBackButton";
 import { getCachedMovie } from "@/lib/api/server-movies";
 import Link from "next/link";
 
@@ -130,9 +129,6 @@ export default async function MoviePage({ params }: MoviePageProps) {
         }}
       >
         <div className="absolute inset-0 bg-[#071619]/45" />
-        <div className="relative mx-auto max-w-6xl px-6 pt-6">
-          <MovieBackButton />
-        </div>
 
         <div className="relative mx-auto flex min-h-120 max-w-6xl items-end gap-10 px-6 pb-16 pt-10 md:min-h-170">
           <div className="hidden w-64 shrink-0 overflow-hidden rounded-2xl bg-white/5 shadow-2xl md:block">
