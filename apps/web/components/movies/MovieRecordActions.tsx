@@ -1,18 +1,17 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { Eye, EyeClosed, Heart, Star } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { ko } from "@daypicker/react/locale";
+import {useQuery} from "@tanstack/react-query";
+import {Eye, EyeClosed, Heart, Star} from "lucide-react";
+import {useRouter} from "next/navigation";
+import {useState} from "react";
+import {ko} from "@daypicker/react/locale";
 
-import { AppModal } from "@/components/ui/app-modal";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  movieRecordQueryOptions,
-} from "@/lib/queries/movie-record.query";
-import { useUpdateMovieRecord } from "@/lib/queries/movie-record.mutation";
-import { useAuthStore } from "@/stores/auth.store";
+import {AppModal} from "@/components/ui/app-modal";
+import {Calendar} from "@/components/ui/calendar";
+import {movieRecordQueryOptions,} from "@/lib/queries/movie-record.query";
+import {useUpdateMovieRecord} from "@/lib/queries/movie-record.mutation";
+import {useAuthStore} from "@/stores/auth.store";
+import {VenueSearch} from "@/components/map/CinemaVenueSearch";
 
 type MovieRecordActionsProps = {
   movieId: string;
@@ -51,6 +50,8 @@ const parseDateValue = (dateValue: string) => {
   return new Date(year, month - 1, day);
 };
 
+type ViewingPlaceSelection = "HOME" | "VENUE";
+
 export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
@@ -64,6 +65,9 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
   const [watchedDateOpen, setWatchedDateOpen] = useState(false);
   const [watchedDate, setWatchedDate] = useState("");
   const [calendarMonth, setCalendarMonth] = useState<Date>();
+  const [venueSearchOpen, setVenueSearchOpen] = useState(false);
+  const [viewingPlaceSelection, setViewingPlaceSelection] =
+    useState<ViewingPlaceSelection>("VENUE");
 
   const record = recordQuery.data;
   const isFavorite = record?.isFavorite ?? false;
@@ -116,10 +120,8 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
 
     setWatchedDate(date);
     setWatchedDateOpen(false);
-    updateRecord.mutate({
-      isWatched: true,
-      watchedAt: date,
-    });
+    setViewingPlaceSelection("VENUE");
+    setVenueSearchOpen(true);
   };
 
   const toggleRatingMenu = () => {
@@ -223,6 +225,82 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
             </button>
           ))}
         </div>
+      </AppModal>
+
+      <AppModal
+        open={venueSearchOpen}
+        onOpenChange={setVenueSearchOpen}
+        title="어디서 봤나요?"
+        description="관람 방식을 선택하세요."
+        className="max-h-[85vh] w-[calc(100%-2rem)] overflow-hidden sm:max-w-md"
+      >
+        <div
+          role="radiogroup"
+          aria-label="관람 방식"
+          className="grid gap-2 sm:grid-cols-2"
+        >
+          {[
+            { value: "HOME" as const, label: "집에서 보기" },
+            { value: "VENUE" as const, label: "관람 장소 선택" },
+          ].map((option) => {
+            const selected = viewingPlaceSelection === option.value;
+
+            return (
+              <label
+                key={option.value}
+                className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm transition ${
+                  selected
+                    ? "border-cinemo-gold bg-cinemo-gold/10 text-cinemo-gold"
+                    : "border-white/10 bg-white/3 text-cinemo-muted hover:border-white/25"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="viewing-place"
+                  value={option.value}
+                  checked={selected}
+                  onChange={() => setViewingPlaceSelection(option.value)}
+                  className="size-4 accent-cinemo-gold"
+                />
+                {option.label}
+              </label>
+            );
+          })}
+        </div>
+
+        {viewingPlaceSelection === "VENUE" ? (
+          <div className="mt-4 space-y-3">
+            <VenueSearch
+              onSelected={(venueId) => {
+                setVenueSearchOpen(false);
+
+                updateRecord.mutate({
+                  isWatched: true,
+                  watchedAt: watchedDate,
+                  venueId,
+                  viewingPlaceType: "VENUE",
+                });
+              }}
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setVenueSearchOpen(false);
+
+              updateRecord.mutate({
+                isWatched: true,
+                watchedAt: watchedDate,
+                venueId: null,
+                viewingPlaceType: "HOME",
+              });
+            }}
+            className="mt-4 w-full rounded-lg bg-cinemo-gold px-4 py-3 text-sm font-semibold text-cinemo-bg transition hover:bg-cinemo-gold-light"
+          >
+            집에서 본 것으로 저장
+          </button>
+        )}
       </AppModal>
 
       <div className="flex w-37 flex-wrap items-center gap-2 sm:w-auto sm:gap-3">

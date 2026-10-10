@@ -88,6 +88,39 @@ export type MovieSitemapResponseDto = {
     items: Array<MovieSitemapItemResponseDto>;
 };
 
+export type VenueSummaryResponseDto = {
+    /**
+     * 관람 장소 ID
+     */
+    id: string;
+    /**
+     * 관람 장소 유형
+     */
+    type: 'CINEMA' | 'HOME' | 'MUSEUM' | 'EXHIBITION_HALL' | 'PERFORMANCE_HALL' | 'OTHER';
+    /**
+     * 관람 장소 이름
+     */
+    name: string;
+    /**
+     * 관람 장소 브랜드명
+     */
+    brandName?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * 도로명 주소
+     */
+    roadAddress?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * 지번 주소
+     */
+    jibunAddress?: {
+        [key: string]: unknown;
+    } | null;
+};
+
 export type UserMovieRecordResponseDto = {
     /**
      * 영화 ID
@@ -109,6 +142,18 @@ export type UserMovieRecordResponseDto = {
      * 개인 평점
      */
     rating: string | null;
+    /**
+     * 관람 장소 ID
+     */
+    venueId: string | null;
+    /**
+     * 관람 방식
+     */
+    viewingPlaceType?: 'HOME' | 'VENUE';
+    /**
+     * 관람 장소 정보
+     */
+    venue?: VenueSummaryResponseDto | null;
 };
 
 export type UpdateMovieRecordRequestDto = {
@@ -130,6 +175,16 @@ export type UpdateMovieRecordRequestDto = {
      * 개인 평점. 0.5~5.0, null이면 평점 삭제
      */
     rating?: string | null;
+    /**
+     * 관람 장소 ID. 집에서 본 경우 null
+     */
+    venueId?: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * 관람 방식
+     */
+    viewingPlaceType?: 'HOME' | 'VENUE';
 };
 
 export type MovieTitleResponseDto = {
@@ -395,6 +450,98 @@ export type MovieResponseDto = {
      * 영화 레코드 수정 시각
      */
     updatedAt: string;
+};
+
+export type UpdateMovieVisibilityRequestDto = {
+    visibility: 'PUBLIC' | 'REVIEW' | 'HIDDEN';
+    moderationReason?: {
+        [key: string]: unknown;
+    } | null;
+};
+
+export type PersonMovieResponseDto = {
+    /**
+     * 출연·연출 영화 식별자
+     */
+    id: string;
+    /**
+     * 영화 대표 제목
+     */
+    title: string;
+    /**
+     * 영화의 대표 개봉일
+     */
+    releaseDate: string | null;
+    /**
+     * 영화 포스터 주소
+     */
+    posterUrl: string | null;
+};
+
+export type PersonCreditResponseDto = {
+    /**
+     * 영화 인물 연결 식별자
+     */
+    id: string;
+    /**
+     * 영화에서 담당한 역할
+     */
+    creditType: 'DIRECTOR' | 'ACTOR';
+    /**
+     * 배우가 연기한 배역명
+     */
+    characterName: string | null;
+    /**
+     * 상세 화면에 표시할 크레딧 순서
+     */
+    displayOrder: number | null;
+    /**
+     * 연결된 영화 정보
+     */
+    movie: PersonMovieResponseDto;
+    /**
+     * 연결된 인물 식별자
+     */
+    personId: string;
+};
+
+export type PersonDetailResponseDto = {
+    /**
+     * 인물 식별자
+     */
+    id: string;
+    /**
+     * 인물의 한국어 이름
+     */
+    name: string;
+    /**
+     * 인물의 영문 또는 원문 이름
+     */
+    nameEn: string | null;
+    /**
+     * 인물 프로필 이미지 주소
+     */
+    profileUrl: string | null;
+    /**
+     * 인물 소개
+     */
+    biography: string | null;
+    /**
+     * 인물 출생일
+     */
+    birthDate: string | null;
+    /**
+     * 인물 출생지
+     */
+    birthPlace: string | null;
+    /**
+     * 인물 국적
+     */
+    nationality: string | null;
+    /**
+     * 인물이 참여한 영화와 담당 역할 목록
+     */
+    credits: Array<PersonCreditResponseDto>;
 };
 
 export type KobisMovieSearchItemResponseDto = {
@@ -798,6 +945,87 @@ export type TmdbMovieDetailResponseDto = {
     } | null;
 };
 
+export type TmdbPersonSearchItemResponseDto = {
+    /**
+     * TMDB 외부 인물 식별자
+     */
+    id: number;
+    /**
+     * TMDB 인물 이름
+     */
+    name: string;
+    /**
+     * TMDB 인물 원문 이름
+     */
+    original_name: string;
+    /**
+     * TMDB 프로필 이미지 부분 경로
+     */
+    profile_path: string | null;
+    /**
+     * TMDB 기준 주요 활동 분야
+     */
+    known_for_department: string | null;
+};
+
+export type SearchTmdbPeopleResponseDto = {
+    /**
+     * 현재 페이지
+     */
+    page: number;
+    /**
+     * TMDB 인물 검색 결과
+     */
+    results: Array<TmdbPersonSearchItemResponseDto>;
+    /**
+     * 전체 페이지 수
+     */
+    total_pages: number;
+    /**
+     * 전체 검색 결과 수
+     */
+    total_results: number;
+};
+
+export type TmdbPersonDetailResponseDto = {
+    /**
+     * TMDB 외부 인물 식별자
+     */
+    id: number;
+    /**
+     * 인물 이름
+     */
+    name: string;
+    /**
+     * 인물 원문 이름
+     */
+    original_name: string;
+    /**
+     * 인물 소개
+     */
+    biography: string;
+    /**
+     * 출생일
+     */
+    birthday: string | null;
+    /**
+     * 출생지
+     */
+    place_of_birth: string | null;
+    /**
+     * TMDB 프로필 이미지 경로
+     */
+    profile_path: string | null;
+    /**
+     * 주요 활동 분야
+     */
+    known_for_department: string | null;
+    /**
+     * 사망일
+     */
+    deathday: string | null;
+};
+
 export type KmdbRatingResponseDto = {
     ratingMain: {
         [key: string]: unknown;
@@ -998,6 +1226,206 @@ export type OauthSignupRequestDto = {
     terms: RegisterTermsDto;
 };
 
+export type KakaoAddressSearchMetaResponseDto = {
+    /**
+     * 검색된 전체 주소 수
+     */
+    total_count: number;
+    /**
+     * 페이지로 조회 가능한 주소 수
+     */
+    pageable_count: number;
+    /**
+     * 현재 페이지가 마지막인지 여부
+     */
+    is_end: boolean;
+};
+
+export type KakaoAddressInfoResponseDto = {
+    /**
+     * 전체 지번 주소
+     */
+    address_name: string;
+    /**
+     * 시·도 이름
+     */
+    region_1depth_name: string;
+    /**
+     * 시·군·구 이름
+     */
+    region_2depth_name: string;
+    /**
+     * 읍·면·동 이름
+     */
+    region_3depth_name: string;
+    /**
+     * 행정동 이름
+     */
+    region_3depth_h_name: string;
+    /**
+     * 행정동 코드
+     */
+    h_code: string;
+    /**
+     * 법정동 코드
+     */
+    b_code: string;
+    /**
+     * 산 여부
+     */
+    mountain_yn: string;
+    /**
+     * 지번 주번지
+     */
+    main_address_no: string;
+    /**
+     * 지번 부번지
+     */
+    sub_address_no: string;
+    /**
+     * 경도
+     */
+    x: string;
+    /**
+     * 위도
+     */
+    y: string;
+};
+
+export type KakaoRoadAddressInfoResponseDto = {
+    /**
+     * 전체 도로명 주소
+     */
+    address_name: string;
+    /**
+     * 시·도 이름
+     */
+    region_1depth_name: string;
+    /**
+     * 시·군·구 이름
+     */
+    region_2depth_name: string;
+    /**
+     * 읍·면·동 이름
+     */
+    region_3depth_name: string;
+    /**
+     * 도로명
+     */
+    road_name: string;
+    /**
+     * 지하 여부
+     */
+    underground_yn: string;
+    /**
+     * 건물 본번
+     */
+    main_building_no: string;
+    /**
+     * 건물 부번
+     */
+    sub_building_no: string;
+    /**
+     * 건물명
+     */
+    building_name: string;
+    /**
+     * 우편번호
+     */
+    zone_no: string;
+    /**
+     * 경도
+     */
+    x: string;
+    /**
+     * 위도
+     */
+    y: string;
+};
+
+export type KakaoAddressSearchItemResponseDto = {
+    /**
+     * 주소 검색 결과의 대표 주소
+     */
+    address_name: string;
+    /**
+     * 주소 유형
+     */
+    address_type: string;
+    /**
+     * 경도
+     */
+    x: string;
+    /**
+     * 위도
+     */
+    y: string;
+    address: KakaoAddressInfoResponseDto | null;
+    road_address: KakaoRoadAddressInfoResponseDto | null;
+};
+
+export type KakaoAddressSearchResponseDto = {
+    /**
+     * 주소 검색 메타 정보
+     */
+    meta: KakaoAddressSearchMetaResponseDto;
+    /**
+     * Kakao 주소 검색 결과 목록
+     */
+    documents: Array<KakaoAddressSearchItemResponseDto>;
+};
+
+export type SaveVenueRequestDto = {
+    /**
+     * Kakao 장소 식별자
+     */
+    id: string;
+    /**
+     * 관람 장소명
+     */
+    place_name: string;
+    /**
+     * Kakao 장소 분류 경로
+     */
+    category_name: string;
+    /**
+     * Kakao 분류 그룹 코드
+     */
+    category_group_code: string;
+    /**
+     * Kakao 분류 그룹명
+     */
+    category_group_name: string;
+    /**
+     * 전화번호
+     */
+    phone: string;
+    /**
+     * 지번 주소
+     */
+    address_name: string;
+    /**
+     * 도로명 주소
+     */
+    road_address_name: string;
+    /**
+     * Kakao 장소 상세 URL
+     */
+    place_url: string;
+    /**
+     * 검색 기준 위치와의 거리
+     */
+    distance: string;
+    /**
+     * 경도
+     */
+    x: string;
+    /**
+     * 위도
+     */
+    y: string;
+};
+
 export type RegisterRequestDtoWritable = {
     /**
      * 로그인에 사용할 이메일
@@ -1193,6 +1621,17 @@ export type MoviesControllerGetReleasedMoviesV1Responses = {
 
 export type MoviesControllerGetReleasedMoviesV1Response = MoviesControllerGetReleasedMoviesV1Responses[keyof MoviesControllerGetReleasedMoviesV1Responses];
 
+export type MoviesControllerGetMyMoviesV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/movies/my';
+};
+
+export type MoviesControllerGetMyMoviesV1Responses = {
+    200: unknown;
+};
+
 export type MoviesControllerGetMovieRecordV1Data = {
     body?: never;
     path: {
@@ -1235,6 +1674,54 @@ export type MoviesControllerUpdateMovieRecordV1Responses = {
 
 export type MoviesControllerUpdateMovieRecordV1Response = MoviesControllerUpdateMovieRecordV1Responses[keyof MoviesControllerUpdateMovieRecordV1Responses];
 
+export type MoviesControllerUnsubscribeMovieNotificationV1Data = {
+    body?: never;
+    path: {
+        /**
+         * CINEMO 내부 영화 UUID
+         */
+        movieId: string;
+    };
+    query?: never;
+    url: '/v1/movies/{movieId}/notification';
+};
+
+export type MoviesControllerUnsubscribeMovieNotificationV1Responses = {
+    200: unknown;
+};
+
+export type MoviesControllerGetMovieNotificationV1Data = {
+    body?: never;
+    path: {
+        /**
+         * CINEMO 내부 영화 UUID
+         */
+        movieId: string;
+    };
+    query?: never;
+    url: '/v1/movies/{movieId}/notification';
+};
+
+export type MoviesControllerGetMovieNotificationV1Responses = {
+    200: unknown;
+};
+
+export type MoviesControllerSubscribeMovieNotificationV1Data = {
+    body?: never;
+    path: {
+        /**
+         * CINEMO 내부 영화 UUID
+         */
+        movieId: string;
+    };
+    query?: never;
+    url: '/v1/movies/{movieId}/notification';
+};
+
+export type MoviesControllerSubscribeMovieNotificationV1Responses = {
+    201: unknown;
+};
+
 export type MoviesControllerFindByIdV1Data = {
     body?: never;
     path: {
@@ -1263,37 +1750,6 @@ export type MoviesControllerFindByIdV1Responses = {
 
 export type MoviesControllerFindByIdV1Response = MoviesControllerFindByIdV1Responses[keyof MoviesControllerFindByIdV1Responses];
 
-export type MovieImportControllerImportDailyBoxOfficeV1Data = {
-    body?: never;
-    path?: never;
-    query: {
-        /**
-         * 박스오피스 조회 기준일
-         */
-        targetDt: string;
-    };
-    url: '/v1/movie-imports/kobis/box-office';
-};
-
-export type MovieImportControllerImportDailyBoxOfficeV1Responses = {
-    200: Array<string>;
-};
-
-export type MovieImportControllerImportDailyBoxOfficeV1Response = MovieImportControllerImportDailyBoxOfficeV1Responses[keyof MovieImportControllerImportDailyBoxOfficeV1Responses];
-
-export type MovieImportControllerImportUpcomingFromKobisV1Data = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/movie-imports/kobis/upcoming';
-};
-
-export type MovieImportControllerImportUpcomingFromKobisV1Responses = {
-    200: Array<string>;
-};
-
-export type MovieImportControllerImportUpcomingFromKobisV1Response = MovieImportControllerImportUpcomingFromKobisV1Responses[keyof MovieImportControllerImportUpcomingFromKobisV1Responses];
-
 export type MovieImportControllerImportFromKobisV1Data = {
     body?: never;
     path: {
@@ -1302,7 +1758,12 @@ export type MovieImportControllerImportFromKobisV1Data = {
          */
         movieCd: string;
     };
-    query?: never;
+    query?: {
+        /**
+         * 이번에 저장할 국내 개봉일. 재개봉일을 지정할 때 사용
+         */
+        releaseDate?: string;
+    };
     url: '/v1/movie-imports/kobis/{movieCd}';
 };
 
@@ -1322,32 +1783,6 @@ export type MovieImportControllerImportFromKobisV1Responses = {
 };
 
 export type MovieImportControllerImportFromKobisV1Response = MovieImportControllerImportFromKobisV1Responses[keyof MovieImportControllerImportFromKobisV1Responses];
-
-export type MovieImportControllerImportPopularFromTmdbV1Data = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/movie-imports/tmdb/popular';
-};
-
-export type MovieImportControllerImportPopularFromTmdbV1Responses = {
-    200: Array<string>;
-};
-
-export type MovieImportControllerImportPopularFromTmdbV1Response = MovieImportControllerImportPopularFromTmdbV1Responses[keyof MovieImportControllerImportPopularFromTmdbV1Responses];
-
-export type MovieImportControllerImportUpcomingFromTmdbV1Data = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/v1/movie-imports/tmdb/upcoming';
-};
-
-export type MovieImportControllerImportUpcomingFromTmdbV1Responses = {
-    200: Array<string>;
-};
-
-export type MovieImportControllerImportUpcomingFromTmdbV1Response = MovieImportControllerImportUpcomingFromTmdbV1Responses[keyof MovieImportControllerImportUpcomingFromTmdbV1Responses];
 
 export type MovieImportControllerImportFromTmdbV1Data = {
     body?: never;
@@ -1454,7 +1889,114 @@ export type MovieImportControllerEnrichFromKmdbV1Responses = {
 
 export type MovieImportControllerEnrichFromKmdbV1Response = MovieImportControllerEnrichFromKmdbV1Responses[keyof MovieImportControllerEnrichFromKmdbV1Responses];
 
-export type MovieImportControllerImportMoviesFromKobisV1Data = {
+export type MovieManagementControllerGetModerationMoviesV1Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        visibility?: 'PUBLIC' | 'REVIEW' | 'HIDDEN';
+        page?: number;
+        limit?: number;
+    };
+    url: '/v1/admin/movies/moderation';
+};
+
+export type MovieManagementControllerGetModerationMoviesV1Responses = {
+    200: unknown;
+};
+
+export type MovieManagementControllerGetDuplicateMovieCandidatesV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/admin/movies/duplicates';
+};
+
+export type MovieManagementControllerGetDuplicateMovieCandidatesV1Responses = {
+    200: unknown;
+};
+
+export type MovieManagementControllerSplitProviderCollisionV1Data = {
+    body?: never;
+    path: {
+        movieId: string;
+        tmdbMovieId: string;
+    };
+    query?: never;
+    url: '/v1/admin/movies/{movieId}/split-provider/{tmdbMovieId}';
+};
+
+export type MovieManagementControllerSplitProviderCollisionV1Responses = {
+    201: unknown;
+};
+
+export type MovieManagementControllerUpdateVisibilityV1Data = {
+    body: UpdateMovieVisibilityRequestDto;
+    path: {
+        /**
+         * CINEMO 내부 영화 UUID
+         */
+        movieId: string;
+    };
+    query?: never;
+    url: '/v1/admin/movies/{movieId}/visibility';
+};
+
+export type MovieManagementControllerUpdateVisibilityV1Responses = {
+    200: unknown;
+};
+
+export type MovieCatalogSyncControllerSyncDailyBoxOfficeV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 박스오피스 조회 기준일
+         */
+        targetDt: string;
+    };
+    url: '/v1/catalog-sync/kobis/box-office';
+};
+
+export type MovieCatalogSyncControllerSyncDailyBoxOfficeV1Responses = {
+    200: Array<string>;
+};
+
+export type MovieCatalogSyncControllerSyncDailyBoxOfficeV1Response = MovieCatalogSyncControllerSyncDailyBoxOfficeV1Responses[keyof MovieCatalogSyncControllerSyncDailyBoxOfficeV1Responses];
+
+export type MovieCatalogSyncControllerSyncReleasedMoviesV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 개봉 연도
+         */
+        releaseYear: number;
+        /**
+         * 페이지당 조회할 영화 수
+         */
+        limit?: number;
+    };
+    url: '/v1/catalog-sync/kobis/released';
+};
+
+export type MovieCatalogSyncControllerSyncReleasedMoviesV1Responses = {
+    201: unknown;
+};
+
+export type MovieCatalogSyncControllerSyncUpcomingMoviesV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/catalog-sync/kobis/upcoming';
+};
+
+export type MovieCatalogSyncControllerSyncUpcomingMoviesV1Responses = {
+    200: Array<string>;
+};
+
+export type MovieCatalogSyncControllerSyncUpcomingMoviesV1Response = MovieCatalogSyncControllerSyncUpcomingMoviesV1Responses[keyof MovieCatalogSyncControllerSyncUpcomingMoviesV1Responses];
+
+export type MovieCatalogSyncControllerSyncMoviesFromKobisV1Data = {
     body?: never;
     path?: never;
     query: {
@@ -1475,14 +2017,184 @@ export type MovieImportControllerImportMoviesFromKobisV1Data = {
          */
         limit?: number;
     };
-    url: '/v1/movie-imports/kobis';
+    url: '/v1/catalog-sync/kobis';
 };
 
-export type MovieImportControllerImportMoviesFromKobisV1Responses = {
+export type MovieCatalogSyncControllerSyncMoviesFromKobisV1Responses = {
     200: Array<string>;
 };
 
-export type MovieImportControllerImportMoviesFromKobisV1Response = MovieImportControllerImportMoviesFromKobisV1Responses[keyof MovieImportControllerImportMoviesFromKobisV1Responses];
+export type MovieCatalogSyncControllerSyncMoviesFromKobisV1Response = MovieCatalogSyncControllerSyncMoviesFromKobisV1Responses[keyof MovieCatalogSyncControllerSyncMoviesFromKobisV1Responses];
+
+export type MovieCatalogSyncControllerSyncPopularMoviesFromTmdbV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/catalog-sync/tmdb/popular';
+};
+
+export type MovieCatalogSyncControllerSyncPopularMoviesFromTmdbV1Responses = {
+    200: Array<string>;
+};
+
+export type MovieCatalogSyncControllerSyncPopularMoviesFromTmdbV1Response = MovieCatalogSyncControllerSyncPopularMoviesFromTmdbV1Responses[keyof MovieCatalogSyncControllerSyncPopularMoviesFromTmdbV1Responses];
+
+export type MovieCatalogSyncControllerSyncUpcomingMoviesFromTmdbV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/catalog-sync/tmdb/upcoming';
+};
+
+export type MovieCatalogSyncControllerSyncUpcomingMoviesFromTmdbV1Responses = {
+    200: Array<string>;
+};
+
+export type MovieCatalogSyncControllerSyncUpcomingMoviesFromTmdbV1Response = MovieCatalogSyncControllerSyncUpcomingMoviesFromTmdbV1Responses[keyof MovieCatalogSyncControllerSyncUpcomingMoviesFromTmdbV1Responses];
+
+export type MovieCatalogSyncControllerReconcileReleasesV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/catalog-sync/kobis/reconcile-releases';
+};
+
+export type MovieCatalogSyncControllerReconcileReleasesV1Responses = {
+    201: unknown;
+};
+
+export type MovieCatalogSyncControllerAuditProviderCollisionsV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/catalog-sync/kobis/audit-provider-collisions';
+};
+
+export type MovieCatalogSyncControllerAuditProviderCollisionsV1Responses = {
+    201: unknown;
+};
+
+export type MovieCatalogSyncControllerSplitProviderCollisionsV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/catalog-sync/kobis/split-provider-collisions';
+};
+
+export type MovieCatalogSyncControllerSplitProviderCollisionsV1Responses = {
+    201: unknown;
+};
+
+export type PeopleControllerFindBookmarkedPeopleV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/people/bookmarks';
+};
+
+export type PeopleControllerFindBookmarkedPeopleV1Responses = {
+    200: unknown;
+};
+
+export type PeopleControllerFindByIdV1Data = {
+    body?: never;
+    path: {
+        personId: string;
+    };
+    query?: never;
+    url: '/v1/people/{personId}';
+};
+
+export type PeopleControllerFindByIdV1Errors = {
+    /**
+     * 인물을 찾을 수 없음
+     */
+    404: unknown;
+};
+
+export type PeopleControllerFindByIdV1Responses = {
+    /**
+     * 인물 상세 정보
+     */
+    200: PersonDetailResponseDto;
+};
+
+export type PeopleControllerFindByIdV1Response = PeopleControllerFindByIdV1Responses[keyof PeopleControllerFindByIdV1Responses];
+
+export type PeopleControllerEnrichFromTmdbV1Data = {
+    body?: never;
+    path: {
+        /**
+         * CINEMO 내부 인물 UUID
+         */
+        personId: string;
+        /**
+         * TMDB 외부 인물 식별자
+         */
+        tmdbPersonId: number;
+    };
+    query?: never;
+    url: '/v1/people/{personId}/enrich/tmdb/{tmdbPersonId}';
+};
+
+export type PeopleControllerEnrichFromTmdbV1Errors = {
+    /**
+     * 인물 또는 TMDB 연결 정보를 찾을 수 없음
+     */
+    404: unknown;
+    /**
+     * TMDB 인물이 다른 CINEMO 인물과 연결되어 있음
+     */
+    409: unknown;
+};
+
+export type PeopleControllerEnrichFromTmdbV1Responses = {
+    /**
+     * 보완된 인물 정보
+     */
+    200: PersonDetailResponseDto;
+};
+
+export type PeopleControllerEnrichFromTmdbV1Response = PeopleControllerEnrichFromTmdbV1Responses[keyof PeopleControllerEnrichFromTmdbV1Responses];
+
+export type PeopleControllerRemoveBookmarkV1Data = {
+    body?: never;
+    path: {
+        personId: string;
+    };
+    query?: never;
+    url: '/v1/people/{personId}/bookmark';
+};
+
+export type PeopleControllerRemoveBookmarkV1Responses = {
+    200: unknown;
+};
+
+export type PeopleControllerGetBookmarkStatusV1Data = {
+    body?: never;
+    path: {
+        personId: string;
+    };
+    query?: never;
+    url: '/v1/people/{personId}/bookmark';
+};
+
+export type PeopleControllerGetBookmarkStatusV1Responses = {
+    200: unknown;
+};
+
+export type PeopleControllerAddBookmarkV1Data = {
+    body?: never;
+    path: {
+        personId: string;
+    };
+    query?: never;
+    url: '/v1/people/{personId}/bookmark';
+};
+
+export type PeopleControllerAddBookmarkV1Responses = {
+    201: unknown;
+};
 
 export type KobisControllerSearchMoviesV1Data = {
     body?: never;
@@ -1693,6 +2405,49 @@ export type TmdbControllerGetMovieDetailV1Responses = {
 };
 
 export type TmdbControllerGetMovieDetailV1Response = TmdbControllerGetMovieDetailV1Responses[keyof TmdbControllerGetMovieDetailV1Responses];
+
+export type TmdbControllerSearchPeopleV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 검색할 인물 이름
+         */
+        query: string;
+        /**
+         * 조회할 페이지 번호
+         */
+        page?: number;
+    };
+    url: '/v1/tmdb/people/search';
+};
+
+export type TmdbControllerSearchPeopleV1Responses = {
+    /**
+     * TMDB 인물 검색 결과
+     */
+    200: SearchTmdbPeopleResponseDto;
+};
+
+export type TmdbControllerSearchPeopleV1Response = TmdbControllerSearchPeopleV1Responses[keyof TmdbControllerSearchPeopleV1Responses];
+
+export type TmdbControllerGetPersonDetailV1Data = {
+    body?: never;
+    path: {
+        /**
+         * TMDB 외부 인물 식별자
+         */
+        tmdbPersonId: number;
+    };
+    query?: never;
+    url: '/v1/tmdb/people/{tmdbPersonId}';
+};
+
+export type TmdbControllerGetPersonDetailV1Responses = {
+    200: TmdbPersonDetailResponseDto;
+};
+
+export type TmdbControllerGetPersonDetailV1Response = TmdbControllerGetPersonDetailV1Responses[keyof TmdbControllerGetPersonDetailV1Responses];
 
 export type KmdbControllerSearchMoviesV1Data = {
     body?: never;
@@ -1916,5 +2671,96 @@ export type AuthControllerRegisterWithOauthV1Data = {
 };
 
 export type AuthControllerRegisterWithOauthV1Responses = {
+    201: unknown;
+};
+
+export type KakaoControllerSearchPlacesV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 검색할 장소명
+         */
+        query: string;
+        /**
+         * 조회할 페이지 번호
+         */
+        page?: number;
+        /**
+         * 페이지당 조회할 장소 수
+         */
+        size?: number;
+    };
+    url: '/v1/kakao/places/search';
+};
+
+export type KakaoControllerSearchPlacesV1Responses = {
+    200: unknown;
+};
+
+export type KakaoControllerSearchAddressV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 검색할 도로명 또는 지번 주소
+         */
+        query: string;
+        /**
+         * 조회할 페이지 번호
+         */
+        page?: number;
+        /**
+         * 페이지당 조회할 주소 수
+         */
+        size?: number;
+    };
+    url: '/v1/kakao/addresses/search';
+};
+
+export type KakaoControllerSearchAddressV1Responses = {
+    200: KakaoAddressSearchResponseDto;
+};
+
+export type KakaoControllerSearchAddressV1Response = KakaoControllerSearchAddressV1Responses[keyof KakaoControllerSearchAddressV1Responses];
+
+export type MapControllerSearchPlacesV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 검색할 장소명
+         */
+        query: string;
+        /**
+         * 조회할 페이지 번호
+         */
+        page?: number;
+        /**
+         * 페이지당 조회할 장소 수
+         */
+        size?: number;
+    };
+    url: '/v1/map/venues/search';
+};
+
+export type MapControllerSearchPlacesV1Responses = {
+    /**
+     * 관람 장소 검색 결과
+     */
+    200: unknown;
+};
+
+export type MapControllerSaveVenueV1Data = {
+    body: SaveVenueRequestDto;
+    path?: never;
+    query?: never;
+    url: '/v1/map/venues';
+};
+
+export type MapControllerSaveVenueV1Responses = {
+    /**
+     * 관람 장소 저장 결과
+     */
     201: unknown;
 };

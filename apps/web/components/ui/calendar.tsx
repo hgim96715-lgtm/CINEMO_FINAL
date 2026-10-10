@@ -60,14 +60,20 @@ function Calendar({ className, classNames, ...props }: CalendarProps) {
           "flex size-8 items-center justify-center rounded-lg text-cinemo-muted transition hover:bg-cinemo-gold/10 hover:text-cinemo-gold-light disabled:pointer-events-none disabled:opacity-30",
           defaultClassNames.button_next,
         ),
-        month_grid: cn("w-full border-separate border-spacing-y-1", defaultClassNames.month_grid),
-        weekdays: cn("grid grid-cols-7", defaultClassNames.weekdays),
-        weekday: cn(
-          "w-8 text-center text-[11px] font-normal text-cinemo-muted",
-          defaultClassNames.weekday,
+        month_grid: cn(
+          defaultClassNames.month_grid,
+          "w-full table-fixed border-separate border-spacing-y-1",
         ),
-        week: cn("grid grid-cols-7", defaultClassNames.week),
-        day: cn("p-0 text-center", defaultClassNames.day),
+        weekdays: cn(
+          defaultClassNames.weekdays,
+          "grid w-full grid-cols-7",
+        ),
+        weekday: cn(
+          defaultClassNames.weekday,
+          "w-full text-center text-[11px] font-normal text-cinemo-muted",
+        ),
+        week: cn(defaultClassNames.week, "grid w-full grid-cols-7"),
+        day: cn(defaultClassNames.day, "w-full p-0 text-center"),
         day_button: cn(
           "mx-auto flex size-8 items-center justify-center rounded-lg text-xs font-normal text-cinemo-text transition hover:bg-cinemo-gold/15 hover:text-cinemo-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cinemo-gold/40",
           defaultClassNames.day_button,

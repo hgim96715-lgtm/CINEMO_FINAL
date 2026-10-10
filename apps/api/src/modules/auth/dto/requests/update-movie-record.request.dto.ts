@@ -1,15 +1,6 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import {
-  IsBoolean,
-  IsDateString,
-  IsDecimal,
-  IsNumber,
-  IsOptional,
-  Matches,
-  Max,
-  Min,
-} from "class-validator";
-import { Decimal } from "node_modules/@prisma/client/runtime/client";
+import {ApiPropertyOptional} from "@nestjs/swagger";
+import {ViewingPlaceType} from "@prisma/client";
+import {IsBoolean, IsDateString, IsDecimal, IsEnum, IsOptional, IsUUID, Matches,} from "class-validator";
 
 export class UpdateMovieRecordRequestDto {
   @ApiPropertyOptional({
@@ -50,4 +41,24 @@ export class UpdateMovieRecordRequestDto {
     message: "평점은 0.5부터 5.0까지 0.5 단위로 입력해주세요.",
   })
   rating?: string | null;
+
+  @ApiPropertyOptional({
+    description: "관람 장소 ID. 집에서 본 경우 null",
+    example: "01a12345-6789-7123-8456-789012345678",
+    format: "uuid",
+    nullable: true,
+  })
+  @IsOptional()
+  @IsUUID()
+  venueId?: string | null;
+
+  @ApiPropertyOptional({
+    description: "관람 방식",
+    enum: ViewingPlaceType,
+    example: ViewingPlaceType.VENUE,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsEnum(ViewingPlaceType)
+  viewingPlaceType?: ViewingPlaceType | null;
 }

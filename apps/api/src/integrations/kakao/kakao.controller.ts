@@ -15,14 +15,14 @@ export class KakaoController {
 
     @Get("places/search")
     @Public()
-    @ApiOperation({ summary: "Kakao 영화관 장소 검색" })
+    @ApiOperation({ summary: "Kakao 관람 장소 검색" })
     @ApiQuery({
         name: "query",
         required: true,
         example: "강남 영화관",
     })
     searchPlaces(@Query() query:SearchKakaoPlacesRequestDto) {
-        return this.kakaoService.searchMovieTheaters(query.query,query.page,query.size);
+        return this.kakaoService.searchPlaces(query.query,query.page,query.size);
     }
 
     @Get("addresses/search")

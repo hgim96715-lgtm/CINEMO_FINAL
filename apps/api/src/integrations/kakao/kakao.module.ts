@@ -23,6 +23,6 @@ import {KakaoController} from "./kakao.controller";
     ],
     controllers: [KakaoController],
     providers: [KakaoService],
-    exports: [HttpModule],
+    exports: [HttpModule,KakaoService],
 })
 export class KakaoModule {}

@@ -4,7 +4,7 @@ import type {
   SearchTmdbMoviesResponse,
   UserMovieRecordResponse,
 } from "@cinemo/api-contract";
-import { apiClient } from "./apiClient";
+import {apiClient} from "./apiClient";
 
 export type SearchMoviesParams = {
   query: string;
@@ -99,6 +99,8 @@ export type UpdateMovieRecordInput = {
   isWatched?: boolean;
   watchedAt?: string | null;
   rating?: string | null;
+  venueId?: string | null;
+  viewingPlaceType?: "HOME" | "VENUE" | null;
 };
 
 export async function getMovieRecord(
@@ -207,6 +209,15 @@ export async function unsubscribeMovieNotification(
   await apiClient.delete(`/movies/${movieId}/notification`);
 }
 
+export type MyMovieVenue = {
+  id: string;
+  type: "CINEMA" | "HOME" | "MUSEUM" | "EXHIBITION_HALL" | "PERFORMANCE_HALL" | "OTHER";
+  name: string;
+  brandName: string | null;
+  roadAddress: string | null;
+  jibunAddress: string | null;
+};
+
 export type MyMovie = {
   id: string;
   movieId: string;
@@ -217,6 +228,9 @@ export type MyMovie = {
   isWatched: boolean;
   watchedAt: string | null;
   rating: string | null;
+  venueId: string | null;
+  viewingPlaceType: "HOME" | "VENUE" | null;
+  venue: MyMovieVenue | null;
 };
 
 export async function getMyMovies(

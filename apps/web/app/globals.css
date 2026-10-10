@@ -17,6 +17,10 @@ body {
   color: var(--foreground);
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body::before {
   position: fixed;
   inset: -12%;

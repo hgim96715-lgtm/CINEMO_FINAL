@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {BadRequestException, Injectable} from "@nestjs/common";
 
-import { MovieNotFoundException } from "@/common/exceptions/movie-not-found.exception";
+import {MovieNotFoundException} from "@/common/exceptions/movie-not-found.exception";
 
-import { UserMovieRecordRepository } from "./repositories/user-movie-record.repository";
-import { UpdateMovieRecordRequestDto } from "../auth/dto/requests/update-movie-record.request.dto";
+import {UserMovieRecordRepository} from "./repositories/user-movie-record.repository";
+import {UpdateMovieRecordRequestDto} from "../auth/dto/requests/update-movie-record.request.dto";
 
 @Injectable()
 export class UserMovieRecordService {
@@ -20,7 +20,9 @@ export class UserMovieRecordService {
       input.isFavorite !== undefined ||
       input.isWatched !== undefined ||
       input.watchedAt !== undefined ||
-      input.rating !== undefined;
+      input.rating !== undefined ||
+      input.venueId !== undefined ||
+      input.viewingPlaceType !== undefined;
 
     if (!hasInput) {
       throw new BadRequestException("변경할 영화 기록이 없습니다.");
@@ -52,6 +54,8 @@ export class UserMovieRecordService {
               : null,
 
         rating: input.rating,
+        venueId: input.venueId,
+        viewingPlaceType: input.viewingPlaceType,
       },
     );
 
@@ -59,6 +63,9 @@ export class UserMovieRecordService {
       ...record,
       rating: record.rating?.toString() ?? null,
       isWatched: record.watchedAt !== null,
+      venueId: record.venueId,
+      viewingPlaceType: record.viewingPlaceType,
+      venue: record.venue ?? null,
     };
   }
   async findByUserAndMovie(userId: string, movieId: string) {
@@ -75,10 +82,13 @@ export class UserMovieRecordService {
 
     return {
       movieId,
+      venueId: record?.venueId ?? null,
+      viewingPlaceType: record?.viewingPlaceType ?? null,
       isFavorite: record?.isFavorite ?? false,
       isWatched: Boolean(record?.watchedAt),
       watchedAt: record?.watchedAt ?? null,
       rating: record?.rating?.toString() ?? null,
+      venue: record?.venue ?? null,
     };
   }
   async findAllByUser(userId: string) {
@@ -87,6 +97,9 @@ export class UserMovieRecordService {
     return records.map((record) => ({
       id: record.id,
       movieId: record.movie.id,
+      venueId: record.venueId,
+      viewingPlaceType: record.viewingPlaceType,
+      venue: record.venue ?? null,
       title: record.movie.titles[0]?.title ?? "",
       posterUrl: record.movie.media[0]?.url ?? null,
       releaseDate: record.movie.releases[0]?.releaseDate ?? null,

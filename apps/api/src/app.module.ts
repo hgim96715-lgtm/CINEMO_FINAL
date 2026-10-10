@@ -21,6 +21,7 @@ import {mailConfig} from "./config/mail.config";
 import {oauthConfig} from "./config/oauth.config";
 import {mapConfig} from "@/config/map.config";
 import {KakaoModule} from "@/integrations/kakao/kakao.module";
+import {MapModule} from "@/modules/map/map.module";
 
 
 @Module({
@@ -60,6 +61,7 @@ import {KakaoModule} from "@/integrations/kakao/kakao.module";
     KmdbModule,
     AuthModule,
     KakaoModule,
+    MapModule,
   ],
   providers: [
     {

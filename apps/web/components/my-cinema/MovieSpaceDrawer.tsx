@@ -76,7 +76,7 @@ export function MovieSpaceDrawer({
         render={
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white transition hover:border-cinemo-gold/50"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-white transition hover:border-cinemo-gold/50"
           />
         }
       >

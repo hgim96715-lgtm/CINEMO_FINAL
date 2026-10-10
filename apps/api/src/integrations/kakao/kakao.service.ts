@@ -12,7 +12,7 @@ export class KakaoService {
     constructor(private readonly httpService: HttpService) {
     }
 
-    async searchMovieTheaters(
+    async searchPlaces(
         query: string,
         page=1,
         size=15,

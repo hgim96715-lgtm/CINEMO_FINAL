@@ -12,7 +12,7 @@ import {
 export class SearchKakaoPlacesRequestDto {
     @ApiProperty({
         description: "검색할 장소명",
-        example: "강남 영화관",
+        example: "강남 문화시설",
     })
     @IsString()
     @IsNotEmpty()

@@ -1,12 +1,14 @@
-import { Injectable } from "@nestjs/common";
-import { MediaType, Prisma, TitleType } from "@prisma/client";
+import {Injectable} from "@nestjs/common";
+import {MediaType, Prisma, TitleType, ViewingPlaceType} from "@prisma/client";
 
-import { PrismaService } from "@/prisma/prisma.service";
+import {PrismaService} from "@/prisma/prisma.service";
 
 type UpsertUserMovieRecordInput = {
   isFavorite?: boolean;
   watchedAt?: Date | null;
   rating?: string | null;
+  venueId?: string | null;
+  viewingPlaceType?: ViewingPlaceType | null;
 };
 
 @Injectable()
@@ -39,6 +41,22 @@ export class UserMovieRecordRepository {
       updateData.rating = input.rating;
     }
 
+    if (input.venueId !== undefined) {
+      updateData.venue = input.venueId
+        ? {
+            connect: {
+              id: input.venueId,
+            },
+          }
+        : {
+            disconnect: true,
+          };
+    }
+
+    if (input.viewingPlaceType !== undefined) {
+      updateData.viewingPlaceType = input.viewingPlaceType;
+    }
+
     return this.prisma.userMovieRecord.upsert({
       where: {
         userId_movieId: {
@@ -49,24 +67,28 @@ export class UserMovieRecordRepository {
       create: {
         userId,
         movieId,
+        venueId: input.venueId ?? null,
+        viewingPlaceType: input.viewingPlaceType ?? null,
         isFavorite: input.isFavorite ?? false,
         watchedAt: input.watchedAt ?? null,
         rating: input.rating ?? null,
       },
       update: updateData,
-    });
-  }
-
-  async findByUserAndMovie(userId: string, movieId: string) {
-    return this.prisma.userMovieRecord.findUnique({
-      where: {
-        userId_movieId: {
-          userId,
-          movieId,
+      include: {
+        venue: {
+          select: {
+            id: true,
+            type: true,
+            name: true,
+            brandName: true,
+            roadAddress: true,
+            jibunAddress: true,
+          },
         },
       },
     });
   }
+
   async findAllByUser(userId: string) {
     return this.prisma.userMovieRecord.findMany({
       where: {
@@ -85,6 +107,18 @@ export class UserMovieRecordRepository {
         isFavorite: true,
         watchedAt: true,
         rating: true,
+        venueId: true,
+        viewingPlaceType: true,
+        venue: {
+          select: {
+            id: true,
+            type: true,
+            name: true,
+            brandName: true,
+            roadAddress: true,
+            jibunAddress: true,
+          },
+        },
         movie: {
           select: {
             id: true,
@@ -125,6 +159,29 @@ export class UserMovieRecordRepository {
                 url: true,
               },
             },
+          },
+        },
+      },
+    });
+  }
+
+  async findByUserAndMovie(userId: string, movieId: string) {
+    return this.prisma.userMovieRecord.findUnique({
+      where: {
+        userId_movieId: {
+          userId,
+          movieId,
+        },
+      },
+      include: {
+        venue: {
+          select: {
+            id: true,
+            type: true,
+            name: true,
+            brandName: true,
+            roadAddress: true,
+            jibunAddress: true,
           },
         },
       },
