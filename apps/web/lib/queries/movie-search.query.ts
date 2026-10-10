@@ -1,4 +1,4 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 import {
   getMovieRankings,
   getPopularMovies,
@@ -60,27 +60,6 @@ export const tmdbMovieSearchQueryOptions = ({
     enabled: enabled && query.trim().length > 0,
     staleTime: 5 * 60_000,
   });
-
-export const useMovieSearchWithTmdbFallback = (params: SearchMoviesParams) => {
-  const dbQuery = useQuery(movieSearchQueryOptions(params));
-  const dbLimit = params.limit ?? 10;
-  const shouldFetchTmdb =
-    dbQuery.isSuccess && dbQuery.data.items.length < dbLimit;
-
-  const tmdbQuery = useQuery(
-    tmdbMovieSearchQueryOptions({
-      query: params.query,
-      page: params.page,
-      enabled: shouldFetchTmdb,
-    }),
-  );
-
-  return {
-    dbQuery,
-    tmdbQuery,
-    shouldFetchTmdb,
-  };
-};
 
 export const popularMoviesQueryOptions = ({
   page = 1,

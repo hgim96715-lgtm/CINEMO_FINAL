@@ -6,8 +6,9 @@ import { useEffect, useState } from "react";
 
 import {
   normalizeSearchText,
+  movieSearchQueryOptions,
   popularMoviesQueryOptions,
-  useMovieSearchWithTmdbFallback,
+  tmdbMovieSearchQueryOptions,
 } from "@/lib/queries/movie-search.query";
 import { importMovieFromTmdb } from "@/lib/api/movies";
 import { useSearchStore } from "@/stores/search.store";
@@ -47,15 +48,22 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
     }),
   );
 
-  const {
-    dbQuery: searchQuery,
-    tmdbQuery,
-    shouldFetchTmdb,
-  } = useMovieSearchWithTmdbFallback({
-    query: debouncedKeyword,
-    page: 1,
-    limit: 5,
-  });
+  const searchQuery = useQuery(
+    movieSearchQueryOptions({
+      query: debouncedKeyword,
+      page: 1,
+      limit: 5,
+    }),
+  );
+  const shouldFetchTmdb =
+    searchQuery.isSuccess && searchQuery.data.items.length < 5;
+  const tmdbQuery = useQuery(
+    tmdbMovieSearchQueryOptions({
+      query: debouncedKeyword,
+      page: 1,
+      enabled: shouldFetchTmdb,
+    }),
+  );
 
   const handleTmdbMovieSelect = async (tmdbMovieId: number) => {
     const movieId = await importMovieFromTmdb(tmdbMovieId);

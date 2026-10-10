@@ -1,9 +1,11 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 import {
   normalizeSearchText,
-  useMovieSearchWithTmdbFallback,
+  movieSearchQueryOptions,
+  tmdbMovieSearchQueryOptions,
 } from "@/lib/queries/movie-search.query";
 import { MovieSearchList } from "@/components/movies/MovieSearchList";
 import { TmdbMovieSearchList } from "@/components/movies/TmdbMovieSearchList";
@@ -14,12 +16,22 @@ function MoviesPageContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("query") ?? "";
 
-  const { dbQuery, tmdbQuery, shouldFetchTmdb } =
-    useMovieSearchWithTmdbFallback({
+  const dbQuery = useQuery(
+    movieSearchQueryOptions({
       query,
       page: 1,
       limit: 10,
-    });
+    }),
+  );
+  const shouldFetchTmdb =
+    dbQuery.isSuccess && dbQuery.data.items.length < 10;
+  const tmdbQuery = useQuery(
+    tmdbMovieSearchQueryOptions({
+      query,
+      page: 1,
+      enabled: shouldFetchTmdb,
+    }),
+  );
 
   if (!query) {
     return (
