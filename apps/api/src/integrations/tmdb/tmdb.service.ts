@@ -1,15 +1,16 @@
-import { HttpService } from "@nestjs/axios";
-import { BadRequestException, Injectable } from "@nestjs/common";
-import { firstValueFrom } from "rxjs";
+import {HttpService} from "@nestjs/axios";
+import {BadRequestException, Injectable} from "@nestjs/common";
+import {firstValueFrom} from "rxjs";
 import type {
   TmdbGenreListResponse,
-  TmdbMovieDetailResponse,
   TmdbMovieCreditsResponse,
+  TmdbMovieDetailResponse,
   TmdbMovieListResponse,
   TmdbMovieReleaseDatesResponse,
   TmdbMovieSearchResponse,
   TmdbMovieVideo,
   TmdbMovieVideosResponse,
+  TmdbMovieWatchProvidersResponse,
   TmdbPersonDetailResponse,
   TmdbPersonSearchResponse,
 } from "./types/tmdb-response.type";
@@ -27,24 +28,6 @@ export class TmdbService {
 
   // TMDB 전용 HTTP 설정은 tmdb.module.ts에서 등록
   constructor(private readonly httpService: HttpService) {}
-
-  private getDateInCinemoTimeZone(monthOffset = 0): string {
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: TmdbService.CINEMO_TIME_ZONE,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(new Date());
-
-    const year = Number(parts.find((part) => part.type === "year")?.value);
-    const month = Number(parts.find((part) => part.type === "month")?.value);
-    const day = Number(parts.find((part) => part.type === "day")?.value);
-    const date = new Date(Date.UTC(year, month - 1, day));
-
-    date.setUTCMonth(date.getUTCMonth() + monthOffset);
-
-    return date.toISOString().slice(0, 10);
-  }
 
   async searchMovies(
     query: string,
@@ -297,5 +280,35 @@ export class TmdbService {
     );
 
     return data;
+  }
+  
+  async getMovieWatchProviders(
+      tmdbMovieId: number,
+  ):Promise<TmdbMovieWatchProvidersResponse>{
+    const {data}=await firstValueFrom(
+        this.httpService.get<TmdbMovieWatchProvidersResponse>(
+            `/movie/${tmdbMovieId}/watch/providers`
+        )
+    );
+    return  data;
+  }
+  
+  
+  private getDateInCinemoTimeZone(monthOffset = 0): string {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: TmdbService.CINEMO_TIME_ZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+
+    const year = Number(parts.find((part) => part.type === "year")?.value);
+    const month = Number(parts.find((part) => part.type === "month")?.value);
+    const day = Number(parts.find((part) => part.type === "day")?.value);
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    date.setUTCMonth(date.getUTCMonth() + monthOffset);
+
+    return date.toISOString().slice(0, 10);
   }
 }

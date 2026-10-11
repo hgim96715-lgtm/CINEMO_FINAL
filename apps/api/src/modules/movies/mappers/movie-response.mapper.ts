@@ -1,6 +1,6 @@
-import { Prisma } from "@prisma/client";
+import {Prisma} from "@prisma/client";
 
-import { MovieResponseDto } from "@/modules/movies/dto/responses/movie.response.dto";
+import {MovieResponseDto} from "@/modules/movies/dto/responses/movie.response.dto";
 
 const movieArgs = Prisma.validator<Prisma.MovieDefaultArgs>()({
   include: {
@@ -91,6 +91,8 @@ export function toMovieResponseDto(movie: MovieWithDetails): MovieResponseDto {
       watchProvider: option.watchProvider,
       availabilityType: option.availabilityType,
       regionCode: option.regionCode,
+      tmdbProviderId: option.tmdbProviderId,
+      logoPath: option.logoPath,
       url: option.url,
       expiresAt: toIsoString(option.expiresAt),
       lastVerifiedAt: toIsoString(option.lastVerifiedAt),

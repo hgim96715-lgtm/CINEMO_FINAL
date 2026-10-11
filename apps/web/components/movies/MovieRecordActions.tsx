@@ -29,6 +29,7 @@ const viewingPlatformOptions: {value: ViewingPlatform; label: string}[] = [
   {value: "DISNEY_PLUS", label: "Disney+"},
   {value: "WAVVE", label: "웨이브"},
   {value: "APPLE_TV", label: "Apple TV"},
+  {value: "PRIME_VIDEO", label: "Prime Video"},
   {value: "TV", label: "TV"},
   {value: "OTHER", label: "기타"},
 ];

@@ -13,6 +13,7 @@ export type ViewingPlatform =
     | "DISNEY_PLUS"
     | "WAVVE"
     | "APPLE_TV"
+    | "PRIME_VIDEO"
     | "COUPANG_PLAY"
     | "TV"
     | "OTHER";

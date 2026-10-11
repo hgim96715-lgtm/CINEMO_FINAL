@@ -1,5 +1,6 @@
-import { ConflictException, Injectable } from "@nestjs/common";
+import {ConflictException, Injectable} from "@nestjs/common";
 import {
+  AvailabilityType,
   CreditType,
   MatchMethod,
   MatchStatus,
@@ -10,11 +11,12 @@ import {
   ReleaseType,
   SourceProvider,
   TitleType,
+  WatchProvider,
 } from "@prisma/client";
 
-import { PrismaService } from "@/prisma/prisma.service";
+import {PrismaService} from "@/prisma/prisma.service";
 
-import { MoviePersonService } from "../movie-person.service";
+import {MoviePersonService} from "../movie-person.service";
 
 export type TmdbMovieCreditInput = {
   name: string;
@@ -31,15 +33,25 @@ export type TmdbMovieMediaInput = {
   externalId: string;
 };
 
+export type TmdbWatchOptionInput = {
+  watchProvider: WatchProvider;
+  tmdbProviderId: number;
+  logoPath: string | null;
+  availabilityType: AvailabilityType;
+  regionCode: string;
+  url: string;
+};
+
 export type SaveTmdbMovieInput = {
   tmdbMovieId: number;
   releaseDate: Date | null;
   title: string | null;
   originalTitle: string | null;
   originalLanguage: string;
-  genres: Array<{ id: number; name: string }>;
+  genres: Array<{id: number; name: string}>;
   credits: TmdbMovieCreditInput[];
   media: TmdbMovieMediaInput[];
+  watchOptions: TmdbWatchOptionInput[];
   overview: string | null;
   runtime: number | null;
   voteAverage: number;
@@ -310,6 +322,28 @@ export class TmdbMovieSyncRepository {
               status: MediaStatus.ACTIVE,
               verifiedAt: new Date(),
             },
+          });
+        }
+
+        await tx.movieWatchOption.deleteMany({
+          where: {
+            movieId,
+            regionCode: "KR",
+          },
+        });
+
+        if (input.watchOptions.length > 0) {
+          await tx.movieWatchOption.createMany({
+            data: input.watchOptions.map((option) => ({
+              movieId,
+              watchProvider: option.watchProvider,
+              tmdbProviderId: option.tmdbProviderId,
+              logoPath: option.logoPath,
+              availabilityType: option.availabilityType,
+              regionCode: option.regionCode,
+              url: option.url,
+              lastVerifiedAt: new Date(),
+            })),
           });
         }
 

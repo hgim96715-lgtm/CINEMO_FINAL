@@ -172,3 +172,27 @@ export interface TmdbPersonSearchItem {
   profile_path: string | null;
   known_for_department: string | null;
 }
+
+
+export interface TmdbMovieWatchProvidersResponse {
+  id: number;
+  // 국가 코드가 동적으로 들어오므로 Record로 정의
+  // 예: results.KR, results.US, results.JP
+  results: Record<string, TmdbWatchProviderRegion>;
+}
+
+export interface TmdbWatchProviderRegion {
+  link: string;
+  flatrate?: TmdbWatchProvider[];
+  rent?: TmdbWatchProvider[];
+  buy?: TmdbWatchProvider[];
+  free?: TmdbWatchProvider[];
+  ads?: TmdbWatchProvider[];
+}
+
+export interface TmdbWatchProvider {
+  display_priority: number;
+  logo_path: string;
+  provider_id: number;
+  provider_name: string;
+}

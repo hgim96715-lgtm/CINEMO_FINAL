@@ -61,6 +61,7 @@ enum WatchProvider {
   DISNEY_PLUS
   WAVVE
   APPLE_TV
+  PRIME_VIDEO
 }
 
 enum AvailabilityType {
@@ -133,6 +134,7 @@ enum ViewingPlatform {
   DISNEY_PLUS
   WAVVE
   APPLE_TV
+  PRIME_VIDEO
   COUPANG_PLAY
   TV
   OTHER
@@ -276,18 +278,18 @@ model AuthSession {
 }
 
 model UserMovieRecord {
-  id               String            @id @default(uuid(7)) @db.Uuid
-  userId           String            @db.Uuid
-  movieId          String            @db.Uuid
-  venueId          String?           @map("venue_id") @db.Uuid
-  viewingPlaceType ViewingPlaceType?
-  viewingPlatform  ViewingPlatform?
-  viewingPlatformCustom String? @map("viewing_platform_custom") @db.VarChar(100)
-  isFavorite       Boolean           @default(false)
-  watchedAt        DateTime?         @db.Timestamptz(3)
-  rating           Decimal?          @db.Decimal(2, 1)
-  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
-  updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
+  id                    String            @id @default(uuid(7)) @db.Uuid
+  userId                String            @db.Uuid
+  movieId               String            @db.Uuid
+  venueId               String?           @map("venue_id") @db.Uuid
+  viewingPlaceType      ViewingPlaceType?
+  viewingPlatform       ViewingPlatform?
+  viewingPlatformCustom String?           @map("viewing_platform_custom") @db.VarChar(100)
+  isFavorite            Boolean           @default(false)
+  watchedAt             DateTime?         @db.Timestamptz(3)
+  rating                Decimal?          @db.Decimal(2, 1)
+  createdAt             DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime          @updatedAt @db.Timestamptz(3)
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   movie Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
@@ -493,8 +495,10 @@ model MovieMedia {
 model MovieWatchOption {
   id               String           @id @default(uuid(7)) @db.Uuid
   movieId          String           @db.Uuid
+  tmdbProviderId   Int?             @map("tmdb_provider_id")
   watchProvider    WatchProvider
   availabilityType AvailabilityType
+  logoPath         String?          @map("logo_path") @db.VarChar(255)
   regionCode       String           @default("KR") @db.VarChar(10)
   url              String           @db.Text
   expiresAt        DateTime?        @db.Timestamptz(3)
@@ -506,6 +510,7 @@ model MovieWatchOption {
 
   @@index([movieId, regionCode])
   @@index([watchProvider, availabilityType])
+  @@index([tmdbProviderId, regionCode])
   @@map("movie_watch_options")
 }
 

@@ -153,7 +153,7 @@ export type UserMovieRecordResponseDto = {
     /**
      * 집에서 영화를 본 플랫폼
      */
-    viewingPlatform?: 'NETFLIX' | 'WATCHA' | 'TVING' | 'DISNEY_PLUS' | 'WAVVE' | 'APPLE_TV' | 'COUPANG_PLAY' | 'TV' | 'OTHER';
+    viewingPlatform?: 'NETFLIX' | 'WATCHA' | 'TVING' | 'DISNEY_PLUS' | 'WAVVE' | 'APPLE_TV' | 'PRIME_VIDEO' | 'COUPANG_PLAY' | 'TV' | 'OTHER';
     /**
      * 기타 플랫폼을 선택했을 때 입력한 플랫폼명
      */
@@ -194,7 +194,7 @@ export type UpdateMovieRecordRequestDto = {
     /**
      * 집에서 영화를 본 플랫폼
      */
-    viewingPlatform?: 'NETFLIX' | 'WATCHA' | 'TVING' | 'DISNEY_PLUS' | 'WAVVE' | 'APPLE_TV' | 'COUPANG_PLAY' | 'TV' | 'OTHER';
+    viewingPlatform?: 'NETFLIX' | 'WATCHA' | 'TVING' | 'DISNEY_PLUS' | 'WAVVE' | 'APPLE_TV' | 'PRIME_VIDEO' | 'COUPANG_PLAY' | 'TV' | 'OTHER';
     /**
      * 기타 플랫폼을 선택했을 때 입력하는 플랫폼명
      */
@@ -326,6 +326,14 @@ export type MovieWatchOptionResponseDto = {
      * 서비스 제공 지역 코드
      */
     regionCode: string;
+    /**
+     * TMDB watch provider 식별자
+     */
+    tmdbProviderId?: number | null;
+    /**
+     * TMDB 플랫폼 로고 경로
+     */
+    logoPath?: string | null;
     /**
      * 시청 페이지 주소
      */

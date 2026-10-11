@@ -1,11 +1,12 @@
-import { notFound } from "next/navigation";
+import {notFound} from "next/navigation";
 
-import { MovieTrailerButton } from "@/components/movies/MovieTrailerButton";
-import { MovieRecordActions } from "@/components/movies/MovieRecordActions";
-import { MovieRecordSummary } from "@/components/movies/MovieRecordSummary";
-import { MovieNotificationButton } from "@/components/movies/MovieNotificationButton";
-import { getCachedMovie } from "@/lib/api/server-movies";
+import {MovieTrailerButton} from "@/components/movies/MovieTrailerButton";
+import {MovieRecordActions} from "@/components/movies/MovieRecordActions";
+import {MovieRecordSummary} from "@/components/movies/MovieRecordSummary";
+import {MovieNotificationButton} from "@/components/movies/MovieNotificationButton";
+import {getCachedMovie} from "@/lib/api/server-movies";
 import Link from "next/link";
+import {MovieWatchOptions} from "@/components/movies/MovieWatchOptions";
 
 type MoviePageProps = {
   params: Promise<{
@@ -198,8 +199,12 @@ export default async function MoviePage({ params }: MoviePageProps) {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-6xl gap-12 px-6 py-12 md:grid-cols-[1fr_280px]">
+      <section className="mx-auto grid max-w-6xl gap-12 px-6 py-5 md:grid-cols-[1fr_280px]">
         <div>
+          <MovieWatchOptions
+            watchOptions={movie.watchOptions}
+            movieTitle={primaryTitle?.title ?? "영화"}
+          />
           <h2 className="text-2xl font-bold">영화 소개</h2>
 
           {movie.overview ? (

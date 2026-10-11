@@ -1,23 +1,20 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Search, UserRound, X } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { CINEMO_BRAND } from "@cinemo/shared";
-import {
-  moiveSearchSchema,
-  MovieSearchFormValues,
-} from "../../schemas/movie-search.schema";
-import { useSearchStore } from "@/stores/search.store";
+import {zodResolver} from "@hookform/resolvers/zod";
+import {Search, UserRound, X} from "lucide-react";
+import {usePathname, useRouter} from "next/navigation";
+import {useForm} from "react-hook-form";
+import {CINEMO_BRAND} from "@cinemo/shared";
+import {moiveSearchSchema, MovieSearchFormValues,} from "../../schemas/movie-search.schema";
+import {useSearchStore} from "@/stores/search.store";
 import Image from "next/image";
 import Link from "next/link";
 import cinemoLogo from "@/app/icon.png";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { MovieSearchSuggestions } from "../movies/MovieSearchSuggestions";
-import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/stores/auth.store";
-import { logout as logoutRequest } from "@/lib/api/auth";
+import {useCallback, useEffect, useRef, useState} from "react";
+import {MovieSearchSuggestions} from "../movies/MovieSearchSuggestions";
+import {cn} from "@/lib/utils";
+import {useAuthStore} from "@/stores/auth.store";
+import {logout as logoutRequest} from "@/lib/api/auth";
 
 export function Header() {
   const user = useAuthStore((state) => state.user);
