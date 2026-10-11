@@ -22,7 +22,9 @@ export class UserMovieRecordService {
       input.watchedAt !== undefined ||
       input.rating !== undefined ||
       input.venueId !== undefined ||
-      input.viewingPlaceType !== undefined;
+      input.viewingPlaceType !== undefined||
+      input.viewingPlatform!==undefined ||
+      input.viewingPlatformCustom !== undefined;
 
     if (!hasInput) {
       throw new BadRequestException("변경할 영화 기록이 없습니다.");
@@ -56,6 +58,11 @@ export class UserMovieRecordService {
         rating: input.rating,
         venueId: input.venueId,
         viewingPlaceType: input.viewingPlaceType,
+        viewingPlatform: input.viewingPlatform,
+        viewingPlatformCustom:
+          input.viewingPlatform === "OTHER"
+            ? input.viewingPlatformCustom?.trim() || null
+            : null,
       },
     );
 
@@ -65,6 +72,8 @@ export class UserMovieRecordService {
       isWatched: record.watchedAt !== null,
       venueId: record.venueId,
       viewingPlaceType: record.viewingPlaceType,
+      viewingPlatform: record.viewingPlatform,
+      viewingPlatformCustom: record.viewingPlatformCustom,
       venue: record.venue ?? null,
     };
   }
@@ -84,6 +93,8 @@ export class UserMovieRecordService {
       movieId,
       venueId: record?.venueId ?? null,
       viewingPlaceType: record?.viewingPlaceType ?? null,
+      viewingPlatform: record?.viewingPlatform ?? null,
+      viewingPlatformCustom: record?.viewingPlatformCustom ?? null,
       isFavorite: record?.isFavorite ?? false,
       isWatched: Boolean(record?.watchedAt),
       watchedAt: record?.watchedAt ?? null,
@@ -99,6 +110,8 @@ export class UserMovieRecordService {
       movieId: record.movie.id,
       venueId: record.venueId,
       viewingPlaceType: record.viewingPlaceType,
+      viewingPlatform: record.viewingPlatform??null,
+      viewingPlatformCustom: record.viewingPlatformCustom ?? null,
       venue: record.venue ?? null,
       title: record.movie.titles[0]?.title ?? "",
       posterUrl: record.movie.media[0]?.url ?? null,
@@ -108,5 +121,16 @@ export class UserMovieRecordService {
       watchedAt: record.watchedAt,
       rating: record.rating?.toString() ?? null,
     }));
+  }
+  
+  async delete(userId:string,movieId: string) {
+    const movie=await this.userMovieRecordRepository.findMovie(movieId);
+    if(!movie) {
+      throw new MovieNotFoundException(movieId);
+    }
+    await this.userMovieRecordRepository.deletdByUserAndMovie(userId, movieId);
+    return{
+      movieId
+    }
   }
 }

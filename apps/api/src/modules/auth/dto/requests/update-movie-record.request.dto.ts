@@ -1,6 +1,6 @@
 import {ApiPropertyOptional} from "@nestjs/swagger";
-import {ViewingPlaceType} from "@prisma/client";
-import {IsBoolean, IsDateString, IsDecimal, IsEnum, IsOptional, IsUUID, Matches,} from "class-validator";
+import {ViewingPlaceType, ViewingPlatform} from "@prisma/client";
+import {IsBoolean, IsDateString, IsDecimal, IsEnum, IsOptional, IsString, IsUUID, Matches, MaxLength,} from "class-validator";
 
 export class UpdateMovieRecordRequestDto {
   @ApiPropertyOptional({
@@ -61,4 +61,25 @@ export class UpdateMovieRecordRequestDto {
   @IsOptional()
   @IsEnum(ViewingPlaceType)
   viewingPlaceType?: ViewingPlaceType | null;
+  
+  @ApiPropertyOptional({
+    description: "집에서 영화를 본 플랫폼",
+    enum: ViewingPlatform,
+    example: ViewingPlatform.NETFLIX,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsEnum(ViewingPlatform)
+  viewingPlatform?: ViewingPlatform | null;
+
+  @ApiPropertyOptional({
+    description: "기타 플랫폼을 선택했을 때 입력하는 플랫폼명",
+    example: "쿠팡플레이",
+    nullable: true,
+    maxLength: 100,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  viewingPlatformCustom?: string | null;
 }

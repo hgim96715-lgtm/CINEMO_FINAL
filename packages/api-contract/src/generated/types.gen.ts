@@ -151,6 +151,16 @@ export type UserMovieRecordResponseDto = {
      */
     viewingPlaceType?: 'HOME' | 'VENUE';
     /**
+     * 집에서 영화를 본 플랫폼
+     */
+    viewingPlatform?: 'NETFLIX' | 'WATCHA' | 'TVING' | 'DISNEY_PLUS' | 'WAVVE' | 'APPLE_TV' | 'COUPANG_PLAY' | 'TV' | 'OTHER';
+    /**
+     * 기타 플랫폼을 선택했을 때 입력한 플랫폼명
+     */
+    viewingPlatformCustom?: {
+        [key: string]: unknown;
+    } | null;
+    /**
      * 관람 장소 정보
      */
     venue?: VenueSummaryResponseDto | null;
@@ -185,6 +195,16 @@ export type UpdateMovieRecordRequestDto = {
      * 관람 방식
      */
     viewingPlaceType?: 'HOME' | 'VENUE';
+    /**
+     * 집에서 영화를 본 플랫폼
+     */
+    viewingPlatform?: 'NETFLIX' | 'WATCHA' | 'TVING' | 'DISNEY_PLUS' | 'WAVVE' | 'APPLE_TV' | 'COUPANG_PLAY' | 'TV' | 'OTHER';
+    /**
+     * 기타 플랫폼을 선택했을 때 입력하는 플랫폼명
+     */
+    viewingPlatformCustom?: {
+        [key: string]: unknown;
+    } | null;
 };
 
 export type MovieTitleResponseDto = {

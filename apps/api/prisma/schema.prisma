@@ -126,6 +126,18 @@ enum ViewingPlaceType {
   VENUE
 }
 
+enum ViewingPlatform {
+  NETFLIX
+  WATCHA
+  TVING
+  DISNEY_PLUS
+  WAVVE
+  APPLE_TV
+  COUPANG_PLAY
+  TV
+  OTHER
+}
+
 model User {
   id              String     @id @default(uuid(7)) @db.Uuid
   email           String?    @unique
@@ -269,6 +281,8 @@ model UserMovieRecord {
   movieId          String            @db.Uuid
   venueId          String?           @map("venue_id") @db.Uuid
   viewingPlaceType ViewingPlaceType?
+  viewingPlatform  ViewingPlatform?
+  viewingPlatformCustom String? @map("viewing_platform_custom") @db.VarChar(100)
   isFavorite       Boolean           @default(false)
   watchedAt        DateTime?         @db.Timestamptz(3)
   rating           Decimal?          @db.Decimal(2, 1)

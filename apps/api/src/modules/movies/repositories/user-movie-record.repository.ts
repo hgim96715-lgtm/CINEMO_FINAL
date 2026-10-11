@@ -1,5 +1,5 @@
 import {Injectable} from "@nestjs/common";
-import {MediaType, Prisma, TitleType, ViewingPlaceType} from "@prisma/client";
+import {MediaType, Prisma, TitleType, ViewingPlaceType, ViewingPlatform} from "@prisma/client";
 
 import {PrismaService} from "@/prisma/prisma.service";
 
@@ -9,6 +9,8 @@ type UpsertUserMovieRecordInput = {
   rating?: string | null;
   venueId?: string | null;
   viewingPlaceType?: ViewingPlaceType | null;
+  viewingPlatform?: ViewingPlatform|null;
+  viewingPlatformCustom?: string | null;
 };
 
 @Injectable()
@@ -56,6 +58,12 @@ export class UserMovieRecordRepository {
     if (input.viewingPlaceType !== undefined) {
       updateData.viewingPlaceType = input.viewingPlaceType;
     }
+    if(input.viewingPlatform !== undefined) {
+      updateData.viewingPlatform=input.viewingPlatform;
+    }
+    if (input.viewingPlatformCustom !== undefined) {
+      updateData.viewingPlatformCustom = input.viewingPlatformCustom;
+    }
 
     return this.prisma.userMovieRecord.upsert({
       where: {
@@ -72,6 +80,8 @@ export class UserMovieRecordRepository {
         isFavorite: input.isFavorite ?? false,
         watchedAt: input.watchedAt ?? null,
         rating: input.rating ?? null,
+        viewingPlatform: input.viewingPlatform ?? null,
+        viewingPlatformCustom: input.viewingPlatformCustom ?? null,
       },
       update: updateData,
       include: {
@@ -109,6 +119,8 @@ export class UserMovieRecordRepository {
         rating: true,
         venueId: true,
         viewingPlaceType: true,
+        viewingPlatform: true,
+        viewingPlatformCustom: true,
         venue: {
           select: {
             id: true,
@@ -186,5 +198,14 @@ export class UserMovieRecordRepository {
         },
       },
     });
+  }
+  
+  async deletdByUserAndMovie(userId:string,movieId: string) {
+    return this.prisma.userMovieRecord.deleteMany({
+      where: {
+        userId,
+        movieId
+      }
+    })
   }
 }

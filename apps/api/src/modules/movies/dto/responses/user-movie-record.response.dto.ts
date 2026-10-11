@@ -1,5 +1,5 @@
 import {ApiProperty, ApiPropertyOptional} from "@nestjs/swagger";
-import {VenueType, ViewingPlaceType} from "@prisma/client";
+import {VenueType, ViewingPlaceType, ViewingPlatform} from "@prisma/client";
 
 class VenueSummaryResponseDto {
   @ApiProperty({
@@ -92,6 +92,22 @@ export class UserMovieRecordResponseDto {
     nullable: true,
   })
   viewingPlaceType!: ViewingPlaceType | null;
+  
+  @ApiPropertyOptional({
+    description: "집에서 영화를 본 플랫폼",
+    enum: ViewingPlatform,
+    example: ViewingPlatform.NETFLIX,
+    nullable: true,
+  })
+  viewingPlatform!: ViewingPlatform | null;
+
+  @ApiPropertyOptional({
+    description: "기타 플랫폼을 선택했을 때 입력한 플랫폼명",
+    example: "쿠팡플레이",
+    nullable: true,
+    maxLength: 100,
+  })
+  viewingPlatformCustom!: string | null;
 
   @ApiPropertyOptional({
     description: "관람 장소 정보",

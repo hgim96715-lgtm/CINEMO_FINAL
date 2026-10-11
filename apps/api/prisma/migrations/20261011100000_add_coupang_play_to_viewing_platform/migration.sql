@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "ViewingPlatform" ADD VALUE IF NOT EXISTS 'COUPANG_PLAY';

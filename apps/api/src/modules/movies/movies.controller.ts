@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Query,
-  Post,
-} from "@nestjs/common";
+import {Body, Controller, Delete, Get, Param, Patch, Post, Query,} from "@nestjs/common";
 import {
   ApiConflictResponse,
   ApiCookieAuth,
@@ -16,24 +7,24 @@ import {
   ApiOperation,
   ApiTags,
 } from "@nestjs/swagger";
-import { Throttle } from "@nestjs/throttler";
+import {Throttle} from "@nestjs/throttler";
 
-import { MovieResponseDto } from "./dto/responses/movie.response.dto";
-import { MoviesService } from "./movies.service";
-import { GetMovieRequestDto } from "./dto/requests/get-movie.request.dto";
-import { SearchMoviesRequestDto } from "./dto/requests/search-movies.request.dto";
-import { MovieSearchResponseDto } from "./dto/responses/movie-search.response.dto";
-import { MovieSitemapResponseDto } from "./dto/responses/movie-sitemap.response.dto";
-import { GetPopularMoviesRequestDto } from "./dto/requests/get-popular-movies.request.dto";
-import { GetUpcomingMoviesRequestDto } from "./dto/requests/get-upcoming-movies.request.dto";
-import { Public } from "../auth/decorators/public.decorator";
-import { UserMovieRecordService } from "./user-movie-record.service";
-import { UpdateMovieRecordRequestDto } from "../auth/dto/requests/update-movie-record.request.dto";
-import { UserMovieRecordResponseDto } from "./dto/responses/user-movie-record.response.dto";
-import type { SessionUser } from "../auth/types/session-user.type";
-import { CurrentUser } from "../auth/decorators/current-user.decorator";
-import { GetReleasedMoviesRequestDto } from "./dto/requests/get-released-movies.request.dto";
-import { UserMovieNotificationService } from "./user-movie-notification.service";
+import {MovieResponseDto} from "./dto/responses/movie.response.dto";
+import {MoviesService} from "./movies.service";
+import {GetMovieRequestDto} from "./dto/requests/get-movie.request.dto";
+import {SearchMoviesRequestDto} from "./dto/requests/search-movies.request.dto";
+import {MovieSearchResponseDto} from "./dto/responses/movie-search.response.dto";
+import {MovieSitemapResponseDto} from "./dto/responses/movie-sitemap.response.dto";
+import {GetPopularMoviesRequestDto} from "./dto/requests/get-popular-movies.request.dto";
+import {GetUpcomingMoviesRequestDto} from "./dto/requests/get-upcoming-movies.request.dto";
+import {Public} from "../auth/decorators/public.decorator";
+import {UserMovieRecordService} from "./user-movie-record.service";
+import {UpdateMovieRecordRequestDto} from "../auth/dto/requests/update-movie-record.request.dto";
+import {UserMovieRecordResponseDto} from "./dto/responses/user-movie-record.response.dto";
+import type {SessionUser} from "../auth/types/session-user.type";
+import {CurrentUser} from "../auth/decorators/current-user.decorator";
+import {GetReleasedMoviesRequestDto} from "./dto/requests/get-released-movies.request.dto";
+import {UserMovieNotificationService} from "./user-movie-notification.service";
 
 @ApiTags("Movies")
 @Controller("movies")
@@ -306,5 +297,23 @@ export class MoviesController {
   })
   findById(@Param() params: GetMovieRequestDto) {
     return this.moviesService.findById(params.movieId);
+  }
+  
+  @Delete(":movieId/record")
+  @ApiOperation({
+    summary: "사용자 영화 기록 삭제",
+    description: "찜·관람일·평점·관람 장소를 포함한 사용자 영화 기록을 삭제",
+  })
+  @ApiOkResponse({
+    description: "사용자 영화 기록 삭제 성공",
+  })
+  deleteMovieRecord(
+      @Param() params: GetMovieRequestDto,
+      @CurrentUser() user: SessionUser,
+  ) {
+    return this.userMovieRecordService.delete(
+        user.id,
+        params.movieId,
+    );
   }
 }

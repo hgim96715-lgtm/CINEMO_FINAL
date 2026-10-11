@@ -13,7 +13,7 @@ ALTER TABLE "cinema_venues" RENAME TO "venues";
 
 -- Keep existing records as movie theaters while making the model extensible.
 ALTER TABLE "venues"
-    ADD COLUMN "type" "VenueType" NOT NULL DEFAULT 'OTHER';
+    ADD COLUMN "type" "VenueType" NOT NULL DEFAULT 'CINEMA';
 
 ALTER TABLE "venues"
     ALTER COLUMN "provider" DROP NOT NULL,
