@@ -6,6 +6,18 @@ import type {
 } from "@cinemo/api-contract";
 import {apiClient} from "./apiClient";
 
+export type ViewingPlatform =
+    | "NETFLIX"
+    | "WATCHA"
+    | "TVING"
+    | "DISNEY_PLUS"
+    | "WAVVE"
+    | "APPLE_TV"
+    | "COUPANG_PLAY"
+    | "TV"
+    | "OTHER";
+
+
 export type SearchMoviesParams = {
   query: string;
   page?: number;
@@ -101,8 +113,9 @@ export type UpdateMovieRecordInput = {
   rating?: string | null;
   venueId?: string | null;
   viewingPlaceType?: "HOME" | "VENUE" | null;
+  viewingPlatform?:ViewingPlatform |null;
+  viewingPlatformCustom?: string | null;
 };
-
 export async function getMovieRecord(
   movieId: string,
   signal?: AbortSignal,
@@ -218,6 +231,7 @@ export type MyMovieVenue = {
   jibunAddress: string | null;
 };
 
+
 export type MyMovie = {
   id: string;
   movieId: string;
@@ -230,6 +244,8 @@ export type MyMovie = {
   rating: string | null;
   venueId: string | null;
   viewingPlaceType: "HOME" | "VENUE" | null;
+  viewingPlatform:ViewingPlatform | null;
+  viewingPlatformCustom: string | null;
   venue: MyMovieVenue | null;
 };
 
@@ -241,4 +257,8 @@ export async function getMyMovies(
   });
 
   return data;
+}
+
+export async function deleteMovieRecord(movieId: string): Promise<void> {
+  await apiClient.delete(`/movies/${movieId}/record`);
 }

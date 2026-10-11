@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Coupang Play</title>
+  <defs>
+    <linearGradient id="play" x1="20" y1="8" x2="43" y2="57" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9be8ff"/>
+      <stop offset=".42" stop-color="#6aa7ed"/>
+      <stop offset=".7" stop-color="#c88bea"/>
+      <stop offset="1" stop-color="#ff9a52"/>
+    </linearGradient>
+  </defs>
+  <path
+    d="M18.5 7.5c-5.8-3.4-11.7 2.2-8.4 8.1 5.3 9.4 8.1 12.4 8.1 16.4s-2.8 7-8.1 16.4c-3.3 5.9 2.6 11.5 8.4 8.1l34.1-19.7c6.2-3.6 6.2-11.9 0-15.5z"
+    fill="url(#play)"
+  />
+</svg>

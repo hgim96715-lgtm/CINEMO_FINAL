@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 208 64" role="img" aria-labelledby="title">
+  <title id="title">Wavve</title>
+  <defs>
+    <clipPath id="playmark">
+      <path d="M17 6c-5-3-11 1-11 7v38c0 6 6 10 11 7l33-19c6-4 6-11 0-15z"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#playmark)">
+    <rect width="56" height="64" fill="#2424ba"/>
+    <path d="M-7 27c14-11 27-11 40 0s24 11 38 0v12c-14 11-25 11-38 0S7 28-7 39z" fill="#3154dd"/>
+    <path d="M-7 42c14-11 27-11 40 0s24 11 38 0v13c-14 11-25 11-38 0S7 43-7 54z" fill="#59c9ed"/>
+  </g>
+  <text x="68" y="45" fill="#fff" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="39" font-weight="400" letter-spacing="-2">wavve</text>
+</svg>

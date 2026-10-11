@@ -12,22 +12,25 @@ import {movieRecordQueryOptions,} from "@/lib/queries/movie-record.query";
 import {useUpdateMovieRecord} from "@/lib/queries/movie-record.mutation";
 import {useAuthStore} from "@/stores/auth.store";
 import {VenueSearch} from "@/components/map/CinemaVenueSearch";
+import {ViewingPlatform} from "@/lib/api/movies";
 
 type MovieRecordActionsProps = {
   movieId: string;
 };
 
-const ratingOptions = [
-  "0.5",
-  "1.0",
-  "1.5",
-  "2.0",
-  "2.5",
-  "3.0",
-  "3.5",
-  "4.0",
-  "4.5",
-  "5.0",
+const ratingOptions = Array.from({ length: 10 }, (_, index) =>
+  ((index + 1) * 0.5).toFixed(1),
+);
+
+const viewingPlatformOptions: {value: ViewingPlatform; label: string}[] = [
+  {value: "NETFLIX", label: "Netflix"},
+  {value: "WATCHA", label: "왓챠"},
+  {value: "TVING", label: "티빙"},
+  {value: "DISNEY_PLUS", label: "Disney+"},
+  {value: "WAVVE", label: "웨이브"},
+  {value: "APPLE_TV", label: "Apple TV"},
+  {value: "TV", label: "TV"},
+  {value: "OTHER", label: "기타"},
 ];
 
 const getLocalDateValue = () => {
@@ -68,6 +71,9 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
   const [venueSearchOpen, setVenueSearchOpen] = useState(false);
   const [viewingPlaceSelection, setViewingPlaceSelection] =
     useState<ViewingPlaceSelection>("VENUE");
+  const [viewingPlatform, setViewingPlatform] =
+    useState<ViewingPlatform | null>(null);
+  const [viewingPlatformCustom, setViewingPlatformCustom] = useState("");
 
   const record = recordQuery.data;
   const isFavorite = record?.isFavorite ?? false;
@@ -120,7 +126,11 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
 
     setWatchedDate(date);
     setWatchedDateOpen(false);
-    setViewingPlaceSelection("VENUE");
+    setViewingPlaceSelection(
+      record?.viewingPlaceType === "HOME" ? "HOME" : "VENUE",
+    );
+    setViewingPlatform(record?.viewingPlatform ?? null);
+    setViewingPlatformCustom(record?.viewingPlatformCustom ?? "");
     setVenueSearchOpen(true);
   };
 
@@ -259,7 +269,13 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
                   name="viewing-place"
                   value={option.value}
                   checked={selected}
-                  onChange={() => setViewingPlaceSelection(option.value)}
+                  onChange={() => {
+                    setViewingPlaceSelection(option.value);
+
+                    if (option.value === "VENUE") {
+                      setViewingPlatform(null);
+                    }
+                  }}
                   className="size-4 accent-cinemo-gold"
                 />
                 {option.label}
@@ -279,27 +295,77 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
                   watchedAt: watchedDate,
                   venueId,
                   viewingPlaceType: "VENUE",
+                  viewingPlatform: null,
                 });
               }}
             />
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => {
-              setVenueSearchOpen(false);
+          <>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {viewingPlatformOptions.map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-3 text-sm transition ${
+                    viewingPlatform === option.value
+                      ? "border-cinemo-gold bg-cinemo-gold/10 text-cinemo-gold"
+                      : "border-white/10 bg-white/3 text-cinemo-muted hover:border-white/25"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="viewing-platform"
+                    value={option.value}
+                    checked={viewingPlatform === option.value}
+                    onChange={() => {
+                      setViewingPlatform(option.value);
+                      if (option.value !== "OTHER") {
+                        setViewingPlatformCustom("");
+                      }
+                    }}
+                    className="size-4 accent-cinemo-gold"
+                  />
+                  {option.label}
+                </label>
+              ))}
+            </div>
 
-              updateRecord.mutate({
-                isWatched: true,
-                watchedAt: watchedDate,
-                venueId: null,
-                viewingPlaceType: "HOME",
-              });
-            }}
-            className="mt-4 w-full rounded-lg bg-cinemo-gold px-4 py-3 text-sm font-semibold text-cinemo-bg transition hover:bg-cinemo-gold-light"
-          >
-            집에서 본 것으로 저장
-          </button>
+            {viewingPlatform === "OTHER" && (
+              <input
+                value={viewingPlatformCustom}
+                onChange={(event) => setViewingPlatformCustom(event.target.value)}
+                placeholder="플랫폼 이름을 직접 입력"
+                maxLength={100}
+                className="mt-3 w-full rounded-lg border border-white/10 bg-white/3 px-3 py-2 text-sm text-white outline-none placeholder:text-cinemo-muted focus:border-cinemo-gold"
+              />
+            )}
+
+            <button
+              type="button"
+              disabled={
+                updateRecord.isPending ||
+                (viewingPlatform === "OTHER" && !viewingPlatformCustom.trim())
+              }
+              onClick={() => {
+                setVenueSearchOpen(false);
+
+                updateRecord.mutate({
+                  isWatched: true,
+                  watchedAt: watchedDate,
+                  venueId: null,
+                  viewingPlaceType: "HOME",
+                  viewingPlatform,
+                  viewingPlatformCustom:
+                    viewingPlatform === "OTHER"
+                      ? viewingPlatformCustom.trim() || null
+                      : null,
+                });
+              }}
+              className="mt-4 w-full rounded-lg bg-cinemo-gold px-4 py-3 text-sm font-semibold text-cinemo-bg transition hover:bg-cinemo-gold-light"
+            >
+              집에서 본 것으로 저장
+            </button>
+          </>
         )}
       </AppModal>
 

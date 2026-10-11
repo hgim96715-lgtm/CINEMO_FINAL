@@ -10,9 +10,9 @@ import {ko} from "@daypicker/react/locale";
 import {VenueSearch} from "@/components/map/CinemaVenueSearch";
 import {AppModal} from "@/components/ui/app-modal";
 import {Calendar} from "@/components/ui/calendar";
-import type {MyMovie, UpdateMovieRecordInput} from "@/lib/api/movies";
+import type {MyMovie, UpdateMovieRecordInput, ViewingPlatform} from "@/lib/api/movies";
 import {myMoviesQueryOptions} from "@/lib/queries/my-movies.query";
-import {useUpdateMovieRecord} from "@/lib/queries/movie-record.mutation";
+import {useDeleteMovieRecord, useUpdateMovieRecord} from "@/lib/queries/movie-record.mutation";
 import {MovieSpaceDrawer, type MovieSpaceTab,} from "./MovieSpaceDrawer";
 
 const formatDateValue = (date: Date) => {
@@ -30,11 +30,120 @@ const parseDateValue = (dateValue: string) => {
 
 const getLocalDateValue = () => formatDateValue(new Date());
 
+const viewingPlatformLabels: Record<ViewingPlatform, string> = {
+  NETFLIX: "Netflix",
+  WATCHA: "왓챠",
+  TVING: "티빙",
+  DISNEY_PLUS: "Disney+",
+  WAVVE: "웨이브",
+  APPLE_TV: "Apple TV",
+  COUPANG_PLAY: "쿠팡플레이",
+  TV: "TV",
+  OTHER: "기타",
+};
+
+const viewingPlatformIconPaths: Partial<Record<ViewingPlatform, string>> = {
+  NETFLIX: "/icons/platforms/netflix.svg",
+  DISNEY_PLUS: "/icons/platforms/disney-plus.svg",
+  WATCHA: "/icons/platforms/watcha.svg",
+  TVING: "/icons/platforms/tving.svg",
+  WAVVE: "/icons/platforms/wavve.svg",
+  APPLE_TV: "/icons/platforms/apple-tv.svg",
+  COUPANG_PLAY: "/icons/platforms/coupang-play.svg",
+};
+
+const viewingPlatformIconSizes: Partial<
+  Record<ViewingPlatform, { width: number; height: number }>
+> = {
+  DISNEY_PLUS: { width: 32, height: 12 },
+  WATCHA: { width: 36, height: 14 },
+  TVING: { width: 32, height: 12 },
+  WAVVE: { width: 52, height: 16 },
+  APPLE_TV: { width: 20, height: 16 },
+};
+
+const viewingPlatformOptions: Array<{
+  value: ViewingPlatform;
+  label: string;
+}> = [
+  { value: "NETFLIX", label: "Netflix" },
+  { value: "WATCHA", label: "왓챠" },
+  { value: "TVING", label: "티빙" },
+  { value: "DISNEY_PLUS", label: "Disney+" },
+  { value: "WAVVE", label: "웨이브" },
+  { value: "APPLE_TV", label: "Apple TV" },
+  { value: "COUPANG_PLAY", label: "쿠팡플레이" },
+  { value: "TV", label: "TV" },
+  { value: "OTHER", label: "기타" },
+];
+
+const ratingOptions = Array.from({ length: 10 }, (_, index) =>
+  ((index + 1) * 0.5).toFixed(1),
+);
+
+function MovieViewingInfo({ movie }: { movie: MyMovie }) {
+  if (!movie.isWatched) {
+    return null;
+  }
+
+  if (movie.viewingPlaceType === "HOME") {
+    const platform = movie.viewingPlatform;
+    const iconPath = platform
+      ? viewingPlatformIconPaths[platform]
+      : undefined;
+
+    if (platform && iconPath) {
+      const iconSize = viewingPlatformIconSizes[platform] ?? {
+        width: 16,
+        height: 16,
+      };
+
+      return (
+        <p className="mt-2 line-clamp-1 text-xs text-cinemo-muted">
+          <Image
+            src={iconPath}
+            alt={viewingPlatformLabels[platform]}
+            width={iconSize.width}
+            height={iconSize.height}
+            className={`inline-block align-middle object-contain ${
+              platform === "DISNEY_PLUS" ? "brightness-0 invert" : ""
+            }`}
+          />
+        </p>
+      );
+    }
+
+    let homeViewingLabel = "집에서 관람";
+    if (platform === "OTHER") {
+      homeViewingLabel = movie.viewingPlatformCustom || "기타 플랫폼";
+    } else if (platform) {
+      homeViewingLabel = `${viewingPlatformLabels[platform]}에서 관람`;
+    }
+
+    return (
+      <p className="mt-2 line-clamp-1 text-xs text-cinemo-muted">
+        {homeViewingLabel}
+      </p>
+    );
+  }
+
+  if (!movie.venue) {
+    return null;
+  }
+
+  return (
+    <p className="mt-2 line-clamp-1 text-xs text-cinemo-muted">
+      {movie.venue.name}
+    </p>
+  );
+}
+
 export function MyMoviesList() {
   const [activeTab, setActiveTab] = useState<MovieSpaceTab>("saved");
   const myMoviesQuery = useQuery(myMoviesQueryOptions());
   const movies = myMoviesQuery.data ?? [];
   const [editingMovie, setEditingMovie] = useState<MyMovie | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [watchedAt, setWatchedAt] = useState("");
   const [calendarMonth, setCalendarMonth] = useState<Date>();
   const [rating, setRating] = useState<string | null>(null);
@@ -42,11 +151,15 @@ export function MyMoviesList() {
   const [viewingPlaceType, setViewingPlaceType] = useState<
     UpdateMovieRecordInput["viewingPlaceType"]
   >(null);
+  const [viewingPlatform, setViewingPlatform] = useState<ViewingPlatform|null>(null);
+  const [viewingPlatformCustom, setViewingPlatformCustom] = useState("");
 
   const updateMovieRecord = useUpdateMovieRecord(
       editingMovie?.movieId ?? "",
   );
-
+  const deleteMovieRecord=useDeleteMovieRecord(editingMovie?.movieId??"");
+  
+  
   const openEditModal = (movie: MyMovie) => {
     setEditingMovie(movie);
     const initialDate = movie.watchedAt?.slice(0, 10) ?? getLocalDateValue();
@@ -56,6 +169,8 @@ export function MyMoviesList() {
     setRating(movie.rating);
     setVenueId(movie.venueId);
     setViewingPlaceType(movie.viewingPlaceType ?? (movie.venueId ? "VENUE" : null));
+    setViewingPlatform(movie.viewingPlatform);
+    setViewingPlatformCustom(movie.viewingPlatformCustom ?? "");
   };
   
   const counts = useMemo(
@@ -135,8 +250,7 @@ export function MyMoviesList() {
                   없음
                 </button>
 
-                {["0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0"].map(
-                    (value) => (
+                {ratingOptions.map((value) => (
                       <button
                           key={value}
                           type="button"
@@ -149,8 +263,7 @@ export function MyMoviesList() {
                       >
                         {value}
                       </button>
-                    ),
-                )}
+                ))}
               </div>
             </div>
 
@@ -171,18 +284,90 @@ export function MyMoviesList() {
                 >
                   집에서 보기
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewingPlaceType("VENUE");
+                    setViewingPlatform(null);
+                  }}
+                  className={`rounded-lg border px-3 py-2 text-sm ${
+                    viewingPlaceType === "VENUE"
+                      ? "border-cinemo-gold bg-cinemo-gold/10 text-cinemo-gold"
+                      : "border-white/10 text-cinemo-muted"
+                  }`}
+                >
+                  다른 장소에서 보기
+                </button>
               </div>
-              <VenueSearch
-                onSelected={(selectedVenueId) => {
-                  setVenueId(selectedVenueId);
-                  setViewingPlaceType("VENUE");
-                }}
-              />
+
+              {viewingPlaceType === "HOME" && (
+                <div className="space-y-2">
+                  <p className="text-sm text-cinemo-muted">시청 플랫폼</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setViewingPlatform(null)}
+                      className={`rounded-lg border px-3 py-2 text-sm ${
+                        viewingPlatform === null
+                          ? "border-cinemo-gold bg-cinemo-gold/10 text-cinemo-gold"
+                          : "border-white/10 text-cinemo-muted"
+                      }`}
+                    >
+                      선택 안 함
+                    </button>
+
+                    {viewingPlatformOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setViewingPlatform(option.value);
+                          if (option.value !== "OTHER") {
+                            setViewingPlatformCustom("");
+                          }
+                        }}
+                        className={`rounded-lg border px-3 py-2 text-sm ${
+                          viewingPlatform === option.value
+                            ? "border-cinemo-gold bg-cinemo-gold/10 text-cinemo-gold"
+                            : "border-white/10 text-cinemo-muted"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {viewingPlatform === "OTHER" && (
+                    <input
+                      value={viewingPlatformCustom}
+                      onChange={(event) => setViewingPlatformCustom(event.target.value)}
+                      placeholder="플랫폼 이름을 직접 입력"
+                      maxLength={100}
+                      className="w-full rounded-lg border border-white\/10 bg-white/3 px-3 py-2 text-sm  outline-none placeholder:text-cinemo-muted focus:border-cinemo-gold"
+                    />
+                  )}
+                </div>
+              )}
+
+              {viewingPlaceType === "VENUE" && (
+                <VenueSearch
+                  onSelected={(selectedVenueId) => {
+                    setVenueId(selectedVenueId);
+                    setViewingPlaceType("VENUE");
+                    setViewingPlatform(null);
+                  }}
+                />
+              )}
             </div>
 
             <button
                 type="button"
-                disabled={!watchedAt || updateMovieRecord.isPending}
+                disabled={
+                  !watchedAt ||
+                  updateMovieRecord.isPending ||
+                  (viewingPlatform === "OTHER" && !viewingPlatformCustom.trim())
+                }
                 onClick={() => {
                   updateMovieRecord.mutate(
                       {
@@ -191,6 +376,11 @@ export function MyMoviesList() {
                         rating,
                         venueId,
                         viewingPlaceType,
+                        viewingPlatform,
+                        viewingPlatformCustom:
+                          viewingPlatform === "OTHER"
+                            ? viewingPlatformCustom.trim() || null
+                            : null,
                       },
                       {
                         onSuccess: () => setEditingMovie(null),
@@ -201,8 +391,49 @@ export function MyMoviesList() {
             >
               {updateMovieRecord.isPending ? "저장 중..." : "변경사항 저장"}
             </button>
+
+            <button
+              type="button"
+              onClick={() => setDeleteConfirmOpen(true)}
+              className="mt-2 w-full rounded-lg border border-red-400/40 px-4 py-3 text-sm text-red-300 disabled:opacity-50"
+            >
+              관람 기록 삭제
+            </button>
           </div>
         </AppModal>
+
+        <AppModal
+          open={deleteConfirmOpen}
+          onOpenChange={setDeleteConfirmOpen}
+          title="관람 기록 삭제"
+          description="관람 기록을 삭제하시겠습니까?"
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmOpen(false)}
+                className="rounded-lg border border-white/10 px-4 py-2 text-sm text-cinemo-muted"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                disabled={deleteMovieRecord.isPending}
+                onClick={() => {
+                  deleteMovieRecord.mutate(undefined, {
+                    onSuccess: () => {
+                      setDeleteConfirmOpen(false);
+                      setEditingMovie(null);
+                    },
+                  });
+                }}
+                className="rounded-lg bg-red-500/80 px-4 py-2 text-sm text-white disabled:opacity-50"
+              >
+                {deleteMovieRecord.isPending ? "삭제 중..." : "삭제"}
+              </button>
+            </>
+          }
+        />
 
         <MovieSpaceDrawer
             activeTab={activeTab}
@@ -279,14 +510,7 @@ export function MyMoviesList() {
                         )}
                       </div>
                       
-                      {movie.isWatched &&
-                          (movie.viewingPlaceType === "HOME" || movie.venue) && (
-                              <p className="mt-2 line-clamp-1 text-xs text-cinemo-muted">
-                                {movie.viewingPlaceType === "HOME"
-                                    ? "집에서 관람"
-                                    : movie.venue?.name}
-                              </p>
-                          )}
+                      <MovieViewingInfo movie={movie} />
                     </div>
                     </Link>
 
@@ -300,10 +524,15 @@ export function MyMoviesList() {
                         <Pencil className="size-4" />
                       </button>
                     )}
+                    
                   </div>
+                  
               ))}
+              
             </div>
+            
         )}
+        
       </section>
   );
 }
