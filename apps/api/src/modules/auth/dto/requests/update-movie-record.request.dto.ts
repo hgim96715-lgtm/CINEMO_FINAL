@@ -44,6 +44,7 @@ export class UpdateMovieRecordRequestDto {
 
   @ApiPropertyOptional({
     description: "관람 장소 ID. 집에서 본 경우 null",
+    type: String,
     example: "01a12345-6789-7123-8456-789012345678",
     format: "uuid",
     nullable: true,
@@ -74,6 +75,7 @@ export class UpdateMovieRecordRequestDto {
 
   @ApiPropertyOptional({
     description: "기타 플랫폼을 선택했을 때 입력하는 플랫폼명",
+    type: String,
     example: "쿠팡플레이",
     nullable: true,
     maxLength: 100,

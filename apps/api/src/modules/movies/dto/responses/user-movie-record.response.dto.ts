@@ -103,6 +103,7 @@ export class UserMovieRecordResponseDto {
 
   @ApiPropertyOptional({
     description: "기타 플랫폼을 선택했을 때 입력한 플랫폼명",
+    type: String,
     example: "쿠팡플레이",
     nullable: true,
     maxLength: 100,

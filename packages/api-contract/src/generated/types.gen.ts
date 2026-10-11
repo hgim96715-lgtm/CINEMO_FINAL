@@ -157,9 +157,7 @@ export type UserMovieRecordResponseDto = {
     /**
      * 기타 플랫폼을 선택했을 때 입력한 플랫폼명
      */
-    viewingPlatformCustom?: {
-        [key: string]: unknown;
-    } | null;
+    viewingPlatformCustom?: string | null;
     /**
      * 관람 장소 정보
      */
@@ -188,9 +186,7 @@ export type UpdateMovieRecordRequestDto = {
     /**
      * 관람 장소 ID. 집에서 본 경우 null
      */
-    venueId?: {
-        [key: string]: unknown;
-    } | null;
+    venueId?: string | null;
     /**
      * 관람 방식
      */
@@ -202,9 +198,7 @@ export type UpdateMovieRecordRequestDto = {
     /**
      * 기타 플랫폼을 선택했을 때 입력하는 플랫폼명
      */
-    viewingPlatformCustom?: {
-        [key: string]: unknown;
-    } | null;
+    viewingPlatformCustom?: string | null;
 };
 
 export type MovieTitleResponseDto = {
@@ -1649,6 +1643,25 @@ export type MoviesControllerGetMyMoviesV1Data = {
 };
 
 export type MoviesControllerGetMyMoviesV1Responses = {
+    200: unknown;
+};
+
+export type MoviesControllerDeleteMovieRecordV1Data = {
+    body?: never;
+    path: {
+        /**
+         * CINEMO 내부 영화 UUID
+         */
+        movieId: string;
+    };
+    query?: never;
+    url: '/v1/movies/{movieId}/record';
+};
+
+export type MoviesControllerDeleteMovieRecordV1Responses = {
+    /**
+     * 사용자 영화 기록 삭제 성공
+     */
     200: unknown;
 };
 
