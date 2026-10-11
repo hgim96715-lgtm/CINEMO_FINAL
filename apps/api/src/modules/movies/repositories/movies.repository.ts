@@ -1,20 +1,20 @@
-import { Injectable } from "@nestjs/common";
+import {Injectable} from "@nestjs/common";
 import {
   CreditType,
   MatchMethod,
   MatchStatus,
   MediaStatus,
   MediaType,
+  MovieVisibility,
   Prisma,
   ReleaseStatus,
   ReleaseType,
   SourceProvider,
   TitleType,
-  MovieVisibility,
 } from "@prisma/client";
 
-import { PrismaService } from "@/prisma/prisma.service";
-import { MoviePersonService } from "../movie-person.service";
+import {PrismaService} from "@/prisma/prisma.service";
+import {MoviePersonService} from "../movie-person.service";
 
 const publicMovieWhere: Prisma.MovieWhereInput = {
   visibility: MovieVisibility.PUBLIC,
@@ -159,6 +159,8 @@ export type SaveMoviePopularitySnapshotInput = {
   collectedAt?: Date;
 };
 
+
+
 @Injectable()
 export class MoviesRepository {
   constructor(
@@ -175,6 +177,7 @@ export class MoviesRepository {
       ...movieInclude,
     });
   }
+  
 
   async search(
     query: string,
@@ -184,11 +187,39 @@ export class MoviesRepository {
     movies: MovieSearchWithDetails[];
     totalCount: number;
   }> {
+    const keyword = query.trim();
+    const normalizedKeyword = keyword
+      .toLocaleLowerCase()
+      .replace(/[\s\p{P}\p{S}]+/gu, "");
+
+    const normalizedTitleMovies =
+      normalizedKeyword.length > 0
+        ? await this.prisma.$queryRaw<Array<{movieId: string}>>(Prisma.sql`
+            SELECT DISTINCT "movieId"
+            FROM "movie_titles"
+            WHERE regexp_replace(
+              lower("title"),
+              '[[:space:][:punct:]]',
+              '',
+              'g'
+            ) LIKE '%' || ${normalizedKeyword} || '%'
+          `)
+        : [];
+
+    const normalizedTitleMovieIds = normalizedTitleMovies.map(
+      ({movieId}) => movieId,
+    );
+
     const where: Prisma.MovieWhereInput = {
       AND: [
         publicMovieWhere,
         {
           OR: [
+            {
+              id: {
+                in: normalizedTitleMovieIds,
+              },
+            },
             {
               titles: {
                 some: {
@@ -201,7 +232,7 @@ export class MoviesRepository {
                     ],
                   },
                   title: {
-                    contains: query.trim(),
+                    contains: keyword,
                     mode: "insensitive",
                   },
                 },
@@ -211,7 +242,7 @@ export class MoviesRepository {
               movieGenres: {
                 some: {
                   name: {
-                    contains: query,
+                    contains: keyword,
                     mode: "insensitive",
                   },
                 },
@@ -224,13 +255,13 @@ export class MoviesRepository {
                     OR: [
                       {
                         name: {
-                          contains: query,
+                          contains: keyword,
                           mode: "insensitive",
                         },
                       },
                       {
                         nameEn: {
-                          contains: query,
+                          contains: keyword,
                           mode: "insensitive",
                         },
                       },

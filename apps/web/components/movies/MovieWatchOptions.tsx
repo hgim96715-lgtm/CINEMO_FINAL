@@ -9,6 +9,9 @@ type MovieWatchOptionsProps = {
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w185";
 
 type WatchProvider = MovieResponse["watchOptions"][number]["watchProvider"];
+//watchProvider: 'WATCHA', ....
+
+
 
 const providerSearchUrls: Partial<Record<WatchProvider, string>> = {
   NETFLIX: "https://www.netflix.com/kr/search?q=",
