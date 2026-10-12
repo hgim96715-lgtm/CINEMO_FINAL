@@ -633,6 +633,12 @@ export class MoviesRepository {
         });
         await tx.movieCredit.deleteMany({ where: { movieId } });
         await tx.movieGenre.deleteMany({ where: { movieId } });
+        await tx.movieWatchOption.deleteMany({
+          where: {
+            movieId,
+            regionCode: "KR",
+          },
+        });
         await tx.movieTitle.deleteMany({
           where: {
             movieId,
