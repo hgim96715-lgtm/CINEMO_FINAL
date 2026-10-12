@@ -568,6 +568,15 @@ export class MoviesRepository {
     });
   }
 
+  async deleteKoreanWatchOptions(movieId: string) {
+    await this.prisma.movieWatchOption.deleteMany({
+      where: {
+        movieId,
+        regionCode: "KR",
+      },
+    });
+  }
+
   async findMoviesForDuplicateAudit() {
     return this.prisma.movie.findMany({
       select: {

@@ -542,9 +542,32 @@ export class KobisMovieBatchImportService {
         link.externalId === tmdbMovieId,
     );
 
-    if (!kobisLink || !tmdbLink) {
+    if (!kobisLink) {
       throw new BadRequestException(
-        "같은 영화에 승인된 KOBIS·TMDB 연결이 모두 있어야 분리할 수 있습니다.",
+        "분리 대상 영화에 승인된 KOBIS 연결이 없습니다.",
+      );
+    }
+
+    if (!tmdbLink) {
+      const separatedMovieId =
+        await this.moviesRepository.findMovieIdByProviderLink(
+          SourceProvider.TMDB,
+          tmdbMovieId,
+        );
+
+      if (separatedMovieId && separatedMovieId !== movieId) {
+        await this.moviesRepository.deleteKoreanWatchOptions(movieId);
+
+        return {
+          oldMovieId: movieId,
+          newMovieId: separatedMovieId,
+          kobisMovieCd: kobisLink.externalId,
+          tmdbMovieId,
+        };
+      }
+
+      throw new BadRequestException(
+        "분리 대상 TMDB 연결을 찾을 수 없습니다.",
       );
     }
 
