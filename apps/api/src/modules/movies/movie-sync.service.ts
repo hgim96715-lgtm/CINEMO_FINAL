@@ -29,4 +29,21 @@ export class MovieSyncService {
   fail(runId: string, errorMessage: string) {
     return this.movieSyncRepository.fail(runId, errorMessage);
   }
+
+  updateProgress(
+    runId: string,
+    input: {
+      currentPage?: number;
+      currentCursor?: string | null;
+      processedCount?: number;
+      successCount?: number;
+      failureCount?: number;
+    },
+  ) {
+    return this.movieSyncRepository.updateProgress(runId, input);
+  }
+
+  partial(runId: string, errorMessage: string) {
+    return this.movieSyncRepository.partial(runId, errorMessage);
+  }
 }

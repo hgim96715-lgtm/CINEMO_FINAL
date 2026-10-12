@@ -81,4 +81,15 @@ export class MovieSyncRepository {
       }
     })
   }
+
+  partial(runId: string, errorMessage: string) {
+    return this.prisma.movieSyncRun.update({
+      where: { id: runId },
+      data: {
+        status: MovieSyncStatus.PARTIAL,
+        errorMessage,
+        completedAt: new Date(),
+      },
+    });
+  }
 }

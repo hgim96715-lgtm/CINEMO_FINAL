@@ -117,10 +117,17 @@ export class MoviePersonRepository {
         id: personId,
       },
       data: {
-        profileUrl: data.profileUrl,
-        biography: data.biography,
-        birthDate: data.birthDate,
-        birthPlace: data.birthPlace,
+        ...(typeof data.profileUrl === "string"
+          ? { profileUrl: data.profileUrl }
+          : {}),
+        ...(typeof data.biography === "string"
+          ? { biography: data.biography }
+          : {}),
+        ...(data.birthDate instanceof Date ? { birthDate: data.birthDate } : {}),
+        ...(typeof data.birthPlace === "string"
+          ? { birthPlace: data.birthPlace }
+          : {}),
+        tmdbEnrichedAt: new Date(),
       },
     });
   }

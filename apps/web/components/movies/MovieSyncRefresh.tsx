@@ -1,11 +1,11 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import type { MovieResponse } from "@cinemo/api-contract";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import {useQuery} from "@tanstack/react-query";
+import type {MovieResponse} from "@cinemo/api-contract";
+import {useRouter} from "next/navigation";
+import {useEffect} from "react";
 
-import { movieDetailQueryOptions } from "@/lib/queries/movie-detail.query";
+import {movieDetailQueryOptions} from "@/lib/queries/movie-detail.query";
 
 type MovieSyncRefreshProps = {
   movieId: string;
@@ -43,8 +43,15 @@ export function MovieSyncRefresh({ movieId }: MovieSyncRefreshProps) {
   }, [movieId, movieQuery.data, router]);
 
   return (
-    <p className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-cinemo-surface/95 px-4 py-2 text-xs text-cinemo-muted shadow-lg backdrop-blur">
-      영화 정보를 보완하는 중...
-    </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-cinemo-bg/70 px-6 backdrop-blur-sm">
+      <div className="rounded-2xl bg-cinemo-surface/95 px-6 py-5 text-center shadow-2xl">
+        <p className="text-sm font-medium text-cinemo-text">
+          영화 정보를 불러오는 중...
+        </p>
+        <p className="mt-2 text-xs text-cinemo-muted">
+          잠시만 기다리면 상세 정보가 표시됩니다.
+        </p>
+      </div>
+    </div>
   );
 }
