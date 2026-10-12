@@ -5,6 +5,7 @@ import { KobisService } from "@/integrations/kobis/kobis.service";
 import { TmdbService } from "@/integrations/tmdb/tmdb.service";
 
 import { KobisMovieImportService } from "./kobis-movie-import.service";
+import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
 import { MoviesRepository } from "./repositories/movies.repository";
 import { toKobisRankingSnapshotInput } from "./mappers/kobis-ranking.mapper";
 import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
@@ -27,11 +28,13 @@ const getSeoulDate = (dayOffset = 0): string => {
 };
 
 const toTmdbDate = (value?: string | null): string | null => {
-  if (!value || !/^\d{8}$/.test(value)) {
+  const normalizedValue = value?.replaceAll("-", "");
+
+  if (!normalizedValue || !/^\d{8}$/.test(normalizedValue)) {
     return null;
   }
 
-  return `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`;
+  return `${normalizedValue.slice(0, 4)}-${normalizedValue.slice(4, 6)}-${normalizedValue.slice(6, 8)}`;
 };
 
 @Injectable()
@@ -44,6 +47,7 @@ export class KobisMovieBatchImportService {
     private readonly moviesRepository: MoviesRepository,
     private readonly tmdbService: TmdbService,
     private readonly tmdbMovieSyncService: TmdbMovieSyncService,
+    private readonly kmdbMovieEnrichmentService: KmdbMovieEnrichmentService,
   ) {}
 
   async importMovies(
@@ -134,6 +138,17 @@ export class KobisMovieBatchImportService {
             await this.tmdbMovieSyncService.syncMovieFromTmdb(
               movieId,
               tmdbMovie.id,
+            );
+          }
+
+          try {
+            await this.kmdbMovieEnrichmentService.enrichMovieByMovieId(movieId);
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : String(error);
+
+            this.logger.warn(
+              `KMDb 개봉 예정 영화 보완 실패: ${movie.movieCd} ${movie.title} - ${message}`,
             );
           }
 
@@ -233,6 +248,17 @@ export class KobisMovieBatchImportService {
             );
           }
 
+          try {
+            await this.kmdbMovieEnrichmentService.enrichMovieByMovieId(movieId);
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : String(error);
+
+            this.logger.warn(
+              `KMDb 올해 개봉 영화 보완 실패: ${movie.movieCd} ${movie.title} - ${message}`,
+            );
+          }
+
           movieIds.add(movieId);
         } catch (error) {
           failures.push({
@@ -262,7 +288,12 @@ export class KobisMovieBatchImportService {
     const boxOffice = await this.kobisService.getDailyBoxOffice(targetDt);
 
     for (const movie of boxOffice.results) {
-      const tmdbMovie = await this.findTmdbMovie(movie.movieNm, movie.openDt);
+      const normalizedOpenDate = movie.openDt?.replaceAll("-", "") ?? null;
+      const tmdbMovie = await this.findTmdbMovie(
+        movie.movieNm,
+        movie.openDt,
+        normalizedOpenDate?.slice(0, 4),
+      );
 
       const tmdbLinkedMovieId = tmdbMovie
         ? await this.moviesRepository.findMovieIdByProviderLink(
@@ -618,61 +649,85 @@ export class KobisMovieBatchImportService {
     const tmdbReleaseDate = toTmdbDate(releaseDate);
     const normalizedProductionYear = productionYear?.trim();
 
-    const titleMatches = response.results.filter((movie) => {
-      const movieTitle = normalizeTitle(movie.title);
-      const originalTitle = normalizeTitle(movie.original_title);
+    const posterCandidates = response.results
+      .filter((movie) => movie.poster_path)
+      .map((movie) => {
+        const movieTitle = normalizeTitle(movie.title);
+        const originalTitle = normalizeTitle(movie.original_title);
+        const candidateTitles = [movieTitle, originalTitle].filter(Boolean);
+        const isExactMatch = candidateTitles.some(
+          (candidateTitle) => candidateTitle === normalizedTitle,
+        );
+        const isPartialMatch = candidateTitles.some(
+          (candidateTitle) =>
+            Math.min(candidateTitle.length, normalizedTitle.length) >= 4 &&
+            (candidateTitle.includes(normalizedTitle) ||
+              normalizedTitle.includes(candidateTitle)),
+        );
 
-      return (
-        movie.poster_path &&
-        (movieTitle === normalizedTitle || originalTitle === normalizedTitle)
-      );
-    });
+        return {
+          movie,
+          titleScore: isExactMatch ? 2 : isPartialMatch ? 1 : 0,
+        };
+      });
 
-    if (titleMatches.length === 0) {
+    if (posterCandidates.length === 0) {
+      this.logger.warn(`TMDB 포스터 후보 없음: ${title}`);
       return null;
     }
 
+    const titleMatches = posterCandidates.filter(
+      ({titleScore}) => titleScore > 0,
+    );
+    const candidates = titleMatches.length > 0 ? titleMatches : posterCandidates;
+
     const yearMatchedTitles = normalizedProductionYear
-      ? titleMatches.filter((movie) => {
+      ? candidates.filter(({movie}) => {
           const tmdbYear = movie.release_date?.slice(0, 4);
 
           // 제목이 같은 리메이크·원작을 잘못 연결하지 않도록
           // KOBIS 제작연도와 TMDB 개봉연도가 정확히 같은 후보만 자동 매칭함.
-          return tmdbYear === normalizedProductionYear;
+          return (
+            tmdbYear === normalizedProductionYear ||
+            !tmdbYear
+          );
         })
-      : titleMatches;
+      : candidates;
 
-    if (yearMatchedTitles.length === 0) {
-      return null;
-    }
+    const dateCandidates =
+      yearMatchedTitles.length > 0 ? yearMatchedTitles : candidates;
 
     if (tmdbReleaseDate) {
-      const exactDateMatch = yearMatchedTitles.find(
-        (movie) => movie.release_date === tmdbReleaseDate,
+      const exactDateMatch = dateCandidates.find(
+        ({movie}) => movie.release_date === tmdbReleaseDate,
       );
 
       if (exactDateMatch) {
-        return exactDateMatch;
+        return exactDateMatch.movie;
       }
 
       const targetTime = Date.parse(`${tmdbReleaseDate}T00:00:00.000Z`);
 
-      const nearbyMatch = yearMatchedTitles
-        .filter((movie) => movie.release_date)
-        .map((movie) => ({
-          movie,
+      const nearbyMatch = dateCandidates
+        .filter(({movie}) => movie.release_date)
+        .map((candidate) => ({
+          candidate,
           distance: Math.abs(
-            Date.parse(`${movie.release_date}T00:00:00.000Z`) - targetTime,
+            Date.parse(`${candidate.movie.release_date}T00:00:00.000Z`) -
+              targetTime,
           ),
         }))
         .filter(({ distance }) => distance <= 365 * 24 * 60 * 60 * 1000)
-        .sort((a, b) => a.distance - b.distance)[0];
+        .sort(
+          (a, b) =>
+            b.candidate.titleScore - a.candidate.titleScore ||
+            a.distance - b.distance,
+        )[0];
 
-      return nearbyMatch?.movie ?? null;
+      return nearbyMatch?.candidate.movie ?? null;
     }
 
-    // 개봉일을 확인할 수 없을 때 제목만으로 자동 연결하면
-    // 같은 제목의 리메이크·재개봉 작품을 잘못 연결할 수 있음.
-    return null;
+    return dateCandidates.sort((a, b) => b.titleScore - a.titleScore)[0]
+      ?.movie ?? null;
   }
 }

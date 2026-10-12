@@ -728,6 +728,37 @@ export class MoviesRepository {
           where: { id: movieId },
         });
 
+        // KOBIS가 연결된 영화는 국내 장르·감독·배우 정보를 기준으로 사용함.
+        // 이전에 잘못 연결된 TMDB 영화의 장르와 인물이 남아 있으면
+        // 같은 영화에 애니메이션 장르나 다른 감독이 함께 표시될 수 있음.
+        await tx.movieGenre.deleteMany({
+          where: {
+            movieId: movie.id,
+            code: { startsWith: "TMDB_" },
+          },
+        });
+
+        const tmdbOnlyCredits = await tx.movieCredit.findMany({
+          where: {
+            movieId: movie.id,
+            person: {
+              providerLinks: { some: { sourceProvider: SourceProvider.TMDB } },
+              NOT: {
+                providerLinks: {
+                  some: { sourceProvider: SourceProvider.KOBIS },
+                },
+              },
+            },
+          },
+          select: { id: true },
+        });
+
+        if (tmdbOnlyCredits.length > 0) {
+          await tx.movieCredit.deleteMany({
+            where: { id: { in: tmdbOnlyCredits.map((credit) => credit.id) } },
+          });
+        }
+
         // 관리자가 검토한 영화는 이후 재수집에서 자동 분류로 덮어쓰지 않음.
         if (!movie.reviewedAt) {
           await tx.movie.update({

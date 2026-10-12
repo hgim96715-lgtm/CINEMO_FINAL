@@ -74,7 +74,9 @@ export class MovieImportController {
     },
   })
   importFromTmdb(@Param() params: GetTmdbMovieRequestDto) {
-    return this.tmdbMovieBatchImportService.importMovie(params.tmdbMovieId);
+    return this.tmdbMovieBatchImportService.importMovie(params.tmdbMovieId, {
+      backgroundSync: true,
+    });
   }
 
   @Post("tmdb/:tmdbMovieId/enrich/kmdb")

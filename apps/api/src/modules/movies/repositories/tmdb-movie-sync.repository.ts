@@ -302,12 +302,17 @@ export class TmdbMovieSyncRepository {
             continue;
           }
 
-          const primaryMedia = await tx.movieMedia.findFirst({
+          await tx.movieMedia.updateMany({
             where: {
               movieId,
               mediaType: media.mediaType,
+              sourceProvider: media.sourceProvider,
               status: MediaStatus.ACTIVE,
               isPrimary: true,
+            },
+            data: {
+              isPrimary: false,
+              status: MediaStatus.INACTIVE,
             },
           });
 
@@ -318,7 +323,7 @@ export class TmdbMovieSyncRepository {
               sourceProvider: media.sourceProvider,
               url: media.url,
               externalId: media.externalId,
-              isPrimary: !primaryMedia,
+              isPrimary: true,
               status: MediaStatus.ACTIVE,
               verifiedAt: new Date(),
             },

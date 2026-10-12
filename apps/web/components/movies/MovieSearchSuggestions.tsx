@@ -31,6 +31,9 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
   const closeSearch = useSearchStore((state) => state.closeSearch);
   const keyword = query.trim();
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
+  const [loadingTmdbMovieId, setLoadingTmdbMovieId] = useState<number | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!keyword) {
@@ -71,9 +74,19 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
   );
 
   const handleTmdbMovieSelect = async (tmdbMovieId: number) => {
-    const movieId = await importMovieFromTmdb(tmdbMovieId);
-    closeSearch();
-    router.push(`/movies/${movieId}`);
+    if (loadingTmdbMovieId !== null) {
+      return;
+    }
+
+    setLoadingTmdbMovieId(tmdbMovieId);
+
+    try {
+      const movieId = await importMovieFromTmdb(tmdbMovieId);
+      closeSearch();
+      router.push(`/movies/${movieId}?sync=1`);
+    } finally {
+      setLoadingTmdbMovieId(null);
+    }
   };
 
   if (!keyword) {
@@ -159,7 +172,15 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="relative grid gap-3">
+      {loadingTmdbMovieId !== null && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-cinemo-bg/70 px-6 backdrop-blur-sm">
+          <p className="rounded-xl bg-cinemo-surface px-5 py-4 text-sm text-cinemo-text shadow-xl">
+            영화 정보를 불러오는 중...
+          </p>
+        </div>
+      )}
+
       {dbMovies.length > 0 && (
         <ul className="grid gap-2 md:gap-3">
           {dbMovies.map((movie) => (
@@ -186,7 +207,8 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
                   <button
                     type="button"
                     onClick={() => handleTmdbMovieSelect(movie.id)}
-                    className="flex w-full items-center gap-3 p-2 text-left transition hover:bg-white/10 md:gap-4 md:p-3"
+                    disabled={loadingTmdbMovieId !== null}
+                    className="flex w-full items-center gap-3 p-2 text-left transition hover:bg-white/10 disabled:cursor-wait disabled:opacity-60 md:gap-4 md:p-3"
                   >
                     {posterPath ? (
                       <img
@@ -201,7 +223,9 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
                     )}
 
                     <span className="min-w-0 truncate text-sm text-cinemo-text md:text-base">
-                      {movie.title}
+                      {loadingTmdbMovieId === movie.id
+                        ? "불러오는 중..."
+                        : movie.title}
                     </span>
                   </button>
                 </li>

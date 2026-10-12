@@ -1,5 +1,4 @@
-import { ConflictException, Injectable } from "@nestjs/common";
-import { SourceProvider } from "@prisma/client";
+import { ConflictException, Injectable, Logger } from "@nestjs/common";
 
 import {
   TmdbService,
@@ -13,6 +12,8 @@ import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
 
 @Injectable()
 export class TmdbMovieBatchImportService {
+  private readonly logger = new Logger(TmdbMovieBatchImportService.name);
+
   constructor(
     private readonly tmdbService: TmdbService,
     private readonly moviesRepository: MoviesRepository,
@@ -28,20 +29,15 @@ export class TmdbMovieBatchImportService {
       input.releaseDate,
     );
 
-    const matchedCandidate =
-      candidates.find((candidate) =>
-        candidate.providerLinks.some(
-          (link) => link.sourceProvider === SourceProvider.KOBIS,
-        ),
-      ) ?? (candidates.length === 1 ? candidates[0] : undefined);
-
-    if (!matchedCandidate && candidates.length > 1) {
+    if (candidates.length > 1) {
       throw new ConflictException({
         code: "MOVIE_MATCH_REVIEW_REQUIRED",
         message: "동일한 영화 후보가 여러 개라 관리자 검토가 필요합니다.",
         candidateMovieIds: candidates.map((candidate) => candidate.id),
       });
     }
+
+    const matchedCandidate = candidates[0];
 
     return this.moviesRepository.getOrCreateMovieByProviderLink(
       input,
@@ -133,7 +129,10 @@ export class TmdbMovieBatchImportService {
     return [...movieIds];
   }
 
-  async importMovie(tmdbMovieId: number): Promise<string> {
+  async importMovie(
+    tmdbMovieId: number,
+    options: { backgroundSync?: boolean } = {},
+  ): Promise<string> {
     const tmdbMovie = await this.tmdbService.getMovieDetail(tmdbMovieId);
     const movieId = await this.getOrCreateTmdbMovie(
       toCreateMovieFromTmdbInput({
@@ -141,7 +140,23 @@ export class TmdbMovieBatchImportService {
         genre_ids: [],
       }),
     );
-    await this.tmdbMovieSyncService.syncMovieFromTmdb(movieId, tmdbMovieId);
+    const syncPromise = this.tmdbMovieSyncService.syncMovieFromTmdb(
+      movieId,
+      tmdbMovieId,
+      tmdbMovie,
+    );
+
+    if (options.backgroundSync) {
+      void syncPromise.catch((error: unknown) => {
+        this.logger.error(
+          `TMDB 영화 보완에 실패했습니다. tmdbMovieId=${tmdbMovieId}, movieId=${movieId}`,
+          error instanceof Error ? error.stack : String(error),
+        );
+      });
+    } else {
+      await syncPromise;
+    }
+
     return movieId;
   }
 }

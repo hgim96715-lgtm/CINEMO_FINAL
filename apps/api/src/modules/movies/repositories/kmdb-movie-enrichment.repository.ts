@@ -250,20 +250,19 @@ export class KmdbMovieEnrichmentRepository {
             },
           });
 
-          if (releaseId) {
-            await tx.movieMedia.updateMany({
-              where: {
-                movieId,
-                mediaType: MediaType.POSTER,
-                releaseId,
-                status: MediaStatus.ACTIVE,
-                isPrimary: true,
-              },
-              data: {
-                isPrimary: false,
-              },
-            });
-          }
+          await tx.movieMedia.updateMany({
+            where: {
+              movieId,
+              mediaType: MediaType.POSTER,
+              status: MediaStatus.ACTIVE,
+              isPrimary: true,
+              ...(existingMedia ? {id: {not: existingMedia.id}} : {}),
+            },
+            data: {
+              isPrimary: false,
+              status: MediaStatus.INACTIVE,
+            },
+          });
 
           if (existingMedia) {
             await tx.movieMedia.update({
@@ -271,22 +270,12 @@ export class KmdbMovieEnrichmentRepository {
               data: {
                 releaseId,
                 url: input.posterUrl,
-                isPrimary: releaseId ? true : existingMedia.isPrimary,
+                isPrimary: true,
                 status: MediaStatus.ACTIVE,
                 verifiedAt: new Date(),
               },
             });
           } else {
-            const primaryMedia = await tx.movieMedia.findFirst({
-              where: {
-                movieId,
-                mediaType: MediaType.POSTER,
-                releaseId: releaseId ?? null,
-                status: MediaStatus.ACTIVE,
-                isPrimary: true,
-              },
-            });
-
             await tx.movieMedia.create({
               data: {
                 movieId,
@@ -295,7 +284,7 @@ export class KmdbMovieEnrichmentRepository {
                 sourceProvider: SourceProvider.KMDB,
                 externalId: input.posterUrl,
                 url: input.posterUrl,
-                isPrimary: releaseId ? true : !primaryMedia,
+                isPrimary: true,
                 status: MediaStatus.ACTIVE,
                 verifiedAt: new Date(),
               },

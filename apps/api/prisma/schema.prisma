@@ -139,6 +139,40 @@ enum ViewingPlatform {
   TV
   OTHER
 }
+enum MovieSyncJobType {
+  INITIAL_IMPORT
+  DAILY_RANKING
+  UPCOMINT_RELEASES
+  MOVIE_ENTICHMENT
+  WATCH_PROVIDER_REFRESH
+}
+
+enum MovieSyncStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  PARTIAL
+  FAILED
+}
+
+model MovieSyncRun {
+  id             String           @id @default(uuid(7)) @db.Uuid
+  jobType        MovieSyncJobType
+  status         MovieSyncStatus
+  currentPage    Int              @default(1)
+  currentCursor  String?
+  processedCount Int              @default(0)
+  successCount   Int              @default(0)
+  failureCount   Int              @default(0)
+  errorMessage   String?          @db.Text
+  startedAt      DateTime         @default(now()) @db.Timestamptz(3)
+  completedAt    DateTime?        @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @db.Timestamptz(3)
+
+  @@index([jobType, status])
+  @@index([startedAt])
+  @@map("movie_sync_runs")
+}
 
 model User {
   id              String     @id @default(uuid(7)) @db.Uuid

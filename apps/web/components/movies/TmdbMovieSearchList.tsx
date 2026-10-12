@@ -22,7 +22,7 @@ export function TmdbMovieSearchList({ movies }: TmdbMovieSearchListProps) {
 
     try {
       const movieId = await importMovieFromTmdb(tmdbMovieId);
-      router.push(`/movies/${movieId}`);
+      router.push(`/movies/${movieId}?sync=1`);
     } finally {
       setLoadingMovieId(null);
     }

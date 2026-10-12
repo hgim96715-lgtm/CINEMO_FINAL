@@ -6,15 +6,23 @@ import {MovieNotificationButton} from "@/components/movies/MovieNotificationButt
 import {getCachedMovie} from "@/lib/api/server-movies";
 import Link from "next/link";
 import {MovieWatchOptions} from "@/components/movies/MovieWatchOptions";
+import {MovieSyncRefresh} from "@/components/movies/MovieSyncRefresh";
 
 type MoviePageProps = {
   params: Promise<{
     id: string;
   }>;
+  searchParams?: Promise<{
+    sync?: string;
+  }>;
 };
 
-export default async function MoviePage({ params }: MoviePageProps) {
+export default async function MoviePage({
+  params,
+  searchParams,
+}: MoviePageProps) {
   const { id } = await params;
+  const { sync } = (await searchParams) ?? {};
   const movie = await getCachedMovie(id);
 
   if (!movie) {
@@ -118,6 +126,7 @@ export default async function MoviePage({ params }: MoviePageProps) {
 
   return (
     <main className="min-h-screen bg-[#071619] text-white">
+      {sync === "1" && <MovieSyncRefresh movieId={id} />}
       <section
         className="relative overflow-hidden"
         style={{

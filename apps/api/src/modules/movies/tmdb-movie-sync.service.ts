@@ -1,6 +1,7 @@
 import {Injectable} from "@nestjs/common";
 
 import {TmdbService} from "@/integrations/tmdb/tmdb.service";
+import type {TmdbMovieDetailResponse} from "@/integrations/tmdb/types/tmdb-response.type";
 
 import {toSaveTmdbMovieInput} from "./mappers/tmdb-movie-sync.mapper";
 import {TmdbMovieSyncRepository} from "./repositories/tmdb-movie-sync.repository";
@@ -15,12 +16,15 @@ export class TmdbMovieSyncService {
   async syncMovieFromTmdb(
     movieId: string,
     tmdbMovieId: number,
+    existingMovie?: TmdbMovieDetailResponse,
   ): Promise<string> {
-    const tmdbMovie = await this.tmdbService.getMovieDetail(tmdbMovieId);
-    const tmdbCredits = await this.tmdbService.getMovieCredits(tmdbMovieId);
-    const trailer = await this.tmdbService.getOfficialTrailer(tmdbMovieId);
-    const tmdbWatchProviders =
-      await this.tmdbService.getMovieWatchProviders(tmdbMovieId);
+    const [tmdbMovie, tmdbCredits, trailer, tmdbWatchProviders] =
+      await Promise.all([
+        existingMovie ?? this.tmdbService.getMovieDetail(tmdbMovieId),
+        this.tmdbService.getMovieCredits(tmdbMovieId),
+        this.tmdbService.getOfficialTrailer(tmdbMovieId),
+        this.tmdbService.getMovieWatchProviders(tmdbMovieId),
+      ]);
 
     const input = toSaveTmdbMovieInput(
       tmdbMovie,
