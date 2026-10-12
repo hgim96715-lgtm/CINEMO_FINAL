@@ -17,6 +17,11 @@ import { MovieSuggestionItem } from "./MovieSuggestionItem";
 
 const hasKoreanTitle = (value: string) => /[가-힣0-9]/.test(value);
 
+const getMovieSearchKey = (
+  title: string,
+  releaseDate: string | null | undefined,
+) => `${normalizeSearchText(title)}:${releaseDate?.slice(0, 4) ?? ""}`;
+
 type MovieSearchSuggestionsProps = {
   query: string;
 };
@@ -120,11 +125,18 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
 
   const dbMovies = searchQuery.data?.items ?? [];
 
-  const dbMovieTitles = new Set(
-    dbMovies.map((movie) => normalizeSearchText(movie.title)),
+  const dbMovieKeys = new Set(
+    dbMovies.map((movie) =>
+      getMovieSearchKey(movie.title, movie.releaseDate),
+    ),
   );
   const tmdbMovies = (tmdbQuery.data?.results ?? [])
-    .filter((movie) => !dbMovieTitles.has(normalizeSearchText(movie.title)))
+    .filter(
+      (movie) =>
+        !dbMovieKeys.has(
+          getMovieSearchKey(movie.title, movie.release_date),
+        ),
+    )
     .slice(0, 5);
 
   if (shouldFetchTmdb && tmdbQuery.isPending && dbMovies.length === 0) {
