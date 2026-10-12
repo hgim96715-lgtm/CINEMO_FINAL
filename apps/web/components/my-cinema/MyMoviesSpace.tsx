@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 
-import { MovieSpaceDrawer } from "./MovieSpaceDrawer";
+import { MovieCalendar } from "./MovieCalendar";
+import {
+    MovieSpaceDrawer,
+    type MovieSpaceTab,
+} from "./MovieSpaceDrawer";
 import { MyMoviesList } from "./MyMoviesList";
-
-type MovieSpaceTab = "saved" | "watched" | "postcards";
 
 export function MyMoviesSpace() {
     const [activeTab, setActiveTab] =
@@ -17,6 +19,8 @@ export function MyMoviesSpace() {
                 activeTab={activeTab}
                 onChange={setActiveTab}
             />
+
+            {activeTab === "calendar" && <MovieCalendar />}
 
             {activeTab === "saved" && <MyMoviesList />}
 
