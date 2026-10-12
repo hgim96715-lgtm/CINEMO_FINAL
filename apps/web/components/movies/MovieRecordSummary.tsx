@@ -8,9 +8,13 @@ import { useAuthStore } from "@/stores/auth.store";
 
 type MovieRecordSummaryProps = {
   movieId: string;
+  onEditWatchedDate: () => void;
 };
 
-export function MovieRecordSummary({ movieId }: MovieRecordSummaryProps) {
+export function MovieRecordSummary({
+  movieId,
+  onEditWatchedDate,
+}: MovieRecordSummaryProps) {
   const user = useAuthStore((state) => state.user);
   const { data: record } = useQuery({
     ...movieRecordQueryOptions(movieId),
@@ -56,15 +60,18 @@ export function MovieRecordSummary({ movieId }: MovieRecordSummaryProps) {
           <CalendarDays className="size-4 text-cinemo-gold" />
           관람일
         </span>
-        <span
-          className={
-            hasWatchedDate
-              ? "font-medium text-cinemo-gold-light"
-              : "text-cinemo-muted"
-          }
-        >
-          {watchedDateLabel}
-        </span>
+        {hasWatchedDate ? (
+          <button
+            type="button"
+            onClick={onEditWatchedDate}
+            className="font-medium text-cinemo-gold-light"
+            title="관람일 수정"
+          >
+            {watchedDateLabel}
+          </button>
+        ) : (
+          <span className="text-cinemo-muted">{watchedDateLabel}</span>
+        )}
       </div>
     </div>
   );

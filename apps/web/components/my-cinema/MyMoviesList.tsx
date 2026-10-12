@@ -142,7 +142,7 @@ function MovieViewingInfo({ movie }: { movie: MyMovie }) {
 }
 
 export function MyMoviesList() {
-  const [activeTab, setActiveTab] = useState<MovieSpaceTab>("calendar");
+  const [activeTab, setActiveTab] = useState<MovieSpaceTab>("watched");
   const myMoviesQuery = useQuery(myMoviesQueryOptions());
   const movies = myMoviesQuery.data ?? [];
   const [editingMovie, setEditingMovie] = useState<MyMovie | null>(null);
@@ -197,7 +197,7 @@ export function MyMoviesList() {
     return [];
   }, [activeTab, movies]);
   
-  if (myMoviesQuery.isPending) {
+  if (myMoviesQuery.isPending && activeTab !== "calendar") {
     return (
         <p className="text-sm text-cinemo-muted">내 영화를 불러오는 중...</p>
     );

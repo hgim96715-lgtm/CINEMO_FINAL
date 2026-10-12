@@ -9,13 +9,17 @@ export function useUpdateMovieRecord(movieId: string) {
   return useMutation({
     mutationFn: (input: UpdateMovieRecordInput) =>
       updateMovieRecord(movieId, input),
-    onSuccess: (record) => {
+    onSuccess: async (record) => {
       queryClient.setQueryData(
         movieRecordQueryOptions(movieId).queryKey,
         record,
       );
       queryClient.invalidateQueries({
         queryKey: ["my-cinema", "movies"],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["my-cinema", "calendar"],
+        refetchType: "all",
       });
     },
   });
@@ -27,13 +31,17 @@ export function useDeleteMovieRecord(movieId: string) {
   
   return useMutation({
     mutationFn: () => deleteMovieRecord(movieId),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.removeQueries({
         queryKey: movieRecordQueryOptions(movieId).queryKey,
       });
       
       queryClient.invalidateQueries({
         queryKey: ["my-cinema", "movies"],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["my-cinema", "calendar"],
+        refetchType: "all",
       });
     },
   });

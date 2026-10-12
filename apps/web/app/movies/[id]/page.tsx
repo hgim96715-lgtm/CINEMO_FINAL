@@ -2,7 +2,6 @@ import {notFound} from "next/navigation";
 
 import {MovieTrailerButton} from "@/components/movies/MovieTrailerButton";
 import {MovieRecordActions} from "@/components/movies/MovieRecordActions";
-import {MovieRecordSummary} from "@/components/movies/MovieRecordSummary";
 import {MovieNotificationButton} from "@/components/movies/MovieNotificationButton";
 import {getCachedMovie} from "@/lib/api/server-movies";
 import Link from "next/link";
@@ -194,7 +193,6 @@ export default async function MoviePage({ params }: MoviePageProps) {
               {isUpcoming && <MovieNotificationButton movieId={id} />}
             </div>
 
-            <MovieRecordSummary movieId={id} />
           </div>
         </div>
       </section>

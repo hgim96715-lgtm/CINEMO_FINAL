@@ -13,9 +13,9 @@ import {
 } from "@/components/ui/drawer";
 
 const tabs = [
+  { value: "watched", label: "본 영화" },
   { value: "calendar", label: "달력" },
   { value: "saved", label: "찜한 영화" },
-  { value: "watched", label: "본 영화" },
   { value: "postcards", label: "엽서" },
 ] as const;
 

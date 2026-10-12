@@ -8,6 +8,7 @@ import {ko} from "@daypicker/react/locale";
 
 import {AppModal} from "@/components/ui/app-modal";
 import {Calendar} from "@/components/ui/calendar";
+import {MovieRecordSummary} from "@/components/movies/MovieRecordSummary";
 import {movieRecordQueryOptions,} from "@/lib/queries/movie-record.query";
 import {useUpdateMovieRecord} from "@/lib/queries/movie-record.mutation";
 import {useAuthStore} from "@/stores/auth.store";
@@ -34,11 +35,20 @@ const viewingPlatformOptions: {value: ViewingPlatform; label: string}[] = [
   {value: "OTHER", label: "기타"},
 ];
 
-const getLocalDateValue = () => {
-  const now = new Date();
-  const localTime = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+const seoulDateFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 
-  return localTime.toISOString().slice(0, 10);
+const getLocalDateValue = () => {
+  const parts = seoulDateFormatter.formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return `${year}-${month}-${day}`;
 };
 
 const formatDateValue = (date: Date) => {
@@ -68,6 +78,7 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
   const [ratingOpen, setRatingOpen] = useState(false);
   const [watchedDateOpen, setWatchedDateOpen] = useState(false);
   const [watchedDate, setWatchedDate] = useState("");
+  const [dateEditOnly, setDateEditOnly] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState<Date>();
   const [venueSearchOpen, setVenueSearchOpen] = useState(false);
   const [viewingPlaceSelection, setViewingPlaceSelection] =
@@ -77,6 +88,7 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
   const [viewingPlatformCustom, setViewingPlatformCustom] = useState("");
 
   const record = recordQuery.data;
+  const today = parseDateValue(getLocalDateValue());
   const isFavorite = record?.isFavorite ?? false;
   const isWatched = record?.isWatched ?? false;
   const selectedRating = record?.rating
@@ -89,6 +101,15 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
 
   const goToLogin = () => {
     router.push("/login");
+  };
+
+  const openWatchedDateEditor = () => {
+    const initialDate = record?.watchedAt?.slice(0, 10) ?? getLocalDateValue();
+
+    setWatchedDate(initialDate);
+    setCalendarMonth(parseDateValue(initialDate));
+    setDateEditOnly(true);
+    setWatchedDateOpen(true);
   };
 
   const toggleFavorite = () => {
@@ -117,6 +138,7 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
 
     setWatchedDate(initialDate);
     setCalendarMonth(parseDateValue(initialDate));
+    setDateEditOnly(false);
     setWatchedDateOpen(true);
   };
 
@@ -127,6 +149,16 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
 
     setWatchedDate(date);
     setWatchedDateOpen(false);
+
+    if (dateEditOnly) {
+      setDateEditOnly(false);
+      updateRecord.mutate({
+        isWatched: true,
+        watchedAt: date,
+      });
+      return;
+    }
+
     setViewingPlaceSelection(
       record?.viewingPlaceType === "HOME" ? "HOME" : "VENUE",
     );
@@ -173,13 +205,20 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
 
       <AppModal
         open={watchedDateOpen}
-        onOpenChange={setWatchedDateOpen}
+        onOpenChange={(open) => {
+          setWatchedDateOpen(open);
+
+          if (!open) {
+            setDateEditOnly(false);
+          }
+        }}
         title="언제 봤나요?"
         description="관람 날짜를 선택하면 봤어요 기록이 저장됩니다."
         className="w-[calc(100%-2rem)] sm:max-w-md"
       >
         <Calendar
           mode="single"
+          required
           locale={ko}
           captionLayout="dropdown"
           startMonth={new Date(new Date().getFullYear() - 100, 0, 1)}
@@ -191,8 +230,8 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
               selectWatchedDate(formatDateValue(date));
             }
           }}
-          disabled={{ after: parseDateValue(getLocalDateValue()) }}
-          endMonth={parseDateValue(getLocalDateValue())}
+          disabled={{ after: today }}
+          endMonth={today}
           className="mx-auto w-full"
         />
       </AppModal>
@@ -445,6 +484,11 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
 
         </div>
       </div>
+
+      <MovieRecordSummary
+        movieId={movieId}
+        onEditWatchedDate={openWatchedDateEditor}
+      />
     </>
   );
 }
