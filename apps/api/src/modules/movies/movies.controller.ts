@@ -188,6 +188,23 @@ export class MoviesController {
   async getMyMovies(@CurrentUser() user: SessionUser) {
     return this.userMovieRecordService.findAllByUser(user.id);
   }
+  
+  @ApiCookieAuth("cinemo_session")
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
+  @Get("notifications")
+  @ApiOperation({
+    summary: "내 영화 개봉 알림 목록 조회",
+  })
+  getMyMovieNotifications(@CurrentUser() user: SessionUser) {
+    return this.userMovieNotificationService.findMyReleaseNotifications(
+        user.id,
+    );
+  }
 
   @ApiCookieAuth("cinemo_session")
   @Throttle({

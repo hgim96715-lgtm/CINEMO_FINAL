@@ -1,10 +1,6 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { Resend } from "resend";
+import {Injectable, InternalServerErrorException, Logger} from "@nestjs/common";
+import {ConfigService} from "@nestjs/config";
+import {Resend} from "resend";
 
 type SendVerificationEmailInput = {
   to: string;
@@ -17,6 +13,13 @@ type SendPasswordResetEmailInput = {
   token: string;
   expiresAt: Date;
 };
+
+type MovieReleasNotificationEmailInput={
+  to:string;
+  movieId:string;
+  movieTitle:string;
+  releaseDate:Date;
+}
 
 @Injectable()
 export class MailService {
@@ -31,10 +34,6 @@ export class MailService {
     timeStyle: "short",
     timeZone: "Asia/Seoul",
   });
-
-  private formatExpiresAt(date: Date) {
-    return this.koreanDateTimeFormatter.format(date);
-  }
 
   constructor(private readonly configService: ConfigService) {
     this.resend = new Resend(
@@ -197,4 +196,66 @@ export class MailService {
       );
     }
   }
+
+  async sendMovieReleaseNotificationEmail(input:MovieReleasNotificationEmailInput){
+    const movieUrl=new URL(`/movies/${input.movieId}`,this.frontendUrl);
+    const releaseDateLabel=this.koreanDateTimeFormatter.format(input.releaseDate);
+    const { error } = await this.resend.emails.send({
+      from: this.from,
+      to: [input.to],
+      subject: `개봉 예정 영화 알림: ${input.movieTitle}`,
+      text: [
+        "CINEMO 개봉 예정 영화 알림",
+        "",
+        `${input.movieTitle}이(가) ${releaseDateLabel} 개봉 예정입니다.`,
+        "",
+        `영화 상세 보기: ${movieUrl.toString()}`,
+      ].join("\n"),
+      html: `
+      <!doctype html>
+      <html lang="ko">
+        <body style="margin:0; padding:40px 16px; background:#061719; color:#f7f3ea; font-family:Arial, sans-serif;">
+          <div style="max-width:600px; margin:0 auto; padding:32px; background:#10292b; border-radius:24px;">
+            <div style="color:#d5aa58; font-size:13px; font-weight:700; letter-spacing:4px;">
+              CINEMO
+            </div>
+
+            <h1 style="color:#fffaf0;">
+              개봉 예정 영화 알림
+            </h1>
+
+            <p style="color:#b6c3c0; font-size:16px; line-height:1.8;">
+              <strong>${input.movieTitle}</strong>이(가)
+              <strong>${releaseDateLabel}</strong> 개봉 예정입니다.
+            </p>
+
+            <a
+              href="${movieUrl.toString()}"
+              style="display:inline-block; padding:14px 22px; background:#d5aa58; color:#071719; font-weight:700; text-decoration:none; border-radius:12px;"
+            >
+              영화 상세 보기 →
+            </a>
+          </div>
+        </body>
+      </html>
+    `,
+    });
+    
+    if (error) {
+      this.logger.error(
+          `[Resend] 개봉 알림 메일 발송 실패: ${error.name} ${error.message}`,
+      );
+      
+      throw new InternalServerErrorException(
+          "개봉 알림 메일 발송에 실패했습니다.",
+      );
+    }
+  }
+
+  private formatExpiresAt(date: Date) {
+    return this.koreanDateTimeFormatter.format(date);
+  }
+  
+  
+  
 }

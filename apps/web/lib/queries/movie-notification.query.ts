@@ -1,6 +1,6 @@
-import { queryOptions } from "@tanstack/react-query";
+import {queryOptions} from "@tanstack/react-query";
 
-import { getMovieNotification } from "@/lib/api/movies";
+import {getMovieNotification, getMovieNotifications} from "@/lib/api/movies";
 
 export const movieNotificationQueryOptions = (
   movieId: string,
@@ -11,3 +11,10 @@ export const movieNotificationQueryOptions = (
     enabled: movieId.length > 0,
     staleTime: 5 * 60_000,
   });
+
+export const myMovieNotificationsQueryOptions = ()=>
+    queryOptions({
+      queryKey:["my-cinema","notification"],
+      queryFn:({ signal }) => getMovieNotifications(signal),
+      staleTime: 5 * 60_000,
+    })

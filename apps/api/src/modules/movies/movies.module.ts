@@ -35,6 +35,8 @@ import {MovieRankingSyncService} from "@/modules/movies/movie-ranking-sync.servi
 import {MovieUpcomingSyncService} from "@/modules/movies/movie-upcoming-sync.service";
 import {MoviePersonEnrichmentService} from "./movie-person-enrichment.service";
 import {MoviePersonEnrichmentRepository} from "./repositories/movie-person-enrichment.repository";
+import {MovieReleaseNotificationService} from "@/modules/movies/movie-release-notification.service";
+import {MailService} from "@/modules/auth/mail.service";
 
 @Module({
   imports: [KobisModule, TmdbModule, KmdbModule],
@@ -60,8 +62,6 @@ import {MoviePersonEnrichmentRepository} from "./repositories/movie-person-enric
     MoviePersonRepository,
     UserMovieRecordRepository,
     UserMovieRecordService,
-    UserMovieNotificationRepository,
-    UserMovieNotificationService,
     PeopleRepository,
     PeopleService,
     UserPersonBookmarkRepository,
@@ -71,7 +71,11 @@ import {MoviePersonEnrichmentRepository} from "./repositories/movie-person-enric
     MovieRankingSyncService,
     MovieUpcomingSyncService,
     MoviePersonEnrichmentRepository,
-    MoviePersonEnrichmentService
+    MoviePersonEnrichmentService,
+    UserMovieNotificationRepository,
+    UserMovieNotificationService,
+    MovieReleaseNotificationService,
+    MailService,
   ],
   exports: [
     MoviesService,
@@ -88,7 +92,10 @@ import {MoviePersonEnrichmentRepository} from "./repositories/movie-person-enric
     MovieSyncService,
     MovieRankingSyncService,
     MovieUpcomingSyncService,
-    MoviePersonEnrichmentService
+    MoviePersonEnrichmentService,
+    UserMovieNotificationRepository,
+    MovieReleaseNotificationService,
+    MailService,
   ],
 })
 export class MoviesModule {}

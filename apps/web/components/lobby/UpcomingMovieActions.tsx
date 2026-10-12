@@ -1,21 +1,19 @@
 "use client";
 
-import { Bell, BellRing, Heart } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import {Bell, BellRing, Heart} from "lucide-react";
+import {useRouter} from "next/navigation";
+import {useState} from "react";
+import {useQuery} from "@tanstack/react-query";
 
-import { AppModal } from "@/components/ui/app-modal";
-import {
-  movieRecordQueryOptions,
-} from "@/lib/queries/movie-record.query";
-import { useUpdateMovieRecord } from "@/lib/queries/movie-record.mutation";
+import {AppModal} from "@/components/ui/app-modal";
+import {movieRecordQueryOptions} from "@/lib/queries/movie-record.query";
+import {useUpdateMovieRecord} from "@/lib/queries/movie-record.mutation";
 import {
   useSubscribeMovieNotification,
   useUnsubscribeMovieNotification,
 } from "@/lib/queries/movie-notification.mutation";
-import { movieNotificationQueryOptions } from "@/lib/queries/movie-notification.query";
-import { useAuthStore } from "@/stores/auth.store";
+import {movieNotificationQueryOptions} from "@/lib/queries/movie-notification.query";
+import {useAuthStore} from "@/stores/auth.store";
 
 type UpcomingMovieActionsProps = {
   movieId: string;
@@ -26,6 +24,7 @@ export function UpcomingMovieActions({ movieId }: UpcomingMovieActionsProps) {
   const user = useAuthStore((state) => state.user);
   const [loginRequired, setLoginRequired] = useState(false);
   const [notificationSuccess, setNotificationSuccess] = useState(false);
+  const [notificationCancelled, setNotificationCancelled] = useState(false);
 
   const recordQuery = useQuery({
     ...movieRecordQueryOptions(movieId),
@@ -71,7 +70,9 @@ export function UpcomingMovieActions({ movieId }: UpcomingMovieActionsProps) {
     }
 
     if (notificationEnabled) {
-      unsubscribeMutation.mutate();
+      unsubscribeMutation.mutate(undefined,{
+        onSuccess:()=>setNotificationCancelled(true)
+      });
     } else {
       subscribeMutation.mutate(undefined, {
         onSuccess: () => setNotificationSuccess(true),
@@ -100,8 +101,9 @@ export function UpcomingMovieActions({ movieId }: UpcomingMovieActionsProps) {
       <AppModal
         open={notificationSuccess}
         onOpenChange={setNotificationSuccess}
-        title="알림 설정 완료"
-        description="개봉 알림 수신 대상에 등록되었습니다."
+        showCloseButton={false}
+        title="개봉 알림을 신청했어요"
+        description="개봉일에 이메일로 알려드릴게요."
         footer={
           <button
             type="button"
@@ -112,7 +114,24 @@ export function UpcomingMovieActions({ movieId }: UpcomingMovieActionsProps) {
           </button>
         }
       />
-
+      <AppModal
+          open={notificationCancelled}
+          onOpenChange={setNotificationCancelled}
+          showCloseButton={false}
+          title="개봉 알림을 해제했어요"
+          description="이 영화의 알림을 더 이상 보내지 않을게요."
+          footer={
+            <button
+                type="button"
+                onClick={() => setNotificationCancelled(false)}
+                className="rounded-lg bg-cinemo-gold px-4 py-2 text-sm font-semibold text-cinemo-bg"
+            >
+              확인
+            </button>
+          }
+      />
+      
+      
       <div className="absolute right-2 top-2 z-10 flex gap-1.5">
         <button
           type="button"

@@ -197,9 +197,9 @@ export default async function MoviePage({
                 trailer={trailer}
               />
 
-              <MovieRecordActions movieId={id} />
-
               {isUpcoming && <MovieNotificationButton movieId={id} />}
+
+              <MovieRecordActions movieId={id} />
             </div>
 
           </div>

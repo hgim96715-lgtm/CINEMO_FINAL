@@ -20,6 +20,7 @@ type AppModalProps = {
   children?: ReactNode;
   footer?: ReactNode;
   className?: string;
+  showCloseButton?: boolean;
 };
 
 export function AppModal({
@@ -30,6 +31,7 @@ export function AppModal({
   children,
   footer,
   className,
+  showCloseButton = true,
 }: AppModalProps) {
   useEffect(() => {
     if (!open) {
@@ -51,12 +53,18 @@ export function AppModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        showCloseButton={showCloseButton}
         className={cn(
           "rounded-2xl border-cinemo-gold/20 bg-[#102326]/95 text-cinemo-text shadow-xl shadow-black/25 sm:max-w-sm",
           className,
         )}
       >
-        <DialogHeader className="items-center pr-8 text-center">
+        <DialogHeader
+          className={cn(
+            "items-center text-center",
+            showCloseButton && "pr-8",
+          )}
+        >
           <DialogTitle className="text-center text-base font-semibold text-cinemo-gold-light">
             {title}
           </DialogTitle>

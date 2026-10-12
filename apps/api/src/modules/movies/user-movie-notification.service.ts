@@ -1,8 +1,8 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {BadRequestException, Injectable} from "@nestjs/common";
 
-import { MovieNotFoundException } from "@/common/exceptions/movie-not-found.exception";
+import {MovieNotFoundException} from "@/common/exceptions/movie-not-found.exception";
 
-import { UserMovieNotificationRepository } from "./repositories/user-movie-notification.repository";
+import {UserMovieNotificationRepository} from "./repositories/user-movie-notification.repository";
 
 @Injectable()
 export class UserMovieNotificationService {
@@ -53,5 +53,9 @@ export class UserMovieNotificationService {
       enabled: notification?.enabled ?? false,
       releaseDate: notification?.release?.releaseDate ?? null,
     };
+  }
+  
+  async findMyReleaseNotifications(userId: string) {
+    return this.notificationRepository.findEnabledReleasNotifications(userId);
   }
 }

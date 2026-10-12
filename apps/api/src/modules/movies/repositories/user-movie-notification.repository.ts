@@ -1,7 +1,7 @@
-import { Injectable } from "@nestjs/common";
-import { MovieNotificationType, ReleaseStatus } from "@prisma/client";
+import {Injectable} from "@nestjs/common";
+import {MovieNotificationType, ReleaseStatus} from "@prisma/client";
 
-import { PrismaService } from "@/prisma/prisma.service";
+import {PrismaService} from "@/prisma/prisma.service";
 
 @Injectable()
 export class UserMovieNotificationRepository {
@@ -82,5 +82,121 @@ export class UserMovieNotificationRepository {
         enabled: false,
       },
     });
+  }
+  
+  findDueReleaseNotifications(now = new Date()) {
+    return this.prisma.userMovieNotification.findMany({
+      where: {
+        notificationType: MovieNotificationType.RELEASE,
+        enabled: true,
+        notifiedAt: null,
+        user: {
+          email: {
+            not: null
+          }
+        },
+        release: {
+          is: {
+            releaseDate: {
+              lte: now,
+            },
+            status: {
+              not: ReleaseStatus.CANCELLED
+            }
+          }
+        },
+      },
+        select:{
+          id:true,
+          user:{
+            select:{
+              email:true,
+            }
+          },
+          movie:{
+            select:{
+              id:true,
+              titles:{
+                where:{
+                  titleType:'PRIMARY',
+                },
+                orderBy:{
+                  createdAt:'asc'
+                },
+                take:1,
+                select:{
+                  title:true
+                },
+              },
+            },
+          },
+          release:{
+            select:{
+              releaseDate:true
+            }
+          }
+        }
+    })
+  }
+  async marksNotified(notificationId:string){
+    return this.prisma.userMovieNotification.update({
+      where:{
+        id:notificationId,
+      },
+      data:{
+        notifiedAt:new Date(),
+      }
+    })
+  }
+  
+  findEnabledReleasNotifications(userId:string){
+    return this.prisma.userMovieNotification.findMany({
+      where: {
+        userId,
+        notificationType: MovieNotificationType.RELEASE,
+        enabled: true,
+      },
+      orderBy: {
+        release:{
+          releaseDate:'asc'
+        }
+      },
+      select:{
+        id:true,
+        movieId:true,
+        release:{
+          select:{
+            releaseDate:true,
+          }
+        },
+        movie:{
+          select:{
+            titles:{
+              where:{
+                titleType:'PRIMARY',
+              },
+              orderBy:{
+                createdAt:'asc'
+              },
+              take:1,
+              select:{
+                title:true
+              }
+            },
+            media:{
+              where:{
+                mediaType:'POSTER',
+                isPrimary:true,
+                status:'ACTIVE'
+              },
+              take:1,
+              select:{
+                url:true
+              }
+            }
+          }
+        }
+      }
+    })
   }
 }

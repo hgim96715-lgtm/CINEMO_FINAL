@@ -291,3 +291,21 @@ export async function  getMovieCalendar(params:MovieCalendarParams,signal?: Abor
   })
   return data;
 }
+
+export type MovieNotificationItem={
+  id:string;
+  movieId:string;
+  release:{
+    releaseDate:string|null;
+  }|null;
+  movie:{
+    titles:Array<{title:string;}>
+    media:Array<{url:string;}>
+  }
+}
+export async function getMovieNotifications(
+    signal?: AbortSignal,
+): Promise<MovieNotificationItem[]> {
+  const {data}=await apiClient.get<MovieNotificationItem[]>('/movies/notifications', {signal} );
+  return data;
+}

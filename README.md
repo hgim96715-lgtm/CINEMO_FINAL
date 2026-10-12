@@ -124,7 +124,8 @@ Try it out으로 요청·응답 확인
 ## 배포 주소
 
 ```text
-https://www.cinemo.site
+Web: https://www.cinemo.site
+API Swagger: https://api.cinemo.site/api
 ```
 
 ## 이메일 발송
