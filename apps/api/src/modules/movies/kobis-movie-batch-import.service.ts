@@ -104,12 +104,13 @@ export class KobisMovieBatchImportService {
 
       for (const movie of response.results) {
         const releaseDate = movie.releaseDate?.trim();
+        const normalizedReleaseDate = releaseDate?.replaceAll("-", "");
 
         if (
           movie.productionStatus?.trim() !== "개봉예정" ||
-          !releaseDate ||
-          releaseDate < startDate ||
-          releaseDate > endDate
+          !normalizedReleaseDate ||
+          normalizedReleaseDate < startDate ||
+          normalizedReleaseDate > endDate
         ) {
           continue;
         }
@@ -167,11 +168,13 @@ export class KobisMovieBatchImportService {
     return [...movieIds];
   }
 
-  async importReleasedMovies(
-    releaseYear: number,
+  async importReleasedMoviesByDateRange(
+    releaseStartDate: string,
+    releaseEndDate: string,
     limit = 100,
   ): Promise<{
-    releaseYear: number;
+    releaseStartDate: string;
+    releaseEndDate: string;
     fetched: number;
     imported: number;
     skipped: number;
@@ -179,8 +182,6 @@ export class KobisMovieBatchImportService {
     movieIds: string[];
     failures: Array<{ movieCd: string; title: string; message: string }>;
   }> {
-    const year = String(releaseYear);
-    const today = getSeoulDate();
     const movieIds = new Set<string>();
     const failures: Array<{
       movieCd: string;
@@ -191,8 +192,8 @@ export class KobisMovieBatchImportService {
     let skipped = 0;
 
     const firstPage = await this.kobisService.searchMoviesByReleaseDate(
-      year,
-      year,
+      releaseStartDate,
+      releaseEndDate,
       1,
       limit,
     );
@@ -203,8 +204,8 @@ export class KobisMovieBatchImportService {
         page === 1
           ? firstPage
           : await this.kobisService.searchMoviesByReleaseDate(
-              year,
-              year,
+              releaseStartDate,
+              releaseEndDate,
               page,
               limit,
             );
@@ -212,11 +213,12 @@ export class KobisMovieBatchImportService {
       for (const movie of response.results) {
         fetched += 1;
         const releaseDate = movie.releaseDate?.trim();
+        const normalizedReleaseDate = releaseDate?.replaceAll("-", "");
 
         if (
-          !releaseDate ||
-          !releaseDate.startsWith(year) ||
-          releaseDate > today
+          !normalizedReleaseDate ||
+          normalizedReleaseDate < releaseStartDate ||
+          normalizedReleaseDate > releaseEndDate
         ) {
           skipped += 1;
           continue;
@@ -255,7 +257,7 @@ export class KobisMovieBatchImportService {
               error instanceof Error ? error.message : String(error);
 
             this.logger.warn(
-              `KMDb 올해 개봉 영화 보완 실패: ${movie.movieCd} ${movie.title} - ${message}`,
+              `KMDb 기간 내 개봉 영화 보완 실패: ${movie.movieCd} ${movie.title} - ${message}`,
             );
           }
 
@@ -271,13 +273,44 @@ export class KobisMovieBatchImportService {
     }
 
     return {
-      releaseYear,
+      releaseStartDate,
+      releaseEndDate,
       fetched,
       imported: movieIds.size,
       skipped,
       failed: failures.length,
       movieIds: [...movieIds],
       failures,
+    };
+  }
+
+  // 기존 관리자 API와의 호환을 위한 연도 단위 wrapper
+  async importReleasedMovies(
+    releaseYear: number,
+    limit = 100,
+  ): Promise<{
+    releaseYear: number;
+    fetched: number;
+    imported: number;
+    skipped: number;
+    failed: number;
+    movieIds: string[];
+    failures: Array<{ movieCd: string; title: string; message: string }>;
+  }> {
+    const result = await this.importReleasedMoviesByDateRange(
+      `${releaseYear}0101`,
+      `${releaseYear}1231`,
+      limit,
+    );
+
+    return {
+      releaseYear,
+      fetched: result.fetched,
+      imported: result.imported,
+      skipped: result.skipped,
+      failed: result.failed,
+      movieIds: result.movieIds,
+      failures: result.failures,
     };
   }
 

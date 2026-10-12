@@ -4,13 +4,36 @@ import {NestFactory} from "@nestjs/core";
 import {BatchAppModule} from "@/batch-app.module";
 import {KobisMovieBatchImportService} from "@/modules/movies/kobis-movie-batch-import.service";
 
-const getCurrentSeoulYear = (): number => {
+const formatDateKey = (date: Date): string => {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+
+  return `${year}${month}${day}`;
+};
+
+const getPreviousMonthDateRange = (): {
+  startDate: string;
+  endDate: string;
+} => {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Seoul",
+    month: "2-digit",
     year: "numeric",
   }).formatToParts(new Date());
 
-  return Number(parts.find((part) => part.type === "year")?.value);
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const currentMonthStart = new Date(Date.UTC(year, month - 1, 1));
+  const previousMonthStart = new Date(currentMonthStart);
+  previousMonthStart.setUTCMonth(previousMonthStart.getUTCMonth() - 1);
+  const previousMonthEnd = new Date(currentMonthStart);
+  previousMonthEnd.setUTCDate(0);
+
+  return {
+    startDate: formatDateKey(previousMonthStart),
+    endDate: formatDateKey(previousMonthEnd),
+  };
 };
 
 const logger = new Logger("MovieReleasedSync");
@@ -22,14 +45,16 @@ async function bootstrap() {
     const kobisMovieBatchImportService = app.get(
       KobisMovieBatchImportService,
     );
-    const releaseYear = getCurrentSeoulYear();
-    const result = await kobisMovieBatchImportService.importReleasedMovies(
-      releaseYear,
-      100,
-    );
+    const {startDate, endDate} = getPreviousMonthDateRange();
+    const result =
+      await kobisMovieBatchImportService.importReleasedMoviesByDateRange(
+        startDate,
+        endDate,
+        100,
+      );
 
     logger.log(
-      `올해 개봉 영화 동기화 완료: ${releaseYear}년, ` +
+      `전월 개봉 영화 동기화 완료: ${startDate}~${endDate}, ` +
         `조회 ${result.fetched}개, 저장 ${result.imported}개, ` +
         `실패 ${result.failed}개`,
     );
