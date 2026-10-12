@@ -14,6 +14,7 @@ import { GetMovieModerationRequestDto } from "./dto/requests/get-movie-moderatio
 import { UpdateMovieVisibilityRequestDto } from "./dto/requests/update-movie-visibility.request.dto";
 import { MoviesService } from "./movies.service";
 import { KobisMovieBatchImportService } from "./kobis-movie-batch-import.service";
+import { Public } from "../auth/decorators/public.decorator";
 
 @ApiTags("Admin Movies")
 // @ApiCookieAuth("cinemo_session")
@@ -41,6 +42,7 @@ export class MovieManagementController {
   }
 
   @Post(":movieId/split-provider/:tmdbMovieId")
+  @Public()
   @ApiOperation({
     summary: "KOBIS·TMDB 연결 충돌 단건 분리",
     description:
