@@ -208,4 +208,59 @@ export class UserMovieRecordRepository {
       }
     })
   }
+  
+  async findWatchedbyUserAndMovie(userId:string,year:number,month:number){
+    const startDate=new Date(Date.UTC(year,month-1,1));
+    const endDate=new Date(Date.UTC(year,month,1));
+    return this.prisma.userMovieRecord.findMany({
+      where:{
+        userId,
+        watchedAt:{
+          gte:startDate,
+          lt:endDate,
+        }
+      },
+      orderBy:{
+        watchedAt:'asc'
+      },
+      select: {
+        watchedAt:true,
+        movie:{
+          select: {
+            id:true,
+            titles:{
+              where:{
+                titleType:TitleType.PRIMARY,
+              },
+              orderBy:{
+                createdAt:"asc",
+              },
+              take:1,
+              select:{
+                title: true,
+              }
+            },
+            media:{
+              where:{
+                mediaType: MediaType.POSTER,
+                isPrimary: true,
+              },
+              take:1,
+              select: {
+                url:true,
+              }
+            },
+            movieGenres:{
+              select: {
+                name: true,
+              },
+              orderBy:{
+                name:'asc'
+              }
+            }
+          }
+        }
+      }
+    })
+  }
 }

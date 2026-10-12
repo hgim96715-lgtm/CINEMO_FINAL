@@ -263,3 +263,31 @@ export async function getMyMovies(
 export async function deleteMovieRecord(movieId: string): Promise<void> {
   await apiClient.delete(`/movies/${movieId}/record`);
 }
+
+export type MovieCalendarParams={
+  year:number;
+  month:number;
+}
+
+export type MovieCalendarMovie={
+  movieId: string;
+  title: string;
+  posterUrl: string | null;
+  genres:string[];
+}
+
+export type MovieCalendarDay={
+  date:string;
+  movies:MovieCalendarMovie[];
+}
+
+export async function  getMovieCalendar(params:MovieCalendarParams,signal?: AbortSignal): Promise<MovieCalendarDay[]> {
+  const {data}=await apiClient.get<MovieCalendarDay[]>('/movies/my/calendar', {
+    params: {
+      year: params.year,
+      month: params.month,
+    },
+    signal,
+  })
+  return data;
+}

@@ -88,6 +88,36 @@ export type MovieSitemapResponseDto = {
     items: Array<MovieSitemapItemResponseDto>;
 };
 
+export type MovieCalendarMovieResponseDto = {
+    /**
+     * CINEMO 내부 영화 ID
+     */
+    movieId: string;
+    /**
+     * 영화 제목
+     */
+    title: string;
+    /**
+     * 포스터 URL
+     */
+    posterUrl: string | null;
+    /**
+     * 영화 장르
+     */
+    genres: Array<string>;
+};
+
+export type MovieCalendarDayResponseDto = {
+    /**
+     * 관람일
+     */
+    date: string;
+    /**
+     * 해당 날짜에 관람한 영화 목록
+     */
+    movies: Array<MovieCalendarMovieResponseDto>;
+};
+
 export type VenueSummaryResponseDto = {
     /**
      * 관람 장소 ID
@@ -1642,6 +1672,31 @@ export type MoviesControllerGetReleasedMoviesV1Responses = {
 };
 
 export type MoviesControllerGetReleasedMoviesV1Response = MoviesControllerGetReleasedMoviesV1Responses[keyof MoviesControllerGetReleasedMoviesV1Responses];
+
+export type MoviesControllerGetMyMovieCalendarV1Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * 조회할 연도
+         */
+        year: number;
+        /**
+         * 조회할 월
+         */
+        month: number;
+    };
+    url: '/v1/movies/my/calendar';
+};
+
+export type MoviesControllerGetMyMovieCalendarV1Responses = {
+    /**
+     * 날짜별 관람 영화 목록
+     */
+    200: Array<MovieCalendarDayResponseDto>;
+};
+
+export type MoviesControllerGetMyMovieCalendarV1Response = MoviesControllerGetMyMovieCalendarV1Responses[keyof MoviesControllerGetMyMovieCalendarV1Responses];
 
 export type MoviesControllerGetMyMoviesV1Data = {
     body?: never;

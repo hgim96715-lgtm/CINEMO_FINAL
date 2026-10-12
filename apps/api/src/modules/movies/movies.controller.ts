@@ -1,4 +1,4 @@
-import {Body, Controller, Delete, Get, Param, Patch, Post, Query,} from "@nestjs/common";
+import {Body, Controller, Delete, Get, Param, Patch, Post, Query} from "@nestjs/common";
 import {
   ApiConflictResponse,
   ApiCookieAuth,
@@ -25,6 +25,8 @@ import type {SessionUser} from "../auth/types/session-user.type";
 import {CurrentUser} from "../auth/decorators/current-user.decorator";
 import {GetReleasedMoviesRequestDto} from "./dto/requests/get-released-movies.request.dto";
 import {UserMovieNotificationService} from "./user-movie-notification.service";
+import {MovieCalendarDayResponseDto} from "@/modules/movies/dto/responses/movie-calendar.response.dto";
+import {GetMovieCalendarRequestDto} from "@/modules/movies/dto/requests/get-movie-calendar.request.dto";
 
 @ApiTags("Movies")
 @Controller("movies")
@@ -148,6 +150,27 @@ export class MoviesController {
   })
   getReleasedMovies(@Query() params: GetReleasedMoviesRequestDto) {
     return this.moviesService.getReleasedMovies(params);
+  }
+  
+  @ApiCookieAuth("cinemo_session")
+  @Get("my/calendar")
+  @ApiOperation({
+    summary: "내 영화 관람 달력 조회",
+    description: "특정 연도와 월에 관람한 영화를 날짜별로 조회",
+  })
+  @ApiOkResponse({
+    type: [MovieCalendarDayResponseDto],
+    description: "날짜별 관람 영화 목록",
+  })
+  getMyMovieCalendar(
+      @Query() query: GetMovieCalendarRequestDto,
+      @CurrentUser() user: SessionUser,
+  ) {
+    return this.userMovieRecordService.findCalendarByUser(
+        user.id,
+        query.year,
+        query.month,
+    );
   }
 
   @ApiCookieAuth("cinemo_session")

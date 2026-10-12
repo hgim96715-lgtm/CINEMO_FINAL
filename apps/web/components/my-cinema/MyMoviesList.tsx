@@ -13,7 +13,8 @@ import {Calendar} from "@/components/ui/calendar";
 import type {MyMovie, UpdateMovieRecordInput, ViewingPlatform} from "@/lib/api/movies";
 import {myMoviesQueryOptions} from "@/lib/queries/my-movies.query";
 import {useDeleteMovieRecord, useUpdateMovieRecord} from "@/lib/queries/movie-record.mutation";
-import {MovieSpaceDrawer, type MovieSpaceTab,} from "./MovieSpaceDrawer";
+import {MovieSpaceDrawer, type MovieSpaceTab} from "./MovieSpaceDrawer";
+import {MovieCalendar} from "./MovieCalendar";
 
 const formatDateValue = (date: Date) => {
   const year = date.getFullYear();
@@ -141,7 +142,7 @@ function MovieViewingInfo({ movie }: { movie: MyMovie }) {
 }
 
 export function MyMoviesList() {
-  const [activeTab, setActiveTab] = useState<MovieSpaceTab>("saved");
+  const [activeTab, setActiveTab] = useState<MovieSpaceTab>("calendar");
   const myMoviesQuery = useQuery(myMoviesQueryOptions());
   const movies = myMoviesQuery.data ?? [];
   const [editingMovie, setEditingMovie] = useState<MyMovie | null>(null);
@@ -443,7 +444,9 @@ export function MyMoviesList() {
             counts={counts}
         />
         
-        {activeTab === "postcards" ? (
+        {activeTab === "calendar" ? (
+            <MovieCalendar />
+        ) : activeTab === "postcards" ? (
             <div className="rounded-2xl border border-white/10 bg-white/3 p-8 text-center">
               <p className="text-sm text-cinemo-muted">
                 작성한 엽서가 없습니다.

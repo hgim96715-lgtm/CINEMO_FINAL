@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/drawer";
 
 const tabs = [
+  { value: "calendar", label: "달력" },
   { value: "saved", label: "찜한 영화" },
   { value: "watched", label: "본 영화" },
   { value: "postcards", label: "엽서" },
@@ -22,7 +23,7 @@ export type MovieSpaceTab = (typeof tabs)[number]["value"];
 
 type MovieSpaceOptionProps = {
   label: string;
-  count: number;
+  count?: number;
   selected: boolean;
   onSelect: () => void;
 };
@@ -45,7 +46,9 @@ function MovieSpaceOption({
       }`}
     >
       <span>{label}</span>
-      <span className="text-sm opacity-60">{count}</span>
+      {count !== undefined && (
+        <span className="text-sm opacity-60">{count}</span>
+      )}
     </button>
   );
 }
@@ -97,7 +100,7 @@ export function MovieSpaceDrawer({
             <MovieSpaceOption
               key={tab.value}
               label={tab.label}
-              count={counts[tab.value] ?? 0}
+              count={counts[tab.value]}
               selected={tab.value === activeTab}
               onSelect={() => handleChange(tab.value)}
             />

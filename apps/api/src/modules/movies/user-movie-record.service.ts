@@ -4,6 +4,7 @@ import {MovieNotFoundException} from "@/common/exceptions/movie-not-found.except
 
 import {UserMovieRecordRepository} from "./repositories/user-movie-record.repository";
 import {UpdateMovieRecordRequestDto} from "../auth/dto/requests/update-movie-record.request.dto";
+import {toUserMovieCalendarResponse} from "@/modules/movies/mappers/user-movie-calendar.mapper";
 
 @Injectable()
 export class UserMovieRecordService {
@@ -132,5 +133,10 @@ export class UserMovieRecordService {
     return{
       movieId
     }
+  }
+  
+  async findCalendarByUser(userId:string,year:number,month:number) {
+    const records=await this.userMovieRecordRepository.findWatchedbyUserAndMovie(userId, year, month);
+    return toUserMovieCalendarResponse(records);
   }
 }
