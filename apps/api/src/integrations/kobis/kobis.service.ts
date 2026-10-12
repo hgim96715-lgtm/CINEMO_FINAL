@@ -85,16 +85,12 @@ export class KobisService {
     page = 1,
     limit = 20,
   ): Promise<KobisMovieSearchResponseDto> {
-    const isValidDate = (value: string) =>
-      /^\d{4}(?:\d{4})?$/.test(value);
-
     if (
-      !isValidDate(releaseStartYear) ||
-      !isValidDate(releaseEndYear) ||
-      releaseStartYear.length !== releaseEndYear.length
+      !/^\d{4}$/.test(releaseStartYear) ||
+      !/^\d{4}$/.test(releaseEndYear)
     ) {
       throw new BadRequestException(
-        "KOBIS 개봉일은 YYYY 또는 YYYYMMDD 형식이어야 합니다.",
+        "KOBIS 개봉 연도는 YYYY 형식이어야 합니다.",
       );
     }
 

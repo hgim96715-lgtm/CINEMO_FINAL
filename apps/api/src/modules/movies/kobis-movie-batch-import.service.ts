@@ -182,6 +182,8 @@ export class KobisMovieBatchImportService {
     movieIds: string[];
     failures: Array<{ movieCd: string; title: string; message: string }>;
   }> {
+    const releaseStartYear = releaseStartDate.slice(0, 4);
+    const releaseEndYear = releaseEndDate.slice(0, 4);
     const movieIds = new Set<string>();
     const failures: Array<{
       movieCd: string;
@@ -192,8 +194,8 @@ export class KobisMovieBatchImportService {
     let skipped = 0;
 
     const firstPage = await this.kobisService.searchMoviesByReleaseDate(
-      releaseStartDate,
-      releaseEndDate,
+      releaseStartYear,
+      releaseEndYear,
       1,
       limit,
     );
@@ -204,8 +206,8 @@ export class KobisMovieBatchImportService {
         page === 1
           ? firstPage
           : await this.kobisService.searchMoviesByReleaseDate(
-              releaseStartDate,
-              releaseEndDate,
+              releaseStartYear,
+              releaseEndYear,
               page,
               limit,
             );
