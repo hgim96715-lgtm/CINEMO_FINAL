@@ -57,4 +57,7 @@ export const envValidationSchema = Joi.object({
     .required(),
 
   [EnvKeys.KAKAO_REST_API_KEY]: Joi.string().trim().min(1).required(),
+
+  [EnvKeys.OPENAI_API_KEY]: Joi.string().trim().min(1).required(),
+  [EnvKeys.OPENAI_MODEL]: Joi.string().trim().min(1).required(),
 });

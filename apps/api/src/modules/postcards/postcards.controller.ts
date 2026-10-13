@@ -38,11 +38,40 @@ import { CreatePostcardShareRequestDto } from "@/modules/postcards/dto/requests/
 import { GetPostcardNotificationsRequestDto } from "@/modules/postcards/dto/requests/get-postcard-notifications-request.dto";
 import { PostcardNotificationFeedResponseDto } from "@/modules/postcards/dto/responses/postcard-notification-feed.response.dto";
 import { toPostcardNotificationResponse } from "@/modules/postcards/dto/mappers/postcard-notification.mapper";
+import { OpenAiService } from "@/integrations/openai/openai.service";
+import { CreatePostcardQuoteSuggestionRequestDto } from "@/modules/postcards/dto/requests/create-postcard-quote-suggestion-request.dto";
+import { PostcardQuoteSuggestionResponseDto } from "@/modules/postcards/dto/responses/postcard-quote-suggestion.response.dto";
+import { Throttle } from "@nestjs/throttler";
 
 @ApiTags("Postcards")
 @Controller("postcards")
 export class PostcardsController {
-  constructor(private readonly postcardService: PostcardService) {}
+  constructor(
+    private readonly postcardService: PostcardService,
+    private readonly openAiService: OpenAiService,
+  ) {}
+
+  @ApiCookieAuth("cinemo_session")
+  @Throttle({
+    default: {
+      limit: 3,
+      ttl: 60_000,
+    },
+  })
+  @Post("ai/quote-suggestion")
+  @ApiOperation({
+    summary: "AI 인용 문구 추천",
+    description: "영화에서 영감을 받은 창작 문장과 한국어 번역을 반환",
+  })
+  @ApiCreatedResponse({
+    description: "AI 인용 문구 추천 성공",
+    type: PostcardQuoteSuggestionResponseDto,
+  })
+  async suggestQuote(
+    @Body() request: CreatePostcardQuoteSuggestionRequestDto,
+  ) {
+    return this.openAiService.suggestQuote(request);
+  }
 
   @Public()
   @Get("feed")
