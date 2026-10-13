@@ -332,6 +332,7 @@ export default async function MoviePage({
           </dl>
         </aside>
       </section>
+
     </main>
   );
 }

@@ -1,19 +1,20 @@
 "use client";
 
-import {useQuery} from "@tanstack/react-query";
-import {Eye, EyeClosed, Heart, Star} from "lucide-react";
-import {useRouter} from "next/navigation";
-import {useState} from "react";
-import {ko} from "@daypicker/react/locale";
+import { useQuery } from "@tanstack/react-query";
+import { Eye, EyeClosed, Heart, Mail, Star } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ko } from "@daypicker/react/locale";
 
-import {AppModal} from "@/components/ui/app-modal";
-import {Calendar} from "@/components/ui/calendar";
-import {MovieRecordSummary} from "@/components/movies/MovieRecordSummary";
-import {movieRecordQueryOptions,} from "@/lib/queries/movie-record.query";
-import {useUpdateMovieRecord} from "@/lib/queries/movie-record.mutation";
-import {useAuthStore} from "@/stores/auth.store";
-import {VenueSearch} from "@/components/map/CinemaVenueSearch";
-import {ViewingPlatform} from "@/lib/api/movies";
+import { AppModal } from "@/components/ui/app-modal";
+import { Calendar } from "@/components/ui/calendar";
+import { MovieRecordSummary } from "@/components/movies/MovieRecordSummary";
+import { movieRecordQueryOptions } from "@/lib/queries/movie-record.query";
+import { useUpdateMovieRecord } from "@/lib/queries/movie-record.mutation";
+import { useAuthStore } from "@/stores/auth.store";
+import { VenueSearch } from "@/components/map/CinemaVenueSearch";
+import { ViewingPlatform } from "@/lib/api/movies";
+import { formatDateValue } from "@/lib/date-utils";
 
 type MovieRecordActionsProps = {
   movieId: string;
@@ -23,16 +24,16 @@ const ratingOptions = Array.from({ length: 10 }, (_, index) =>
   ((index + 1) * 0.5).toFixed(1),
 );
 
-const viewingPlatformOptions: {value: ViewingPlatform; label: string}[] = [
-  {value: "NETFLIX", label: "Netflix"},
-  {value: "WATCHA", label: "왓챠"},
-  {value: "TVING", label: "티빙"},
-  {value: "DISNEY_PLUS", label: "Disney+"},
-  {value: "WAVVE", label: "웨이브"},
-  {value: "APPLE_TV", label: "Apple TV"},
-  {value: "PRIME_VIDEO", label: "Prime Video"},
-  {value: "TV", label: "TV"},
-  {value: "OTHER", label: "기타"},
+const viewingPlatformOptions: { value: ViewingPlatform; label: string }[] = [
+  { value: "NETFLIX", label: "Netflix" },
+  { value: "WATCHA", label: "왓챠" },
+  { value: "TVING", label: "티빙" },
+  { value: "DISNEY_PLUS", label: "Disney+" },
+  { value: "WAVVE", label: "웨이브" },
+  { value: "APPLE_TV", label: "Apple TV" },
+  { value: "PRIME_VIDEO", label: "Prime Video" },
+  { value: "TV", label: "TV" },
+  { value: "OTHER", label: "기타" },
 ];
 
 const seoulDateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -47,14 +48,6 @@ const getLocalDateValue = () => {
   const year = parts.find((part) => part.type === "year")?.value ?? "";
   const month = parts.find((part) => part.type === "month")?.value ?? "";
   const day = parts.find((part) => part.type === "day")?.value ?? "";
-
-  return `${year}-${month}-${day}`;
-};
-
-const formatDateValue = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 };
@@ -181,6 +174,13 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
   const selectRating = (rating: string | null) => {
     setRatingOpen(false);
     updateRecord.mutate({ rating });
+  };
+
+  const openPostcardCreate = () => {
+    if (!isWatched) return;
+    router.push(
+      `/my-cinema/postcards/new?movieId=${encodeURIComponent(movieId)}`,
+    );
   };
 
   const isDisabled = recordQuery.isLoading || updateRecord.isPending;
@@ -373,10 +373,12 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
             {viewingPlatform === "OTHER" && (
               <input
                 value={viewingPlatformCustom}
-                onChange={(event) => setViewingPlatformCustom(event.target.value)}
+                onChange={(event) =>
+                  setViewingPlatformCustom(event.target.value)
+                }
                 placeholder="플랫폼 이름을 직접 입력"
                 maxLength={100}
-                className="mt-3 w-full rounded-lg border border-white/10 bg-white/3 px-3 py-2 text-sm text-white outline-none placeholder:text-cinemo-muted focus:border-cinemo-gold"
+                className="mt-3 w-full rounded-lg border border-white\/10 bg-white/3 px-3 py-2 text-sm outline-none placeholder:text-cinemo-muted focus:border-cinemo-gold"
               />
             )}
 
@@ -409,7 +411,7 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
         )}
       </AppModal>
 
-      <div className="flex w-37 flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
+      <div className="flex w-full flex-nowrap items-center gap-2 sm:w-auto sm:gap-3">
         <button
           type="button"
           onClick={toggleFavorite}
@@ -417,7 +419,7 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
           aria-pressed={isFavorite}
           aria-label={isFavorite ? "찜하기 해제" : "찜하기"}
           title={isFavorite ? "찜하기 해제" : "찜하기"}
-          className={`group inline-flex h-11 w-11 items-center justify-center gap-0 rounded-xl border px-0 py-0 font-semibold backdrop-blur transition disabled:opacity-50 sm:h-[52px] sm:w-28 sm:min-w-28 sm:max-w-28 sm:flex-none sm:gap-2 sm:px-3 sm:py-0 ${
+          className={`group inline-flex h-11 w-11 items-center justify-center gap-0 rounded-xl border px-0 py-0 font-semibold backdrop-blur transition disabled:opacity-50 sm:h-13 sm:w-28 sm:min-w-28 sm:max-w-28 sm:flex-none sm:gap-2 sm:px-3 sm:py-0 ${
             isFavorite
               ? "border-cinemo-gold/60 bg-cinemo-gold/15 text-cinemo-gold-light"
               : "border-white/20 bg-white/5 text-cinemo-text hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10"
@@ -440,7 +442,7 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
             aria-expanded={watchedDateOpen}
             aria-label={isWatched ? "봤어요 해제" : "봤어요 날짜 선택"}
             title={isWatched ? "봤어요 해제" : "봤어요 날짜 선택"}
-            className={`group inline-flex h-11 w-11 items-center justify-center gap-0 rounded-xl border px-0 py-0 font-semibold backdrop-blur transition disabled:opacity-50 sm:h-[52px] sm:w-28 sm:min-w-28 sm:max-w-28 sm:flex-none sm:gap-2 sm:px-3 sm:py-0 ${
+            className={`group inline-flex h-11 w-11 items-center justify-center gap-0 rounded-xl border px-0 py-0 font-semibold backdrop-blur transition disabled:opacity-50 sm:h-13 sm:w-28 sm:min-w-28 sm:max-w-28 sm:flex-none sm:gap-2 sm:px-3 sm:py-0 ${
               isWatched
                 ? "border-cinemo-gold/60 bg-cinemo-gold/15 text-cinemo-gold-light"
                 : "border-white/20 bg-white/5 text-cinemo-text hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10"
@@ -455,6 +457,34 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
           </button>
         </div>
 
+        <div
+          title={
+            isWatched
+              ? "이 영화의 엽서 만들기"
+              : "봤어요 기록 후 엽서를 만들 수 있습니다."
+          }
+        >
+          <button
+            type="button"
+            onClick={openPostcardCreate}
+            disabled={isDisabled || !isWatched}
+            aria-label={
+              isWatched
+                ? "이 영화의 엽서 만들기"
+                : "봤어요 기록 후 엽서를 만들 수 있습니다"
+            }
+            className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border transition sm:h-[52px] sm:w-28 sm:gap-2 ${
+              isWatched
+                ? "border-cinemo-gold/60 bg-cinemo-gold/15 text-cinemo-gold-light hover:bg-cinemo-gold/25"
+                : "cursor-not-allowed border-white/10 bg-white/5 text-white/25"
+            }`}
+          >
+            <Mail className="size-4" />
+
+            <span className="hidden sm:inline">엽서</span>
+          </button>
+        </div>
+
         <div>
           <button
             type="button"
@@ -464,7 +494,7 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
             aria-expanded={ratingOpen}
             aria-label="평점 선택"
             title="평점 선택"
-            className={`inline-flex h-11 w-11 items-center justify-center gap-0 rounded-xl border px-0 py-0 text-sm transition disabled:opacity-50 sm:h-[52px] sm:w-28 sm:min-w-28 sm:max-w-28 sm:flex-none sm:justify-center sm:gap-2 sm:px-3 sm:py-0 ${
+            className={`inline-flex h-11 w-11 items-center justify-center gap-0 rounded-xl border px-0 py-0 text-sm transition disabled:opacity-50 sm:h-13 sm:w-28 sm:min-w-28 sm:max-w-28 sm:flex-none sm:justify-center sm:gap-2 sm:px-3 sm:py-0 ${
               selectedRating
                 ? "border-cinemo-gold/60 bg-cinemo-gold/15 text-cinemo-gold-light"
                 : "border-white/20 bg-white/5 text-cinemo-text hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10"
@@ -481,7 +511,6 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
               {selectedRating ? `${selectedRating}점` : "평점"}
             </span>
           </button>
-
         </div>
       </div>
 

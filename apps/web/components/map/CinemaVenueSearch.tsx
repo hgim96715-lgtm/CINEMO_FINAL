@@ -1,6 +1,7 @@
 "use client";
 
 import {useState} from "react";
+import {Search} from "lucide-react";
 import {useForm} from "react-hook-form";
 import {VenueSearchFormValues, venueSearchSchema} from "@/schemas/cinema-venue-search.schema";
 import {zodResolver} from "@hookform/resolvers/zod";
@@ -96,14 +97,16 @@ export function VenueSearch({
                         <input
                             {...register("query")}
                             placeholder="관람 장소 검색"
-                            className="flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white"
+                            className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-white/40 focus:border-cinemo-gold"
                         />
 
                         <button
                             type="submit"
-                            className="rounded-lg bg-cinemo-gold px-4 py-3 text-black"
+                            aria-label="관람 장소 검색"
+                            title="관람 장소 검색"
+                            className="inline-flex size-12 shrink-0 items-center justify-center rounded-lg border border-cinemo-gold/60 bg-cinemo-gold/15 text-cinemo-gold-light transition hover:bg-cinemo-gold/25"
                         >
-                            검색
+                            <Search className="size-4" />
                         </button>
                     </form>
 

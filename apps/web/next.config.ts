@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
         hostname: "file.koreafilm.or.kr",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "cdn.forbeskorea.co.kr",
+        pathname: "/**",
+      },
     ],
   },
 };

@@ -1,36 +1,42 @@
 "use client";
 
-import type { ComponentType } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { BookmarkedPeopleList } from "./BookmarkedPeopleList";
 import { MovieNotificationsList } from "./MovieNotificationsList";
 import { MyMoviesList } from "./MyMoviesList";
+import { MyPostcardsPanel } from "@/components/postcard/MyPostcardsPanel";
 
-type MyCinemaTab = "movies" | "people" | "notifications";
-
-const panelMap: Record<MyCinemaTab, ComponentType> = {
-  movies: MyMoviesList,
-  people: BookmarkedPeopleList,
-  notifications: MovieNotificationsList,
-};
+type MyCinemaTab = "movies" | "people" | "notifications" | "postcards";
 
 const tabs: Array<{ id: MyCinemaTab; label: string }> = [
   { id: "movies", label: "내 영화" },
   { id: "people", label: "저장한 인물" },
   { id: "notifications", label: "알림" },
+  { id: "postcards", label: "내 엽서" },
 ];
 
 export function MyCinemaTabs() {
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+
   const [activeTab, setActiveTab] = useState<MyCinemaTab>("movies");
-  const Panel = panelMap[activeTab];
+
+  useEffect(() => {
+    const isValidTab = tabs.some((tab) => tab.id === requestedTab);
+
+    if (isValidTab) {
+      setActiveTab(requestedTab as MyCinemaTab);
+    }
+  }, [requestedTab]);
 
   return (
     <section className="mt-8">
       <div
         role="tablist"
         aria-label="MY CINEMA 메뉴"
-        className="flex overflow-x-auto rounded-2xl border border-white/10 bg-white/3 p-1"
+        className="flex overflow-x-auto rounded-2xl border border-white/10 bg-white/3 p-1 scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -55,7 +61,13 @@ export function MyCinemaTabs() {
       </div>
 
       <div className="mt-5 min-h-36 text-sm text-cinemo-muted">
-        <Panel />
+        {activeTab === "movies" && <MyMoviesList />}
+
+        {activeTab === "people" && <BookmarkedPeopleList />}
+
+        {activeTab === "notifications" && <MovieNotificationsList />}
+
+        {activeTab === "postcards" && <MyPostcardsPanel />}
       </div>
     </section>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Search, UserRound, X} from "lucide-react";
+import {LogOut, Search, UserRound, X} from "lucide-react";
 import {usePathname, useRouter} from "next/navigation";
 import {useForm} from "react-hook-form";
 import {CINEMO_BRAND} from "@cinemo/shared";
@@ -110,8 +110,8 @@ export function Header() {
         className={cn(
           "mx-auto flex h-22 w-full items-center px-4",
           isLobby
-            ? "max-w-[120rem] gap-4 sm:px-6 lg:px-10"
-            : "max-w-6xl gap-8 px-6",
+            ? "max-w-[120rem] gap-2 sm:gap-4 sm:px-6 lg:px-10"
+            : "max-w-6xl gap-4 px-4 sm:gap-8 sm:px-6",
         )}
       >
         <Link
@@ -126,7 +126,7 @@ export function Header() {
             width={44}
             height={44}
             priority
-            className="h-11 w-11 object-contain"
+            className="h-10 w-10 object-contain sm:h-11 sm:w-11"
           />
         </Link>
 
@@ -214,7 +214,7 @@ export function Header() {
           </form>
         </div>
         {user ? (
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
             <Link
               href="/my-cinema"
               aria-label="MY CINEMA"
@@ -243,9 +243,13 @@ export function Header() {
               type="button"
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="text-sm text-cinemo-muted transition hover:text-cinemo-gold-light disabled:opacity-50"
+              aria-label={isLoggingOut ? "로그아웃 중" : "로그아웃"}
+              className="flex size-9 items-center justify-center rounded-full text-cinemo-muted transition hover:bg-white/10 hover:text-cinemo-gold-light disabled:opacity-50 sm:h-auto sm:w-auto sm:rounded-none"
             >
-              {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
+              <LogOut className="size-4 sm:hidden" aria-hidden="true" />
+              <span className="hidden sm:inline">
+                {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
+              </span>
             </button>
           </div>
         ) : (

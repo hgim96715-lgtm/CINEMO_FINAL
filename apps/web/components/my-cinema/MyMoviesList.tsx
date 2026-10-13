@@ -11,18 +11,11 @@ import {VenueSearch} from "@/components/map/CinemaVenueSearch";
 import {AppModal} from "@/components/ui/app-modal";
 import {Calendar} from "@/components/ui/calendar";
 import type {MyMovie, UpdateMovieRecordInput, ViewingPlatform} from "@/lib/api/movies";
+import {formatDateValue} from "@/lib/date-utils";
 import {myMoviesQueryOptions} from "@/lib/queries/my-movies.query";
 import {useDeleteMovieRecord, useUpdateMovieRecord} from "@/lib/queries/movie-record.mutation";
 import {MovieSpaceDrawer, type MovieSpaceTab} from "./MovieSpaceDrawer";
 import {MovieCalendar} from "./MovieCalendar";
-
-const formatDateValue = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-};
 
 const parseDateValue = (dateValue: string) => {
   const [year, month, day] = dateValue.split("-").map(Number);
@@ -180,7 +173,6 @@ export function MyMoviesList() {
       () => ({
         saved: movies.filter((movie) => movie.isFavorite).length,
         watched: movies.filter((movie) => movie.isWatched).length,
-        postcards: 0,
       }),
       [movies],
   );
@@ -446,12 +438,6 @@ export function MyMoviesList() {
         
         {activeTab === "calendar" ? (
             <MovieCalendar />
-        ) : activeTab === "postcards" ? (
-            <div className="rounded-2xl border border-white/10 bg-white/3 p-8 text-center">
-              <p className="text-sm text-cinemo-muted">
-                작성한 엽서가 없습니다.
-              </p>
-            </div>
         ) : visibleMovies.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-white/3 p-8 text-center">
               <p className="text-sm text-cinemo-muted">

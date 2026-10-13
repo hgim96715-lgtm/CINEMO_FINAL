@@ -30,11 +30,6 @@ export function MyMoviesSpace() {
                 </div>
             )}
 
-            {activeTab === "postcards" && (
-                <div className="rounded-2xl border border-white/10 p-8 text-center text-sm text-cinemo-muted">
-                    작성한 엽서 목록
-                </div>
-            )}
         </section>
     );
 }
