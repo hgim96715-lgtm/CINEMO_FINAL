@@ -1,6 +1,6 @@
 import * as Joi from "joi";
 
-import {EnvKeys} from "@/config/env-keys";
+import { EnvKeys } from "@/config/env-keys";
 
 export const envValidationSchema = Joi.object({
   [EnvKeys.DATABASE_URL]: Joi.string()
