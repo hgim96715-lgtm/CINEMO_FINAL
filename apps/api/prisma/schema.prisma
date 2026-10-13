@@ -88,6 +88,11 @@ enum UserStatus {
   DELETED
 }
 
+enum UserVisibility {
+  PUBLIC
+  PRIVATE
+}
+
 enum EmailVerificationPurpose {
   SIGNUP
   CHANGE_EMAIL
@@ -155,6 +160,337 @@ enum MovieSyncStatus {
   FAILED
 }
 
+enum PostcardCommentStatus {
+  PUBLISHED
+  HIDDEN
+  DELETED
+}
+
+enum PostcardNotificationType {
+  COMMENT
+  REPLY
+  REACTION
+  MENTION
+}
+
+enum PostcardRestrictionType {
+  COMMENT
+  INTERACTION
+  ALL
+}
+
+enum PostcardType {
+  REVIEW
+  QUOTE
+  SCENE
+  NOTE
+}
+enum PostcardSource {
+  USER
+  AI
+}
+
+enum PostcardVisibility {
+  PUBLIC
+  PRIVATE
+  UNLISTED
+}
+enum PostcardStatus {
+  DRAFT
+  PUBLISHED
+  HIDDEN
+  DELETED
+}
+enum PostcardGenerationStatus {
+  REQUESTED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum PostcardReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  REJECTED
+}
+enum PostcardModerationAction {
+  HIDE
+  RESTORE
+  DELETE
+  WARN
+  RESTRICT_USER
+}
+model Postcard {
+  id                 String             @id @default(uuid(7)) @db.Uuid
+  userId             String             @db.Uuid
+  movieId            String             @db.Uuid
+  type               PostcardType
+  source             PostcardSource     @default(USER)
+  content            String             @db.Text
+  backgroundStyle    String?            @map("background_style") @db.VarChar(100)
+  backgroundImageKey String?            @map("background_image_key") @db.VarChar(255)
+  visibility         PostcardVisibility @default(PUBLIC)
+  status             PostcardStatus     @default(DRAFT)
+
+  reactionCount Int @default(0) @map("reaction_count")
+  commentCount  Int @default(0) @map("comment_count")
+  shareCount    Int @default(0) @map("share_count")
+
+  publishedAt DateTime? @map("published_at") @db.Timestamptz(3)
+  editedAt    DateTime? @map("edited_at") @db.Timestamptz(3)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie         Movie                  @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  revisions     PostcardRevision[]
+  reactions     PostcardReaction[]
+  comments      PostcardComment[]
+  bookmarks     PostcardBookmark[]
+  shares        PostcardShare[]
+  reports       PostcardReport[]
+  moderations   PostcardModeration[]
+  generations   PostcardGeneration[]
+  notifications PostcardNotification[]
+
+  @@index([userId, status, createdAt])
+  @@index([movieId, visibility, status, createdAt])
+  @@index([visibility, status, publishedAt])
+  @@map("postcards")
+}
+
+model PostcardRevision {
+  id         String         @id @default(uuid(7)) @db.Uuid
+  postcardId String         @db.Uuid
+  version    Int
+  content    String         @db.Text
+  source     PostcardSource
+  editorId   String?        @db.Uuid
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  postcard Postcard @relation(fields: [postcardId], references: [id], onDelete: Cascade)
+  editor   User?    @relation(fields: [editorId], references: [id], onDelete: SetNull)
+
+  @@unique([postcardId, version])
+  @@index([postcardId, createdAt])
+  @@map("postcard_revisions")
+}
+
+model PostcardReaction {
+  postcardId String   @db.Uuid
+  userId     String   @db.Uuid
+  emoji      String   @db.VarChar(64)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  postcard Postcard @relation(fields: [postcardId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postcardId, userId, emoji])
+  @@index([postcardId, emoji, createdAt])
+  @@index([userId, createdAt])
+  @@map("postcard_reactions")
+}
+
+model PostcardBookmark {
+  postcardId String   @db.Uuid
+  userId     String   @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  postcard Postcard @relation(fields: [postcardId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postcardId, userId])
+  @@index([userId, createdAt])
+  @@map("postcard_bookmarks")
+}
+
+model PostcardComment {
+  id            String                @id @default(uuid(7)) @db.Uuid
+  postcardId    String                @db.Uuid
+  userId        String                @db.Uuid
+  parentId      String?               @db.Uuid
+  content       String                @db.Text
+  status        PostcardCommentStatus @default(PUBLISHED)
+  reactionCount Int                   @default(0)
+  replyCount    Int                   @default(0)
+  deletedAt     DateTime?             @map("deleted_at") @db.Timestamptz(3)
+  editedAt      DateTime?             @map("edited_at") @db.Timestamptz(3)
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  postcard      Postcard                  @relation(fields: [postcardId], references: [id], onDelete: Cascade)
+  user          User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent        PostcardComment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies       PostcardComment[]         @relation("CommentReplies")
+  reactions     PostcardCommentReaction[]
+  notifications PostcardNotification[]
+
+  @@index([postcardId, status, createdAt])
+  @@index([postcardId, parentId, status, createdAt])
+  @@index([postcardId, userId, createdAt])
+  @@map("postcard_comments")
+}
+
+model PostcardCommentReaction {
+  commentId String   @db.Uuid
+  userId    String   @db.Uuid
+  emoji     String   @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  comment PostcardComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, userId, emoji])
+  @@index([commentId, emoji, createdAt])
+  @@index([userId, createdAt])
+  @@map("postcard_comment_reactions")
+}
+model PostcardNotification {
+  id            String                   @id @default(uuid(7)) @db.Uuid
+  recipientId   String                   @db.Uuid
+  actorId       String?                  @db.Uuid
+  postcardId    String?                  @db.Uuid
+  commentId     String?                  @db.Uuid
+  type          PostcardNotificationType
+  reactionEmoji String?                  @map("reaction_emoji") @db.VarChar(64)
+  readAt        DateTime?                @map("read_at") @db.Timestamptz(3)
+  createdAt     DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  recipient User             @relation("PostcardNotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor     User?            @relation("PostcardNotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  postcard  Postcard?        @relation(fields: [postcardId], references: [id], onDelete: Cascade)
+  comment   PostcardComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, readAt, createdAt])
+  @@index([postcardId, createdAt])
+  @@map("postcard_notifications")
+}
+
+model PostcardShare {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  postcardId String   @db.Uuid
+  userId     String?  @db.Uuid
+  channel    String?  @db.VarChar(50)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  postcard Postcard @relation(fields: [postcardId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([postcardId, createdAt])
+  @@index([userId, createdAt])
+  @@map("postcard_shares")
+}
+model PostcardReport {
+  id         String               @id @default(uuid(7)) @db.Uuid
+  postcardId String               @db.Uuid
+  reporterId String               @db.Uuid
+  reason     String               @db.Text
+  status     PostcardReportStatus @default(PENDING)
+  createdAt  DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  resolvedAt DateTime?            @map("resolved_at") @db.Timestamptz(3)
+
+  postcard Postcard @relation(fields: [postcardId], references: [id], onDelete: Cascade)
+  reporter User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([postcardId, status, createdAt])
+  @@index([reporterId, createdAt])
+  @@map("postcard_reports")
+}
+
+model PostcardModeration {
+  id          String                   @id @default(uuid(7)) @db.Uuid
+  postcardId  String                   @db.Uuid
+  moderatorId String                   @db.Uuid
+  action      PostcardModerationAction
+  reason      String?                  @db.Text
+  createdAt   DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  postcard  Postcard @relation(fields: [postcardId], references: [id], onDelete: Cascade)
+  moderator User     @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
+
+  @@index([postcardId, createdAt])
+  @@index([moderatorId, createdAt])
+  @@map("postcard_moderations")
+}
+model PostcardUserRestriction {
+  id        String                  @id @default(uuid(7)) @db.Uuid
+  userId    String                  @db.Uuid
+  type      PostcardRestrictionType
+  reason    String?                 @db.Text
+  startsAt  DateTime                @default(now()) @map("starts_at") @db.Timestamptz(3)
+  expiresAt DateTime?               @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime?               @map("revoked_at") @db.Timestamptz(3)
+  createdAt DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, revokedAt, expiresAt])
+  @@index([createdAt])
+  @@map("postcard_user_restrictions")
+}
+
+model PostcardGeneration {
+  id            String                   @id @default(uuid(7)) @db.Uuid
+  postcardId    String?                  @db.Uuid
+  userId        String                   @db.Uuid
+  movieId       String                   @db.Uuid
+  type          PostcardType
+  model         String                   @db.VarChar(100)
+  promptVersion String                   @map("prompt_version") @db.VarChar(100)
+  inputSummary  String?                  @map("input_summary") @db.Text
+  outputContent String?                  @map("output_content") @db.Text
+  status        PostcardGenerationStatus @default(REQUESTED)
+  errorMessage  String?                  @map("error_message") @db.Text
+  createdAt     DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  completedAt   DateTime?                @map("completed_at") @db.Timestamptz(3)
+
+  postcard Postcard? @relation(fields: [postcardId], references: [id], onDelete: SetNull)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie    Movie     @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([movieId, status, createdAt])
+  @@map("postcard_generations")
+}
+
+model PostcardPolicy {
+  id                        String   @id @default(uuid(7)) @db.Uuid
+  name                      String   @unique @db.VarChar(100)
+  dailyCreateLimit          Int      @map("daily_create_limit")
+  movieDailyLimit           Int      @map("movie_daily_limit")
+  aiDailyLimit              Int      @map("ai_daily_limit")
+  maxContentLength          Int      @map("max_content_length")
+  commentMaxLength          Int      @map("comment_max_length")
+  commentRateLimitCount     Int      @map("comment_rate_limit_count")
+  commentRateLimitWindowSec Int      @map("comment_rate_limit_window_sec")
+  duplicateCommentWindowSec Int      @map("duplicate_comment_window_sec")
+  isActive                  Boolean  @default(true) @map("is_active")
+  createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("postcard_policies")
+}
+
+model PostcardDailyUsage {
+  userId      String   @db.Uuid
+  movieId     String   @db.Uuid
+  usageDate   DateTime @db.Date
+  totalCount  Int      @default(0) @map("total_count")
+  reviewCount Int      @default(0) @map("review_count")
+  aiCount     Int      @default(0) @map("ai_count")
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@id([userId, movieId, usageDate])
+  @@index([userId, usageDate])
+  @@map("postcard_daily_usages")
+}
+
 model MovieSyncRun {
   id             String           @id @default(uuid(7)) @db.Uuid
   jobType        MovieSyncJobType
@@ -179,6 +515,7 @@ model User {
   email           String?    @unique
   nickname        String     @unique
   status          UserStatus @default(ACTIVE)
+  profileVisibility UserVisibility @default(PUBLIC) @map("profile_visibility")
   isAdmin         Boolean    @default(false)
   profileImageUrl String?    @db.Text
   profileImageKey String?    @db.Text
@@ -186,15 +523,29 @@ model User {
   createdAt       DateTime   @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime   @updatedAt @db.Timestamptz(3)
 
-  identities             UserIdentity[]
-  passwordCredential     UserPasswordCredential?
-  emailVerifications     EmailVerification[]
-  passwordResetTokens    PasswordResetToken[]
-  termsAgreements        UserTermsAgreement[]
-  sessions               AuthSession[]
-  userMovieRecords       UserMovieRecord[]
-  userMovieNotifications UserMovieNotification[]
-  userPersonBookmarks    UserPersonBookmark[]
+  identities                 UserIdentity[]
+  passwordCredential         UserPasswordCredential?
+  emailVerifications         EmailVerification[]
+  passwordResetTokens        PasswordResetToken[]
+  termsAgreements            UserTermsAgreement[]
+  sessions                   AuthSession[]
+  userMovieRecords           UserMovieRecord[]
+  userMovieNotifications     UserMovieNotification[]
+  userPersonBookmarks        UserPersonBookmark[]
+  postcards                  Postcard[]
+  postcardRevisions          PostcardRevision[]
+  postcardReactions          PostcardReaction[]
+  postcardCommentReactions   PostcardCommentReaction[]
+  postcardComments           PostcardComment[]
+  postcardBookmarks          PostcardBookmark[]
+  postcardShares             PostcardShare[]
+  postcardReports            PostcardReport[]
+  postcardModerations        PostcardModeration[]
+  postcardRestrictions       PostcardUserRestriction[]
+  postcardGenerations        PostcardGeneration[]
+  postcardDailyUsages        PostcardDailyUsage[]
+  postcardNotifications      PostcardNotification[]    @relation("PostcardNotificationRecipient")
+  postcardNotificationActors PostcardNotification[]    @relation("PostcardNotificationActor")
 
   @@index([nickname])
   @@index([status])
@@ -441,6 +792,9 @@ model Movie {
   movieCertifications    MovieCertification[]
   userMovieRecords       UserMovieRecord[]
   userMovieNotifications UserMovieNotification[]
+  postcards              Postcard[]
+  postcardGenerations    PostcardGeneration[]
+  postcardDailyUsages    PostcardDailyUsage[]
 
   @@index([visibility])
   @@map("movies")
@@ -581,17 +935,17 @@ model MoviePopularitySnapshot {
 }
 
 model MoviePerson {
-  id          String    @id @default(uuid(7)) @db.Uuid
-  name        String    @db.Text
-  nameEn      String?   @db.Text
-  profileUrl  String?   @db.Text
-  biography   String?   @db.Text
-  birthDate   DateTime? @db.Date
-  birthPlace  String?   @db.Text
-  nationality String?   @db.Text
+  id             String    @id @default(uuid(7)) @db.Uuid
+  name           String    @db.Text
+  nameEn         String?   @db.Text
+  profileUrl     String?   @db.Text
+  biography      String?   @db.Text
+  birthDate      DateTime? @db.Date
+  birthPlace     String?   @db.Text
+  nationality    String?   @db.Text
   tmdbEnrichedAt DateTime? @map("tmdb_enriched_at") @db.Timestamptz(3)
-  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime  @updatedAt @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
 
   credits             MovieCredit[]
   providerLinks       MoviePersonProviderLink[]

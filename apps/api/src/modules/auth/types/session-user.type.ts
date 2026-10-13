@@ -1,9 +1,10 @@
-import type { UserStatus } from "@prisma/client";
+import type { UserStatus, UserVisibility } from "@prisma/client";
 
 export type SessionUser = {
   id: string;
   email: string | null;
   nickname: string;
   status: UserStatus;
+  profileVisibility: UserVisibility;
   profileImageUrl: string | null;
 };

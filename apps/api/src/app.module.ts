@@ -22,6 +22,7 @@ import {oauthConfig} from "./config/oauth.config";
 import {mapConfig} from "@/config/map.config";
 import {KakaoModule} from "@/integrations/kakao/kakao.module";
 import {MapModule} from "@/modules/map/map.module";
+import {PostcardsModule} from "@/modules/postcards/postcards.module";
 
 
 @Module({
@@ -62,6 +63,7 @@ import {MapModule} from "@/modules/map/map.module";
     AuthModule,
     KakaoModule,
     MapModule,
+    PostcardsModule,
   ],
   providers: [
     {

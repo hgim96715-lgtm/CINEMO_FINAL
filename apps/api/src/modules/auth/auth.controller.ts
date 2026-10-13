@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Post,
+  Patch,
   Query,
   Req,
   Res,
@@ -40,6 +41,7 @@ import { CheckEmailRequestDto } from "./dto/requests/check-email.request.dto";
 import { AppleAuthService } from "./apple-auth.service";
 import { OauthSignupRequestDto } from "./dto/requests/oauth-signup.request.dto";
 import { OptionalAuth } from "./decorators/optional-auth.decorator";
+import { UpdateProfileVisibilityRequestDto } from "./dto/requests/update-profile-visibility.request.dto";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -58,6 +60,24 @@ export class AuthController {
   @Get("me")
   getMe(@Req() request: Request & { user?: SessionUser }) {
     return request.user ?? null;
+  }
+
+  @ApiCookieAuth("cinemo_session")
+  @Patch("me/profile-visibility")
+  @ApiOperation({
+    summary: "프로필 공개 범위 변경",
+  })
+  @ApiOkResponse({
+    description: "프로필 공개 범위 변경 성공",
+  })
+  async updateProfileVisibility(
+    @CurrentUser() user: SessionUser,
+    @Body() input: UpdateProfileVisibilityRequestDto,
+  ) {
+    return this.authService.updateProfileVisibility(
+      user.id,
+      input.profileVisibility,
+    );
   }
 
   @Get("check-nickname")

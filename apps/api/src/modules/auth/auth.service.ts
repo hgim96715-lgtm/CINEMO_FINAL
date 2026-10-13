@@ -9,6 +9,7 @@ import {
   AuthProvider,
   TermsType,
   UserStatus,
+  UserVisibility,
 } from "@prisma/client";
 import { createHash, randomBytes } from "node:crypto";
 
@@ -193,6 +194,7 @@ export class AuthService {
         email: user.email,
         nickname: user.nickname,
         status: user.status,
+        profileVisibility: user.profileVisibility,
         profileImageUrl: user.profileImageUrl,
       },
       sessionToken,
@@ -229,6 +231,19 @@ export class AuthService {
     });
   }
 
+  async updateProfileVisibility(
+    userId: string,
+    profileVisibility: UserVisibility,
+  ) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { profileVisibility },
+      select: {
+        profileVisibility: true,
+      },
+    });
+  }
+
   async validateSession(sessionToken?: string) {
     if (!sessionToken) {
       throw new UnauthorizedException("로그인이 필요합니다.");
@@ -245,6 +260,7 @@ export class AuthService {
             email: true,
             nickname: true,
             status: true,
+            profileVisibility: true,
             profileImageUrl: true,
           },
         },
@@ -409,6 +425,7 @@ export class AuthService {
         email: user.email,
         nickname: user.nickname,
         status: user.status,
+        profileVisibility: user.profileVisibility,
         profileImageUrl: user.profileImageUrl,
       },
       sessionToken,
@@ -524,6 +541,7 @@ export class AuthService {
           email: true,
           nickname: true,
           status: true,
+          profileVisibility: true,
           profileImageUrl: true,
         },
       });
