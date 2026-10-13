@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthControllerAppleCallbackV1Data, AuthControllerAppleCallbackV1Responses, AuthControllerAppleLoginV1Data, AuthControllerAppleLoginV1Responses, AuthControllerCheckEmailV1Data, AuthControllerCheckEmailV1Responses, AuthControllerCheckNicknameV1Data, AuthControllerCheckNicknameV1Responses, AuthControllerDeleteAccountV1Data, AuthControllerDeleteAccountV1Responses, AuthControllerGetMeV1Data, AuthControllerGetMeV1Responses, AuthControllerLoginV1Data, AuthControllerLoginV1Errors, AuthControllerLoginV1Responses, AuthControllerLogoutV1Data, AuthControllerLogoutV1Responses, AuthControllerRegisterV1Data, AuthControllerRegisterV1Errors, AuthControllerRegisterV1Responses, AuthControllerRegisterWithOauthV1Data, AuthControllerRegisterWithOauthV1Responses, AuthControllerRequestPasswordResetV1Data, AuthControllerRequestPasswordResetV1Responses, AuthControllerResetPasswordV1Data, AuthControllerResetPasswordV1Responses, AuthControllerVerifyEmailV1Data, AuthControllerVerifyEmailV1Errors, AuthControllerVerifyEmailV1Responses, HealthControllerCheckV1Data, HealthControllerCheckV1Responses, KakaoControllerSearchAddressV1Data, KakaoControllerSearchAddressV1Responses, KakaoControllerSearchPlacesV1Data, KakaoControllerSearchPlacesV1Responses, KmdbControllerSearchMoviesV1Data, KmdbControllerSearchMoviesV1Responses, KobisControllerGetDailyBoxOfficeV1Data, KobisControllerGetDailyBoxOfficeV1Responses, KobisControllerGetMovieInfoV1Data, KobisControllerGetMovieInfoV1Errors, KobisControllerGetMovieInfoV1Responses, KobisControllerSearchMoviesV1Data, KobisControllerSearchMoviesV1Errors, KobisControllerSearchMoviesV1Responses, MapControllerSaveVenueV1Data, MapControllerSaveVenueV1Responses, MapControllerSearchPlacesV1Data, MapControllerSearchPlacesV1Responses, MovieCatalogSyncControllerAuditProviderCollisionsV1Data, MovieCatalogSyncControllerAuditProviderCollisionsV1Responses, MovieCatalogSyncControllerReconcileReleasesV1Data, MovieCatalogSyncControllerReconcileReleasesV1Responses, MovieCatalogSyncControllerSplitProviderCollisionsV1Data, MovieCatalogSyncControllerSplitProviderCollisionsV1Responses, MovieCatalogSyncControllerSyncDailyBoxOfficeV1Data, MovieCatalogSyncControllerSyncDailyBoxOfficeV1Responses, MovieCatalogSyncControllerSyncMoviesFromKobisV1Data, MovieCatalogSyncControllerSyncMoviesFromKobisV1Responses, MovieCatalogSyncControllerSyncPopularMoviesFromTmdbV1Data, MovieCatalogSyncControllerSyncPopularMoviesFromTmdbV1Responses, MovieCatalogSyncControllerSyncReleasedMoviesV1Data, MovieCatalogSyncControllerSyncReleasedMoviesV1Responses, MovieCatalogSyncControllerSyncUpcomingMoviesFromTmdbV1Data, MovieCatalogSyncControllerSyncUpcomingMoviesFromTmdbV1Responses, MovieCatalogSyncControllerSyncUpcomingMoviesV1Data, MovieCatalogSyncControllerSyncUpcomingMoviesV1Responses, MovieImportControllerEnrichFromKmdbAutomaticallyV1Data, MovieImportControllerEnrichFromKmdbAutomaticallyV1Responses, MovieImportControllerEnrichFromKmdbV1Data, MovieImportControllerEnrichFromKmdbV1Responses, MovieImportControllerImportFromKobisV1Data, MovieImportControllerImportFromKobisV1Errors, MovieImportControllerImportFromKobisV1Responses, MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Data, MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Errors, MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Responses, MovieImportControllerImportFromTmdbV1Data, MovieImportControllerImportFromTmdbV1Responses, MovieImportControllerSyncFromTmdbV1Data, MovieImportControllerSyncFromTmdbV1Responses, MovieManagementControllerGetDuplicateMovieCandidatesV1Data, MovieManagementControllerGetDuplicateMovieCandidatesV1Responses, MovieManagementControllerGetModerationMoviesV1Data, MovieManagementControllerGetModerationMoviesV1Responses, MovieManagementControllerSplitProviderCollisionV1Data, MovieManagementControllerSplitProviderCollisionV1Responses, MovieManagementControllerUpdateVisibilityV1Data, MovieManagementControllerUpdateVisibilityV1Responses, MoviesControllerDeleteMovieRecordV1Data, MoviesControllerDeleteMovieRecordV1Responses, MoviesControllerFindByIdV1Data, MoviesControllerFindByIdV1Errors, MoviesControllerFindByIdV1Responses, MoviesControllerGetMovieNotificationV1Data, MoviesControllerGetMovieNotificationV1Responses, MoviesControllerGetMovieRankingsV1Data, MoviesControllerGetMovieRankingsV1Responses, MoviesControllerGetMovieRecordV1Data, MoviesControllerGetMovieRecordV1Responses, MoviesControllerGetMyMovieCalendarV1Data, MoviesControllerGetMyMovieCalendarV1Responses, MoviesControllerGetMyMoviesV1Data, MoviesControllerGetMyMoviesV1Responses, MoviesControllerGetPopularMoviesV1Data, MoviesControllerGetPopularMoviesV1Responses, MoviesControllerGetReleasedMoviesV1Data, MoviesControllerGetReleasedMoviesV1Responses, MoviesControllerGetSitemapMoviesV1Data, MoviesControllerGetSitemapMoviesV1Responses, MoviesControllerGetUpcomingMoviesV1Data, MoviesControllerGetUpcomingMoviesV1Responses, MoviesControllerSearchV1Data, MoviesControllerSearchV1Errors, MoviesControllerSearchV1Responses, MoviesControllerSubscribeMovieNotificationV1Data, MoviesControllerSubscribeMovieNotificationV1Responses, MoviesControllerUnsubscribeMovieNotificationV1Data, MoviesControllerUnsubscribeMovieNotificationV1Responses, MoviesControllerUpdateMovieRecordV1Data, MoviesControllerUpdateMovieRecordV1Responses, PeopleControllerAddBookmarkV1Data, PeopleControllerAddBookmarkV1Responses, PeopleControllerEnrichFromTmdbV1Data, PeopleControllerEnrichFromTmdbV1Errors, PeopleControllerEnrichFromTmdbV1Responses, PeopleControllerFindBookmarkedPeopleV1Data, PeopleControllerFindBookmarkedPeopleV1Responses, PeopleControllerFindByIdV1Data, PeopleControllerFindByIdV1Errors, PeopleControllerFindByIdV1Responses, PeopleControllerGetBookmarkStatusV1Data, PeopleControllerGetBookmarkStatusV1Responses, PeopleControllerRemoveBookmarkV1Data, PeopleControllerRemoveBookmarkV1Responses, TmdbControllerGetMovieDetailV1Data, TmdbControllerGetMovieDetailV1Responses, TmdbControllerGetMovieGenresV1Data, TmdbControllerGetMovieGenresV1Responses, TmdbControllerGetMovieVideosV1Data, TmdbControllerGetMovieVideosV1Responses, TmdbControllerGetOfficialTrailerV1Data, TmdbControllerGetOfficialTrailerV1Responses, TmdbControllerGetPersonDetailV1Data, TmdbControllerGetPersonDetailV1Responses, TmdbControllerGetPopularMoviesV1Data, TmdbControllerGetPopularMoviesV1Responses, TmdbControllerGetUpcomingMoviesV1Data, TmdbControllerGetUpcomingMoviesV1Responses, TmdbControllerSearchMoviesV1Data, TmdbControllerSearchMoviesV1Responses, TmdbControllerSearchPeopleV1Data, TmdbControllerSearchPeopleV1Responses } from './types.gen';
+import type { AuthControllerAppleCallbackV1Data, AuthControllerAppleCallbackV1Responses, AuthControllerAppleLoginV1Data, AuthControllerAppleLoginV1Responses, AuthControllerCheckEmailV1Data, AuthControllerCheckEmailV1Responses, AuthControllerCheckNicknameV1Data, AuthControllerCheckNicknameV1Responses, AuthControllerDeleteAccountV1Data, AuthControllerDeleteAccountV1Responses, AuthControllerGetMeV1Data, AuthControllerGetMeV1Responses, AuthControllerLoginV1Data, AuthControllerLoginV1Errors, AuthControllerLoginV1Responses, AuthControllerLogoutV1Data, AuthControllerLogoutV1Responses, AuthControllerRegisterV1Data, AuthControllerRegisterV1Errors, AuthControllerRegisterV1Responses, AuthControllerRegisterWithOauthV1Data, AuthControllerRegisterWithOauthV1Responses, AuthControllerRequestPasswordResetV1Data, AuthControllerRequestPasswordResetV1Responses, AuthControllerResetPasswordV1Data, AuthControllerResetPasswordV1Responses, AuthControllerUpdateProfileVisibilityV1Data, AuthControllerUpdateProfileVisibilityV1Responses, AuthControllerVerifyEmailV1Data, AuthControllerVerifyEmailV1Errors, AuthControllerVerifyEmailV1Responses, HealthControllerCheckV1Data, HealthControllerCheckV1Responses, KakaoControllerSearchAddressV1Data, KakaoControllerSearchAddressV1Responses, KakaoControllerSearchPlacesV1Data, KakaoControllerSearchPlacesV1Responses, KmdbControllerSearchMoviesV1Data, KmdbControllerSearchMoviesV1Responses, KobisControllerGetDailyBoxOfficeV1Data, KobisControllerGetDailyBoxOfficeV1Responses, KobisControllerGetMovieInfoV1Data, KobisControllerGetMovieInfoV1Errors, KobisControllerGetMovieInfoV1Responses, KobisControllerSearchMoviesV1Data, KobisControllerSearchMoviesV1Errors, KobisControllerSearchMoviesV1Responses, MapControllerSaveVenueV1Data, MapControllerSaveVenueV1Responses, MapControllerSearchPlacesV1Data, MapControllerSearchPlacesV1Responses, MovieCatalogSyncControllerAuditProviderCollisionsV1Data, MovieCatalogSyncControllerAuditProviderCollisionsV1Responses, MovieCatalogSyncControllerReconcileReleasesV1Data, MovieCatalogSyncControllerReconcileReleasesV1Responses, MovieCatalogSyncControllerSplitProviderCollisionsV1Data, MovieCatalogSyncControllerSplitProviderCollisionsV1Responses, MovieCatalogSyncControllerSyncDailyBoxOfficeV1Data, MovieCatalogSyncControllerSyncDailyBoxOfficeV1Responses, MovieCatalogSyncControllerSyncMoviesFromKobisV1Data, MovieCatalogSyncControllerSyncMoviesFromKobisV1Responses, MovieCatalogSyncControllerSyncPopularMoviesFromTmdbV1Data, MovieCatalogSyncControllerSyncPopularMoviesFromTmdbV1Responses, MovieCatalogSyncControllerSyncReleasedMoviesV1Data, MovieCatalogSyncControllerSyncReleasedMoviesV1Responses, MovieCatalogSyncControllerSyncUpcomingMoviesFromTmdbV1Data, MovieCatalogSyncControllerSyncUpcomingMoviesFromTmdbV1Responses, MovieCatalogSyncControllerSyncUpcomingMoviesV1Data, MovieCatalogSyncControllerSyncUpcomingMoviesV1Responses, MovieImportControllerEnrichFromKmdbAutomaticallyV1Data, MovieImportControllerEnrichFromKmdbAutomaticallyV1Responses, MovieImportControllerEnrichFromKmdbV1Data, MovieImportControllerEnrichFromKmdbV1Responses, MovieImportControllerImportFromKobisV1Data, MovieImportControllerImportFromKobisV1Errors, MovieImportControllerImportFromKobisV1Responses, MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Data, MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Errors, MovieImportControllerImportFromTmdbAndEnrichFromKmdbV1Responses, MovieImportControllerImportFromTmdbV1Data, MovieImportControllerImportFromTmdbV1Responses, MovieImportControllerSyncFromTmdbV1Data, MovieImportControllerSyncFromTmdbV1Responses, MovieManagementControllerGetDuplicateMovieCandidatesV1Data, MovieManagementControllerGetDuplicateMovieCandidatesV1Responses, MovieManagementControllerGetModerationMoviesV1Data, MovieManagementControllerGetModerationMoviesV1Responses, MovieManagementControllerSplitProviderCollisionV1Data, MovieManagementControllerSplitProviderCollisionV1Responses, MovieManagementControllerUpdateVisibilityV1Data, MovieManagementControllerUpdateVisibilityV1Responses, MoviesControllerDeleteMovieRecordV1Data, MoviesControllerDeleteMovieRecordV1Responses, MoviesControllerFindByIdV1Data, MoviesControllerFindByIdV1Errors, MoviesControllerFindByIdV1Responses, MoviesControllerGetMovieNotificationV1Data, MoviesControllerGetMovieNotificationV1Responses, MoviesControllerGetMovieRankingsV1Data, MoviesControllerGetMovieRankingsV1Responses, MoviesControllerGetMovieRecordV1Data, MoviesControllerGetMovieRecordV1Responses, MoviesControllerGetMyMovieCalendarV1Data, MoviesControllerGetMyMovieCalendarV1Responses, MoviesControllerGetMyMovieNotificationsV1Data, MoviesControllerGetMyMovieNotificationsV1Responses, MoviesControllerGetMyMoviesV1Data, MoviesControllerGetMyMoviesV1Responses, MoviesControllerGetPopularMoviesV1Data, MoviesControllerGetPopularMoviesV1Responses, MoviesControllerGetReleasedMoviesV1Data, MoviesControllerGetReleasedMoviesV1Responses, MoviesControllerGetSitemapMoviesV1Data, MoviesControllerGetSitemapMoviesV1Responses, MoviesControllerGetUpcomingMoviesV1Data, MoviesControllerGetUpcomingMoviesV1Responses, MoviesControllerSearchV1Data, MoviesControllerSearchV1Errors, MoviesControllerSearchV1Responses, MoviesControllerSubscribeMovieNotificationV1Data, MoviesControllerSubscribeMovieNotificationV1Responses, MoviesControllerUnsubscribeMovieNotificationV1Data, MoviesControllerUnsubscribeMovieNotificationV1Responses, MoviesControllerUpdateMovieRecordV1Data, MoviesControllerUpdateMovieRecordV1Responses, PeopleControllerAddBookmarkV1Data, PeopleControllerAddBookmarkV1Responses, PeopleControllerEnrichFromTmdbV1Data, PeopleControllerEnrichFromTmdbV1Errors, PeopleControllerEnrichFromTmdbV1Responses, PeopleControllerFindBookmarkedPeopleV1Data, PeopleControllerFindBookmarkedPeopleV1Responses, PeopleControllerFindByIdV1Data, PeopleControllerFindByIdV1Errors, PeopleControllerFindByIdV1Responses, PeopleControllerGetBookmarkStatusV1Data, PeopleControllerGetBookmarkStatusV1Responses, PeopleControllerRemoveBookmarkV1Data, PeopleControllerRemoveBookmarkV1Responses, PostcardsControllerAddBookmarkV1Data, PostcardsControllerAddBookmarkV1Responses, PostcardsControllerAddReactionV1Data, PostcardsControllerAddReactionV1Responses, PostcardsControllerCreateCommentV1Data, PostcardsControllerCreateCommentV1Responses, PostcardsControllerCreateV1Data, PostcardsControllerCreateV1Responses, PostcardsControllerFindByIdV1Data, PostcardsControllerFindByIdV1Errors, PostcardsControllerFindByIdV1Responses, PostcardsControllerFindCommentsV1Data, PostcardsControllerFindCommentsV1Responses, PostcardsControllerFindMineV1Data, PostcardsControllerFindMineV1Responses, PostcardsControllerFindNotificationsV1Data, PostcardsControllerFindNotificationsV1Responses, PostcardsControllerFindPublicFeedV1Data, PostcardsControllerFindPublicFeedV1Responses, PostcardsControllerMarkNotificationAsReadV1Data, PostcardsControllerMarkNotificationAsReadV1Responses, PostcardsControllerPublishV1Data, PostcardsControllerPublishV1Responses, PostcardsControllerRemoveBookmarkV1Data, PostcardsControllerRemoveBookmarkV1Responses, PostcardsControllerRemoveReactionV1Data, PostcardsControllerRemoveReactionV1Responses, PostcardsControllerRemoveV1Data, PostcardsControllerRemoveV1Responses, PostcardsControllerReportV1Data, PostcardsControllerReportV1Responses, PostcardsControllerShareV1Data, PostcardsControllerShareV1Responses, PostcardsControllerUpdateV1Data, PostcardsControllerUpdateV1Responses, TmdbControllerGetMovieDetailV1Data, TmdbControllerGetMovieDetailV1Responses, TmdbControllerGetMovieGenresV1Data, TmdbControllerGetMovieGenresV1Responses, TmdbControllerGetMovieVideosV1Data, TmdbControllerGetMovieVideosV1Responses, TmdbControllerGetOfficialTrailerV1Data, TmdbControllerGetOfficialTrailerV1Responses, TmdbControllerGetPersonDetailV1Data, TmdbControllerGetPersonDetailV1Responses, TmdbControllerGetPopularMoviesV1Data, TmdbControllerGetPopularMoviesV1Responses, TmdbControllerGetUpcomingMoviesV1Data, TmdbControllerGetUpcomingMoviesV1Responses, TmdbControllerSearchMoviesV1Data, TmdbControllerSearchMoviesV1Responses, TmdbControllerSearchPeopleV1Data, TmdbControllerSearchPeopleV1Responses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -80,6 +80,11 @@ export const moviesControllerGetMyMovieCalendarV1 = <ThrowOnError extends boolea
  * 찜한 영화·본 영화·평점이 있는 영화 목록 조회
  */
 export const moviesControllerGetMyMoviesV1 = <ThrowOnError extends boolean = false>(options?: Options<MoviesControllerGetMyMoviesV1Data, ThrowOnError>): RequestResult<MoviesControllerGetMyMoviesV1Responses, unknown, ThrowOnError> => (options?.client ?? client).get<MoviesControllerGetMyMoviesV1Responses, unknown, ThrowOnError>({ url: '/v1/movies/my', ...options });
+
+/**
+ * 내 영화 개봉 알림 목록 조회
+ */
+export const moviesControllerGetMyMovieNotificationsV1 = <ThrowOnError extends boolean = false>(options?: Options<MoviesControllerGetMyMovieNotificationsV1Data, ThrowOnError>): RequestResult<MoviesControllerGetMyMovieNotificationsV1Responses, unknown, ThrowOnError> => (options?.client ?? client).get<MoviesControllerGetMyMovieNotificationsV1Responses, unknown, ThrowOnError>({ url: '/v1/movies/notifications', ...options });
 
 /**
  * 사용자 영화 기록 삭제
@@ -373,6 +378,18 @@ export const authControllerDeleteAccountV1 = <ThrowOnError extends boolean = fal
 
 export const authControllerGetMeV1 = <ThrowOnError extends boolean = false>(options?: Options<AuthControllerGetMeV1Data, ThrowOnError>): RequestResult<AuthControllerGetMeV1Responses, unknown, ThrowOnError> => (options?.client ?? client).get<AuthControllerGetMeV1Responses, unknown, ThrowOnError>({ url: '/v1/auth/me', ...options });
 
+/**
+ * 프로필 공개 범위 변경
+ */
+export const authControllerUpdateProfileVisibilityV1 = <ThrowOnError extends boolean = false>(options: Options<AuthControllerUpdateProfileVisibilityV1Data, ThrowOnError>): RequestResult<AuthControllerUpdateProfileVisibilityV1Responses, unknown, ThrowOnError> => (options.client ?? client).patch<AuthControllerUpdateProfileVisibilityV1Responses, unknown, ThrowOnError>({
+    url: '/v1/auth/me/profile-visibility',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
 export const authControllerCheckNicknameV1 = <ThrowOnError extends boolean = false>(options: Options<AuthControllerCheckNicknameV1Data, ThrowOnError>): RequestResult<AuthControllerCheckNicknameV1Responses, unknown, ThrowOnError> => (options.client ?? client).get<AuthControllerCheckNicknameV1Responses, unknown, ThrowOnError>({ url: '/v1/auth/check-nickname', ...options });
 
 export const authControllerCheckEmailV1 = <ThrowOnError extends boolean = false>(options: Options<AuthControllerCheckEmailV1Data, ThrowOnError>): RequestResult<AuthControllerCheckEmailV1Responses, unknown, ThrowOnError> => (options.client ?? client).get<AuthControllerCheckEmailV1Responses, unknown, ThrowOnError>({ url: '/v1/auth/check-email', ...options });
@@ -487,6 +504,133 @@ export const mapControllerSearchPlacesV1 = <ThrowOnError extends boolean = false
  */
 export const mapControllerSaveVenueV1 = <ThrowOnError extends boolean = false>(options: Options<MapControllerSaveVenueV1Data, ThrowOnError>): RequestResult<MapControllerSaveVenueV1Responses, unknown, ThrowOnError> => (options.client ?? client).post<MapControllerSaveVenueV1Responses, unknown, ThrowOnError>({
     url: '/v1/map/venues',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 공개 엽서 피드 조회
+ */
+export const postcardsControllerFindPublicFeedV1 = <ThrowOnError extends boolean = false>(options?: Options<PostcardsControllerFindPublicFeedV1Data, ThrowOnError>): RequestResult<PostcardsControllerFindPublicFeedV1Responses, unknown, ThrowOnError> => (options?.client ?? client).get<PostcardsControllerFindPublicFeedV1Responses, unknown, ThrowOnError>({ url: '/v1/postcards/feed', ...options });
+
+/**
+ * 내 엽서 알림 목록 조회
+ */
+export const postcardsControllerFindNotificationsV1 = <ThrowOnError extends boolean = false>(options?: Options<PostcardsControllerFindNotificationsV1Data, ThrowOnError>): RequestResult<PostcardsControllerFindNotificationsV1Responses, unknown, ThrowOnError> => (options?.client ?? client).get<PostcardsControllerFindNotificationsV1Responses, unknown, ThrowOnError>({ url: '/v1/postcards/notifications', ...options });
+
+/**
+ * 엽서 알림 읽음 처리
+ */
+export const postcardsControllerMarkNotificationAsReadV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerMarkNotificationAsReadV1Data, ThrowOnError>): RequestResult<PostcardsControllerMarkNotificationAsReadV1Responses, unknown, ThrowOnError> => (options.client ?? client).patch<PostcardsControllerMarkNotificationAsReadV1Responses, unknown, ThrowOnError>({ url: '/v1/postcards/notifications/{notificationId}/read', ...options });
+
+/**
+ * 내 엽서 목록 조회
+ */
+export const postcardsControllerFindMineV1 = <ThrowOnError extends boolean = false>(options?: Options<PostcardsControllerFindMineV1Data, ThrowOnError>): RequestResult<PostcardsControllerFindMineV1Responses, unknown, ThrowOnError> => (options?.client ?? client).get<PostcardsControllerFindMineV1Responses, unknown, ThrowOnError>({ url: '/v1/postcards/mine', ...options });
+
+/**
+ * 엽서 삭제
+ */
+export const postcardsControllerRemoveV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerRemoveV1Data, ThrowOnError>): RequestResult<PostcardsControllerRemoveV1Responses, unknown, ThrowOnError> => (options.client ?? client).delete<PostcardsControllerRemoveV1Responses, unknown, ThrowOnError>({ url: '/v1/postcards/{postcardId}', ...options });
+
+/**
+ * 엽서 상세 조회
+ */
+export const postcardsControllerFindByIdV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerFindByIdV1Data, ThrowOnError>): RequestResult<PostcardsControllerFindByIdV1Responses, PostcardsControllerFindByIdV1Errors, ThrowOnError> => (options.client ?? client).get<PostcardsControllerFindByIdV1Responses, PostcardsControllerFindByIdV1Errors, ThrowOnError>({ url: '/v1/postcards/{postcardId}', ...options });
+
+/**
+ * 엽서 수정
+ */
+export const postcardsControllerUpdateV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerUpdateV1Data, ThrowOnError>): RequestResult<PostcardsControllerUpdateV1Responses, unknown, ThrowOnError> => (options.client ?? client).patch<PostcardsControllerUpdateV1Responses, unknown, ThrowOnError>({
+    url: '/v1/postcards/{postcardId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 엽서 발행
+ */
+export const postcardsControllerPublishV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerPublishV1Data, ThrowOnError>): RequestResult<PostcardsControllerPublishV1Responses, unknown, ThrowOnError> => (options.client ?? client).patch<PostcardsControllerPublishV1Responses, unknown, ThrowOnError>({ url: '/v1/postcards/{postcardId}/publish', ...options });
+
+/**
+ * 엽서 작성
+ */
+export const postcardsControllerCreateV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerCreateV1Data, ThrowOnError>): RequestResult<PostcardsControllerCreateV1Responses, unknown, ThrowOnError> => (options.client ?? client).post<PostcardsControllerCreateV1Responses, unknown, ThrowOnError>({
+    url: '/v1/postcards',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 엽서 댓글 목록 조회
+ */
+export const postcardsControllerFindCommentsV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerFindCommentsV1Data, ThrowOnError>): RequestResult<PostcardsControllerFindCommentsV1Responses, unknown, ThrowOnError> => (options.client ?? client).get<PostcardsControllerFindCommentsV1Responses, unknown, ThrowOnError>({ url: '/v1/postcards/{postcardId}/comments', ...options });
+
+/**
+ * 엽서 댓글 작성
+ */
+export const postcardsControllerCreateCommentV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerCreateCommentV1Data, ThrowOnError>): RequestResult<PostcardsControllerCreateCommentV1Responses, unknown, ThrowOnError> => (options.client ?? client).post<PostcardsControllerCreateCommentV1Responses, unknown, ThrowOnError>({
+    url: '/v1/postcards/{postcardId}/comments',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 엽서 이모지 반응 추가
+ */
+export const postcardsControllerAddReactionV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerAddReactionV1Data, ThrowOnError>): RequestResult<PostcardsControllerAddReactionV1Responses, unknown, ThrowOnError> => (options.client ?? client).post<PostcardsControllerAddReactionV1Responses, unknown, ThrowOnError>({
+    url: '/v1/postcards/{postcardId}/reactions',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 엽서 이모지 반응 삭제
+ */
+export const postcardsControllerRemoveReactionV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerRemoveReactionV1Data, ThrowOnError>): RequestResult<PostcardsControllerRemoveReactionV1Responses, unknown, ThrowOnError> => (options.client ?? client).delete<PostcardsControllerRemoveReactionV1Responses, unknown, ThrowOnError>({ url: '/v1/postcards/{postcardId}/reactions/{emoji}', ...options });
+
+/**
+ * 엽서 북마크 삭제
+ */
+export const postcardsControllerRemoveBookmarkV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerRemoveBookmarkV1Data, ThrowOnError>): RequestResult<PostcardsControllerRemoveBookmarkV1Responses, unknown, ThrowOnError> => (options.client ?? client).delete<PostcardsControllerRemoveBookmarkV1Responses, unknown, ThrowOnError>({ url: '/v1/postcards/{postcardId}/bookmark', ...options });
+
+/**
+ * 엽서 북마크 추가
+ */
+export const postcardsControllerAddBookmarkV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerAddBookmarkV1Data, ThrowOnError>): RequestResult<PostcardsControllerAddBookmarkV1Responses, unknown, ThrowOnError> => (options.client ?? client).post<PostcardsControllerAddBookmarkV1Responses, unknown, ThrowOnError>({ url: '/v1/postcards/{postcardId}/bookmark', ...options });
+
+/**
+ * 엽서 신고
+ */
+export const postcardsControllerReportV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerReportV1Data, ThrowOnError>): RequestResult<PostcardsControllerReportV1Responses, unknown, ThrowOnError> => (options.client ?? client).post<PostcardsControllerReportV1Responses, unknown, ThrowOnError>({
+    url: '/v1/postcards/{postcardId}/reports',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * 엽서 공유 기록
+ */
+export const postcardsControllerShareV1 = <ThrowOnError extends boolean = false>(options: Options<PostcardsControllerShareV1Data, ThrowOnError>): RequestResult<PostcardsControllerShareV1Responses, unknown, ThrowOnError> => (options.client ?? client).post<PostcardsControllerShareV1Responses, unknown, ThrowOnError>({
+    url: '/v1/postcards/{postcardId}/share',
     ...options,
     headers: {
         'Content-Type': 'application/json',

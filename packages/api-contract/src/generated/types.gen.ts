@@ -1185,6 +1185,13 @@ export type KmdbMovieSearchResponseDto = {
     results: Array<KmdbMovieSearchItemResponseDto>;
 };
 
+export type UpdateProfileVisibilityRequestDto = {
+    /**
+     * 프로필 공개 범위
+     */
+    profileVisibility: 'PUBLIC' | 'PRIVATE';
+};
+
 export type RegisterTermsDto = {
     /**
      * 서비스 이용약관 동의
@@ -1478,6 +1485,336 @@ export type SaveVenueRequestDto = {
     y: string;
 };
 
+export type PostcardMovieSummaryDto = {
+    /**
+     * 영화 ID
+     */
+    id: string;
+    /**
+     * 대표 영화 제목
+     */
+    title: string;
+    /**
+     * 대표 포스터 URL
+     */
+    posterUrl: string | null;
+};
+
+export type PostcardMediaResponseDto = {
+    /**
+     * 엽서 이미지 ID
+     */
+    id: string;
+    /**
+     * 엽서 미디어 유형
+     */
+    type: string;
+    url: string | null;
+    storageKey: string | null;
+    altText: string | null;
+    /**
+     * 이미지 정렬 순서
+     */
+    sortOrder: number;
+};
+
+export type PostcardResponseDto = {
+    /**
+     * 엽서 ID
+     */
+    id: string;
+    /**
+     * 영화 ID
+     */
+    movieId: string;
+    /**
+     * 피드 카드에 표시할 영화 요약 정보
+     */
+    movie: PostcardMovieSummaryDto | null;
+    /**
+     * 엽서에 직접 첨부한 이미지 목록
+     */
+    media: Array<PostcardMediaResponseDto>;
+    /**
+     * 엽서 유형
+     */
+    type: 'REVIEW' | 'QUOTE' | 'SCENE' | 'NOTE';
+    /**
+     * 엽서 생성 방식
+     */
+    source: 'USER' | 'AI';
+    /**
+     * QUOTE 원문의 근거
+     */
+    quoteSource: 'USER' | 'OPENSUBTITLES' | null;
+    /**
+     * 엽서 내용
+     */
+    content: string;
+    /**
+     * 엽서 배경 스타일
+     */
+    backgroundStyle: string | null;
+    /**
+     * Cloud Storage 배경 이미지 식별자
+     */
+    backgroundImageKey: string | null;
+    /**
+     * 이모지 반응 수
+     */
+    reactionCount: number;
+    /**
+     * 댓글 수
+     */
+    commentCount: number;
+    /**
+     * 공유 수
+     */
+    shareCount: number;
+    /**
+     * 엽서 공개 상태
+     */
+    visibility: 'PUBLIC' | 'PRIVATE' | 'UNLISTED';
+    /**
+     * 엽서 처리 상태
+     */
+    status: 'DRAFT' | 'PUBLISHED' | 'HIDDEN' | 'DELETED';
+    /**
+     * 생성 시각
+     */
+    createdAt: string;
+    /**
+     * 수정 시각
+     */
+    updatedAt: string;
+};
+
+export type PostcardFeedResponseDto = {
+    /**
+     * 공개 엽서 목록
+     */
+    items: Array<PostcardResponseDto>;
+    /**
+     * 다음 페이지 조회용 커서
+     */
+    nextCursor: string | null;
+    /**
+     * 다음 페이지 존재 여부
+     */
+    hasNextPage: boolean;
+};
+
+export type PostcardNotificationResponseDto = {
+    /**
+     * 알림 ID
+     */
+    id: string;
+    /**
+     * 알림 유형
+     */
+    type: 'COMMENT' | 'REPLY' | 'REACTION' | 'MENTION';
+    /**
+     * 관련 엽서 ID
+     */
+    postcardId: string | null;
+    /**
+     * 관련 댓글 ID
+     */
+    commentId: string | null;
+    /**
+     * 반응에 사용된 이모지
+     */
+    reactionEmoji: string | null;
+    /**
+     * 알림을 발생시킨 사용자
+     */
+    actor: {
+        [key: string]: unknown;
+    } | null;
+    /**
+     * 알림을 읽은 시각. 읽지 않았으면 null
+     */
+    readAt: string | null;
+    /**
+     * 알림 생성 시각
+     */
+    createdAt: string;
+};
+
+export type PostcardNotificationFeedResponseDto = {
+    items: Array<PostcardNotificationResponseDto>;
+    nextCursor: string | null;
+    hasNextPage: boolean;
+};
+
+export type PostcardMetadataDto = {
+    type: 'REVIEW' | 'QUOTE' | 'SCENE' | 'NOTE';
+    /**
+     * 감상 제목
+     */
+    title?: string | null;
+    /**
+     * 인용·장면 설명
+     */
+    sceneDescription?: string | null;
+    /**
+     * 장면 시간대
+     */
+    sceneTime?: string | null;
+    /**
+     * AI가 제안한 문장인지 여부
+     */
+    isAiSuggested?: boolean | null;
+    venueType?: 'HOME' | 'THEATER' | 'OTHER' | null;
+    venueName?: string | null;
+    companionType?: 'ALONE' | 'FRIEND' | 'FAMILY' | 'PARTNER' | 'OTHER' | null;
+    companionName?: string | null;
+    watchedAt?: string | null;
+};
+
+export type PostcardStyleDto = {
+    backgroundType: 'POSTER' | 'SOLID' | 'GRADIENT' | 'IMAGE';
+    backgroundColor?: string | null;
+    textColor?: string | null;
+    overlayOpacity?: number;
+    textAlign?: 'LEFT' | 'CENTER' | 'RIGHT';
+};
+
+export type PostcardMediaDto = {
+    type: 'IMAGE';
+    url?: string | null;
+    storageKey?: string | null;
+    altText?: string | null;
+    sortOrder?: number;
+};
+
+export type UpdatePostcardRequestDto = {
+    /**
+     * QUOTE 원문의 근거
+     */
+    quoteSource?: 'USER' | 'OPENSUBTITLES' | null;
+    /**
+     * 엽서 본문
+     */
+    content?: string;
+    metadata?: PostcardMetadataDto | null;
+    style?: PostcardStyleDto | null;
+    media?: Array<PostcardMediaDto>;
+    /**
+     * 기존 배경 preset 호환용
+     */
+    backgroundStyle?: string | null;
+    /**
+     * Cloud Storage 배경 이미지 식별자
+     */
+    backgroundImageKey?: string | null;
+    /**
+     * 엽서 공개 범위
+     */
+    visibility?: 'PUBLIC' | 'PRIVATE' | 'UNLISTED';
+};
+
+export type CreatePostcardRequestDto = {
+    /**
+     * 엽서를 작성할 영화 ID
+     */
+    movieId: string;
+    type: 'REVIEW' | 'QUOTE' | 'SCENE' | 'NOTE';
+    /**
+     * QUOTE 원문의 근거
+     */
+    quoteSource?: 'USER' | 'OPENSUBTITLES' | null;
+    /**
+     * 엽서 내용
+     */
+    content: string;
+    /**
+     * 기존 배경 preset 호환용
+     */
+    backgroundStyle?: string | null;
+    metadata?: PostcardMetadataDto | null;
+    style?: PostcardStyleDto | null;
+    media?: Array<PostcardMediaDto>;
+    /**
+     * Cloud Storage 배경 이미지 식별자
+     */
+    backgroundImageKey?: string | null;
+    visibility?: 'PUBLIC' | 'PRIVATE' | 'UNLISTED';
+};
+
+export type CreatePostcardCommentRequestDto = {
+    /**
+     * 댓글 내용
+     */
+    content: string;
+    /**
+     * 대댓글 대상 댓글 ID
+     */
+    parentId?: string;
+};
+
+export type PostcardCommentResponseDto = {
+    /**
+     * 댓글 ID
+     */
+    id: string;
+    /**
+     * 엽서 ID
+     */
+    postcardId: string;
+    /**
+     * 대댓글 대상 댓글 ID
+     */
+    parentId: string | null;
+    /**
+     * 댓글 내용
+     */
+    content: string;
+    /**
+     * 댓글 상태
+     */
+    status: 'PUBLISHED' | 'HIDDEN' | 'DELETED';
+    /**
+     * 댓글 이모지 반응 수
+     */
+    reactionCount: number;
+    /**
+     * 대댓글 수
+     */
+    replyCount: number;
+    /**
+     * 작성 시각
+     */
+    createdAt: string;
+    /**
+     * 수정 시각
+     */
+    updatedAt: string;
+};
+
+export type CreatePostcardReactionRequestDto = {
+    /**
+     * 이모지
+     */
+    emoji: string;
+};
+
+export type CreatePostcardReportRequestDto = {
+    /**
+     * 신고 사유
+     */
+    reason: string;
+};
+
+export type CreatePostcardShareRequestDto = {
+    /**
+     * 공유 채널
+     */
+    channel?: {
+        [key: string]: unknown;
+    } | null;
+};
+
 export type RegisterRequestDtoWritable = {
     /**
      * 로그인에 사용할 이메일
@@ -1706,6 +2043,17 @@ export type MoviesControllerGetMyMoviesV1Data = {
 };
 
 export type MoviesControllerGetMyMoviesV1Responses = {
+    200: unknown;
+};
+
+export type MoviesControllerGetMyMovieNotificationsV1Data = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/v1/movies/notifications';
+};
+
+export type MoviesControllerGetMyMovieNotificationsV1Responses = {
     200: unknown;
 };
 
@@ -2596,6 +2944,20 @@ export type AuthControllerGetMeV1Responses = {
     200: unknown;
 };
 
+export type AuthControllerUpdateProfileVisibilityV1Data = {
+    body: UpdateProfileVisibilityRequestDto;
+    path?: never;
+    query?: never;
+    url: '/v1/auth/me/profile-visibility';
+};
+
+export type AuthControllerUpdateProfileVisibilityV1Responses = {
+    /**
+     * 프로필 공개 범위 변경 성공
+     */
+    200: unknown;
+};
+
 export type AuthControllerCheckNicknameV1Data = {
     body?: never;
     path?: never;
@@ -2858,5 +3220,310 @@ export type MapControllerSaveVenueV1Responses = {
     /**
      * 관람 장소 저장 결과
      */
+    201: unknown;
+};
+
+export type PostcardsControllerFindPublicFeedV1Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * 마지막으로 조회한 엽서 ID
+         */
+        cursor?: string;
+        /**
+         * 페이지당 엽서 개수
+         */
+        pageSize?: number;
+    };
+    url: '/v1/postcards/feed';
+};
+
+export type PostcardsControllerFindPublicFeedV1Responses = {
+    /**
+     * 공개 엽서 피드 조회 성공
+     */
+    200: PostcardFeedResponseDto;
+};
+
+export type PostcardsControllerFindPublicFeedV1Response = PostcardsControllerFindPublicFeedV1Responses[keyof PostcardsControllerFindPublicFeedV1Responses];
+
+export type PostcardsControllerFindNotificationsV1Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * 마지막으로 조회한 알림 ID
+         */
+        cursor?: string;
+        /**
+         * 페이지당 알림 개수
+         */
+        pageSize?: number;
+        /**
+         * 읽지 않은 알림만 조회
+         */
+        unreadOnly?: boolean;
+    };
+    url: '/v1/postcards/notifications';
+};
+
+export type PostcardsControllerFindNotificationsV1Responses = {
+    /**
+     * 엽서 알림 목록 조회 성공
+     */
+    200: PostcardNotificationFeedResponseDto;
+};
+
+export type PostcardsControllerFindNotificationsV1Response = PostcardsControllerFindNotificationsV1Responses[keyof PostcardsControllerFindNotificationsV1Responses];
+
+export type PostcardsControllerMarkNotificationAsReadV1Data = {
+    body?: never;
+    path: {
+        notificationId: string;
+    };
+    query?: never;
+    url: '/v1/postcards/notifications/{notificationId}/read';
+};
+
+export type PostcardsControllerMarkNotificationAsReadV1Responses = {
+    /**
+     * 알림 읽음 처리 성공
+     */
+    200: unknown;
+};
+
+export type PostcardsControllerFindMineV1Data = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * 마지막으로 조회한 엽서 ID
+         */
+        cursor?: string;
+        /**
+         * 페이지당 엽서 개수
+         */
+        pageSize?: number;
+    };
+    url: '/v1/postcards/mine';
+};
+
+export type PostcardsControllerFindMineV1Responses = {
+    /**
+     * 내 엽서 목록 조회 성공
+     */
+    200: PostcardFeedResponseDto;
+};
+
+export type PostcardsControllerFindMineV1Response = PostcardsControllerFindMineV1Responses[keyof PostcardsControllerFindMineV1Responses];
+
+export type PostcardsControllerRemoveV1Data = {
+    body?: never;
+    path: {
+        postcardId: string;
+    };
+    query?: never;
+    url: '/v1/postcards/{postcardId}';
+};
+
+export type PostcardsControllerRemoveV1Responses = {
+    /**
+     * 엽서 삭제 성공
+     */
+    200: unknown;
+};
+
+export type PostcardsControllerFindByIdV1Data = {
+    body?: never;
+    path: {
+        postcardId: string;
+    };
+    query?: never;
+    url: '/v1/postcards/{postcardId}';
+};
+
+export type PostcardsControllerFindByIdV1Errors = {
+    /**
+     * 엽서를 찾을 수 없음
+     */
+    404: unknown;
+};
+
+export type PostcardsControllerFindByIdV1Responses = {
+    /**
+     * 엽서 상세 조회 성공
+     */
+    200: PostcardResponseDto;
+};
+
+export type PostcardsControllerFindByIdV1Response = PostcardsControllerFindByIdV1Responses[keyof PostcardsControllerFindByIdV1Responses];
+
+export type PostcardsControllerUpdateV1Data = {
+    body: UpdatePostcardRequestDto;
+    path: {
+        postcardId: string;
+    };
+    query?: never;
+    url: '/v1/postcards/{postcardId}';
+};
+
+export type PostcardsControllerUpdateV1Responses = {
+    /**
+     * 엽서 수정 성공
+     */
+    200: PostcardResponseDto;
+};
+
+export type PostcardsControllerUpdateV1Response = PostcardsControllerUpdateV1Responses[keyof PostcardsControllerUpdateV1Responses];
+
+export type PostcardsControllerPublishV1Data = {
+    body?: never;
+    path: {
+        postcardId: string;
+    };
+    query?: never;
+    url: '/v1/postcards/{postcardId}/publish';
+};
+
+export type PostcardsControllerPublishV1Responses = {
+    /**
+     * 엽서 발행 성공
+     */
+    200: PostcardResponseDto;
+};
+
+export type PostcardsControllerPublishV1Response = PostcardsControllerPublishV1Responses[keyof PostcardsControllerPublishV1Responses];
+
+export type PostcardsControllerCreateV1Data = {
+    body: CreatePostcardRequestDto;
+    path?: never;
+    query?: never;
+    url: '/v1/postcards';
+};
+
+export type PostcardsControllerCreateV1Responses = {
+    /**
+     * 엽서 작성 성공
+     */
+    201: unknown;
+};
+
+export type PostcardsControllerFindCommentsV1Data = {
+    body?: never;
+    path: {
+        postcardId: string;
+    };
+    query?: {
+        /**
+         * 마지막으로 조회한 댓글 ID
+         */
+        cursor?: string;
+        /**
+         * 페이지당 댓글 개수
+         */
+        pageSize?: number;
+    };
+    url: '/v1/postcards/{postcardId}/comments';
+};
+
+export type PostcardsControllerFindCommentsV1Responses = {
+    200: unknown;
+};
+
+export type PostcardsControllerCreateCommentV1Data = {
+    body: CreatePostcardCommentRequestDto;
+    path: {
+        postcardId: string;
+    };
+    query?: never;
+    url: '/v1/postcards/{postcardId}/comments';
+};
+
+export type PostcardsControllerCreateCommentV1Responses = {
+    /**
+     * 댓글 작성 성공
+     */
+    201: PostcardCommentResponseDto;
+};
+
+export type PostcardsControllerCreateCommentV1Response = PostcardsControllerCreateCommentV1Responses[keyof PostcardsControllerCreateCommentV1Responses];
+
+export type PostcardsControllerAddReactionV1Data = {
+    body: CreatePostcardReactionRequestDto;
+    path: {
+        postcardId: string;
+    };
+    query?: never;
+    url: '/v1/postcards/{postcardId}/reactions';
+};
+
+export type PostcardsControllerAddReactionV1Responses = {
+    201: unknown;
+};
+
+export type PostcardsControllerRemoveReactionV1Data = {
+    body?: never;
+    path: {
+        postcardId: string;
+        emoji: string;
+    };
+    query?: never;
+    url: '/v1/postcards/{postcardId}/reactions/{emoji}';
+};
+
+export type PostcardsControllerRemoveReactionV1Responses = {
+    200: unknown;
+};
+
+export type PostcardsControllerRemoveBookmarkV1Data = {
+    body?: never;
+    path: {
+        postcardId: string;
+    };
+    query?: never;
+    url: '/v1/postcards/{postcardId}/bookmark';
+};
+
+export type PostcardsControllerRemoveBookmarkV1Responses = {
+    200: unknown;
+};
+
+export type PostcardsControllerAddBookmarkV1Data = {
+    body?: never;
+    path: {
+        postcardId: string;
+    };
+    query?: never;
+    url: '/v1/postcards/{postcardId}/bookmark';
+};
+
+export type PostcardsControllerAddBookmarkV1Responses = {
+    201: unknown;
+};
+
+export type PostcardsControllerReportV1Data = {
+    body: CreatePostcardReportRequestDto;
+    path: {
+        postcardId: string;
+    };
+    query?: never;
+    url: '/v1/postcards/{postcardId}/reports';
+};
+
+export type PostcardsControllerReportV1Responses = {
+    201: unknown;
+};
+
+export type PostcardsControllerShareV1Data = {
+    body: CreatePostcardShareRequestDto;
+    path: {
+        postcardId: string;
+    };
+    query?: never;
+    url: '/v1/postcards/{postcardId}/share';
+};
+
+export type PostcardsControllerShareV1Responses = {
     201: unknown;
 };
