@@ -1,6 +1,19 @@
-import {ApiProperty, ApiPropertyOptional} from "@nestjs/swagger";
-import {IsEnum, IsOptional, IsString, IsUUID, MaxLength} from "class-validator";
-import {PostcardType, PostcardVisibility} from "@prisma/client";
+import { Type } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import {
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  ValidateNested,
+} from "class-validator";
+import { PostcardType, PostcardVisibility } from "@prisma/client";
+
+import { PostcardMediaDto } from "./postcard-media.dto";
+import { PostcardMetadataDto } from "./postcard-metadata.dto";
+import { PostcardStyleDto } from "./postcard-style.dto";
 
 export class CreatePostcardRequestDto {
   @ApiProperty({
@@ -26,22 +39,47 @@ export class CreatePostcardRequestDto {
   content: string;
   
   @ApiPropertyOptional({
-    description: "엽서 배경 스타일",
+    description: "기존 배경 preset 호환용",
     example: "midnight",
     nullable: true,
-    type:String
   })
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  backgroundStyle: string|null;
+  backgroundStyle?: string | null;
+
+  @ApiPropertyOptional({
+    type: () => PostcardMetadataDto,
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PostcardMetadataDto)
+  metadata?: PostcardMetadataDto | null;
+
+  @ApiPropertyOptional({
+    type: () => PostcardStyleDto,
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PostcardStyleDto)
+  style?: PostcardStyleDto | null;
+
+  @ApiPropertyOptional({
+    type: () => [PostcardMediaDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PostcardMediaDto)
+  media?: PostcardMediaDto[];
   
   @ApiPropertyOptional({
     description: "Cloud Storage 배경 이미지 식별자",
     maxLength: 255,
     nullable: true,
     example: "postcards/backgrounds/01.webp",
-    type:String
   })
   @IsOptional()
   @IsString()

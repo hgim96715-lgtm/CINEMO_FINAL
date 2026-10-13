@@ -1,10 +1,22 @@
-import {ApiPropertyOptional} from "@nestjs/swagger";
-import {PostcardVisibility} from "@prisma/client";
-import {IsEnum, IsOptional, IsString, MaxLength} from "class-validator";
+import { Type } from "class-transformer";
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import {
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from "class-validator";
+import { PostcardVisibility } from "@prisma/client";
+
+import { PostcardMediaDto } from "./postcard-media.dto";
+import { PostcardMetadataDto } from "./postcard-metadata.dto";
+import { PostcardStyleDto } from "./postcard-style.dto";
 
 export class UpdatePostcardRequestDto {
   @ApiPropertyOptional({
-    description: "엽서 내용",
+    description: "엽서 본문",
     maxLength: 5000,
   })
   @IsOptional()
@@ -13,22 +25,46 @@ export class UpdatePostcardRequestDto {
   content?: string;
 
   @ApiPropertyOptional({
-    description: "엽서 배경 스타일",
+    type: () => PostcardMetadataDto,
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PostcardMetadataDto)
+  metadata?: PostcardMetadataDto | null;
+
+  @ApiPropertyOptional({
+    type: () => PostcardStyleDto,
+    nullable: true,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PostcardStyleDto)
+  style?: PostcardStyleDto | null;
+
+  @ApiPropertyOptional({
+    type: () => [PostcardMediaDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PostcardMediaDto)
+  media?: PostcardMediaDto[];
+
+  @ApiPropertyOptional({
+    description: "기존 배경 preset 호환용",
     maxLength: 100,
     nullable: true,
-    type:String,
   })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   backgroundStyle?: string | null;
-  
+
   @ApiPropertyOptional({
     description: "Cloud Storage 배경 이미지 식별자",
     maxLength: 255,
     nullable: true,
-    type:String,
-    example: "postcards/backgrounds/01.webp",
   })
   @IsOptional()
   @IsString()
@@ -36,7 +72,7 @@ export class UpdatePostcardRequestDto {
   backgroundImageKey?: string | null;
 
   @ApiPropertyOptional({
-    description: "엽서 공개 상태",
+    description: "엽서 공개 범위",
     enum: PostcardVisibility,
   })
   @IsOptional()

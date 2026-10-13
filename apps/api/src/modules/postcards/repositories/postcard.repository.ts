@@ -1,7 +1,10 @@
-import type {Postcard, PostcardComment, PostcardReport} from "@prisma/client";
 import {
+  Postcard,
+  PostcardComment,
   PostcardCommentStatus,
+  PostcardMediaType,
   PostcardNotificationType,
+  PostcardReport,
   PostcardReportStatus,
   PostcardSource,
   PostcardStatus,
@@ -9,20 +12,32 @@ import {
   PostcardVisibility,
   Prisma,
 } from "@prisma/client";
-import {PrismaService} from "@/prisma/prisma.service";
-import {Injectable} from "@nestjs/common";
+import type { Postcard as DomainPostcard } from "../domain/postcard.types";
+import { PrismaService } from "@/prisma/prisma.service";
+import { Injectable } from "@nestjs/common";
+import { toPostcard } from "../mappers/postcard.mapper";
 
-export interface CreatePostcardRepositoryInput{
-  userId:string;
-  movieId:string;
-  type:PostcardType;
-  source:PostcardSource;
-  content:string;
-  backgroundStyle?:string|null;
-  backgroundImageKey?:string|null;
-  visibility?:PostcardVisibility;
+export type CreatePostcardMediaRepositoryInput = {
+  type: PostcardMediaType;
+  url?: string | null;
+  storageKey?: string | null;
+  altText?: string | null;
+  sortOrder?: number;
+};
+
+export interface CreatePostcardRepositoryInput {
+  userId: string;
+  movieId: string;
+  type: PostcardType;
+  source: PostcardSource;
+  content: string;
+  metadata?: unknown | null;
+  style?: unknown | null;
+  media?: CreatePostcardMediaRepositoryInput[];
+  backgroundStyle?: string | null;
+  backgroundImageKey?: string | null;
+  visibility?: PostcardVisibility;
 }
-
 
 export type CreatePostcardCommentRepositoryInput = {
   postcardId: string;
@@ -35,8 +50,11 @@ export type UpdatePostcardRepositoryInput = {
   postcardId: string;
   userId: string;
   content?: string;
+  metadata?: unknown | null;
+  style?: unknown | null;
+  media?: CreatePostcardMediaRepositoryInput[];
   backgroundStyle?: string | null;
-  backgroundImageKey?:string|null;
+  backgroundImageKey?: string | null;
   visibility?: PostcardVisibility;
 };
 
@@ -64,6 +82,9 @@ export type CreateShareRepositoryInput = {
   channel?: string | null;
 };
 
+const toPrismaJson = (value: unknown): Prisma.InputJsonValue =>
+  value as Prisma.InputJsonValue;
+
 export const PostcardNotificationArgs =
   Prisma.validator<Prisma.PostcardNotificationDefaultArgs>()({
     include: {
@@ -77,57 +98,54 @@ export const PostcardNotificationArgs =
     },
   });
 
-export type PostcardNotificationWithActor = Prisma.PostcardNotificationGetPayload<typeof PostcardNotificationArgs>;
-
-
+export type PostcardNotificationWithActor =
+  Prisma.PostcardNotificationGetPayload<typeof PostcardNotificationArgs>;
 
 @Injectable()
 export class PostcardRepository {
-  constructor (private readonly prisma: PrismaService) {}
-  
+  constructor(private readonly prisma: PrismaService) {}
+
   async findPublicFeed(
     cursor: string | undefined,
     pageSize: number,
-  ): Promise<CursorPage<Postcard>> {
-    const items=await this.prisma.postcard.findMany({
-      where:{
-        visibility:PostcardVisibility.PUBLIC,
+  ): Promise<CursorPage<DomainPostcard>> {
+    const items = await this.prisma.postcard.findMany({
+      where: {
+        visibility: PostcardVisibility.PUBLIC,
         status: PostcardStatus.PUBLISHED,
       },
-      orderBy:[
+      orderBy: [
         {
-          createdAt:'desc'
+          createdAt: "desc",
         },
         {
-          id:'desc'
-        }
+          id: "desc",
+        },
       ],
-      take:pageSize+1,
-      ...(cursor &&{
-        cursor:{id:cursor},
-        skip:1,
+      take: pageSize + 1,
+      ...(cursor && {
+        cursor: { id: cursor },
+        skip: 1,
       }),
     });
-    const hasNextPage=items.length>pageSize;
-    const resultItems=hasNextPage?items.slice(0,pageSize):items;
-    const nextCursor=hasNextPage? resultItems[resultItems.length-1]?.id??null:null
+    const hasNextPage = items.length > pageSize;
+    const resultItems = hasNextPage ? items.slice(0, pageSize) : items;
+    const nextCursor = hasNextPage
+      ? (resultItems[resultItems.length - 1]?.id ?? null)
+      : null;
     return {
-      items:resultItems,
+      items: resultItems.map(toPostcard),
       nextCursor,
-      hasNextPage
-    }
-    
+      hasNextPage,
+    };
   }
-  
-  async findById(
-    id: string,
-    userId?: string,
-  ): Promise<Postcard | null> {
-    return this.prisma.postcard.findFirst({
-      where:{
+
+  async findById(id: string, userId?: string): Promise<DomainPostcard | null> {
+    const record = await this.prisma.postcard.findFirst({
+      where: {
         id,
-        status:{
-          not:PostcardStatus.DELETED
+        status: {
+          not: PostcardStatus.DELETED,
         },
         OR: [
           ...(userId ? [{ userId }] : []),
@@ -136,30 +154,56 @@ export class PostcardRepository {
             status: PostcardStatus.PUBLISHED,
           },
         ],
-      }
-    })
+      },
+    });
+    return record ? toPostcard(record) : null;
   }
-  
+
   async create(
     input: CreatePostcardRepositoryInput,
-  ): Promise<Postcard> {
-    return this.prisma.postcard.create({
-      data:{
+  ): Promise<DomainPostcard> {
+    const record = await this.prisma.postcard.create({
+      data: {
         userId: input.userId,
         movieId: input.movieId,
-        type:input.type,
-        source:input.source,
-        content:input.content,
-        backgroundStyle:input.backgroundStyle??null,
-        backgroundImageKey:input.backgroundImageKey??null,
-        visibility:input.visibility?? PostcardVisibility.PRIVATE,
-      }
-    })
+        type: input.type,
+        source: input.source,
+        content: input.content,
+        metadata:
+          input.metadata === undefined
+            ? undefined
+            : input.metadata === null
+              ? Prisma.JsonNull
+              : toPrismaJson(input.metadata),
+        style:
+          input.style === undefined
+            ? undefined
+            : input.style === null
+              ? Prisma.JsonNull
+              : toPrismaJson(input.style),
+        backgroundStyle: input.backgroundStyle ?? null,
+        backgroundImageKey: input.backgroundImageKey ?? null,
+        visibility: input.visibility ?? PostcardVisibility.PRIVATE,
+        media: input.media?.length
+          ? {
+              create: input.media.map((media) => ({
+                type: media.type,
+                url: media.url ?? null,
+                storageKey: media.storageKey ?? null,
+                altText: media.altText ?? null,
+                sortOrder: media.sortOrder ?? 0,
+              })),
+            }
+          : undefined,
+      },
+    });
+
+    return toPostcard(record);
   }
 
   async update(
     input: UpdatePostcardRepositoryInput,
-  ): Promise<Postcard | null> {
+  ): Promise<DomainPostcard | null> {
     return this.prisma.$transaction(async (tx) => {
       const postcard = await tx.postcard.findFirst({
         where: {
@@ -175,21 +219,19 @@ export class PostcardRepository {
         return null;
       }
 
-      const latestRevision =
-        await tx.postcardRevision.findFirst({
-          where: {
-            postcardId: postcard.id,
-          },
-          orderBy: {
-            version: "desc",
-          },
-          select: {
-            version: true,
-          },
-        });
+      const latestRevision = await tx.postcardRevision.findFirst({
+        where: {
+          postcardId: postcard.id,
+        },
+        orderBy: {
+          version: "desc",
+        },
+        select: {
+          version: true,
+        },
+      });
 
-      const nextVersion =
-        (latestRevision?.version ?? 0) + 1;
+      const nextVersion = (latestRevision?.version ?? 0) + 1;
 
       const updatedPostcard = await tx.postcard.update({
         where: {
@@ -199,18 +241,57 @@ export class PostcardRepository {
           ...(input.content !== undefined && {
             content: input.content,
           }),
+
+          ...(input.metadata !== undefined && {
+            metadata:
+              input.metadata === null
+                ? Prisma.JsonNull
+                : toPrismaJson(input.metadata),
+          }),
+
+          ...(input.style !== undefined && {
+            style:
+              input.style === null
+                ? Prisma.JsonNull
+                : toPrismaJson(input.style),
+          }),
+
           ...(input.backgroundStyle !== undefined && {
             backgroundStyle: input.backgroundStyle,
           }),
-          ...(input.visibility !== undefined && {
-            visibility: input.visibility,
-          }),
+
           ...(input.backgroundImageKey !== undefined && {
             backgroundImageKey: input.backgroundImageKey,
           }),
+
+          ...(input.visibility !== undefined && {
+            visibility: input.visibility,
+          }),
+
           editedAt: new Date(),
         },
       });
+
+      if (input.media !== undefined) {
+        await tx.postcardMedia.deleteMany({
+          where: {
+            postcardId: postcard.id,
+          },
+        });
+
+        if (input.media.length > 0) {
+          await tx.postcardMedia.createMany({
+            data: input.media.map((media) => ({
+              postcardId: postcard.id,
+              type: media.type,
+              url: media.url ?? null,
+              storageKey: media.storageKey ?? null,
+              altText: media.altText ?? null,
+              sortOrder: media.sortOrder ?? 0,
+            })),
+          });
+        }
+      }
 
       await tx.postcardRevision.create({
         data: {
@@ -222,14 +303,14 @@ export class PostcardRepository {
         },
       });
 
-      return updatedPostcard;
+      return toPostcard(updatedPostcard);
     });
   }
 
   async publish(
     postcardId: string,
     userId: string,
-  ): Promise<Postcard | null> {
+  ): Promise<DomainPostcard | null> {
     return this.prisma.$transaction(async (tx) => {
       const postcard = await tx.postcard.findFirst({
         where: {
@@ -245,24 +326,59 @@ export class PostcardRepository {
         return null;
       }
 
-      return tx.postcard.update({
+      const updatedPostcard = await tx.postcard.update({
         where: {
           id: postcard.id,
         },
         data: {
           status: PostcardStatus.PUBLISHED,
-          visibility: PostcardVisibility.PUBLIC,
           publishedAt: postcard.publishedAt ?? new Date(),
           deletedAt: null,
         },
       });
+
+      return toPostcard(updatedPostcard);
     });
   }
-
-  async softDelete(
-    postcardId: string,
+  async findMine(
     userId: string,
-  ): Promise<boolean> {
+    cursor: string | undefined,
+    pageSize: number,
+  ): Promise<CursorPage<DomainPostcard>> {
+    const items = await this.prisma.postcard.findMany({
+      where: {
+        userId,
+        status: {
+          not: PostcardStatus.DELETED,
+        },
+      },
+      orderBy: [
+        {
+          createdAt: "desc",
+        },
+        {
+          id: "desc",
+        },
+      ],
+      take: pageSize + 1,
+      ...(cursor && {
+        cursor: { id: cursor },
+        skip: 1,
+      }),
+    });
+    const hasNextPage = items.length > pageSize;
+    const resultItems = hasNextPage ? items.slice(0, pageSize) : items;
+    const nextCursor = hasNextPage
+      ? (resultItems[resultItems.length - 1]?.id ?? null)
+      : null;
+    return {
+      items: resultItems.map(toPostcard),
+      nextCursor,
+      hasNextPage,
+    };
+  }
+
+  async softDelete(postcardId: string, userId: string): Promise<boolean> {
     const result = await this.prisma.postcard.updateMany({
       where: {
         id: postcardId,
@@ -279,7 +395,7 @@ export class PostcardRepository {
 
     return result.count > 0;
   }
-  
+
   async createComment(
     input: CreatePostcardCommentRepositoryInput,
   ): Promise<PostcardComment | null> {
@@ -354,9 +470,7 @@ export class PostcardRepository {
     });
   }
 
-  async createReaction(
-    input: CreateReactionRepositoryInput,
-  ): Promise<{
+  async createReaction(input: CreateReactionRepositoryInput): Promise<{
     emoji: string;
     reacted: boolean;
     reactionCount: number;
@@ -598,10 +712,7 @@ export class PostcardRepository {
           },
         },
       },
-      orderBy: [
-        { createdAt: "desc" },
-        { id: "desc" },
-      ],
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: pageSize + 1,
       ...(cursor && {
         cursor: { id: cursor },
@@ -616,9 +727,7 @@ export class PostcardRepository {
 
     return {
       items,
-      nextCursor: hasNextPage
-        ? items[items.length - 1]?.id ?? null
-        : null,
+      nextCursor: hasNextPage ? (items[items.length - 1]?.id ?? null) : null,
       hasNextPage,
     };
   }
@@ -655,10 +764,7 @@ export class PostcardRepository {
           status: PostcardStatus.PUBLISHED,
         },
       },
-      orderBy: [
-        { createdAt: "desc" },
-        { id: "desc" },
-      ],
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: pageSize + 1,
       ...(cursor && {
         cursor: { id: cursor },
@@ -667,12 +773,10 @@ export class PostcardRepository {
     });
 
     const hasNextPage = comments.length > pageSize;
-    const items = hasNextPage
-      ? comments.slice(0, pageSize)
-      : comments;
+    const items = hasNextPage ? comments.slice(0, pageSize) : comments;
 
     const nextCursor = hasNextPage
-      ? items[items.length - 1]?.id ?? null
+      ? (items[items.length - 1]?.id ?? null)
       : null;
 
     return {
@@ -681,6 +785,4 @@ export class PostcardRepository {
       hasNextPage,
     };
   }
-  
-
 }

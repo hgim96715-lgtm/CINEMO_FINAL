@@ -144,6 +144,7 @@ enum ViewingPlatform {
   TV
   OTHER
 }
+
 enum MovieSyncJobType {
   INITIAL_IMPORT
   DAILY_RANKING
@@ -185,6 +186,7 @@ enum PostcardType {
   SCENE
   NOTE
 }
+
 enum PostcardSource {
   USER
   AI
@@ -195,12 +197,14 @@ enum PostcardVisibility {
   PRIVATE
   UNLISTED
 }
+
 enum PostcardStatus {
   DRAFT
   PUBLISHED
   HIDDEN
   DELETED
 }
+
 enum PostcardGenerationStatus {
   REQUESTED
   PROCESSING
@@ -215,6 +219,7 @@ enum PostcardReportStatus {
   RESOLVED
   REJECTED
 }
+
 enum PostcardModerationAction {
   HIDE
   RESTORE
@@ -222,6 +227,12 @@ enum PostcardModerationAction {
   WARN
   RESTRICT_USER
 }
+
+enum PostcardMediaType {
+  IMAGE
+  CAPTURE
+}
+
 model Postcard {
   id                 String             @id @default(uuid(7)) @db.Uuid
   userId             String             @db.Uuid
@@ -231,6 +242,8 @@ model Postcard {
   content            String             @db.Text
   backgroundStyle    String?            @map("background_style") @db.VarChar(100)
   backgroundImageKey String?            @map("background_image_key") @db.VarChar(255)
+  style              Json?
+  metadata           Json?
   visibility         PostcardVisibility @default(PUBLIC)
   status             PostcardStatus     @default(DRAFT)
 
@@ -246,6 +259,7 @@ model Postcard {
 
   user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   movie         Movie                  @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  media         PostcardMedia[]
   revisions     PostcardRevision[]
   reactions     PostcardReaction[]
   comments      PostcardComment[]
@@ -348,6 +362,7 @@ model PostcardCommentReaction {
   @@index([userId, createdAt])
   @@map("postcard_comment_reactions")
 }
+
 model PostcardNotification {
   id            String                   @id @default(uuid(7)) @db.Uuid
   recipientId   String                   @db.Uuid
@@ -383,6 +398,7 @@ model PostcardShare {
   @@index([userId, createdAt])
   @@map("postcard_shares")
 }
+
 model PostcardReport {
   id         String               @id @default(uuid(7)) @db.Uuid
   postcardId String               @db.Uuid
@@ -415,6 +431,7 @@ model PostcardModeration {
   @@index([moderatorId, createdAt])
   @@map("postcard_moderations")
 }
+
 model PostcardUserRestriction {
   id        String                  @id @default(uuid(7)) @db.Uuid
   userId    String                  @db.Uuid
@@ -491,6 +508,22 @@ model PostcardDailyUsage {
   @@map("postcard_daily_usages")
 }
 
+model PostcardMedia {
+  id         String            @id @default(uuid(7)) @db.Uuid
+  postcardId String            @db.Uuid
+  type       PostcardMediaType
+  url        String?           @db.VarChar(2048)
+  storageKey String?           @map("storage_key") @db.VarChar(512)
+  altText    String?           @map("alt_text") @db.VarChar(500)
+  sortOrder  Int               @default(0) @map("sort_order")
+  createdAt  DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  postcard Postcard @relation(fields: [postcardId], references: [id], onDelete: Cascade)
+
+  @@index([postcardId, sortOrder, createdAt])
+  @@map("postcard_media")
+}
+
 model MovieSyncRun {
   id             String           @id @default(uuid(7)) @db.Uuid
   jobType        MovieSyncJobType
@@ -511,17 +544,17 @@ model MovieSyncRun {
 }
 
 model User {
-  id              String     @id @default(uuid(7)) @db.Uuid
-  email           String?    @unique
-  nickname        String     @unique
-  status          UserStatus @default(ACTIVE)
+  id                String         @id @default(uuid(7)) @db.Uuid
+  email             String?        @unique
+  nickname          String         @unique
+  status            UserStatus     @default(ACTIVE)
   profileVisibility UserVisibility @default(PUBLIC) @map("profile_visibility")
-  isAdmin         Boolean    @default(false)
-  profileImageUrl String?    @db.Text
-  profileImageKey String?    @db.Text
-  lastLoginAt     DateTime?  @db.Timestamptz(3)
-  createdAt       DateTime   @default(now()) @db.Timestamptz(3)
-  updatedAt       DateTime   @updatedAt @db.Timestamptz(3)
+  isAdmin           Boolean        @default(false)
+  profileImageUrl   String?        @db.Text
+  profileImageKey   String?        @db.Text
+  lastLoginAt       DateTime?      @db.Timestamptz(3)
+  createdAt         DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime       @updatedAt @db.Timestamptz(3)
 
   identities                 UserIdentity[]
   passwordCredential         UserPasswordCredential?
