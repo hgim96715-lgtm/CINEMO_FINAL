@@ -19,6 +19,7 @@ export class PostcardMediaDto {
   type: PostcardMediaType;
 
   @ApiPropertyOptional({
+    type: String,
     nullable: true,
     example: "https://example.com/scene.webp",
   })
@@ -30,6 +31,7 @@ export class PostcardMediaDto {
   url?: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     nullable: true,
     example: "postcards/scenes/scene-01.webp",
   })
@@ -39,6 +41,7 @@ export class PostcardMediaDto {
   storageKey?: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     nullable: true,
     example: "주인공이 기차역에서 기다리는 장면",
   })

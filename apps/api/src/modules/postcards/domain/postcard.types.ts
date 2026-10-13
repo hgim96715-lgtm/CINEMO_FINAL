@@ -6,14 +6,34 @@ export type PostcardType = "REVIEW" | "QUOTE" | "SCENE" | "NOTE";
 
 export type PostcardSource = "USER" | "AI";
 
-export type PostcardMediaType = "IMAGE" | "CAPTURE";
+export type PostcardQuoteSource = "USER" | "OPENSUBTITLES";
+
+export type PostcardMediaType = "IMAGE";
+
+export type PostcardMovieSummary = {
+  id: string;
+  title: string;
+  posterUrl: string | null;
+};
+
+export type PostcardMediaSummary = {
+  id: string;
+  type: PostcardMediaType;
+  url: string | null;
+  storageKey: string | null;
+  altText: string | null;
+  sortOrder: number;
+};
 
 export type Postcard = {
   id: string;
   userId: string;
   movieId: string;
+  movie: PostcardMovieSummary | null;
+  media: PostcardMediaSummary[];
   type: PostcardType;
   source: PostcardSource;
+  quoteSource: PostcardQuoteSource | null;
   content: string;
   visibility: PostcardVisibility;
   status: PostcardStatus;

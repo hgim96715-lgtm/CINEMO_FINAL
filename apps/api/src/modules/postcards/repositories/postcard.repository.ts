@@ -4,6 +4,7 @@ import {
   PostcardCommentStatus,
   PostcardMediaType,
   PostcardNotificationType,
+  PostcardQuoteSource,
   PostcardReport,
   PostcardReportStatus,
   PostcardSource,
@@ -15,7 +16,10 @@ import {
 import type { Postcard as DomainPostcard } from "../domain/postcard.types";
 import { PrismaService } from "@/prisma/prisma.service";
 import { Injectable } from "@nestjs/common";
-import { toPostcard } from "../mappers/postcard.mapper";
+import {
+  postcardWithMovieArgs,
+  toPostcard,
+} from "../mappers/postcard.mapper";
 
 export type CreatePostcardMediaRepositoryInput = {
   type: PostcardMediaType;
@@ -30,6 +34,7 @@ export interface CreatePostcardRepositoryInput {
   movieId: string;
   type: PostcardType;
   source: PostcardSource;
+  quoteSource?: PostcardQuoteSource | null;
   content: string;
   metadata?: unknown | null;
   style?: unknown | null;
@@ -49,6 +54,7 @@ export type CreatePostcardCommentRepositoryInput = {
 export type UpdatePostcardRepositoryInput = {
   postcardId: string;
   userId: string;
+  quoteSource?: PostcardQuoteSource | null;
   content?: string;
   metadata?: unknown | null;
   style?: unknown | null;
@@ -110,6 +116,7 @@ export class PostcardRepository {
     pageSize: number,
   ): Promise<CursorPage<DomainPostcard>> {
     const items = await this.prisma.postcard.findMany({
+      include: postcardWithMovieArgs.include,
       where: {
         visibility: PostcardVisibility.PUBLIC,
         status: PostcardStatus.PUBLISHED,
@@ -142,6 +149,7 @@ export class PostcardRepository {
 
   async findById(id: string, userId?: string): Promise<DomainPostcard | null> {
     const record = await this.prisma.postcard.findFirst({
+      include: postcardWithMovieArgs.include,
       where: {
         id,
         status: {
@@ -168,6 +176,7 @@ export class PostcardRepository {
         movieId: input.movieId,
         type: input.type,
         source: input.source,
+        quoteSource: input.quoteSource ?? null,
         content: input.content,
         metadata:
           input.metadata === undefined
@@ -238,6 +247,10 @@ export class PostcardRepository {
           id: postcard.id,
         },
         data: {
+          ...(input.quoteSource !== undefined && {
+            quoteSource: input.quoteSource,
+          }),
+
           ...(input.content !== undefined && {
             content: input.content,
           }),
@@ -346,6 +359,7 @@ export class PostcardRepository {
     pageSize: number,
   ): Promise<CursorPage<DomainPostcard>> {
     const items = await this.prisma.postcard.findMany({
+      include: postcardWithMovieArgs.include,
       where: {
         userId,
         status: {

@@ -9,7 +9,11 @@ import {
   MaxLength,
   ValidateNested,
 } from "class-validator";
-import { PostcardType, PostcardVisibility } from "@prisma/client";
+import {
+  PostcardQuoteSource,
+  PostcardType,
+  PostcardVisibility,
+} from "@prisma/client";
 
 import { PostcardMediaDto } from "./postcard-media.dto";
 import { PostcardMetadataDto } from "./postcard-metadata.dto";
@@ -29,6 +33,15 @@ export class CreatePostcardRequestDto {
   })
   @IsEnum(PostcardType)
   type: PostcardType;
+
+  @ApiPropertyOptional({
+    description: "QUOTE 원문의 근거",
+    enum: PostcardQuoteSource,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsEnum(PostcardQuoteSource)
+  quoteSource?: PostcardQuoteSource | null;
   
   @ApiProperty({
     description: "엽서 내용",
@@ -40,6 +53,7 @@ export class CreatePostcardRequestDto {
   
   @ApiPropertyOptional({
     description: "기존 배경 preset 호환용",
+    type: String,
     example: "midnight",
     nullable: true,
   })
@@ -77,6 +91,7 @@ export class CreatePostcardRequestDto {
   
   @ApiPropertyOptional({
     description: "Cloud Storage 배경 이미지 식별자",
+    type: String,
     maxLength: 255,
     nullable: true,
     example: "postcards/backgrounds/01.webp",

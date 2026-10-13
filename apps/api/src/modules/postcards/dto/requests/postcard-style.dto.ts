@@ -16,6 +16,7 @@ export class PostcardStyleDto {
   backgroundType: "POSTER" | "SOLID" | "GRADIENT" | "IMAGE";
 
   @ApiPropertyOptional({
+    type: String,
     nullable: true,
     example: "#102326",
   })
@@ -24,6 +25,7 @@ export class PostcardStyleDto {
   backgroundColor?: string | null;
 
   @ApiPropertyOptional({
+    type: String,
     nullable: true,
     example: "#FFFFFF",
   })

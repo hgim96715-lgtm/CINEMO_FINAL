@@ -1,4 +1,9 @@
-import { BadGatewayException, Inject, Injectable } from "@nestjs/common";
+import {
+  BadGatewayException,
+  Inject,
+  Injectable,
+  Logger,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import OpenAI from "openai";
 
@@ -11,9 +16,10 @@ type SuggestQuoteInput = {
 };
 
 export type SuggestQuoteResult = {
-  original: string;
-  translation: string;
-  sourceLanguage: string;
+  found: boolean;
+  original: string | null;
+  translation: string | null;
+  sourceLanguage: string | null;
   targetLanguage: "ko";
   isAiSuggested: true;
 };
@@ -26,6 +32,8 @@ type TranslateQuoteInput = {
 
 @Injectable()
 export class OpenAiService {
+  private readonly logger = new Logger(OpenAiService.name);
+
   constructor(
     @Inject(OPENAI_CLIENT)
     private readonly openai: OpenAI,
@@ -35,32 +43,41 @@ export class OpenAiService {
   async suggestQuote({
     movieTitle,
     review,
-    language = "ko",
+    language,
   }: SuggestQuoteInput): Promise<SuggestQuoteResult> {
-    return this.createStructuredOutput<SuggestQuoteResult>({
+    const sourceLanguageInstruction = language?.trim()
+      ? language
+      : "영화의 대표 원문 언어를 자동으로 추론";
+
+    const result = await this.createStructuredOutput<SuggestQuoteResult>({
       instructions:
         [
-          "실제 영화 대사를 그대로 인용하지 않는다.",
-          "영화에서 영감을 받은 새로운 창작 문장 1개를 만든다.",
+          "사용자가 영화에서 기억할 만한 문구를 궁금해하고 있다.",
+          "영화에 실제로 등장한 것으로 확인되는 대표 문구 또는 대사만 반환한다.",
+          "확인할 수 없는 경우 추측하거나 새 문장을 만들지 않는다.",
+          "확인 가능한 문구가 없으면 found를 false로 반환하고 문구 관련 값은 null로 반환한다.",
           "원문과 자연스러운 한국어 번역을 함께 반환한다.",
           "원문 언어는 요청 언어가 없으면 영화 제목과 맥락을 기준으로 추론한다.",
         ].join(" "),
       input: [
         `영화 제목: ${movieTitle}`,
         `사용자 감상: ${review ?? "없음"}`,
-        `원문 요청 언어: ${language}`,
+        `원문 언어: ${sourceLanguageInstruction}`,
+        "번역 언어: 한국어(ko)",
       ].join("\n"),
       schema: {
         type: "object",
         additionalProperties: false,
         properties: {
-          original: { type: "string" },
-          translation: { type: "string" },
-          sourceLanguage: { type: "string" },
+          found: { type: "boolean" },
+          original: { type: ["string", "null"] },
+          translation: { type: ["string", "null"] },
+          sourceLanguage: { type: ["string", "null"] },
           targetLanguage: { type: "string", enum: ["ko"] },
           isAiSuggested: { type: "boolean", enum: [true] },
         },
         required: [
+          "found",
           "original",
           "translation",
           "sourceLanguage",
@@ -69,6 +86,19 @@ export class OpenAiService {
         ],
       },
     });
+
+    if (
+      !result.found ||
+      !result.original ||
+      !result.translation ||
+      !result.sourceLanguage
+    ) {
+      throw new BadGatewayException(
+        "확인 가능한 영화 문구를 찾지 못했습니다.",
+      );
+    }
+
+    return result;
   }
 
   async translateQuote({
@@ -104,7 +134,13 @@ export class OpenAiService {
       });
 
       text = response.output_text.trim();
-    } catch {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      this.logger.error(
+        `OpenAI 일반 텍스트 응답 요청 실패: ${message}`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw new BadGatewayException("AI 응답을 불러오지 못했습니다.");
     }
 
@@ -142,7 +178,13 @@ export class OpenAiService {
       });
 
       text = response.output_text.trim();
-    } catch {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      this.logger.error(
+        `OpenAI 구조화 응답 요청 실패: ${message}`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw new BadGatewayException("AI 응답을 불러오지 못했습니다.");
     }
 

@@ -192,6 +192,11 @@ enum PostcardSource {
   AI
 }
 
+enum PostcardQuoteSource {
+  USER
+  OPENSUBTITLES
+}
+
 enum PostcardVisibility {
   PUBLIC
   PRIVATE
@@ -230,7 +235,6 @@ enum PostcardModerationAction {
 
 enum PostcardMediaType {
   IMAGE
-  CAPTURE
 }
 
 model Postcard {
@@ -239,6 +243,7 @@ model Postcard {
   movieId            String             @db.Uuid
   type               PostcardType
   source             PostcardSource     @default(USER)
+  quoteSource        PostcardQuoteSource? @map("quote_source") // QUOTE 원문의 근거
   content            String             @db.Text
   backgroundStyle    String?            @map("background_style") @db.VarChar(100)
   backgroundImageKey String?            @map("background_image_key") @db.VarChar(255)

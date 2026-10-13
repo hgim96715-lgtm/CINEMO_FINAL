@@ -1,5 +1,47 @@
 import {ApiProperty} from "@nestjs/swagger";
-import {PostcardSource, PostcardStatus, PostcardType, PostcardVisibility} from "@prisma/client";
+import {
+  PostcardQuoteSource,
+  PostcardSource,
+  PostcardStatus,
+  PostcardType,
+  PostcardVisibility,
+} from "@prisma/client";
+
+export class PostcardMovieSummaryDto {
+  @ApiProperty({ description: "영화 ID", format: "uuid" })
+  id!: string;
+
+  @ApiProperty({ description: "대표 영화 제목", example: "인터스텔라" })
+  title!: string;
+
+  @ApiProperty({
+    description: "대표 포스터 URL",
+    type: String,
+    nullable: true,
+    example: "https://image.tmdb.org/t/p/w342/example.jpg",
+  })
+  posterUrl!: string | null;
+}
+
+export class PostcardMediaResponseDto {
+  @ApiProperty({ description: "엽서 이미지 ID", format: "uuid" })
+  id!: string;
+
+  @ApiProperty({ description: "엽서 미디어 유형", example: "IMAGE" })
+  type!: string;
+
+  @ApiProperty({ type: String, nullable: true })
+  url!: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  storageKey!: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  altText!: string | null;
+
+  @ApiProperty({ description: "이미지 정렬 순서", example: 0 })
+  sortOrder!: number;
+}
 
 export class PostcardResponseDto {
   @ApiProperty({
@@ -13,6 +55,19 @@ export class PostcardResponseDto {
     format: "uuid",
   })
   movieId!: string;
+
+  @ApiProperty({
+    description: "피드 카드에 표시할 영화 요약 정보",
+    type: PostcardMovieSummaryDto,
+    nullable: true,
+  })
+  movie!: PostcardMovieSummaryDto | null;
+
+  @ApiProperty({
+    description: "엽서에 직접 첨부한 이미지 목록",
+    type: [PostcardMediaResponseDto],
+  })
+  media!: PostcardMediaResponseDto[];
   
   @ApiProperty({
     description: "엽서 유형",
@@ -27,6 +82,13 @@ export class PostcardResponseDto {
     example: PostcardSource.USER,
   })
   source!: PostcardSource;
+
+  @ApiProperty({
+    description: "QUOTE 원문의 근거",
+    enum: PostcardQuoteSource,
+    nullable: true,
+  })
+  quoteSource!: PostcardQuoteSource | null;
   
   @ApiProperty({
     description: "엽서 내용",

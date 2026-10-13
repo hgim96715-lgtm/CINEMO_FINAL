@@ -16,8 +16,20 @@ export const toPostcardResponse = (
 ): PostcardResponseDto => ({
   id: record.id,
   movieId: record.movieId,
+  movie: "movie" in record ? record.movie : null,
+  media: "media" in record
+    ? record.media.map((media) => ({
+        id: media.id,
+        type: media.type,
+        url: media.url,
+        storageKey: media.storageKey,
+        altText: media.altText,
+        sortOrder: media.sortOrder,
+      }))
+    : [],
   type: record.type,
   source: record.source,
+  quoteSource: record.quoteSource,
   content: record.content,
   backgroundStyle: record.backgroundStyle,
   backgroundImageKey: record.backgroundImageKey,
