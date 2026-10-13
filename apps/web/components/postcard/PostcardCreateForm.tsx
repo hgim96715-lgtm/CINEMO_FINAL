@@ -149,18 +149,9 @@ export function PostcardCreateForm({
     values: CreatePostcardFormValues,
     shouldPublish: boolean,
   ) => {
-    const media = values.media?.length
-      ? values.media
-      : backgroundUrl
-        ? [
-            {
-              type: "IMAGE" as const,
-              url: backgroundUrl,
-              altText: `${movieTitle} 포스터`,
-              sortOrder: 0,
-            },
-          ]
-        : undefined;
+    // media는 사용자가 직접 첨부한 장면 이미지에만 사용함.
+    // 기본 배경(backdrop/poster)은 movie.posterUrl fallback으로 표시함.
+    const media = values.media?.length ? values.media : undefined;
 
     const postcard = await createMutation.mutateAsync({
       ...values,
