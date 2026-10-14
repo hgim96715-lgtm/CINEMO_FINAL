@@ -42,6 +42,7 @@ import { AppleAuthService } from "./apple-auth.service";
 import { OauthSignupRequestDto } from "./dto/requests/oauth-signup.request.dto";
 import { OptionalAuth } from "./decorators/optional-auth.decorator";
 import { UpdateProfileVisibilityRequestDto } from "./dto/requests/update-profile-visibility.request.dto";
+import { SESSION_COOKIE_NAME } from "./session-cookie";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -193,7 +194,7 @@ export class AuthController {
   ) {
     const result = await this.authService.login(input);
 
-    response.cookie("cinemo_session", result.sessionToken, {
+    response.cookie(SESSION_COOKIE_NAME, result.sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
@@ -219,11 +220,11 @@ export class AuthController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const sessionToken = request.cookies?.cinemo_session;
+    const sessionToken = request.cookies?.[SESSION_COOKIE_NAME];
 
     await this.authService.logout(sessionToken);
 
-    response.clearCookie("cinemo_session", {
+    response.clearCookie(SESSION_COOKIE_NAME, {
       path: "/",
     });
 
@@ -246,7 +247,7 @@ export class AuthController {
   ) {
     await this.authService.deleteAccount(user.id);
 
-    response.clearCookie("cinemo_session", {
+    response.clearCookie(SESSION_COOKIE_NAME, {
       path: "/",
     });
 
@@ -310,7 +311,7 @@ export class AuthController {
 
     const isProduction = process.env.NODE_ENV === "production";
 
-    response.cookie("cinemo_session", result.sessionToken, {
+    response.cookie(SESSION_COOKIE_NAME, result.sessionToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
@@ -341,7 +342,7 @@ export class AuthController {
   ) {
     const result = await this.authService.completeOauthSignup(input);
 
-    response.cookie("cinemo_session", result.sessionToken, {
+    response.cookie(SESSION_COOKIE_NAME, result.sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

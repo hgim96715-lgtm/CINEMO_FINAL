@@ -9,15 +9,20 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ??
   "http://localhost:3050";
 
+const SESSION_COOKIE_NAME =
+  process.env.NODE_ENV === "production"
+    ? "__Host-cinemo_session"
+    : "cinemo_session";
+
 export const getServerUser = cache(async (): Promise<AuthUser | null> => {
   const cookieStore = await cookies();
-  const sessionToken = cookieStore.get("cinemo_session")?.value;
+  const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
   if (!sessionToken) return null;
 
   const response = await fetch(`${API_URL}/v1/auth/me`, {
     headers: {
-      Cookie: `cinemo_session=${sessionToken}`,
+      Cookie: `${SESSION_COOKIE_NAME}=${sessionToken}`,
     },
     cache: "no-store",
   });

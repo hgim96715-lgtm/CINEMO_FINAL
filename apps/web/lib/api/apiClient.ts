@@ -1,7 +1,14 @@
 import axios from "axios";
 
+const serverApiBaseUrl = `${
+  process.env.API_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:3050"
+}/v1`;
+
 export const apiClient = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3050"}/v1`,
+  // 브라우저 요청은 웹 출처의 BFF를 거쳐 HttpOnly 세션 쿠키를 유지함
+  baseURL: typeof window === "undefined" ? serverApiBaseUrl : "/api/v1",
   headers: {
     "Content-Type": "application/json",
   },
