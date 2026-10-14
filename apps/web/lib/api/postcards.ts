@@ -1,5 +1,5 @@
 import {
-  PostcardFeedResponse as ApiPostcardFeedResponse,
+  PostcardFeedResponse as ApiPostcardFeedResponseDto,
   PostcardMedia,
   PostcardMetadata,
   PostcardResponse,
@@ -9,8 +9,18 @@ import {
 
 import { apiClient } from "./apiClient";
 
-export type Postcard = PostcardResponse;
-export type PostcardFeedResponse = ApiPostcardFeedResponse;
+type ApiPostcard = PostcardResponse;
+
+export type Postcard = Omit<ApiPostcard, "metadata" | "style"> & {
+  metadata: PostcardMetadata | null;
+  style: PostcardStyle | null;
+};
+export type PostcardFeedResponse = Omit<
+  ApiPostcardFeedResponseDto,
+  "items"
+> & {
+  items: Postcard[];
+};
 
 export type GetPostcardFeedParams = {
   cursor?: string;
@@ -153,5 +163,38 @@ export async function sharePostcard(
     input,
     { signal },
   );
+  return data;
+}
+
+export type PostcardReactionResponse = {
+  emoji: string;
+  reacted: boolean;
+  reactionCount: number;
+};
+
+export async function setPostcardHeart(
+  postcardId: string,
+  isReacted: boolean,
+  signal?: AbortSignal,
+): Promise<PostcardReactionResponse> {
+  const emoji = "❤️";
+  const encodedPostcardId = encodeURIComponent(postcardId);
+  const encodedEmoji = encodeURIComponent(emoji);
+
+  if (isReacted) {
+    const { data } = await apiClient.delete<PostcardReactionResponse>(
+      `/postcards/${encodedPostcardId}/reactions/${encodedEmoji}`,
+      { signal },
+    );
+
+    return data;
+  }
+
+  const { data } = await apiClient.post<PostcardReactionResponse>(
+    `/postcards/${encodedPostcardId}/reactions`,
+    { emoji },
+    { signal },
+  );
+
   return data;
 }

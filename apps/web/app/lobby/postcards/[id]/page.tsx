@@ -3,13 +3,18 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { postcardDetailQueryOptions } from "@/lib/queries/postcard-detail.query";
 import { PostcardSceneMeta } from "@/components/postcard/PostcardSceneMeta";
 import { PostcardQuoteContent } from "@/components/postcard/PostcardQuoteContent";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, MessageCircle, UserRound } from "lucide-react";
 import { PostcardShareButton } from "@/components/postcard/PostcardShareButton";
+import { PostcardHeartButton } from "@/components/postcard/PostcardHeartButton";
+import { PostcardCommentSection } from "@/components/postcard/PostcardCommentSection";
+import { useAuthStore } from "@/stores/auth.store";
+import { postcardCommentsQueryOptions } from "@/lib/queries/postcard-comment.query";
+import { useCreatePostcardComment } from "@/lib/queries/postcard-comment.mutation";
 
 const formatPostcardDate = (value: string) => {
   const date = new Date(value);
@@ -29,6 +34,9 @@ const formatPostcardDate = (value: string) => {
 
 export default function PostcardDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const currentUser = useAuthStore((state) => state.user);
+  const commentsQuery = useInfiniteQuery(postcardCommentsQueryOptions(id));
+  const createCommentMutation = useCreatePostcardComment();
 
   const postcardQuery = useQuery(postcardDetailQueryOptions(id));
 
@@ -55,7 +63,35 @@ export default function PostcardDetailPage() {
     );
   }
 
+  const comments =
+    commentsQuery.data?.pages
+      .flatMap((page) => page.items)
+        .map((comment) => ({
+          id: comment.id,
+          parentId: comment.parentId,
+          content: comment.content,
+          createdAt: comment.createdAt,
+          status: comment.status,
+          author: {
+            id:
+              typeof comment.author?.id === "string"
+                ? comment.author.id
+                : "",
+            nickname:
+              typeof comment.author?.nickname === "string"
+                ? comment.author.nickname
+              : "익명",
+          avatarUrl:
+            typeof comment.author?.avatarUrl === "string"
+              ? comment.author?.avatarUrl
+              : null,
+        },
+      })) ?? [];
+
   const postcard = postcardQuery.data;
+  const visibleCommentCount = commentsQuery.isSuccess
+    ? comments.length
+    : postcard.commentCount;
   const imageUrl = postcard.media[0]?.url ?? postcard.movie?.posterUrl;
   const imageAlt =
     postcard.media[0]?.altText ?? `${postcard.movie?.title ?? "영화"} 포스터`;
@@ -133,24 +169,69 @@ export default function PostcardDetailPage() {
               </p>
             )}
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-xs text-white/55 sm:mt-8">
-              <span>
-                {postcard.author?.nickname ?? "익명"} ·{" "}
-                {formatPostcardDate(postcard.createdAt)}
-              </span>
+            <div className="mt-6 flex flex-col gap-3 text-xs text-white/55 sm:mt-8 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div className="flex min-w-0 items-center gap-2">
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-label={`${postcard.author?.nickname ?? "익명"} 프로필 열기`}
+                  className="inline-flex min-w-0 items-center gap-1.5 text-left transition-colors hover:text-cinemo-gold"
+                >
+                  <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
+                  <span className="truncate">
+                    {postcard.author?.nickname ?? "익명"}
+                  </span>
+                </button>
 
-              <div className="flex items-center gap-4 text-sm text-white/60">
-                <span>반응 {postcard.reactionCount}</span>
-                <span>댓글 {postcard.commentCount}</span>
-                <span>공유 {postcard.shareCount}</span>
+                <span aria-hidden="true">·</span>
+                <time dateTime={postcard.createdAt} className="shrink-0">
+                  {formatPostcardDate(postcard.createdAt)}
+                </time>
+              </div>
+
+              <div className="flex h-6 w-full shrink-0 items-center justify-start gap-5 whitespace-nowrap text-sm text-white/60 sm:w-auto sm:gap-4">
+        <PostcardHeartButton
+          postcardId={postcard.id}
+          reactionCount={postcard.reactionCount}
+          initialReacted={postcard.hasReacted}
+        />
+
+                <span className="inline-flex shrink-0 items-center gap-1">
+                  <MessageCircle className="size-4" aria-hidden="true" />
+                  <span className="tabular-nums">{visibleCommentCount}</span>
+                </span>
                 <PostcardShareButton
                   postcardId={postcard.id}
                   title={postcard.movie?.title ?? "CINEMO 엽서"}
+                  shareCount={postcard.shareCount}
                 />
               </div>
             </div>
           </div>
         </article>
+        <PostcardCommentSection
+          postcardId={id}
+          comments={comments}
+          currentUser={
+            currentUser
+              ? {
+                  id: currentUser.id,
+                  nickname: currentUser.nickname,
+                  avatarUrl: currentUser.profileImageUrl,
+                }
+              : null
+          }
+          isSubmitting={createCommentMutation.isPending}
+          onSubmit={async (values, parentId) => {
+            await createCommentMutation.mutateAsync({
+              postcardId: id,
+              input: {
+                ...values,
+                parentId,
+              },
+            });
+          }}
+        />
       </div>
     </main>
   );

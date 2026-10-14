@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
+import { Heart, MessageCircle, Share2 } from "lucide-react";
 import { postcardFeedQueryOptions } from "@/lib/queries/postcard-feed.query";
 import { PostcardSceneMeta } from "@/components/postcard/PostcardSceneMeta";
 import { PostcardQuoteContent } from "@/components/postcard/PostcardQuoteContent";
@@ -181,10 +182,37 @@ export function PostcardFeed() {
 
               <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3 text-xs text-cinemo-muted">
                 <span>영화의 순간을 기록</span>
-                <div className="flex items-center gap-3">
-                  <span>반응 {postcard.reactionCount}</span>
-                  <span>댓글 {postcard.commentCount}</span>
-                  <span>공유 {postcard.shareCount}</span>
+                <div className="flex items-center gap-4">
+                  <span
+                    className={`inline-flex items-center gap-1 ${
+                      postcard.hasReacted ? "text-cinemo-gold" : ""
+                    }`}
+                    aria-label={`반응 ${postcard.reactionCount}`}
+                    title="반응"
+                  >
+                    <Heart
+                      className="size-3.5"
+                      fill={postcard.hasReacted ? "currentColor" : "none"}
+                      aria-hidden="true"
+                    />
+                    <span className="tabular-nums">{postcard.reactionCount}</span>
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-1"
+                    aria-label={`댓글 ${postcard.commentCount}`}
+                    title="댓글"
+                  >
+                    <MessageCircle className="size-3.5" aria-hidden="true" />
+                    <span className="tabular-nums">{postcard.commentCount}</span>
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-1"
+                    aria-label={`공유 ${postcard.shareCount}`}
+                    title="공유"
+                  >
+                    <Share2 className="size-3.5" aria-hidden="true" />
+                    <span className="tabular-nums">{postcard.shareCount}</span>
+                  </span>
                 </div>
               </div>
             </article>
@@ -192,9 +220,8 @@ export function PostcardFeed() {
         );
       })}
 
-      <div ref={sentinelRef} className="flex justify-center py-6">
+      <div ref={sentinelRef} className="flex min-h-px justify-center">
         {isFetchingNextPage && <span>더 불러오는 중...</span>}
-        {!hasNextPage && <span>모든 엽서를 불러왔습니다.</span>}
       </div>
     </section>
   );

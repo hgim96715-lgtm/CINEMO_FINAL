@@ -27,6 +27,7 @@ import { GetPostcardFeedRequestDto } from "@/modules/postcards/dto/requests/get-
 import { Public } from "@/modules/auth/decorators/public.decorator";
 import { PostcardFeedResponseDto } from "@/modules/postcards/dto/responses/postcard-feed.response.dto";
 import { CreatePostcardCommentRequestDto } from "@/modules/postcards/dto/requests/create-postcard-comment-request.dto";
+import { UpdatePostcardCommentRequestDto } from "@/modules/postcards/dto/requests/update-postcard-comment-request.dto";
 import { PostcardCommentResponseDto } from "@/modules/postcards/dto/responses/postcard-comment.response.dto";
 import { toPostcardCommentResponse } from "@/modules/postcards/dto/mappers/postcard-comment.mapper";
 import { GetPostcardCommentsRequestDto } from "@/modules/postcards/dto/requests/get-postcard-comments-request.dto";
@@ -73,7 +74,7 @@ export class PostcardsController {
     return this.openAiService.suggestQuote(request);
   }
 
-  @Public()
+  @OptionalAuth()
   @Get("feed")
   @ApiOperation({
     summary: "공개 엽서 피드 조회",
@@ -82,8 +83,11 @@ export class PostcardsController {
     description: "공개 엽서 피드 조회 성공",
     type: PostcardFeedResponseDto,
   })
-  async findPublicFeed(@Query() request: GetPostcardFeedRequestDto) {
-    const result = await this.postcardService.findPublicFeed(request);
+  async findPublicFeed(
+    @Query() request: GetPostcardFeedRequestDto,
+    @CurrentUser() user: SessionUser | undefined,
+  ) {
+    const result = await this.postcardService.findPublicFeed(user?.id, request);
 
     return {
       items: result.items.map(toPostcardResponse),
@@ -266,6 +270,50 @@ export class PostcardsController {
   ) {
     const comment = await this.postcardService.createComment(
       postcardId,
+      user.id,
+      request,
+    );
+
+    return toPostcardCommentResponse(comment);
+  }
+
+  @ApiCookieAuth("cinemo_session")
+  @Delete(":postcardId/comments/:commentId")
+  @ApiOperation({
+    summary: "엽서 댓글 삭제",
+  })
+  async deleteComment(
+    @Param("postcardId") postcardId: string,
+    @Param("commentId") commentId: string,
+    @CurrentUser() user: SessionUser,
+  ) {
+    await this.postcardService.deleteComment(
+      postcardId,
+      commentId,
+      user.id,
+    );
+
+    return { deleted: true };
+  }
+
+  @ApiCookieAuth("cinemo_session")
+  @Patch(":postcardId/comments/:commentId")
+  @ApiOperation({
+    summary: "엽서 댓글 수정",
+  })
+  @ApiOkResponse({
+    description: "댓글 수정 성공",
+    type: PostcardCommentResponseDto,
+  })
+  async updateComment(
+    @Param("postcardId") postcardId: string,
+    @Param("commentId") commentId: string,
+    @CurrentUser() user: SessionUser,
+    @Body() request: UpdatePostcardCommentRequestDto,
+  ) {
+    const comment = await this.postcardService.updateComment(
+      postcardId,
+      commentId,
       user.id,
       request,
     );

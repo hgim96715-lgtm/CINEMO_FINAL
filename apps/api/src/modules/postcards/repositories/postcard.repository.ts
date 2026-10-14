@@ -1,5 +1,4 @@
 import {
-  Postcard,
   PostcardComment,
   PostcardCommentStatus,
   PostcardMediaType,
@@ -16,10 +15,7 @@ import {
 import type { Postcard as DomainPostcard } from "../domain/postcard.types";
 import { PrismaService } from "@/prisma/prisma.service";
 import { Injectable } from "@nestjs/common";
-import {
-  postcardWithMovieArgs,
-  toPostcard,
-} from "../mappers/postcard.mapper";
+import { postcardWithMovieArgs, toPostcard } from "../mappers/postcard.mapper";
 
 export type CreatePostcardMediaRepositoryInput = {
   type: PostcardMediaType;
@@ -51,6 +47,13 @@ export type CreatePostcardCommentRepositoryInput = {
   parentId?: string | null;
 };
 
+export type UpdatePostcardCommentRepositoryInput = {
+  postcardId: string;
+  commentId: string;
+  userId: string;
+  content: string;
+};
+
 export type UpdatePostcardRepositoryInput = {
   postcardId: string;
   userId: string;
@@ -70,6 +73,18 @@ export type CursorPage<T> = {
   nextCursor: string | null;
   hasNextPage: boolean;
 };
+
+export type PostcardCommentWithUser = Prisma.PostcardCommentGetPayload<{
+  include: {
+    user: {
+      select: {
+        id: true;
+        nickname: true;
+        profileImageUrl: true;
+      };
+    };
+  };
+}>;
 
 export type CreateReactionRepositoryInput = {
   postcardId: string;
@@ -112,7 +127,35 @@ export type PostcardNotificationWithActor =
 export class PostcardRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async findVisibleCommentCounts(
+    postcardIds: string[],
+  ): Promise<Map<string, number>> {
+    if (postcardIds.length === 0) {
+      return new Map();
+    }
+
+    const counts = await this.prisma.postcardComment.groupBy({
+      by: ["postcardId"],
+      where: {
+        postcardId: { in: postcardIds },
+        OR: [
+          { status: PostcardCommentStatus.PUBLISHED },
+          {
+            status: PostcardCommentStatus.DELETED,
+            replyCount: { gt: 0 },
+          },
+        ],
+      },
+      _count: { _all: true },
+    });
+
+    return new Map(
+      counts.map((count) => [count.postcardId, count._count._all]),
+    );
+  }
+
   async findPublicFeed(
+    userId: string | undefined,
     cursor: string | undefined,
     pageSize: number,
   ): Promise<CursorPage<DomainPostcard>> {
@@ -141,8 +184,32 @@ export class PostcardRepository {
     const nextCursor = hasNextPage
       ? (resultItems[resultItems.length - 1]?.id ?? null)
       : null;
+
+    const reactedPostcardIds = userId
+      ? new Set(
+          (
+            await this.prisma.postcardReaction.findMany({
+              where: {
+                userId,
+                emoji: "❤️",
+                postcardId: { in: resultItems.map((item) => item.id) },
+              },
+              select: { postcardId: true },
+            })
+          ).map((reaction) => reaction.postcardId),
+        )
+      : new Set<string>();
+    const visibleCommentCounts = await this.findVisibleCommentCounts(
+      resultItems.map((item) => item.id),
+    );
+
     return {
-      items: resultItems.map(toPostcard),
+      items: resultItems.map((item) =>
+        toPostcard(item, {
+          hasReacted: reactedPostcardIds.has(item.id),
+          commentCount: visibleCommentCounts.get(item.id) ?? 0,
+        }),
+      ),
       nextCursor,
       hasNextPage,
     };
@@ -165,12 +232,34 @@ export class PostcardRepository {
         ],
       },
     });
-    return record ? toPostcard(record) : null;
+
+    if (!record) {
+      return null;
+    }
+
+    const hasReacted = userId
+      ? Boolean(
+          await this.prisma.postcardReaction.findUnique({
+            where: {
+              postcardId_userId_emoji: {
+                postcardId: id,
+                userId,
+                emoji: "❤️",
+              },
+            },
+            select: { postcardId: true },
+          }),
+        )
+      : false;
+    const visibleCommentCounts = await this.findVisibleCommentCounts([id]);
+
+    return toPostcard(record, {
+      hasReacted,
+      commentCount: visibleCommentCounts.get(id) ?? 0,
+    });
   }
 
-  async create(
-    input: CreatePostcardRepositoryInput,
-  ): Promise<DomainPostcard> {
+  async create(input: CreatePostcardRepositoryInput): Promise<DomainPostcard> {
     const record = await this.prisma.postcard.create({
       data: {
         userId: input.userId,
@@ -391,7 +480,7 @@ export class PostcardRepository {
       ? (resultItems[resultItems.length - 1]?.id ?? null)
       : null;
     return {
-      items: resultItems.map(toPostcard),
+      items: resultItems.map((item) => toPostcard(item)),
       nextCursor,
       hasNextPage,
     };
@@ -417,7 +506,7 @@ export class PostcardRepository {
 
   async createComment(
     input: CreatePostcardCommentRepositoryInput,
-  ): Promise<PostcardComment | null> {
+  ): Promise<PostcardCommentWithUser | null> {
     return this.prisma.$transaction(async (tx) => {
       const postcard = await tx.postcard.findFirst({
         where: {
@@ -485,7 +574,158 @@ export class PostcardRepository {
         });
       }
 
-      return comment;
+      return tx.postcardComment.findUnique({
+        where: { id: comment.id },
+        include: {
+          user: {
+            select: {
+              id: true,
+              nickname: true,
+              profileImageUrl: true,
+            },
+          },
+        },
+      });
+    });
+  }
+
+  async deleteComment(
+    postcardId: string,
+    commentId: string,
+    userId: string,
+  ): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const comment = await tx.postcardComment.findFirst({
+        where: {
+          id: commentId,
+          postcardId,
+          userId,
+          status: {
+            in: [
+              PostcardCommentStatus.PUBLISHED,
+              PostcardCommentStatus.DELETED,
+            ],
+          },
+        },
+        select: {
+          id: true,
+          parentId: true,
+          replyCount: true,
+          status: true,
+        },
+      });
+
+      if (!comment) {
+        return false;
+      }
+
+      const publishedReplyCount = await tx.postcardComment.count({
+        where: {
+          parentId: comment.id,
+          status: PostcardCommentStatus.PUBLISHED,
+        },
+      });
+
+      if (
+        comment.status === PostcardCommentStatus.PUBLISHED &&
+        publishedReplyCount > 0
+      ) {
+        await tx.postcardComment.update({
+          where: { id: comment.id },
+          data: {
+            content: "삭제된 댓글입니다",
+            status: PostcardCommentStatus.DELETED,
+            deletedAt: new Date(),
+          },
+        });
+
+        return true;
+      }
+
+      await tx.postcardComment.delete({
+        where: { id: comment.id },
+      });
+
+      await tx.postcard.update({
+        where: { id: postcardId },
+        data: {
+          commentCount: { decrement: 1 },
+        },
+      });
+
+      if (comment.parentId) {
+        const parentComment = await tx.postcardComment.findUnique({
+          where: { id: comment.parentId },
+          select: { id: true, status: true },
+        });
+
+        if (parentComment) {
+          const remainingReplyCount = await tx.postcardComment.count({
+            where: {
+              parentId: parentComment.id,
+              status: PostcardCommentStatus.PUBLISHED,
+            },
+          });
+
+          if (
+            parentComment.status === PostcardCommentStatus.DELETED &&
+            remainingReplyCount === 0
+          ) {
+            await tx.postcardComment.delete({
+              where: { id: parentComment.id },
+            });
+
+            await tx.postcard.update({
+              where: { id: postcardId },
+              data: {
+                commentCount: { decrement: 1 },
+              },
+            });
+          } else {
+            await tx.postcardComment.update({
+              where: { id: parentComment.id },
+              data: { replyCount: remainingReplyCount },
+            });
+          }
+        }
+      }
+
+      return true;
+    });
+  }
+
+  async updateComment(
+    input: UpdatePostcardCommentRepositoryInput,
+  ): Promise<PostcardCommentWithUser | null> {
+    const comment = await this.prisma.postcardComment.findFirst({
+      where: {
+        id: input.commentId,
+        postcardId: input.postcardId,
+        userId: input.userId,
+        status: PostcardCommentStatus.PUBLISHED,
+      },
+      select: { id: true },
+    });
+
+    if (!comment) {
+      return null;
+    }
+
+    return this.prisma.postcardComment.update({
+      where: { id: comment.id },
+      data: {
+        content: input.content,
+        editedAt: new Date(),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            nickname: true,
+            profileImageUrl: true,
+          },
+        },
+      },
     });
   }
 
@@ -773,14 +1013,29 @@ export class PostcardRepository {
     postcardId: string,
     cursor: string | undefined,
     pageSize: number,
-  ): Promise<CursorPage<PostcardComment>> {
+  ): Promise<CursorPage<PostcardCommentWithUser>> {
     const comments = await this.prisma.postcardComment.findMany({
       where: {
         postcardId,
-        status: PostcardCommentStatus.PUBLISHED,
+        OR: [
+          { status: PostcardCommentStatus.PUBLISHED },
+          {
+            status: PostcardCommentStatus.DELETED,
+            replyCount: { gt: 0 },
+          },
+        ],
         postcard: {
           visibility: PostcardVisibility.PUBLIC,
           status: PostcardStatus.PUBLISHED,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            nickname: true,
+            profileImageUrl: true,
+          },
         },
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],

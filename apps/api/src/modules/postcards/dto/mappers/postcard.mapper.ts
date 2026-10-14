@@ -46,6 +46,7 @@ export const toPostcardResponse = (
   metadata: toJsonObject(record.metadata) as PostcardMetadataDto | null,
   style: toJsonObject(record.style) as PostcardStyleDto | null,
   reactionCount: record.reactionCount,
+  hasReacted: "hasReacted" in record ? record.hasReacted : false,
   commentCount: record.commentCount,
   shareCount: record.shareCount,
   visibility: record.visibility,

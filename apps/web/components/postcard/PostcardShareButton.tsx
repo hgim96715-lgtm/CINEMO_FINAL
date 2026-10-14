@@ -8,11 +8,13 @@ import { useSharePostcard } from "@/lib/queries/postcard.mutation";
 type PostcardShareButtonProps = {
   postcardId: string;
   title: string;
+  shareCount?: number;
 };
 
 export function PostcardShareButton({
   postcardId,
   title,
+  shareCount,
 }: PostcardShareButtonProps) {
   const shareMutation = useSharePostcard();
   const [message, setMessage] = useState("");
@@ -70,6 +72,9 @@ export function PostcardShareButton({
         className="inline-flex items-center gap-1.5 text-sm text-cinemo-muted transition hover:text-cinemo-gold disabled:opacity-50"
       >
         <Share2 className="size-4" aria-hidden="true" />
+        {shareCount !== undefined && (
+          <span className="tabular-nums">{shareCount}</span>
+        )}
       </button>
 
       {message && <span className="text-xs text-cinemo-gold">{message}</span>}

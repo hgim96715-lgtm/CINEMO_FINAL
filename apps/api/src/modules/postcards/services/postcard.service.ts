@@ -3,17 +3,17 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import {
-  PostcardComment,
-  PostcardSource,
-  PostcardVisibility,
-} from "@prisma/client";
+import { PostcardSource, PostcardVisibility } from "@prisma/client";
 import type { Postcard as DomainPostcard } from "../domain/postcard.types";
-import type { CursorPage } from "../repositories/postcard.repository";
+import type {
+  CursorPage,
+  PostcardCommentWithUser,
+} from "../repositories/postcard.repository";
 import { PostcardRepository } from "../repositories/postcard.repository";
 import { CreatePostcardRequestDto } from "@/modules/postcards/dto/requests/create-postcard-request.dto";
 import { GetPostcardFeedRequestDto } from "@/modules/postcards/dto/requests/get-postcard-feed-request.dto";
 import { CreatePostcardCommentRequestDto } from "@/modules/postcards/dto/requests/create-postcard-comment-request.dto";
+import { UpdatePostcardCommentRequestDto } from "@/modules/postcards/dto/requests/update-postcard-comment-request.dto";
 import { GetPostcardCommentsRequestDto } from "@/modules/postcards/dto/requests/get-postcard-comments-request.dto";
 import { UpdatePostcardRequestDto } from "@/modules/postcards/dto/requests/update-postcard-request.dto";
 import { CreatePostcardReactionRequestDto } from "@/modules/postcards/dto/requests/create-postcard-reaction-request.dto";
@@ -25,10 +25,15 @@ import { CreatePostcardShareRequestDto } from "@/modules/postcards/dto/requests/
 export class PostcardService {
   constructor(private readonly postcardRepository: PostcardRepository) {}
   async findPublicFeed(
+    userId: string | undefined,
     request: GetPostcardFeedRequestDto,
   ): Promise<CursorPage<DomainPostcard>> {
     const pageSize = Math.min(request.pageSize ?? 20, 50);
-    return this.postcardRepository.findPublicFeed(request.cursor, pageSize);
+    return this.postcardRepository.findPublicFeed(
+      userId,
+      request.cursor,
+      pageSize,
+    );
   }
 
   async findById(
@@ -144,7 +149,7 @@ export class PostcardService {
     postcardId: string,
     userId: string,
     request: CreatePostcardCommentRequestDto,
-  ): Promise<PostcardComment> {
+  ): Promise<PostcardCommentWithUser> {
     const comment = await this.postcardRepository.createComment({
       postcardId,
       userId,
@@ -161,10 +166,46 @@ export class PostcardService {
     return comment;
   }
 
+  async deleteComment(
+    postcardId: string,
+    commentId: string,
+    userId: string,
+  ): Promise<void> {
+    const deleted = await this.postcardRepository.deleteComment(
+      postcardId,
+      commentId,
+      userId,
+    );
+
+    if (!deleted) {
+      throw new NotFoundException("삭제할 댓글을 찾을 수 없습니다.");
+    }
+  }
+
+  async updateComment(
+    postcardId: string,
+    commentId: string,
+    userId: string,
+    request: UpdatePostcardCommentRequestDto,
+  ): Promise<PostcardCommentWithUser> {
+    const comment = await this.postcardRepository.updateComment({
+      postcardId,
+      commentId,
+      userId,
+      content: request.content,
+    });
+
+    if (!comment) {
+      throw new NotFoundException("수정할 댓글을 찾을 수 없습니다.");
+    }
+
+    return comment;
+  }
+
   async findComments(
     postcardId: string,
     request: GetPostcardCommentsRequestDto,
-  ): Promise<CursorPage<PostcardComment>> {
+  ): Promise<CursorPage<PostcardCommentWithUser>> {
     const pageSize = Math.min(request.pageSize ?? 20, 50);
 
     return this.postcardRepository.findComments(

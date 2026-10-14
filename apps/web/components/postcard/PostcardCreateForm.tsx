@@ -240,7 +240,7 @@ export function PostcardCreateForm({
           type: values.type,
           content: values.content,
           visibility: values.visibility,
-          quoteSource: values.quoteSource,
+          quoteSource: values.quoteSource ?? undefined,
           metadata: values.metadata,
           style: values.style,
           media,
@@ -255,6 +255,7 @@ export function PostcardCreateForm({
     } else {
       const createdPostcard = await createMutation.mutateAsync({
         ...values,
+        quoteSource: values.quoteSource ?? undefined,
         media,
       });
 

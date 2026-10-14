@@ -47,6 +47,7 @@ export type Postcard = {
   style: Record<string, unknown> | null;
   metadata: Record<string, unknown> | null;
   reactionCount: number;
+  hasReacted: boolean;
   commentCount: number;
   shareCount: number;
   createdAt: Date;

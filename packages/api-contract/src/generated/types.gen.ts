@@ -1485,6 +1485,54 @@ export type SaveVenueRequestDto = {
     y: string;
 };
 
+export type CreatePostcardQuoteSuggestionRequestDto = {
+    /**
+     * 영화 제목
+     */
+    movieTitle: string;
+    /**
+     * 사용자가 작성한 감상
+     */
+    review?: string;
+    /**
+     * 원문 추천 언어. 비워두면 AI가 추론
+     */
+    language?: string;
+};
+
+export type PostcardQuoteSuggestionResponseDto = {
+    /**
+     * 확인 가능한 실제 영화 문구를 찾았는지 여부
+     */
+    found: boolean;
+    /**
+     * 확인된 영화 문구 원문
+     */
+    original: {
+        [key: string]: unknown;
+    };
+    /**
+     * 원문의 한국어 번역
+     */
+    translation: {
+        [key: string]: unknown;
+    };
+    /**
+     * 원문 언어 코드
+     */
+    sourceLanguage: {
+        [key: string]: unknown;
+    };
+    /**
+     * 번역 언어 코드
+     */
+    targetLanguage: string;
+    /**
+     * AI 생성 결과인지 여부
+     */
+    isAiSuggested: boolean;
+};
+
 export type PostcardMovieSummaryDto = {
     /**
      * 영화 ID
@@ -1557,7 +1605,7 @@ export type PostcardResponseDto = {
     /**
      * QUOTE 원문의 근거
      */
-    quoteSource: 'USER' | 'OPENSUBTITLES' | null;
+    quoteSource: 'USER' | 'OPENSUBTITLES';
     /**
      * 엽서 내용
      */
@@ -1573,15 +1621,23 @@ export type PostcardResponseDto = {
     /**
      * 엽서 유형별 추가 기록 정보
      */
-    metadata: PostcardMetadataDto | null;
+    metadata: {
+        [key: string]: unknown;
+    } | null;
     /**
      * 엽서 스타일 정보
      */
-    style: PostcardStyleDto | null;
+    style: {
+        [key: string]: unknown;
+    } | null;
     /**
      * 이모지 반응 수
      */
     reactionCount: number;
+    /**
+     * 현재 로그인한 사용자가 하트 반응을 남겼는지 여부
+     */
+    hasReacted: boolean;
     /**
      * 댓글 수
      */
@@ -1666,6 +1722,21 @@ export type PostcardNotificationFeedResponseDto = {
     hasNextPage: boolean;
 };
 
+export type PostcardTranslationDto = {
+    /**
+     * 번역 언어 코드
+     */
+    language: string;
+    /**
+     * 번역된 문장
+     */
+    content: string;
+    /**
+     * 번역 생성 주체
+     */
+    source: 'AI' | 'USER';
+};
+
 export type PostcardMetadataDto = {
     type: 'REVIEW' | 'QUOTE' | 'SCENE';
     /**
@@ -1691,11 +1762,7 @@ export type PostcardMetadataDto = {
     /**
      * 원문을 보존하기 위한 번역 목록
      */
-    translations?: Array<{
-        language: string;
-        content: string;
-        source: 'AI' | 'USER';
-    }> | null;
+    translations?: Array<PostcardTranslationDto> | null;
 };
 
 export type PostcardStyleDto = {
@@ -1722,7 +1789,7 @@ export type UpdatePostcardRequestDto = {
     /**
      * QUOTE 원문의 근거
      */
-    quoteSource?: 'USER' | 'OPENSUBTITLES' | null;
+    quoteSource?: 'USER' | 'OPENSUBTITLES';
     /**
      * 엽서 본문
      */
@@ -1753,7 +1820,7 @@ export type CreatePostcardRequestDto = {
     /**
      * QUOTE 원문의 근거
      */
-    quoteSource?: 'USER' | 'OPENSUBTITLES' | null;
+    quoteSource?: 'USER' | 'OPENSUBTITLES';
     /**
      * 엽서 내용
      */
@@ -1812,6 +1879,12 @@ export type PostcardCommentResponseDto = {
      * 대댓글 수
      */
     replyCount: number;
+    /**
+     * 댓글 작성자
+     */
+    author: {
+        [key: string]: unknown;
+    };
     /**
      * 작성 시각
      */
@@ -3252,6 +3325,22 @@ export type MapControllerSaveVenueV1Responses = {
      */
     201: unknown;
 };
+
+export type PostcardsControllerSuggestQuoteV1Data = {
+    body: CreatePostcardQuoteSuggestionRequestDto;
+    path?: never;
+    query?: never;
+    url: '/v1/postcards/ai/quote-suggestion';
+};
+
+export type PostcardsControllerSuggestQuoteV1Responses = {
+    /**
+     * AI 인용 문구 추천 성공
+     */
+    201: PostcardQuoteSuggestionResponseDto;
+};
+
+export type PostcardsControllerSuggestQuoteV1Response = PostcardsControllerSuggestQuoteV1Responses[keyof PostcardsControllerSuggestQuoteV1Responses];
 
 export type PostcardsControllerFindPublicFeedV1Data = {
     body?: never;

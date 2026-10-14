@@ -11,8 +11,9 @@ export type {
 } from "./generated/types.gen";
 
 export type {
-  CreatePostcardRequestDto as CreatePostcardRequest,
+  CreatePostcardCommentRequestDto as CreatePostcardCommentRequest,
   PostcardFeedResponseDto as PostcardFeedResponse,
+  PostcardCommentResponseDto as PostcardCommentResponse,
   PostcardMediaDto as PostcardMedia,
   PostcardMetadataDto as PostcardMetadata,
   PostcardResponseDto as PostcardResponse,

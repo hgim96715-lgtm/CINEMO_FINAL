@@ -69,7 +69,10 @@ const toJsonObject = (
   return value as Record<string, unknown>;
 };
 
-export const toPostcard = (record: PostcardRecord): Postcard => ({
+export const toPostcard = (
+  record: PostcardRecord,
+  options?: { hasReacted?: boolean; commentCount?: number },
+): Postcard => ({
   id: record.id,
   userId: record.userId,
   movieId: record.movieId,
@@ -107,7 +110,8 @@ export const toPostcard = (record: PostcardRecord): Postcard => ({
   style: toJsonObject(record.style),
   metadata: toJsonObject(record.metadata),
   reactionCount: record.reactionCount,
-  commentCount: record.commentCount,
+  hasReacted: options?.hasReacted ?? false,
+  commentCount: options?.commentCount ?? record.commentCount,
   shareCount: record.shareCount,
   createdAt: record.createdAt,
   updatedAt: record.updatedAt,

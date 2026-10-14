@@ -6,7 +6,9 @@ import {
   type CreatePostcardInput,
   createPostcardQuoteSuggestion,
   type CreatePostcardQuoteSuggestionInput,
+  PostcardReactionResponse,
   publishPostcard,
+  setPostcardHeart,
   sharePostcard,
   SharePostcardInput,
   updatePostcard,
@@ -152,6 +154,40 @@ export function useSharePostcard() {
       );
 
       await queryClient.invalidateQueries({
+        queryKey: postcardFeedQueryOptions().queryKey,
+      });
+    },
+  });
+}
+
+type SetPostcardHeartInput = {
+  postcardId: string;
+  isReacted: boolean;
+};
+
+export function useSetPostcardHeart() {
+  const queryClient = useQueryClient();
+
+  return useMutation<PostcardReactionResponse, Error, SetPostcardHeartInput>({
+    mutationFn: ({ postcardId, isReacted }) =>
+      setPostcardHeart(postcardId, isReacted),
+
+    retry: false,
+
+    onSuccess: (data, { postcardId }) => {
+      queryClient.setQueryData(
+        postcardDetailQueryOptions(postcardId).queryKey,
+        (postcard) =>
+          postcard
+            ? {
+                ...postcard,
+                reactionCount: data.reactionCount,
+                hasReacted: data.reacted,
+              }
+            : postcard,
+      );
+
+      void queryClient.invalidateQueries({
         queryKey: postcardFeedQueryOptions().queryKey,
       });
     },

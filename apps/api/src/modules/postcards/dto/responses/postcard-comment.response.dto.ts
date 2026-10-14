@@ -1,5 +1,5 @@
-import {ApiProperty} from "@nestjs/swagger";
-import {PostcardCommentStatus} from "@prisma/client";
+import { ApiProperty } from "@nestjs/swagger";
+import { PostcardCommentStatus } from "@prisma/client";
 
 export class PostcardCommentResponseDto {
   @ApiProperty({
@@ -7,27 +7,27 @@ export class PostcardCommentResponseDto {
     format: "uuid",
   })
   id!: string;
-  
+
   @ApiProperty({
     description: "엽서 ID",
     format: "uuid",
   })
   postcardId!: string;
-  
+
   @ApiProperty({
     description: "대댓글 대상 댓글 ID",
     format: "uuid",
     nullable: true,
-    type:String,
+    type: String,
   })
   parentId!: string | null;
-  
+
   @ApiProperty({
     description: "댓글 내용",
     example: "이 장면이 가장 오래 기억에 남았어요.",
   })
   content!: string;
-  
+
   @ApiProperty({
     description: "댓글 상태",
     enum: PostcardCommentStatus,
@@ -40,14 +40,24 @@ export class PostcardCommentResponseDto {
 
   @ApiProperty({ description: "대댓글 수", example: 2 })
   replyCount!: number;
-  
+
+  @ApiProperty({
+    description: "댓글 작성자",
+    type: Object,
+  })
+  author!: {
+    id: string;
+    nickname: string;
+    profileImageUrl: string | null;
+  };
+
   @ApiProperty({
     description: "작성 시각",
     type: String,
     format: "date-time",
   })
   createdAt!: string;
-  
+
   @ApiProperty({
     description: "수정 시각",
     type: String,

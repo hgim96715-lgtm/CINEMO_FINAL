@@ -6,8 +6,8 @@ import {
   PostcardType,
   PostcardVisibility,
 } from "@prisma/client";
-import type {PostcardMetadataDto} from "../requests/postcard-metadata.dto";
-import type {PostcardStyleDto} from "../requests/postcard-style.dto";
+import {PostcardMetadataDto} from "../requests/postcard-metadata.dto";
+import {PostcardStyleDto} from "../requests/postcard-style.dto";
 
 export class PostcardMovieSummaryDto {
   @ApiProperty({ description: "영화 ID", format: "uuid" })
@@ -128,20 +128,26 @@ export class PostcardResponseDto {
 
   @ApiProperty({
     description: "엽서 유형별 추가 기록 정보",
-    type: Object,
+    type: PostcardMetadataDto,
     nullable: true,
   })
   metadata!: PostcardMetadataDto | null;
 
   @ApiProperty({
     description: "엽서 스타일 정보",
-    type: Object,
+    type: PostcardStyleDto,
     nullable: true,
   })
   style!: PostcardStyleDto | null;
 
   @ApiProperty({ description: "이모지 반응 수", example: 12 })
   reactionCount!: number;
+
+  @ApiProperty({
+    description: "현재 로그인한 사용자가 하트 반응을 남겼는지 여부",
+    example: true,
+  })
+  hasReacted!: boolean;
 
   @ApiProperty({ description: "댓글 수", example: 4 })
   commentCount!: number;
