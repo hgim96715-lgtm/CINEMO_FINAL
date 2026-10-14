@@ -180,7 +180,7 @@ export function PostcardFeed() {
               </div>
 
               <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3 text-xs text-cinemo-muted">
-                <span>영화의 순간을 기록함</span>
+                <span>영화의 순간을 기록</span>
                 <div className="flex items-center gap-3">
                   <span>반응 {postcard.reactionCount}</span>
                   <span>댓글 {postcard.commentCount}</span>

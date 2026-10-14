@@ -16,15 +16,15 @@ export function PostcardSceneMeta({
   if (compact) {
     return (
       <p className="mt-2 truncate text-xs text-cinemo-muted">
-        장면 위치 {metadata.sceneTime}
+        시점 {metadata.sceneTime}
       </p>
     );
   }
 
   return (
-    <div className="border-y border-white/10 py-4">
-      <p className="text-xs font-medium text-cinemo-gold">장면 위치</p>
-      <p className="mt-1 text-sm text-white/85">{metadata.sceneTime}</p>
-    </div>
+    <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 text-sm">
+      <dt className="text-xs font-medium text-cinemo-muted">시점</dt>
+      <dd className="min-w-0 truncate text-white/85">{metadata.sceneTime}</dd>
+    </dl>
   );
 }

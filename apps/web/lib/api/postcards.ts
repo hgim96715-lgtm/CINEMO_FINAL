@@ -135,3 +135,23 @@ export async function updatePostcard(
   );
   return data;
 }
+export type SharePostcardInput = {
+  channel?: string | null;
+};
+export type SharePostcardResponse = {
+  shared: boolean;
+  shareCount: number;
+};
+
+export async function sharePostcard(
+  postcardId: string,
+  input: SharePostcardInput = {},
+  signal?: AbortSignal,
+): Promise<SharePostcardResponse> {
+  const { data } = await apiClient.post<SharePostcardResponse>(
+    `/postcards/${encodeURIComponent(postcardId)}/share`,
+    input,
+    { signal },
+  );
+  return data;
+}

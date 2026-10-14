@@ -7,6 +7,8 @@ import {
   createPostcardQuoteSuggestion,
   type CreatePostcardQuoteSuggestionInput,
   publishPostcard,
+  sharePostcard,
+  SharePostcardInput,
   updatePostcard,
 } from "@/lib/api/postcards";
 import {
@@ -121,6 +123,37 @@ export function useUpdatePostcard() {
           queryKey: myPostcardsQueryOptions().queryKey,
         }),
       ]);
+    },
+  });
+}
+
+type SharePostcardMutationInput = {
+  postcardId: string;
+  input?: SharePostcardInput;
+};
+
+export function useSharePostcard() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ postcardId, input = {} }: SharePostcardMutationInput) =>
+      sharePostcard(postcardId, input),
+
+    onSuccess: async (data, { postcardId }) => {
+      queryClient.setQueryData(
+        postcardDetailQueryOptions(postcardId).queryKey,
+        (postcard) =>
+          postcard
+            ? {
+                ...postcard,
+                shareCount: data.shareCount,
+              }
+            : postcard,
+      );
+
+      await queryClient.invalidateQueries({
+        queryKey: postcardFeedQueryOptions().queryKey,
+      });
     },
   });
 }

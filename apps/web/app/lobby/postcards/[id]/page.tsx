@@ -9,6 +9,23 @@ import { postcardDetailQueryOptions } from "@/lib/queries/postcard-detail.query"
 import { PostcardSceneMeta } from "@/components/postcard/PostcardSceneMeta";
 import { PostcardQuoteContent } from "@/components/postcard/PostcardQuoteContent";
 import { ArrowLeft } from "lucide-react";
+import { PostcardShareButton } from "@/components/postcard/PostcardShareButton";
+
+const formatPostcardDate = (value: string) => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(date)
+    .replaceAll(" ", "");
+};
 
 export default function PostcardDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -61,7 +78,7 @@ export default function PostcardDetailPage() {
           <ArrowLeft className="size-4" aria-hidden="true" /> 공개 엽서
         </Link>
 
-        <article className="relative mt-6 border-b border-white/15 pb-8 sm:mt-8 sm:pb-10">
+        <article className="relative mt-6 border-b border-cinemo-gold/40 pb-8 sm:mt-8 sm:pb-10">
           <div className="relative p-5 sm:p-8">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
@@ -70,9 +87,9 @@ export default function PostcardDetailPage() {
                 </p>
 
                 {postcard.movie?.title && (
-                  <p className="mt-4 truncate text-sm text-cinemo-muted">
+                  <h1 className="mt-2 line-clamp-2 text-xl font-semibold tracking-tight text-white sm:text-2xl">
                     {postcard.movie.title}
-                  </p>
+                  </h1>
                 )}
               </div>
 
@@ -90,8 +107,8 @@ export default function PostcardDetailPage() {
               )}
             </div>
 
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <span className="rounded-full border border-cinemo-gold/40 bg-cinemo-gold/10 px-3 py-1 text-xs text-cinemo-gold-light">
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <span className="text-xs font-medium tracking-wide text-cinemo-gold">
                 {typeLabel}
               </span>
             </div>
@@ -109,15 +126,28 @@ export default function PostcardDetailPage() {
                 className="mt-4 font-serif text-[clamp(1.5rem,6vw,2.5rem)] font-semibold leading-[1.25] text-white sm:mt-5 sm:text-3xl sm:leading-[1.4]"
               />
             ) : (
-              <blockquote className="mt-4 whitespace-pre-wrap font-serif text-[clamp(1.5rem,6vw,2.5rem)] font-semibold leading-[1.25] text-white sm:mt-5 sm:text-3xl sm:leading-[1.4]">
-                “{postcard.content}”
-              </blockquote>
+              <p className="mt-4 whitespace-pre-wrap font-serif text-[clamp(1.5rem,6vw,2.5rem)] font-semibold leading-[1.25] text-white sm:mt-5 sm:text-3xl sm:leading-[1.4]">
+                {postcard.type === "SCENE"
+                  ? `“${postcard.content}”`
+                  : postcard.content}
+              </p>
             )}
 
-            <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-sm text-white/60 sm:mt-7">
-              <span>반응 {postcard.reactionCount}</span>
-              <span>댓글 {postcard.commentCount}</span>
-              <span>공유 {postcard.shareCount}</span>
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-xs text-white/55 sm:mt-8">
+              <span>
+                {postcard.author?.nickname ?? "익명"} ·{" "}
+                {formatPostcardDate(postcard.createdAt)}
+              </span>
+
+              <div className="flex items-center gap-4 text-sm text-white/60">
+                <span>반응 {postcard.reactionCount}</span>
+                <span>댓글 {postcard.commentCount}</span>
+                <span>공유 {postcard.shareCount}</span>
+                <PostcardShareButton
+                  postcardId={postcard.id}
+                  title={postcard.movie?.title ?? "CINEMO 엽서"}
+                />
+              </div>
             </div>
           </div>
         </article>
