@@ -30,6 +30,13 @@ export const envValidationSchema = Joi.object({
   [EnvKeys.KMDB_BASE_URL]: Joi.string()
     .uri({ allowRelative: false })
     .required(),
+
+  [EnvKeys.OPENSUBTITLES_API_BASE_URL]: Joi.string()
+    .uri({ scheme: ["http", "https"] })
+    .required(),
+  [EnvKeys.OPENSUBTITLES_USER_AGENT]: Joi.string().trim().min(1).required(),
+  [EnvKeys.OPENSUBTITLES_API_KEY]: Joi.string().trim().min(1).required(),
+
   [EnvKeys.API_URL]: Joi.string()
     .uri({ scheme: ["http", "https"] })
     .required(),

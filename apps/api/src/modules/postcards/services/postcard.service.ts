@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import { PostcardSource, PostcardVisibility } from "@prisma/client";
@@ -20,10 +21,105 @@ import { CreatePostcardReactionRequestDto } from "@/modules/postcards/dto/reques
 import { CreatePostcardReportRequestDto } from "@/modules/postcards/dto/requests/create-postcard-report-request.dto";
 import { GetPostcardNotificationsRequestDto } from "@/modules/postcards/dto/requests/get-postcard-notifications-request.dto";
 import { CreatePostcardShareRequestDto } from "@/modules/postcards/dto/requests/create-postcard-share-request.dto";
+import {
+  OpenAiService,
+  type SuggestQuoteResult,
+} from "@/integrations/openai/openai.service";
+import { CreatePostcardQuoteSuggestionRequestDto } from "@/modules/postcards/dto/requests/create-postcard-quote-suggestion-request.dto";
+import { OpenSubtitlesService } from "@/integrations/opensubtitles/opensubtitles.service";
+import type {
+  OpenSubtitlesSubtitleContent,
+  OpenSubtitlesSubtitleSearchItem,
+} from "@/integrations/opensubtitles/opensubtitles.types";
 
 @Injectable()
 export class PostcardService {
-  constructor(private readonly postcardRepository: PostcardRepository) {}
+  private readonly logger = new Logger(PostcardService.name);
+
+  constructor(
+    private readonly postcardRepository: PostcardRepository,
+    private readonly openAiService: OpenAiService,
+    private readonly openSubtitlesService: OpenSubtitlesService,
+  ) {}
+
+  async suggestQuote(
+    request: CreatePostcardQuoteSuggestionRequestDto,
+  ): Promise<SuggestQuoteResult> {
+    const subtitleContent = await this.tryFetchSubtitleContent(request);
+
+    if (subtitleContent?.cues.length) {
+      return this.openAiService.suggestQuoteFromSubtitles({
+        movieTitle: request.movieTitle,
+        review: request.review,
+        language: request.language,
+        subtitles: subtitleContent.cues,
+      });
+    }
+
+    const candidates =
+      await this.postcardRepository.findPublicQuoteCandidates({
+        movieId: request.movieId,
+        movieTitle: request.movieTitle,
+      });
+
+    return this.openAiService.suggestQuote({
+      ...request,
+      candidates,
+    });
+  }
+
+  private async tryFetchSubtitleContent(
+    request: CreatePostcardQuoteSuggestionRequestDto,
+  ): Promise<OpenSubtitlesSubtitleContent | null> {
+    try {
+      const searchResult = await this.openSubtitlesService.searchSubtitles({
+        query: request.movieTitle.trim(),
+        languages: request.language?.trim() || "en,ko",
+        type: "movie",
+      });
+
+      const subtitle = this.selectSubtitleSearchItem(
+        searchResult.items,
+        request.language,
+      );
+
+      if (!subtitle) {
+        return null;
+      }
+
+      const download = await this.openSubtitlesService.downloadSubtitle({
+        file_id: subtitle.fileId,
+      });
+
+      return await this.openSubtitlesService.fetchSubtitleContent(download);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      this.logger.warn(`OpenSubtitles 자막 처리 실패: ${message}`);
+      return null;
+    }
+  }
+
+  private selectSubtitleSearchItem(
+    items: OpenSubtitlesSubtitleSearchItem[],
+    language?: string,
+  ) {
+    const requestedLanguage = language?.trim().toLowerCase();
+
+    return (
+      (requestedLanguage
+        ? items.find(
+            (item) => item.language.toLowerCase() === requestedLanguage,
+          )
+        : undefined) ??
+      items.find((item) => item.language.toLowerCase() === "en") ??
+      items.find(
+        (item) => !item.aiTranslated && !item.machineTranslated,
+      ) ??
+      items[0]
+    );
+  }
+
   async findPublicFeed(
     userId: string | undefined,
     request: GetPostcardFeedRequestDto,

@@ -10,6 +10,7 @@ import type { CreatePostcardFormValues } from "@/schemas/postcard.schema";
 type PostcardQuoteFieldsProps = {
   control: Control<CreatePostcardFormValues>;
   register: UseFormRegister<CreatePostcardFormValues>;
+  quoteSource?: CreatePostcardFormValues["quoteSource"];
   error?: string;
   aiError?: string;
   contentLength: number;
@@ -18,6 +19,7 @@ type PostcardQuoteFieldsProps = {
 export function PostcardQuoteFields({
   control,
   register,
+  quoteSource,
   error,
   aiError,
   contentLength,
@@ -68,9 +70,20 @@ export function PostcardQuoteFields({
         return (
           <section className="space-y-4 rounded-2xl border border-dashed border-white/15 p-5">
             <div>
-              <p className="text-sm font-medium text-cinemo-gold">
-                기억하고 싶은 인용구
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-medium text-cinemo-gold">
+                  기억하고 싶은 인용구
+                </p>
+
+                {quoteSource === "OPENSUBTITLES" && (
+                  <span
+                    className="rounded-full border border-cinemo-gold/30 bg-cinemo-gold/10 px-2 py-0.5 text-[11px] text-cinemo-gold"
+                    title="OpenSubtitles에서 확인한 자막을 기반으로 추천된 문구"
+                  >
+                    실제 자막 기반 문구
+                  </span>
+                )}
+              </div>
 
               <p className="mt-1 text-xs text-cinemo-muted">
                 영화 속 문장이나 대사를 남겨보세요.

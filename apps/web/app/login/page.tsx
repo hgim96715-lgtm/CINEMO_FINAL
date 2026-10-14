@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoaderCircle, LockKeyhole, Mail } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  LockKeyhole,
+  Mail,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +25,7 @@ export default function LoginPage() {
   const [apiError, setApiError] = useState("");
   const [registered, setRegistered] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -125,12 +132,27 @@ export default function LoginPage() {
 
               <Input
                 {...register("password")}
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="비밀번호를 입력하세요"
                 autoComplete="current-password"
                 aria-invalid={Boolean(errors.password)}
-                className="h-12 border-white/15 bg-white/5 pl-10 text-cinemo-text placeholder:text-white/35"
+                className="h-12 border-white/15 bg-white/5 pl-10 pr-12 text-cinemo-text placeholder:text-white/35"
               />
+
+              <button
+                type="button"
+                aria-label={
+                  showPassword ? "비밀번호 숨기기" : "비밀번호 보기"
+                }
+                onClick={() => setShowPassword((visible) => !visible)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-cinemo-muted transition-colors hover:text-cinemo-text"
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="size-4" aria-hidden="true" />
+                )}
+              </button>
             </div>
 
             {errors.password && (

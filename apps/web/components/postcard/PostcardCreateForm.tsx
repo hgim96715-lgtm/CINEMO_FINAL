@@ -196,6 +196,7 @@ export function PostcardCreateForm({
   const postcardType = form.watch("type");
   const postcardVisibility = form.watch("visibility");
   const postcardContent = form.watch("content");
+  const quoteSource = form.watch("quoteSource");
   const postcardMetadata = form.watch("metadata");
   const postcardMedia = form.watch("media");
   const sceneMediaUrl =
@@ -276,6 +277,7 @@ export function PostcardCreateForm({
 
     try {
       const result = await quoteSuggestionMutation.mutateAsync({
+        movieId,
         movieTitle,
       });
 
@@ -291,6 +293,12 @@ export function PostcardCreateForm({
       const currentMetadata = form.getValues("metadata");
 
       form.setValue("content", result.original, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+
+      form.setValue("quoteSource", result.quoteSource, {
         shouldDirty: true,
         shouldTouch: true,
         shouldValidate: true,
@@ -450,6 +458,7 @@ export function PostcardCreateForm({
             <PostcardQuoteFields
               control={form.control}
               register={form.register}
+              quoteSource={quoteSource}
               error={form.formState.errors.content?.message}
               aiError={aiSuggestionError ?? undefined}
               contentLength={postcardContent.length}

@@ -38,10 +38,23 @@ export function PostcardHeroCarousel() {
 
   const activePostcard = postcards[activeIndex];
   const activeImageUrl =
-    activePostcard?.media[0]?.url ?? activePostcard?.movie?.posterUrl;
+    activePostcard?.movie?.posterUrl ?? activePostcard?.media[0]?.url;
   const activeImageAlt =
     activePostcard?.media[0]?.altText ??
     `${activePostcard?.movie?.title ?? "영화"} 포스터`;
+  const activeTranslation =
+    activePostcard?.metadata?.type === "QUOTE"
+      ? (activePostcard.metadata.translations?.find(
+          (translation) => translation.language.toLowerCase() === "ko",
+        )?.content ?? "")
+      : "";
+  const hasMoreContent = activePostcard
+    ? activePostcard.type === "QUOTE"
+      ? activePostcard.content.length > 90 ||
+        activeTranslation.length > 90 ||
+        activeTranslation.split(/\r?\n/).length > 3
+      : activePostcard.content.length > 160
+    : false;
 
   // 배열이 새로 바뀌었을 때 현재 선택된 인덱스를 확인하고, 존재하지 않으면 0번 엽서로 초기화
   useEffect(() => {
@@ -93,7 +106,7 @@ export function PostcardHeroCarousel() {
 
   return (
     <section
-      className="relative isolate h-124 overflow-hidden rounded-[2rem] border border-white/10 bg-white/6 text-cinemo-text shadow-[0_2rem_5rem_rgb(0_0_0_/24%)] backdrop-blur-xl sm:h-[clamp(28rem,44vw,34rem)]"
+      className="relative isolate h-[28rem] overflow-hidden rounded-[2rem] border border-white/10 bg-white/6 text-cinemo-text shadow-[0_2rem_5rem_rgb(0_0_0_/24%)] backdrop-blur-xl sm:h-[clamp(28rem,44vw,34rem)]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocus={() => setIsPaused(true)}
@@ -112,9 +125,26 @@ export function PostcardHeroCarousel() {
         aria-hidden
       />
 
-      <div className="relative z-10 grid h-full min-h-0 grid-rows-[9rem_minmax(0,1fr)] gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(18rem,0.85fr)] sm:grid-rows-1 sm:gap-10 sm:p-10 lg:p-14">
-        <div className="order-2 flex min-h-0 min-w-0 flex-col justify-between overflow-hidden sm:order-1">
-          <div className="flex min-h-0 flex-1 flex-col">
+      {activeImageUrl && (
+        <Image
+          src={activeImageUrl}
+          alt=""
+          fill
+          sizes="100vw"
+          className="z-0 object-cover opacity-40 sm:hidden"
+          aria-hidden="true"
+          priority
+        />
+      )}
+
+      <div
+        className="absolute inset-0 z-[1] bg-black/45 sm:hidden"
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 grid h-full min-h-0 grid-rows-1 gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(18rem,0.85fr)] sm:grid-rows-1 sm:gap-10 sm:p-10 lg:p-14">
+        <div className="order-2 flex min-h-0 min-w-0 flex-col justify-center overflow-hidden sm:order-1 sm:justify-between">
+          <div className="flex min-h-0 flex-none flex-col sm:flex-1">
             <div className="min-h-0 flex-1 overflow-hidden">
               <div className="flex items-center justify-between gap-3 sm:justify-start">
                 <p className="text-xs tracking-[0.08em] text-cinemo-muted">
@@ -132,7 +162,7 @@ export function PostcardHeroCarousel() {
                 </span>
               </div>
 
-              <p className="mt-5 text-sm text-cinemo-muted sm:mt-8">
+              <p className="mt-5 text-sm font-medium text-cinemo-gold drop-shadow-[0_1px_5px_rgba(0,0,0,0.8)] sm:mt-5">
                 {activePostcard.movie?.title ?? "영화와 함께 남긴 기록"}
               </p>
 
@@ -145,7 +175,9 @@ export function PostcardHeroCarousel() {
                   content={activePostcard.content}
                   metadata={activePostcard.metadata}
                   compact
-                  className="mt-3 h-[8.5rem] max-w-2xl overflow-hidden font-serif text-[clamp(1.3rem,6vw,1.9rem)] font-semibold leading-[1.2] text-white sm:h-44 sm:text-[clamp(1.8rem,4vw,3.2rem)]"
+                  compactQuoteLines={3}
+                  compactTranslationLines={3}
+                  className="mt-3 h-[11.5rem] max-w-2xl overflow-hidden font-serif text-[clamp(1.3rem,6vw,1.9rem)] font-semibold leading-[1.2] text-white sm:h-60 sm:text-[clamp(1.7rem,3.5vw,2.8rem)]"
                 />
               ) : (
                 <blockquote
@@ -157,15 +189,17 @@ export function PostcardHeroCarousel() {
               )}
             </div>
 
-            <Link
-              href={`/lobby/postcards/${activePostcard.id}`}
-              className="mt-2 inline-flex shrink-0 text-sm font-medium text-cinemo-gold transition hover:text-cinemo-gold-light"
-            >
-              더보기
-            </Link>
+            {hasMoreContent && (
+              <Link
+                href={`/lobby/postcards/${activePostcard.id}`}
+                className="mt-2 inline-flex shrink-0 text-sm font-medium text-cinemo-gold transition hover:text-cinemo-gold-light"
+              >
+                더보기
+              </Link>
+            )}
           </div>
 
-          <div className="mt-4 flex shrink-0 items-end justify-between gap-4 sm:mt-10 sm:gap-6">
+          <div className="mt-4 flex shrink-0 items-end justify-between gap-4 sm:mt-6 sm:gap-6">
             <div>
               <p className="text-sm text-cinemo-muted">
                 영화와 함께 남긴 한 장의 기록
@@ -199,26 +233,22 @@ export function PostcardHeroCarousel() {
           </div>
         </div>
 
-        <div className="relative order-1 flex w-full items-center justify-center sm:order-2">
+        <div className="relative order-1 hidden w-full items-center justify-center sm:order-2 sm:flex">
           {activeImageUrl ? (
-            <div className="relative h-full w-full max-w-md rotate-1 overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/10 p-1 shadow-2xl shadow-black/40 transition-transform duration-500 hover:rotate-0 sm:h-auto sm:aspect-video">
-              <div className="relative h-full overflow-hidden rounded-[1.3rem]">
+            <div className="relative flex h-full w-full items-center justify-center">
+              <div className="relative aspect-[2/3] h-full max-h-full w-auto max-w-full rotate-1 overflow-hidden rounded-[1.75rem] transition-transform duration-500 hover:rotate-0">
                 <Image
                   src={activeImageUrl}
                   alt={activeImageAlt}
                   fill
-                  sizes="(max-width: 640px) calc(100vw - 2rem), (max-width: 1024px) 38vw, 448px"
-                  className="object-cover"
+                  sizes="(max-width: 1024px) 44vw, 520px"
+                  className="object-contain drop-shadow-2xl"
                   priority
-                />
-                <div
-                  className="absolute inset-0 bg-linear-to-t from-black/45 via-transparent to-white/10"
-                  aria-hidden="true"
                 />
               </div>
             </div>
           ) : (
-            <div className="flex h-full aspect-auto w-full max-w-md items-center justify-center rounded-[1.5rem] border border-white/15 bg-white/5 text-sm text-cinemo-muted sm:h-auto sm:aspect-video">
+            <div className="flex h-full w-full max-w-lg items-center justify-center text-sm text-cinemo-muted">
               포스터 준비중
             </div>
           )}

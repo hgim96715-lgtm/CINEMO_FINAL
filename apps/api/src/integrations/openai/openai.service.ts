@@ -7,15 +7,19 @@ import {
 import { ConfigService } from "@nestjs/config";
 import OpenAI from "openai";
 
+import type { PublicQuoteCandidate } from "@/modules/postcards/repositories/postcard.repository";
+import type { OpenSubtitlesSubtitleCue } from "@/integrations/opensubtitles/opensubtitles.types";
 import { OPENAI_CLIENT } from "./openai.constants";
 
 type SuggestQuoteInput = {
+  movieId?: string;
   movieTitle: string;
   review?: string;
   language?: string;
+  candidates: PublicQuoteCandidate[];
 };
 
-export type SuggestQuoteResult = {
+type QuoteModelResult = {
   found: boolean;
   original: string | null;
   translation: string | null;
@@ -24,11 +28,36 @@ export type SuggestQuoteResult = {
   isAiSuggested: true;
 };
 
+type SubtitleQuoteModelResult = {
+  found: boolean;
+  startCue: number | null;
+  endCue: number | null;
+  translation: string | null;
+  sourceLanguage: string | null;
+  targetLanguage: "ko";
+  isAiSuggested: true;
+};
+
+export type SuggestQuoteResult = QuoteModelResult & {
+  quoteSource: "USER" | "OPENSUBTITLES";
+};
+
 type TranslateQuoteInput = {
   content: string;
   sourceLanguage: string;
   targetLanguage: string;
 };
+
+type SuggestSubtitleQuoteInput = {
+  movieTitle: string;
+  review?: string;
+  language?: string;
+  subtitles: OpenSubtitlesSubtitleCue[];
+};
+
+const MAX_SUBTITLE_CUES = 600;
+const MAX_QUOTE_CUES = 4;
+const MAX_QUOTE_CHARACTERS = 600;
 
 @Injectable()
 export class OpenAiService {
@@ -41,42 +70,41 @@ export class OpenAiService {
   ) {}
 
   async suggestQuote({
+    movieId,
     movieTitle,
     review,
     language,
+    candidates,
   }: SuggestQuoteInput): Promise<SuggestQuoteResult> {
-    // 실제 문구 조회 연동 전 UI 확인용 임시 응답임.
-    // 운영 환경에서는 절대 반환하지 않음.
-    if (process.env.NODE_ENV !== "production") {
-      return {
-        found: true,
-        original: "This is a temporary quote for UI preview.",
-        translation: "이 문장은 UI 확인을 위한 임시 문구입니다.",
-        sourceLanguage: "en",
-        targetLanguage: "ko",
-        isAiSuggested: true,
-      };
+    if (!candidates.length) {
+      throw new BadGatewayException(
+        "이 영화에 공개된 인용구가 아직 없습니다.",
+      );
     }
 
     const sourceLanguageInstruction = language?.trim()
       ? language
       : "영화의 대표 원문 언어를 자동으로 추론";
 
-    const result = await this.createStructuredOutput<SuggestQuoteResult>({
+    const result = await this.createStructuredOutput<QuoteModelResult>({
       instructions:
         [
           "사용자가 영화에서 기억할 만한 문구를 궁금해하고 있다.",
-          "영화에 실제로 등장한 것으로 확인되는 대표 문구 또는 대사만 반환한다.",
-          "확인할 수 없는 경우 추측하거나 새 문장을 만들지 않는다.",
-          "확인 가능한 문구가 없으면 found를 false로 반환하고 문구 관련 값은 null로 반환한다.",
+          "아래 후보 중 하나의 원문을 정확히 그대로 선택한다.",
+          "후보에 없는 문장을 새로 만들거나 원문을 수정하지 않는다.",
           "원문과 자연스러운 한국어 번역을 함께 반환한다.",
           "원문 언어는 요청 언어가 없으면 영화 제목과 맥락을 기준으로 추론한다.",
         ].join(" "),
       input: [
         `영화 제목: ${movieTitle}`,
+        `영화 ID: ${movieId ?? "없음"}`,
         `사용자 감상: ${review ?? "없음"}`,
         `원문 언어: ${sourceLanguageInstruction}`,
         "번역 언어: 한국어(ko)",
+        "공개 인용구 후보:",
+        candidates
+          .map((candidate, index) => `${index + 1}. ${candidate.content}`)
+          .join("\n"),
       ].join("\n"),
       schema: {
         type: "object",
@@ -100,18 +128,26 @@ export class OpenAiService {
       },
     });
 
+    const selectedCandidate = candidates.find(
+      (candidate) => candidate.content.trim() === result.original?.trim(),
+    );
+
     if (
       !result.found ||
       !result.original ||
       !result.translation ||
-      !result.sourceLanguage
+      !result.sourceLanguage ||
+      !selectedCandidate
     ) {
       throw new BadGatewayException(
-        "확인 가능한 영화 문구를 찾지 못했습니다.",
+        "후보에서 확인 가능한 영화 문구를 찾지 못했습니다.",
       );
     }
 
-    return result;
+    return {
+      ...result,
+      quoteSource: selectedCandidate.quoteSource ?? "USER",
+    };
   }
 
   async translateQuote({
@@ -128,6 +164,107 @@ export class OpenAiService {
         `원문: ${content}`,
       ].join("\n"),
     });
+  }
+
+  async suggestQuoteFromSubtitles({
+    movieTitle,
+    review,
+    language,
+    subtitles,
+  }: SuggestSubtitleQuoteInput): Promise<SuggestQuoteResult> {
+    if (subtitles.length === 0) {
+      throw new BadGatewayException("확인할 자막 문장이 없습니다.");
+    }
+
+    const sourceLanguageInstruction = language?.trim()
+      ? language
+      : "자막 문장의 언어를 자동으로 추론";
+    const availableSubtitles = subtitles.slice(0, MAX_SUBTITLE_CUES);
+    const subtitleItems = availableSubtitles
+      .map(
+        (subtitle, index) =>
+          `[${index + 1}] ${subtitle.startTime} → ${subtitle.endTime}: ${subtitle.text}`,
+      )
+      .join("\n");
+
+    const result = await this.createStructuredOutput<SubtitleQuoteModelResult>({
+      instructions:
+        [
+          "사용자가 영화에서 기억할 만한 실제 문구를 찾고 있다.",
+          "아래 자막 목록에서 기억에 남는 하나의 연속된 대사 구간을 선택한다.",
+          `startCue와 endCue로 최대 ${MAX_QUOTE_CUES}개의 인접한 자막 구간을 지정한다.`,
+          "완전한 생각이나 대화가 되도록 선택하고, 단어 하나나 맥락 없는 짧은 문장은 피한다.",
+          "자막 목록에 없는 문장을 만들거나 자막 순서를 바꾸지 않는다.",
+          "선택한 구간의 원문은 서버가 자막에서 직접 조합하므로 원문을 반환하지 않는다.",
+          "확실한 문장을 선택할 수 없으면 found를 false로 반환한다.",
+        ].join(" "),
+      input: [
+        `영화 제목: ${movieTitle}`,
+        `사용자 감상: ${review ?? "없음"}`,
+        `원문 언어: ${sourceLanguageInstruction}`,
+        "번역 언어: 한국어(ko)",
+        "자막 목록:",
+        subtitleItems,
+      ].join("\n"),
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          found: { type: "boolean" },
+          startCue: { type: ["integer", "null"] },
+          endCue: { type: ["integer", "null"] },
+          translation: { type: ["string", "null"] },
+          sourceLanguage: { type: ["string", "null"] },
+          targetLanguage: { type: "string", enum: ["ko"] },
+          isAiSuggested: { type: "boolean", enum: [true] },
+        },
+        required: [
+          "found",
+          "startCue",
+          "endCue",
+          "translation",
+          "sourceLanguage",
+          "targetLanguage",
+          "isAiSuggested",
+        ],
+      },
+    });
+
+    const startCue = result.startCue ?? 0;
+    const endCue = result.endCue ?? 0;
+    const selectedSubtitles =
+      startCue > 0 &&
+      endCue >= startCue &&
+      endCue - startCue + 1 <= MAX_QUOTE_CUES
+        ? availableSubtitles.slice(startCue - 1, endCue)
+        : [];
+    const original = selectedSubtitles
+      .map((subtitle) => subtitle.text.trim())
+      .filter(Boolean)
+      .join(" ");
+
+    if (
+      !result.found ||
+      !original ||
+      original.length > MAX_QUOTE_CHARACTERS ||
+      !result.translation ||
+      !result.sourceLanguage ||
+      selectedSubtitles.length === 0
+    ) {
+      throw new BadGatewayException(
+        "자막에서 확인 가능한 영화 문구를 찾지 못했습니다.",
+      );
+    }
+
+    return {
+      found: true,
+      original,
+      translation: result.translation,
+      sourceLanguage: result.sourceLanguage,
+      targetLanguage: "ko",
+      isAiSuggested: true,
+      quoteSource: "OPENSUBTITLES",
+    };
   }
 
   private async createPlainText({

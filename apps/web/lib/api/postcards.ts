@@ -106,6 +106,7 @@ export async function publishPostcard(
   return data;
 }
 export type CreatePostcardQuoteSuggestionInput = {
+  movieId?: string;
   movieTitle: string;
   review?: string;
   language?: string;
@@ -118,6 +119,7 @@ export type PostcardQuoteSuggestionResponse = {
   sourceLanguage: string | null;
   targetLanguage: "ko";
   isAiSuggested: true;
+  quoteSource: "USER" | "OPENSUBTITLES";
 };
 
 export async function createPostcardQuoteSuggestion(

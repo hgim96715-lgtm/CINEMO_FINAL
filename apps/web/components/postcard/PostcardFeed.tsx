@@ -103,7 +103,7 @@ export function PostcardFeed() {
           >
             <article className="overflow-hidden rounded-[1.5rem] border border-white/15 bg-white/[0.07] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.24)] backdrop-blur-xl transition duration-300 group-hover:-translate-y-1 group-hover:border-white/25 group-hover:bg-white/[0.1] group-hover:shadow-[0_24px_60px_rgba(0,0,0,0.32)] group-focus-visible:ring-2 group-focus-visible:ring-cinemo-gold sm:rounded-[1.75rem] sm:p-5">
               <div className="flex flex-col gap-4 sm:flex-row">
-                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-2xl bg-[#172322] min-[480px]:aspect-[16/7] sm:h-40 sm:aspect-auto sm:w-28">
+                <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden rounded-2xl bg-[#172322] min-[480px]:aspect-[16/7] sm:h-40 sm:aspect-auto sm:w-28">
                   {imageUrl ? (
                     <Image
                       src={imageUrl}
@@ -170,7 +170,7 @@ export function PostcardFeed() {
                     <PostcardQuoteContent
                       content={postcard.content}
                       metadata={postcard.metadata}
-                      className="mt-2 line-clamp-4 text-sm leading-6 text-white/90"
+                      className="mt-2 line-clamp-5 text-sm leading-6 text-white/90"
                     />
                   ) : (
                     <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-6 text-white/90">

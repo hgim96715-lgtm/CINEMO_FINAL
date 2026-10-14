@@ -24,6 +24,7 @@ import { KakaoModule } from "@/integrations/kakao/kakao.module";
 import { MapModule } from "@/modules/map/map.module";
 import { PostcardsModule } from "@/modules/postcards/postcards.module";
 import { openaiConfig } from "@/config/openai.config";
+import { openSubtitlesConfig } from "@/config/opensubtitles.config";
 import { OpenAiModule } from "@/integrations/openai/openai.module";
 
 @Module({
@@ -48,6 +49,7 @@ import { OpenAiModule } from "@/integrations/openai/openai.module";
         oauthConfig,
         mapConfig,
         openaiConfig,
+        openSubtitlesConfig,
       ],
       validationSchema: envValidationSchema,
       validationOptions: {

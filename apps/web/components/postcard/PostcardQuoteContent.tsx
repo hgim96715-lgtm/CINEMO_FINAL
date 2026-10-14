@@ -5,6 +5,8 @@ type PostcardQuoteContentProps = {
   metadata: PostcardMetadata | null | undefined;
   className?: string;
   compact?: boolean;
+  compactQuoteLines?: 2 | 3;
+  compactTranslationLines?: 1 | 2 | 3;
 };
 
 export function PostcardQuoteContent({
@@ -12,6 +14,8 @@ export function PostcardQuoteContent({
   metadata,
   className,
   compact = false,
+  compactQuoteLines = 2,
+  compactTranslationLines = 1,
 }: PostcardQuoteContentProps) {
   const translation =
     metadata?.type === "QUOTE"
@@ -24,7 +28,11 @@ export function PostcardQuoteContent({
     <div className={className}>
       <p
         className={`whitespace-pre-wrap wrap-break-word ${
-          compact ? "line-clamp-2" : ""
+          compact
+            ? compactQuoteLines === 3
+              ? "line-clamp-3"
+              : "line-clamp-2"
+            : ""
         }`}
       >
         “{content}”
@@ -33,7 +41,13 @@ export function PostcardQuoteContent({
       {translation && (
         <p
           className={`mt-2 whitespace-pre-wrap wrap-break-word border-t border-white/10 pt-2 font-sans text-sm font-normal leading-6 text-cinemo-muted ${
-            compact ? "line-clamp-1" : ""
+            compact
+              ? compactTranslationLines === 3
+                ? "line-clamp-3"
+                : compactTranslationLines === 2
+                  ? "line-clamp-2"
+                  : "line-clamp-1"
+              : ""
           }`}
         >
           {translation}

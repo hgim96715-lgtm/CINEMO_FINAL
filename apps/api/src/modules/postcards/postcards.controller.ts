@@ -39,7 +39,6 @@ import { CreatePostcardShareRequestDto } from "@/modules/postcards/dto/requests/
 import { GetPostcardNotificationsRequestDto } from "@/modules/postcards/dto/requests/get-postcard-notifications-request.dto";
 import { PostcardNotificationFeedResponseDto } from "@/modules/postcards/dto/responses/postcard-notification-feed.response.dto";
 import { toPostcardNotificationResponse } from "@/modules/postcards/dto/mappers/postcard-notification.mapper";
-import { OpenAiService } from "@/integrations/openai/openai.service";
 import { CreatePostcardQuoteSuggestionRequestDto } from "@/modules/postcards/dto/requests/create-postcard-quote-suggestion-request.dto";
 import { PostcardQuoteSuggestionResponseDto } from "@/modules/postcards/dto/responses/postcard-quote-suggestion.response.dto";
 import { Throttle } from "@nestjs/throttler";
@@ -49,7 +48,6 @@ import { Throttle } from "@nestjs/throttler";
 export class PostcardsController {
   constructor(
     private readonly postcardService: PostcardService,
-    private readonly openAiService: OpenAiService,
   ) {}
 
   @ApiCookieAuth("cinemo_session")
@@ -71,7 +69,7 @@ export class PostcardsController {
   async suggestQuote(
     @Body() request: CreatePostcardQuoteSuggestionRequestDto,
   ) {
-    return this.openAiService.suggestQuote(request);
+    return this.postcardService.suggestQuote(request);
   }
 
   @OptionalAuth()

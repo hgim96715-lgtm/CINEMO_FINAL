@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { PostcardQuoteSource } from "@prisma/client";
 
 export class PostcardQuoteSuggestionResponseDto {
   @ApiProperty({
@@ -36,4 +37,11 @@ export class PostcardQuoteSuggestionResponseDto {
     example: true,
   })
   isAiSuggested!: true;
+
+  @ApiProperty({
+    description: "추천 문구의 근거",
+    enum: PostcardQuoteSource,
+    example: PostcardQuoteSource.USER,
+  })
+  quoteSource!: PostcardQuoteSource;
 }

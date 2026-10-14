@@ -1,7 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsOptional, IsString, MaxLength } from "class-validator";
+import { IsOptional, IsString, IsUUID, MaxLength } from "class-validator";
 
 export class CreatePostcardQuoteSuggestionRequestDto {
+  @ApiPropertyOptional({
+    description: "정확한 영화 매칭에 사용할 영화 ID",
+    format: "uuid",
+  })
+  @IsOptional()
+  @IsUUID()
+  movieId?: string;
+
   @ApiProperty({
     description: "영화 제목",
     example: "인터스텔라",

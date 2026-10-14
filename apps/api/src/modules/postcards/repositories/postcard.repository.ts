@@ -98,6 +98,11 @@ export type CreateReportRepositoryInput = {
   reason: string;
 };
 
+export type PublicQuoteCandidate = {
+  content: string;
+  quoteSource: PostcardQuoteSource | null;
+};
+
 export type CreateShareRepositoryInput = {
   postcardId: string;
   userId?: string | null;
@@ -213,6 +218,59 @@ export class PostcardRepository {
       nextCursor,
       hasNextPage,
     };
+  }
+
+  async findPublicQuoteCandidates({
+    movieId,
+    movieTitle,
+    limit = 20,
+  }: {
+    movieId?: string;
+    movieTitle: string;
+    limit?: number;
+  }): Promise<PublicQuoteCandidate[]> {
+    const items = await this.prisma.postcard.findMany({
+      where: {
+        type: PostcardType.QUOTE,
+        source: PostcardSource.USER,
+        visibility: PostcardVisibility.PUBLIC,
+        status: PostcardStatus.PUBLISHED,
+        content: { not: "" },
+        ...(movieId
+          ? { movieId }
+          : {
+              movie: {
+                titles: {
+                  some: {
+                    title: {
+                      equals: movieTitle.trim(),
+                      mode: "insensitive",
+                    },
+                  },
+                },
+              },
+            }),
+      },
+      orderBy: [{ reactionCount: "desc" }, { createdAt: "desc" }],
+      select: {
+        content: true,
+        quoteSource: true,
+      },
+      take: Math.min(limit, 50),
+    });
+
+    const seen = new Set<string>();
+
+    return items.filter((item) => {
+      const normalizedContent = item.content.trim();
+
+      if (!normalizedContent || seen.has(normalizedContent)) {
+        return false;
+      }
+
+      seen.add(normalizedContent);
+      return true;
+    });
   }
 
   async findById(id: string, userId?: string): Promise<DomainPostcard | null> {
