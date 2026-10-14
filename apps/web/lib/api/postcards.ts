@@ -1,9 +1,10 @@
-import type {
+import {
   PostcardFeedResponse as ApiPostcardFeedResponse,
   PostcardMedia,
   PostcardMetadata,
   PostcardResponse,
   PostcardStyle,
+  UpdatePostcardRequest,
 } from "@cinemo/api-contract";
 
 import { apiClient } from "./apiClient";
@@ -119,5 +120,18 @@ export async function createPostcardQuoteSuggestion(
     { signal },
   );
 
+  return data;
+}
+
+export async function updatePostcard(
+  postcardId: string,
+  input: UpdatePostcardRequest,
+  signal?: AbortSignal,
+): Promise<Postcard> {
+  const { data } = await apiClient.patch<Postcard>(
+    `/postcards/${encodeURIComponent(postcardId)}`,
+    input,
+    { signal },
+  );
   return data;
 }

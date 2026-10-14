@@ -1,8 +1,8 @@
-export type PostcardVisibility = "PUBLIC" | "PRIVATE" | "UNLISTED";
+export type PostcardVisibility = "PUBLIC" | "PRIVATE";
 
 export type PostcardStatus = "DRAFT" | "PUBLISHED" | "HIDDEN" | "DELETED";
 
-export type PostcardType = "REVIEW" | "QUOTE" | "SCENE" | "NOTE";
+export type PostcardType = "REVIEW" | "QUOTE" | "SCENE";
 
 export type PostcardSource = "USER" | "AI";
 
@@ -14,6 +14,10 @@ export type PostcardMovieSummary = {
   id: string;
   title: string;
   posterUrl: string | null;
+};
+
+export type PostcardAuthorSummary = {
+  nickname: string;
 };
 
 export type PostcardMediaSummary = {
@@ -30,6 +34,7 @@ export type Postcard = {
   userId: string;
   movieId: string;
   movie: PostcardMovieSummary | null;
+  author: PostcardAuthorSummary | null;
   media: PostcardMediaSummary[];
   type: PostcardType;
   source: PostcardSource;

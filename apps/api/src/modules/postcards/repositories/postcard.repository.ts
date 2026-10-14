@@ -54,6 +54,7 @@ export type CreatePostcardCommentRepositoryInput = {
 export type UpdatePostcardRepositoryInput = {
   postcardId: string;
   userId: string;
+  type?: PostcardType;
   quoteSource?: PostcardQuoteSource | null;
   content?: string;
   metadata?: unknown | null;
@@ -247,6 +248,10 @@ export class PostcardRepository {
           id: postcard.id,
         },
         data: {
+          ...(input.type !== undefined && {
+            type: input.type,
+          }),
+
           ...(input.quoteSource !== undefined && {
             quoteSource: input.quoteSource,
           }),

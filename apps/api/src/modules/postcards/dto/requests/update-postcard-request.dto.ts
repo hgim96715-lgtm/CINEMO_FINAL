@@ -8,13 +8,25 @@ import {
   MaxLength,
   ValidateNested,
 } from "class-validator";
-import { PostcardQuoteSource, PostcardVisibility } from "@prisma/client";
+import {
+  PostcardQuoteSource,
+  PostcardType,
+  PostcardVisibility,
+} from "@prisma/client";
 
 import { PostcardMediaDto } from "./postcard-media.dto";
 import { PostcardMetadataDto } from "./postcard-metadata.dto";
 import { PostcardStyleDto } from "./postcard-style.dto";
 
 export class UpdatePostcardRequestDto {
+  @ApiPropertyOptional({
+    description: "엽서 유형",
+    enum: PostcardType,
+  })
+  @IsOptional()
+  @IsEnum(PostcardType)
+  type?: PostcardType;
+
   @ApiPropertyOptional({
     description: "QUOTE 원문의 근거",
     enum: PostcardQuoteSource,

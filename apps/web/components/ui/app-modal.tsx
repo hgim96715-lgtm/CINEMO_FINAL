@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, type ReactNode} from "react";
+import { type ReactNode, useEffect } from "react";
 
 import {
   Dialog,
@@ -60,10 +60,7 @@ export function AppModal({
         )}
       >
         <DialogHeader
-          className={cn(
-            "items-center text-center",
-            showCloseButton && "pr-8",
-          )}
+          className={cn("items-center text-center", showCloseButton && "pr-8")}
         >
           <DialogTitle className="text-center text-base font-semibold text-cinemo-gold-light">
             {title}
@@ -79,7 +76,7 @@ export function AppModal({
         {children}
 
         {footer && (
-          <DialogFooter className="-mx-4 -mb-4 flex-row items-center justify-center gap-2 border-white/10 bg-white/[0.02] sm:flex-row sm:justify-center">
+          <DialogFooter className="-mx-4 -mb-4 flex-row items-center justify-center gap-2 border-white/10 bg-white/2 sm:flex-row sm:justify-center">
             {footer}
           </DialogFooter>
         )}

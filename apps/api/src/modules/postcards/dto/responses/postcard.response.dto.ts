@@ -6,6 +6,8 @@ import {
   PostcardType,
   PostcardVisibility,
 } from "@prisma/client";
+import type {PostcardMetadataDto} from "../requests/postcard-metadata.dto";
+import type {PostcardStyleDto} from "../requests/postcard-style.dto";
 
 export class PostcardMovieSummaryDto {
   @ApiProperty({ description: "영화 ID", format: "uuid" })
@@ -43,6 +45,11 @@ export class PostcardMediaResponseDto {
   sortOrder!: number;
 }
 
+export class PostcardAuthorSummaryDto {
+  @ApiProperty({ description: "작성자 닉네임", example: "시네마틱" })
+  nickname!: string;
+}
+
 export class PostcardResponseDto {
   @ApiProperty({
     description: "엽서 ID",
@@ -62,6 +69,13 @@ export class PostcardResponseDto {
     nullable: true,
   })
   movie!: PostcardMovieSummaryDto | null;
+
+  @ApiProperty({
+    description: "엽서를 작성한 사용자 요약 정보",
+    type: PostcardAuthorSummaryDto,
+    nullable: true,
+  })
+  author!: PostcardAuthorSummaryDto | null;
 
   @ApiProperty({
     description: "엽서에 직접 첨부한 이미지 목록",
@@ -111,6 +125,20 @@ export class PostcardResponseDto {
     example: "postcards/backgrounds/01.webp",
   })
   backgroundImageKey!: string | null;
+
+  @ApiProperty({
+    description: "엽서 유형별 추가 기록 정보",
+    type: Object,
+    nullable: true,
+  })
+  metadata!: PostcardMetadataDto | null;
+
+  @ApiProperty({
+    description: "엽서 스타일 정보",
+    type: Object,
+    nullable: true,
+  })
+  style!: PostcardStyleDto | null;
 
   @ApiProperty({ description: "이모지 반응 수", example: 12 })
   reactionCount!: number;

@@ -6,19 +6,25 @@ import { useState } from "react";
 import Image from "next/image";
 
 import { PostcardMoviePicker } from "@/components/postcard/PostcardMoviePicker";
+import { PostcardSceneMeta } from "@/components/postcard/PostcardSceneMeta";
+import { PostcardQuoteContent } from "@/components/postcard/PostcardQuoteContent";
 import { myPostcardsQueryOptions } from "@/lib/queries/postcard-feed.query";
 import { Plus } from "lucide-react";
+import { Postcard } from "@/lib/api/postcards";
+import { PostcardViewModal } from "@/components/postcard/PostcardViewModal";
 
 const postcardTypeLabels = {
   REVIEW: "감상",
   QUOTE: "인용",
   SCENE: "장면",
-  NOTE: "기록",
 } as const;
 
 export function MyPostcardsPanel() {
   const router = useRouter();
   const [moviePickerOpen, setMoviePickerOpen] = useState(false);
+  const [selectedPostcard, setSelectedPostcard] = useState<Postcard | null>(
+    null,
+  );
 
   const {
     data,
@@ -96,7 +102,14 @@ export function MyPostcardsPanel() {
                 return (
                   <article
                     key={postcard.id}
-                    className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] backdrop-blur-xl"
+                    className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl cursor-pointer"
+                    onClick={() => setSelectedPostcard(postcard)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedPostcard(postcard);
+                      }
+                    }}
                   >
                     <div className="flex min-h-36 gap-4 p-3">
                       <div className="relative h-32 w-24 shrink-0 overflow-hidden rounded-xl bg-[#172322]">
@@ -126,9 +139,7 @@ export function MyPostcardsPanel() {
                               ? "임시저장"
                               : postcard.visibility === "PUBLIC"
                                 ? "공개"
-                                : postcard.visibility === "UNLISTED"
-                                  ? "링크 공개"
-                                  : "비공개"}
+                                : "비공개"}
                           </span>
                         </div>
 
@@ -136,9 +147,24 @@ export function MyPostcardsPanel() {
                           {postcard.movie?.title ?? "영화 정보 없음"}
                         </p>
 
-                        <p className="mt-2 line-clamp-3 text-sm leading-6 whitespace-pre-wrap text-cinemo-muted">
-                          {postcard.content}
-                        </p>
+                        {postcard.type === "SCENE" && (
+                          <PostcardSceneMeta
+                            metadata={postcard.metadata}
+                            compact
+                          />
+                        )}
+
+                        {postcard.type === "QUOTE" ? (
+                          <PostcardQuoteContent
+                            content={postcard.content}
+                            metadata={postcard.metadata}
+                            className="mt-2 line-clamp-4 text-sm leading-6 text-cinemo-muted"
+                          />
+                        ) : (
+                          <p className="mt-2 line-clamp-3 text-sm leading-6 whitespace-pre-wrap text-cinemo-muted">
+                            {postcard.content}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </article>
@@ -165,6 +191,15 @@ export function MyPostcardsPanel() {
         onOpenChange={setMoviePickerOpen}
         onSelect={(movieId) => {
           openPostcardCreate(movieId);
+        }}
+      />
+      <PostcardViewModal
+        postcard={selectedPostcard}
+        open={selectedPostcard !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedPostcard(null);
+          }
         }}
       />
     </>

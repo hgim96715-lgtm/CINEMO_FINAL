@@ -1,26 +1,42 @@
 "use client";
 
-import {useEffect, useRef} from "react";
-import {useInfiniteQuery} from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import Image from "next/image";
-import {postcardFeedQueryOptions} from "@/lib/queries/postcard-feed.query";
+import { postcardFeedQueryOptions } from "@/lib/queries/postcard-feed.query";
+import { PostcardSceneMeta } from "@/components/postcard/PostcardSceneMeta";
+import { PostcardQuoteContent } from "@/components/postcard/PostcardQuoteContent";
 
 const postcardTypeLabels = {
   REVIEW: "감상",
   QUOTE: "인용",
   SCENE: "장면",
-  NOTE: "기록",
 } as const;
 
 const postcardTypeDescriptions = {
   REVIEW: "영화를 보고 남은 마음",
   QUOTE: "기억하고 싶은 한 문장",
   SCENE: "오래 남은 영화의 순간",
-  NOTE: "영화를 본 날의 기록",
 } as const;
 
-export function PostcardFeed(){
+const formatPostcardDate = (value: string) => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(date)
+    .replaceAll(" ", "");
+};
+
+export function PostcardFeed() {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const {
     data,
@@ -29,48 +45,47 @@ export function PostcardFeed(){
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  }=useInfiniteQuery(postcardFeedQueryOptions());
-  
-  const postcards=data?.pages.flatMap((page)=>page.items)??[];
-  
-  
+  } = useInfiniteQuery(postcardFeedQueryOptions());
+
+  const postcards = data?.pages.flatMap((page) => page.items) ?? [];
+
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    
+
     if (!sentinel || !hasNextPage || isFetchingNextPage) {
       return;
     }
-    
+
     const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry?.isIntersecting) {
-            void fetchNextPage();
-          }
-        },
-        {
-          rootMargin: "300px",
-        },
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          void fetchNextPage();
+        }
+      },
+      {
+        rootMargin: "300px",
+      },
     );
-    
+
     observer.observe(sentinel);
-    
+
     return () => {
       observer.disconnect();
     };
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-  
+
   if (isPending) {
     return <p>엽서를 불러오는 중...</p>;
   }
-  
+
   if (isError) {
     return <p>엽서를 불러오지 못했습니다.</p>;
   }
-  
+
   if (postcards.length === 0) {
     return <p>공개된 엽서가 없습니다.</p>;
   }
-  
+
   return (
     <section className="mx-auto flex max-w-xl flex-col gap-6">
       {postcards.map((postcard) => {
@@ -118,8 +133,9 @@ export function PostcardFeed(){
 
                 <div className="flex min-w-0 flex-1 flex-col">
                   <div className="flex items-center justify-between gap-3 sm:hidden">
-                    <span className="text-[10px] font-medium tracking-[0.12em] text-white/55">
-                      CINEMO POSTCARD
+                    <span className="text-[10px] font-medium tracking-[0.08em] text-white/55">
+                      {formatPostcardDate(postcard.createdAt)} ·{" "}
+                      {postcard.author?.nickname ?? "익명"}
                     </span>
                     <span className="rounded-full bg-cinemo-gold px-2.5 py-1 text-xs font-semibold text-cinemo-bg">
                       {postcardTypeLabels[postcard.type]}
@@ -128,8 +144,9 @@ export function PostcardFeed(){
 
                   <div className="hidden items-start justify-between gap-3 sm:flex">
                     <div className="min-w-0">
-                      <p className="truncate text-xs tracking-[0.12em] text-white/55">
-                        CINEMO POSTCARD
+                      <p className="truncate text-xs tracking-[0.08em] text-white/55">
+                        {formatPostcardDate(postcard.createdAt)} ·{" "}
+                        {postcard.author?.nickname ?? "익명"}
                       </p>
                       <h2 className="mt-1 truncate text-lg font-semibold text-white">
                         {postcard.movie?.title ?? "영화 정보 없음"}
@@ -144,9 +161,21 @@ export function PostcardFeed(){
                     {postcardTypeDescriptions[postcard.type]}
                   </p>
 
-                  <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-6 text-white/90">
-                    {postcard.type === "QUOTE" ? `“${postcard.content}”` : postcard.content}
-                  </p>
+                  {postcard.type === "SCENE" && (
+                    <PostcardSceneMeta metadata={postcard.metadata} compact />
+                  )}
+
+                  {postcard.type === "QUOTE" ? (
+                    <PostcardQuoteContent
+                      content={postcard.content}
+                      metadata={postcard.metadata}
+                      className="mt-2 line-clamp-4 text-sm leading-6 text-white/90"
+                    />
+                  ) : (
+                    <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-sm leading-6 text-white/90">
+                      {postcard.content}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -162,7 +191,7 @@ export function PostcardFeed(){
           </Link>
         );
       })}
-        
+
       <div ref={sentinelRef} className="flex justify-center py-6">
         {isFetchingNextPage && <span>더 불러오는 중...</span>}
         {!hasNextPage && <span>모든 엽서를 불러왔습니다.</span>}

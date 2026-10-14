@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
         hostname: "cdn.forbeskorea.co.kr",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "www.artinsight.co.kr",
+        pathname: "/**",
+      },
     ],
   },
 };

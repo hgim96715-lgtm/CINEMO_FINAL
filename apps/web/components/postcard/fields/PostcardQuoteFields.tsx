@@ -80,7 +80,7 @@ export function PostcardQuoteFields({
             <div className="space-y-3">
               <label
                 htmlFor="quote-content"
-                className="block text-xs font-medium text-cinemo-muted"
+                className="block text-xs font-medium text-cinemo-gold"
               >
                 원문
               </label>
@@ -102,7 +102,7 @@ export function PostcardQuoteFields({
             <div className="space-y-3">
               <label
                 htmlFor="quote-translation"
-                className="block text-xs font-medium text-cinemo-muted"
+                className="block text-xs font-medium text-cinemo-gold"
               >
                 한국어 번역
               </label>
@@ -124,7 +124,7 @@ export function PostcardQuoteFields({
             <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
               <label
                 htmlFor="quote-ai-suggested"
-                className="flex cursor-pointer items-center gap-2 text-sm text-cinemo-text"
+                className="flex cursor-pointer items-center gap-2 text-sm text-cinemo-gold"
               >
                 <input
                   id="quote-ai-suggested"

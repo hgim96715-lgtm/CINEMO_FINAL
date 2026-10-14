@@ -27,6 +27,11 @@ export const postcardWithMovieArgs = Prisma.validator<Prisma.PostcardDefaultArgs
         },
       },
     },
+    user: {
+      select: {
+        nickname: true,
+      },
+    },
     media: {
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     },
@@ -38,6 +43,17 @@ export type PostcardWithMovie = Prisma.PostcardGetPayload<
 >;
 
 type PostcardRecord = PrismaPostcard | PostcardWithMovie;
+
+const toPostcardType = (type: PrismaPostcard["type"]): Postcard["type"] => {
+  switch (type) {
+    case "REVIEW":
+    case "QUOTE":
+    case "SCENE":
+      return type;
+    default:
+      throw new Error("지원하지 않는 엽서 유형입니다.");
+  }
+};
 
 const toJsonObject = (
   value: Prisma.JsonValue | null,
@@ -64,6 +80,11 @@ export const toPostcard = (record: PostcardRecord): Postcard => ({
         posterUrl: record.movie.media[0]?.url ?? null,
       }
     : null,
+  author: "author" in record
+    ? (record.author as Postcard["author"])
+    : "user" in record
+      ? {nickname: (record.user as {nickname: string}).nickname}
+      : null,
   media: "media" in record
     ? record.media.map((media) => ({
         id: media.id,
@@ -74,11 +95,12 @@ export const toPostcard = (record: PostcardRecord): Postcard => ({
         sortOrder: media.sortOrder,
       }))
     : [],
-  type: record.type,
+  type: toPostcardType(record.type),
   source: record.source,
   quoteSource: record.quoteSource,
   content: record.content,
-  visibility: record.visibility,
+  // 기존 Prisma Client가 갱신되기 전에도 UNLISTED 값은 비공개로 안전하게 매핑함.
+  visibility: record.visibility === "PUBLIC" ? "PUBLIC" : "PRIVATE",
   status: record.status,
   backgroundStyle: record.backgroundStyle,
   backgroundImageKey: record.backgroundImageKey,

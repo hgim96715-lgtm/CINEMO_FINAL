@@ -5,8 +5,27 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { postcardFeedQueryOptions } from "@/lib/queries/postcard-feed.query";
 import Link from "next/link";
 import Image from "next/image";
+import { PostcardSceneMeta } from "@/components/postcard/PostcardSceneMeta";
+import { PostcardQuoteContent } from "@/components/postcard/PostcardQuoteContent";
+import { ArrowUpRight } from "lucide-react";
 
 const AUTO_PLAY_INTERVAL = 6_000;
+
+const formatPostcardDate = (value: string) => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(date)
+    .replaceAll(" ", "");
+};
 
 export function PostcardHeroCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -63,7 +82,7 @@ export function PostcardHeroCarousel() {
 
           <Link
             href="/lobby/postcards"
-            className="mt-8 inline-flex rounded-full bg-primary px-5 py-3 text-sm font-semibold text-cinemo-background"
+            className="mt-8 inline-flex items-center rounded-lg border border-cinemo-gold/40 bg-cinemo-gold/10 px-3.5 py-2 text-xs font-medium text-cinemo-gold transition hover:border-cinemo-gold/70 hover:bg-cinemo-gold/15"
           >
             엽서 둘러보기
           </Link>
@@ -74,7 +93,7 @@ export function PostcardHeroCarousel() {
 
   return (
     <section
-      className="relative isolate overflow-hidden rounded-[2rem] border border-white/10 bg-white/6 text-cinemo-text shadow-[0_2rem_5rem_rgb(0_0_0_/24%)] backdrop-blur-xl"
+      className="relative isolate h-124 overflow-hidden rounded-[2rem] border border-white/10 bg-white/6 text-cinemo-text shadow-[0_2rem_5rem_rgb(0_0_0_/24%)] backdrop-blur-xl sm:h-[clamp(28rem,44vw,34rem)]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocus={() => setIsPaused(true)}
@@ -93,37 +112,60 @@ export function PostcardHeroCarousel() {
         aria-hidden
       />
 
-      <div className="relative z-10 grid min-h-0 gap-6 p-4 sm:min-h-[clamp(28rem,44vw,34rem)] sm:grid-cols-[minmax(0,1fr)_minmax(18rem,0.85fr)] sm:gap-10 sm:p-10 lg:p-14">
-        <div className="order-2 flex min-w-0 flex-col justify-start sm:order-1 sm:justify-between">
-          <div>
-            <div className="flex items-center justify-between gap-3 sm:justify-start">
-              <p className="text-xs tracking-[0.28em] text-cinemo-gold">
-                CINEMO POSTCARD
+      <div className="relative z-10 grid h-full min-h-0 grid-rows-[9rem_minmax(0,1fr)] gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(18rem,0.85fr)] sm:grid-rows-1 sm:gap-10 sm:p-10 lg:p-14">
+        <div className="order-2 flex min-h-0 min-w-0 flex-col justify-between overflow-hidden sm:order-1">
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <div className="flex items-center justify-between gap-3 sm:justify-start">
+                <p className="text-xs tracking-[0.08em] text-cinemo-muted">
+                  {formatPostcardDate(activePostcard.createdAt)} ·{" "}
+                  {activePostcard.author?.nickname ?? "익명"}
+                </p>
+                <span className="rounded-full border border-cinemo-gold/40 bg-cinemo-gold/10 px-3 py-1 text-xs text-cinemo-gold sm:hidden">
+                  {activePostcard.type === "REVIEW"
+                    ? "감상"
+                    : activePostcard.type === "QUOTE"
+                      ? "인용"
+                      : activePostcard.type === "SCENE"
+                        ? "장면"
+                        : "감상"}
+                </span>
+              </div>
+
+              <p className="mt-5 text-sm text-cinemo-muted sm:mt-8">
+                {activePostcard.movie?.title ?? "영화와 함께 남긴 기록"}
               </p>
-              <span className="rounded-full border border-cinemo-gold/40 bg-cinemo-gold/10 px-3 py-1 text-xs text-cinemo-gold sm:hidden">
-                {activePostcard.type === "REVIEW"
-                  ? "감상"
-                  : activePostcard.type === "QUOTE"
-                    ? "인용"
-                    : activePostcard.type === "SCENE"
-                      ? "장면"
-                      : "기록"}
-              </span>
+
+              {activePostcard.type === "SCENE" && (
+                <PostcardSceneMeta metadata={activePostcard.metadata} compact />
+              )}
+
+              {activePostcard.type === "QUOTE" ? (
+                <PostcardQuoteContent
+                  content={activePostcard.content}
+                  metadata={activePostcard.metadata}
+                  compact
+                  className="mt-3 h-[8.5rem] max-w-2xl overflow-hidden font-serif text-[clamp(1.3rem,6vw,1.9rem)] font-semibold leading-[1.2] text-white sm:h-44 sm:text-[clamp(1.8rem,4vw,3.2rem)]"
+                />
+              ) : (
+                <blockquote
+                  key={activePostcard.id}
+                  className="mt-3 h-[8.5rem] max-w-2xl line-clamp-3 overflow-hidden whitespace-pre-wrap font-serif text-[clamp(1.3rem,6vw,1.9rem)] font-semibold leading-[1.2] text-white sm:h-44 sm:text-[clamp(1.8rem,4vw,3.2rem)]"
+                >
+                  “{activePostcard.content}”
+                </blockquote>
+              )}
             </div>
 
-            <p className="mt-5 text-sm text-cinemo-muted sm:mt-8">
-              {activePostcard.movie?.title ?? "영화와 함께 남긴 기록"}
-            </p>
-
-            <blockquote
-              key={activePostcard.id}
-              className="mt-3 min-h-[5.1rem] max-w-2xl line-clamp-3 overflow-hidden whitespace-pre-wrap font-serif text-[clamp(1.45rem,6.8vw,2rem)] font-semibold leading-[1.18] text-white sm:min-h-[7.1rem] sm:text-[clamp(1.8rem,4vw,3.8rem)]"
+            <Link
+              href={`/lobby/postcards/${activePostcard.id}`}
+              className="mt-2 inline-flex shrink-0 text-sm font-medium text-cinemo-gold transition hover:text-cinemo-gold-light"
             >
-              “{activePostcard.content}”
-            </blockquote>
+              더보기
+            </Link>
           </div>
 
-          <div className="mt-7 flex items-end justify-between gap-4 sm:mt-10 sm:gap-6">
+          <div className="mt-4 flex shrink-0 items-end justify-between gap-4 sm:mt-10 sm:gap-6">
             <div>
               <p className="text-sm text-cinemo-muted">
                 영화와 함께 남긴 한 장의 기록
@@ -131,9 +173,10 @@ export function PostcardHeroCarousel() {
 
               <Link
                 href="/lobby/postcards"
-                className="mt-4 inline-flex rounded-full bg-cinemo-gold px-5 py-3 text-sm font-semibold text-cinemo-bg transition hover:bg-cinemo-gold-light"
+                className="mt-4 inline-flex items-center rounded-lg border border-cinemo-gold/40 bg-cinemo-gold/10 px-3.5 py-2 text-xs font-medium text-cinemo-gold transition hover:border-cinemo-gold/70 hover:bg-cinemo-gold/15"
               >
                 엽서 둘러보기
+                <ArrowUpRight aria-hidden="true" className="size-3.5" />
               </Link>
             </div>
 
@@ -158,7 +201,7 @@ export function PostcardHeroCarousel() {
 
         <div className="relative order-1 flex w-full items-center justify-center sm:order-2">
           {activeImageUrl ? (
-            <div className="relative aspect-video w-full max-w-md rotate-1 overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/10 p-1 shadow-2xl shadow-black/40 transition-transform duration-500 hover:rotate-0">
+            <div className="relative h-full w-full max-w-md rotate-1 overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/10 p-1 shadow-2xl shadow-black/40 transition-transform duration-500 hover:rotate-0 sm:h-auto sm:aspect-video">
               <div className="relative h-full overflow-hidden rounded-[1.3rem]">
                 <Image
                   src={activeImageUrl}
@@ -175,7 +218,7 @@ export function PostcardHeroCarousel() {
               </div>
             </div>
           ) : (
-            <div className="flex aspect-video w-full max-w-md items-center justify-center rounded-[1.5rem] border border-white/15 bg-white/5 text-sm text-cinemo-muted">
+            <div className="flex h-full aspect-auto w-full max-w-md items-center justify-center rounded-[1.5rem] border border-white/15 bg-white/5 text-sm text-cinemo-muted sm:h-auto sm:aspect-video">
               포스터 준비중
             </div>
           )}

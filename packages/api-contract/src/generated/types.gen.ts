@@ -1500,6 +1500,13 @@ export type PostcardMovieSummaryDto = {
     posterUrl: string | null;
 };
 
+export type PostcardAuthorSummaryDto = {
+    /**
+     * 작성자 닉네임
+     */
+    nickname: string;
+};
+
 export type PostcardMediaResponseDto = {
     /**
      * 엽서 이미지 ID
@@ -1532,13 +1539,17 @@ export type PostcardResponseDto = {
      */
     movie: PostcardMovieSummaryDto | null;
     /**
+     * 엽서를 작성한 사용자 요약 정보
+     */
+    author: PostcardAuthorSummaryDto | null;
+    /**
      * 엽서에 직접 첨부한 이미지 목록
      */
     media: Array<PostcardMediaResponseDto>;
     /**
      * 엽서 유형
      */
-    type: 'REVIEW' | 'QUOTE' | 'SCENE' | 'NOTE';
+    type: 'REVIEW' | 'QUOTE' | 'SCENE';
     /**
      * 엽서 생성 방식
      */
@@ -1560,6 +1571,14 @@ export type PostcardResponseDto = {
      */
     backgroundImageKey: string | null;
     /**
+     * 엽서 유형별 추가 기록 정보
+     */
+    metadata: PostcardMetadataDto | null;
+    /**
+     * 엽서 스타일 정보
+     */
+    style: PostcardStyleDto | null;
+    /**
      * 이모지 반응 수
      */
     reactionCount: number;
@@ -1574,7 +1593,7 @@ export type PostcardResponseDto = {
     /**
      * 엽서 공개 상태
      */
-    visibility: 'PUBLIC' | 'PRIVATE' | 'UNLISTED';
+    visibility: 'PUBLIC' | 'PRIVATE';
     /**
      * 엽서 처리 상태
      */
@@ -1648,7 +1667,7 @@ export type PostcardNotificationFeedResponseDto = {
 };
 
 export type PostcardMetadataDto = {
-    type: 'REVIEW' | 'QUOTE' | 'SCENE' | 'NOTE';
+    type: 'REVIEW' | 'QUOTE' | 'SCENE';
     /**
      * 감상 제목
      */
@@ -1665,11 +1684,18 @@ export type PostcardMetadataDto = {
      * AI가 제안한 문장인지 여부
      */
     isAiSuggested?: boolean | null;
-    venueType?: 'HOME' | 'THEATER' | 'OTHER' | null;
-    venueName?: string | null;
-    companionType?: 'ALONE' | 'FRIEND' | 'FAMILY' | 'PARTNER' | 'OTHER' | null;
-    companionName?: string | null;
-    watchedAt?: string | null;
+    /**
+     * 원문 언어 코드
+     */
+    originalLanguage?: string | null;
+    /**
+     * 원문을 보존하기 위한 번역 목록
+     */
+    translations?: Array<{
+        language: string;
+        content: string;
+        source: 'AI' | 'USER';
+    }> | null;
 };
 
 export type PostcardStyleDto = {
@@ -1689,6 +1715,10 @@ export type PostcardMediaDto = {
 };
 
 export type UpdatePostcardRequestDto = {
+    /**
+     * 엽서 유형
+     */
+    type?: 'REVIEW' | 'QUOTE' | 'SCENE';
     /**
      * QUOTE 원문의 근거
      */
@@ -1711,7 +1741,7 @@ export type UpdatePostcardRequestDto = {
     /**
      * 엽서 공개 범위
      */
-    visibility?: 'PUBLIC' | 'PRIVATE' | 'UNLISTED';
+    visibility?: 'PUBLIC' | 'PRIVATE';
 };
 
 export type CreatePostcardRequestDto = {
@@ -1719,7 +1749,7 @@ export type CreatePostcardRequestDto = {
      * 엽서를 작성할 영화 ID
      */
     movieId: string;
-    type: 'REVIEW' | 'QUOTE' | 'SCENE' | 'NOTE';
+    type: 'REVIEW' | 'QUOTE' | 'SCENE';
     /**
      * QUOTE 원문의 근거
      */
@@ -1739,7 +1769,7 @@ export type CreatePostcardRequestDto = {
      * Cloud Storage 배경 이미지 식별자
      */
     backgroundImageKey?: string | null;
-    visibility?: 'PUBLIC' | 'PRIVATE' | 'UNLISTED';
+    visibility?: 'PUBLIC' | 'PRIVATE';
 };
 
 export type CreatePostcardCommentRequestDto = {

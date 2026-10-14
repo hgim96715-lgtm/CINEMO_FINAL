@@ -7,11 +7,14 @@ import {
   createPostcardQuoteSuggestion,
   type CreatePostcardQuoteSuggestionInput,
   publishPostcard,
+  updatePostcard,
 } from "@/lib/api/postcards";
 import {
   myPostcardsQueryOptions,
   postcardFeedQueryOptions,
 } from "./postcard-feed.query";
+import { UpdatePostcardRequest } from "@cinemo/api-contract";
+import { postcardDetailQueryOptions } from "@/lib/queries/postcard-detail.query";
 
 export function useCreatePostcard() {
   const queryClient = useQueryClient();
@@ -90,4 +93,34 @@ export function useCreatePostcardQuoteSuggestion() {
       abortControllerRef.current?.abort();
     },
   };
+}
+
+export function useUpdatePostcard() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      postcardId,
+      request,
+    }: {
+      postcardId: string;
+      request: UpdatePostcardRequest;
+    }) => updatePostcard(postcardId, request),
+
+    onSuccess: async (postcard) => {
+      queryClient.setQueryData(
+        postcardDetailQueryOptions(postcard.id).queryKey,
+        postcard,
+      );
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: postcardFeedQueryOptions().queryKey,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: myPostcardsQueryOptions().queryKey,
+        }),
+      ]);
+    },
+  });
 }

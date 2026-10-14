@@ -1,7 +1,7 @@
 "use client";
 
-import {useState} from "react";
-import {ChevronDown} from "lucide-react";
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 import {
   Drawer,
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/drawer";
 
 const tabs = [
-  { value: "watched", label: "본 영화" },
+  { value: "watched", label: "관람 기록" },
   { value: "calendar", label: "달력" },
   { value: "saved", label: "찜한 영화" },
 ] as const;
@@ -64,8 +64,7 @@ export function MovieSpaceDrawer({
   counts = {},
 }: MovieSpaceDrawerProps) {
   const [open, setOpen] = useState(false);
-  const currentTab =
-    tabs.find((tab) => tab.value === activeTab) ?? tabs[0];
+  const currentTab = tabs.find((tab) => tab.value === activeTab) ?? tabs[0];
 
   const handleChange = (tab: MovieSpaceTab) => {
     onChange(tab);

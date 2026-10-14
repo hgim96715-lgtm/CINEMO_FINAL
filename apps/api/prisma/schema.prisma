@@ -184,7 +184,6 @@ enum PostcardType {
   REVIEW
   QUOTE
   SCENE
-  NOTE
 }
 
 enum PostcardSource {
@@ -200,7 +199,6 @@ enum PostcardQuoteSource {
 enum PostcardVisibility {
   PUBLIC
   PRIVATE
-  UNLISTED
 }
 
 enum PostcardStatus {
@@ -249,7 +247,7 @@ model Postcard {
   backgroundImageKey String?            @map("background_image_key") @db.VarChar(255)
   style              Json?
   metadata           Json?
-  visibility         PostcardVisibility @default(PUBLIC)
+  visibility         PostcardVisibility @default(PRIVATE)
   status             PostcardStatus     @default(DRAFT)
 
   reactionCount Int @default(0) @map("reaction_count")

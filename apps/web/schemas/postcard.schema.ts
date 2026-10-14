@@ -42,7 +42,7 @@ const commonFields = {
   media: z.array(mediaSchema).max(4).optional(),
   backgroundStyle: z.string().max(100).nullable().optional(),
   backgroundImageKey: z.string().max(255).nullable().optional(),
-  visibility: z.enum(["PUBLIC", "PRIVATE", "UNLISTED"]),
+  visibility: z.enum(["PUBLIC", "PRIVATE"]),
 };
 
 export const createPostcardSchema = z.discriminatedUnion("type", [
@@ -85,25 +85,6 @@ export const createPostcardSchema = z.discriminatedUnion("type", [
         type: z.literal("SCENE"),
         sceneDescription: z.string().max(1000).nullable().optional(),
         sceneTime: z.string().max(20).nullable().optional(),
-      })
-      .nullable()
-      .optional(),
-  }),
-
-  z.object({
-    ...commonFields,
-    type: z.literal("NOTE"),
-    metadata: z
-      .object({
-        type: z.literal("NOTE"),
-        venueType: z.enum(["HOME", "THEATER", "OTHER"]).nullable().optional(),
-        venueName: z.string().max(100).nullable().optional(),
-        companionType: z
-          .enum(["ALONE", "FRIEND", "FAMILY", "PARTNER", "OTHER"])
-          .nullable()
-          .optional(),
-        companionName: z.string().max(100).nullable().optional(),
-        watchedAt: z.string().max(10).nullable().optional(),
       })
       .nullable()
       .optional(),

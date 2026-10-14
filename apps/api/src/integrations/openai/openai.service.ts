@@ -45,6 +45,19 @@ export class OpenAiService {
     review,
     language,
   }: SuggestQuoteInput): Promise<SuggestQuoteResult> {
+    // 실제 문구 조회 연동 전 UI 확인용 임시 응답임.
+    // 운영 환경에서는 절대 반환하지 않음.
+    if (process.env.NODE_ENV !== "production") {
+      return {
+        found: true,
+        original: "This is a temporary quote for UI preview.",
+        translation: "이 문장은 UI 확인을 위한 임시 문구입니다.",
+        sourceLanguage: "en",
+        targetLanguage: "ko",
+        isAiSuggested: true,
+      };
+    }
+
     const sourceLanguageInstruction = language?.trim()
       ? language
       : "영화의 대표 원문 언어를 자동으로 추론";

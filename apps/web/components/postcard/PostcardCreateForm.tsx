@@ -7,7 +7,9 @@ import {
   useCreatePostcard,
   useCreatePostcardQuoteSuggestion,
   usePublishPostcard,
+  useUpdatePostcard,
 } from "@/lib/queries/postcard.mutation";
+import type { Postcard } from "@/lib/api/postcards";
 import { DefaultValues, useForm } from "react-hook-form";
 import {
   CreatePostcardFormValues,
@@ -18,27 +20,97 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState } from "react";
 import { PostcardQuoteFields } from "@/components/postcard/fields/PostcardQuoteFields";
 import { PostcardSceneFields } from "@/components/postcard/fields/PostcardSceneFields";
-import { PostcardNoteFields } from "@/components/postcard/fields/PostcardNoteFields";
 
 type PostcardCreateFormProps = {
   movieId: string;
   movieTitle: string;
   backgroundUrl?: string | null;
   backgroundType?: "BACKDROP" | "POSTER";
+  postcard?: Postcard;
 };
 
 const postcardTypeOptions = [
   { value: "REVIEW", label: "감상" },
   { value: "QUOTE", label: "인용" },
   { value: "SCENE", label: "장면" },
-  { value: "NOTE", label: "기록" },
 ] as const;
 
-const postcardVisibilityOptions = [
-  { value: "PRIVATE", label: "비공개" },
-  { value: "PUBLIC", label: "전체 공개" },
-  { value: "UNLISTED", label: "링크 공개" },
-] as const;
+function getEmptyMetadata(
+  type: CreatePostcardFormValues["type"],
+): CreatePostcardFormValues["metadata"] {
+  switch (type) {
+    case "REVIEW":
+      return {
+        type: "REVIEW",
+        title: null,
+      };
+    case "QUOTE":
+      return {
+        type: "QUOTE",
+        title: null,
+        originalLanguage: null,
+        translations: [],
+        isAiSuggested: false,
+      };
+    case "SCENE":
+      return {
+        type: "SCENE",
+        sceneDescription: null,
+        sceneTime: null,
+      };
+  }
+}
+
+function getFormMetadata(
+  postcard?: Postcard,
+): CreatePostcardFormValues["metadata"] {
+  if (!postcard) {
+    return null;
+  }
+
+  switch (postcard.type) {
+    case "REVIEW":
+      return {
+        type: "REVIEW",
+        title:
+          postcard.metadata?.type === "REVIEW"
+            ? (postcard.metadata.title ?? null)
+            : null,
+      };
+    case "QUOTE":
+      return {
+        type: "QUOTE",
+        title:
+          postcard.metadata?.type === "QUOTE"
+            ? (postcard.metadata.title ?? null)
+            : null,
+        originalLanguage:
+          postcard.metadata?.type === "QUOTE"
+            ? (postcard.metadata.originalLanguage ?? null)
+            : null,
+        translations:
+          postcard.metadata?.type === "QUOTE"
+            ? (postcard.metadata.translations ?? [])
+            : [],
+        isAiSuggested:
+          postcard.metadata?.type === "QUOTE"
+            ? (postcard.metadata.isAiSuggested ?? false)
+            : false,
+      };
+    case "SCENE":
+      return {
+        type: "SCENE",
+        sceneDescription:
+          postcard.metadata?.type === "SCENE"
+            ? (postcard.metadata.sceneDescription ?? null)
+            : null,
+        sceneTime:
+          postcard.metadata?.type === "SCENE"
+            ? (postcard.metadata.sceneTime ?? null)
+            : null,
+      };
+  }
+}
 
 function getImageSource(url: string, type: "BACKDROP" | "POSTER") {
   const tmdbWidth = type === "BACKDROP" ? "w1280" : "w500";
@@ -51,17 +123,17 @@ export function PostcardCreateForm({
   movieTitle,
   backgroundUrl,
   backgroundType = "POSTER",
+  postcard,
 }: PostcardCreateFormProps) {
   const router = useRouter();
   const createMutation = useCreatePostcard();
+  const updateMutation = useUpdatePostcard();
   const publishMutation = usePublishPostcard();
   const [isTypeOpen, setIsTypeOpen] = useState(false);
-  const [isVisibilityOpen, setIsVisibilityOpen] = useState(false);
   const [aiSuggestionError, setAiSuggestionError] = useState<string | null>(
     null,
   );
   const typeDropdownRef = useRef<HTMLDivElement>(null);
-  const visibilityDropdownRef = useRef<HTMLDivElement>(null);
   const quoteSuggestionMutation = useCreatePostcardQuoteSuggestion();
 
   useEffect(() => {
@@ -75,10 +147,6 @@ export function PostcardCreateForm({
       if (!typeDropdownRef.current?.contains(target)) {
         setIsTypeOpen(false);
       }
-
-      if (!visibilityDropdownRef.current?.contains(target)) {
-        setIsVisibilityOpen(false);
-      }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -87,7 +155,6 @@ export function PostcardCreateForm({
       }
 
       setIsTypeOpen(false);
-      setIsVisibilityOpen(false);
     };
 
     document.addEventListener("pointerdown", handlePointerDown);
@@ -100,17 +167,26 @@ export function PostcardCreateForm({
   }, []);
 
   const defaultValues = {
-    movieId,
-    type: "REVIEW" as const,
-    content: "",
-    visibility: "PRIVATE" as const,
-    metadata: null,
-    style: {
+    movieId: postcard?.movieId ?? movieId,
+    type: postcard?.type ?? ("REVIEW" as const),
+    content: postcard?.content ?? "",
+    visibility: postcard?.visibility ?? ("PRIVATE" as const),
+    metadata: getFormMetadata(postcard),
+    style: postcard?.style ?? {
       backgroundType: "POSTER" as const,
       textAlign: "LEFT" as const,
     },
-    media: [],
-  } satisfies DefaultValues<CreatePostcardFormValues>;
+    media:
+      postcard?.media
+        .filter((media) => media.type === "IMAGE")
+        .map((media) => ({
+          type: "IMAGE" as const,
+          url: media.url,
+          storageKey: media.storageKey,
+          altText: media.altText,
+          sortOrder: media.sortOrder,
+        })) ?? [],
+  } as DefaultValues<CreatePostcardFormValues>;
 
   const form = useForm<CreatePostcardFormValues>({
     resolver: zodResolver(createPostcardSchema),
@@ -128,7 +204,12 @@ export function PostcardCreateForm({
       : null;
   const previewBackgroundUrl = sceneMediaUrl ?? backgroundUrl;
   const previewBackgroundType = sceneMediaUrl ? "POSTER" : backgroundType;
-  const isSaving = createMutation.isPending || publishMutation.isPending;
+  const isEdit = postcard !== undefined;
+  const isPublishedEdit = isEdit && postcard.status === "PUBLISHED";
+  const isSaving =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    publishMutation.isPending;
   const quoteTranslation =
     postcardType === "QUOTE" && postcardMetadata?.type === "QUOTE"
       ? postcardMetadata.translations?.find(
@@ -143,7 +224,6 @@ export function PostcardCreateForm({
         REVIEW: "이 영화를 보고 어떤 마음이 남았는지 적어보세요.",
         QUOTE: "기억하고 싶은 대사가 여기에 표시됩니다.",
         SCENE: "기억에 남은 장면이 여기에 표시됩니다.",
-        NOTE: "영화를 본 기록이 여기에 표시됩니다.",
       }[postcardType];
   const handleSave = async (
     values: CreatePostcardFormValues,
@@ -153,13 +233,36 @@ export function PostcardCreateForm({
     // 기본 배경(backdrop/poster)은 movie.posterUrl fallback으로 표시함.
     const media = values.media?.length ? values.media : undefined;
 
-    const postcard = await createMutation.mutateAsync({
-      ...values,
-      media,
-    });
-    if (shouldPublish) {
-      await publishMutation.mutateAsync(postcard.id);
+    if (postcard) {
+      const updatedPostcard = await updateMutation.mutateAsync({
+        postcardId: postcard.id,
+        request: {
+          type: values.type,
+          content: values.content,
+          visibility: values.visibility,
+          quoteSource: values.quoteSource,
+          metadata: values.metadata,
+          style: values.style,
+          media,
+          backgroundStyle: values.backgroundStyle,
+          backgroundImageKey: values.backgroundImageKey,
+        },
+      });
+
+      if (shouldPublish && updatedPostcard.status !== "PUBLISHED") {
+        await publishMutation.mutateAsync(updatedPostcard.id);
+      }
+    } else {
+      const createdPostcard = await createMutation.mutateAsync({
+        ...values,
+        media,
+      });
+
+      if (shouldPublish) {
+        await publishMutation.mutateAsync(createdPostcard.id);
+      }
     }
+
     router.push("/my-cinema?tab=postcards");
   };
 
@@ -273,7 +376,6 @@ export function PostcardCreateForm({
                 aria-expanded={isTypeOpen}
                 onClick={() => {
                   setIsTypeOpen((isOpen) => !isOpen);
-                  setIsVisibilityOpen(false);
                 }}
                 className="flex w-full items-center justify-between rounded-xl border border-white\/10 bg-cinemo-bg px-4 py-3 text-left text-sm text-cinemo-text outline-none transition focus:border-cinemo-gold"
               >
@@ -312,6 +414,15 @@ export function PostcardCreateForm({
                           shouldTouch: true,
                           shouldValidate: true,
                         });
+                        form.setValue(
+                          "metadata",
+                          getEmptyMetadata(option.value),
+                          {
+                            shouldDirty: true,
+                            shouldTouch: true,
+                            shouldValidate: true,
+                          },
+                        );
                         setIsTypeOpen(false);
                       }}
                       className={
@@ -343,15 +454,8 @@ export function PostcardCreateForm({
               contentLength={postcardContent.length}
               onRequestAiSuggestion={handleRequestAiSuggestion}
             />
-          ) : postcardType === "SCENE" ? (
-            <PostcardSceneFields
-              control={form.control}
-              register={form.register}
-              error={form.formState.errors.content?.message}
-              contentLength={postcardContent.length}
-            />
           ) : (
-            <PostcardNoteFields
+            <PostcardSceneFields
               control={form.control}
               register={form.register}
               error={form.formState.errors.content?.message}
@@ -360,74 +464,58 @@ export function PostcardCreateForm({
           )}
 
           <div className="space-y-3">
-            <label
-              htmlFor="postcard-visibility"
-              className="text-sm font-medium text-cinemo-gold"
-            >
-              공개 범위
-            </label>
-
-            <div ref={visibilityDropdownRef} className="relative top-2">
-              <button
-                type="button"
-                id="postcard-visibility"
-                aria-haspopup="listbox"
-                aria-expanded={isVisibilityOpen}
-                onClick={() => {
-                  setIsVisibilityOpen((isOpen) => !isOpen);
-                  setIsTypeOpen(false);
-                }}
-                className="flex w-full items-center justify-between rounded-xl border border-white\/10 bg-cinemo-bg px-4 py-3 text-left text-sm text-cinemo-text outline-none transition focus:border-cinemo-gold"
+            <div className="flex items-center justify-between gap-4">
+              <label
+                htmlFor="postcard-visibility"
+                className="text-sm font-medium text-cinemo-gold"
               >
-                <span>
-                  {
-                    postcardVisibilityOptions.find(
-                      (option) => option.value === postcardVisibility,
-                    )?.label
-                  }
-                </span>
-                <ChevronDown
-                  className={
-                    isVisibilityOpen
-                      ? "size-4 rotate-180 text-cinemo-gold transition-transform"
-                      : "size-4 text-cinemo-gold transition-transform"
-                  }
-                  aria-hidden="true"
-                />
-              </button>
-
-              {isVisibilityOpen && (
-                <div
-                  role="listbox"
-                  aria-labelledby="postcard-visibility"
-                  className="absolute z-20 mt-2 max-h-52 w-full overflow-y-auto overscroll-contain rounded-xl border border-cinemo-gold\/40 bg-cinemo-bg p-1 shadow-xl shadow-black\/30"
-                >
-                  {postcardVisibilityOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      role="option"
-                      aria-selected={postcardVisibility === option.value}
-                      onClick={() => {
-                        form.setValue("visibility", option.value, {
-                          shouldDirty: true,
-                          shouldTouch: true,
-                          shouldValidate: true,
-                        });
-                        setIsVisibilityOpen(false);
-                      }}
-                      className={
-                        postcardVisibility === option.value
-                          ? "w-full rounded-lg bg-cinemo-gold\/15 px-3 py-2.5 text-left text-sm text-cinemo-gold transition"
-                          : "w-full rounded-lg px-3 py-2.5 text-left text-sm text-cinemo-text transition hover:bg-white\/5"
-                      }
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+                공개 범위
+              </label>
+              <span className="text-xs text-cinemo-muted">
+                {postcardVisibility === "PUBLIC" ? "전체 공개" : "비공개"}
+              </span>
             </div>
+
+            <button
+              type="button"
+              id="postcard-visibility"
+              role="switch"
+              aria-checked={postcardVisibility === "PUBLIC"}
+              onClick={() => {
+                form.setValue(
+                  "visibility",
+                  postcardVisibility === "PUBLIC" ? "PRIVATE" : "PUBLIC",
+                  {
+                    shouldDirty: true,
+                    shouldTouch: true,
+                    shouldValidate: true,
+                  },
+                );
+              }}
+              className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-cinemo-bg px-4 py-3 text-left outline-none transition hover:border-cinemo-gold/50 focus:border-cinemo-gold"
+            >
+              <span className="text-sm text-cinemo-text">
+                {postcardVisibility === "PUBLIC"
+                  ? "공개 엽서 피드에 표시"
+                  : "내 엽서에서만 표시"}
+              </span>
+              <span
+                className={`relative h-6 w-11 rounded-full p-1 transition-colors ${
+                  postcardVisibility === "PUBLIC"
+                    ? "bg-cinemo-gold"
+                    : "bg-white/20"
+                }`}
+                aria-hidden="true"
+              >
+                <span
+                  className={`block size-4 rounded-full bg-white shadow-sm transition-transform ${
+                    postcardVisibility === "PUBLIC"
+                      ? "translate-x-5"
+                      : "translate-x-0"
+                  }`}
+                />
+              </span>
+            </button>
           </div>
         </section>
       </div>
@@ -441,14 +529,16 @@ export function PostcardCreateForm({
           취소
         </button>
 
-        <button
-          type="button"
-          disabled={isSaving}
-          onClick={form.handleSubmit((values) => handleSave(values, false))}
-          className="rounded-xl border border-cinemo-gold/50 px-5 py-3 text-sm text-cinemo-gold transition hover:bg-cinemo-gold/10 disabled:opacity-50"
-        >
-          {createMutation.isPending ? "저장 중..." : "임시저장"}
-        </button>
+        {!isPublishedEdit && (
+          <button
+            type="button"
+            disabled={isSaving}
+            onClick={form.handleSubmit((values) => handleSave(values, false))}
+            className="rounded-xl border border-cinemo-gold/50 px-5 py-3 text-sm text-cinemo-gold transition hover:bg-cinemo-gold/10 disabled:opacity-50"
+          >
+            {isSaving ? "저장 중..." : "임시저장"}
+          </button>
+        )}
 
         <button
           type="button"
@@ -456,7 +546,13 @@ export function PostcardCreateForm({
           onClick={form.handleSubmit((values) => handleSave(values, true))}
           className="rounded-xl bg-cinemo-gold px-5 py-3 text-sm font-semibold text-cinemo-bg transition hover:bg-cinemo-gold-light disabled:opacity-50"
         >
-          {isSaving ? "저장 중..." : "엽서 저장"}
+          {isSaving
+            ? "저장 중..."
+            : !isEdit
+              ? "엽서 저장"
+              : isPublishedEdit
+                ? "수정 완료"
+                : "공개하기"}
         </button>
       </footer>
     </form>

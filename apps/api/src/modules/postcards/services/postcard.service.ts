@@ -52,6 +52,7 @@ export class PostcardService {
     const postcard = await this.postcardRepository.update({
       postcardId,
       userId,
+      type: request.type,
       quoteSource: request.quoteSource,
       content: request.content,
 
