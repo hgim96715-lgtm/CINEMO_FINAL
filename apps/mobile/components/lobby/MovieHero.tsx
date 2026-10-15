@@ -26,13 +26,13 @@ export function MovieHero({
       className="w-full overflow-hidden rounded-2xl "
     >
       <View className="flex-1 justify-end px-6 pb-8 pt-10">
-        <Text className="text-xs font-semibold tracking-[4px]">
+        <Text className="text-xs font-semibold tracking-[4px] text-cinemo-gold">
           CINEMO FEATURED MOVIE
         </Text>
 
-        <Text className="mt-2 text-2xl font-bold">{movie.title}</Text>
+        <Text className="mt-2 text-2xl font-bold text-cinemo-text">{movie.title}</Text>
 
-        <Text className="mt-2 text-sm">
+        <Text className="mt-2 text-sm text-cinemo-muted">
           {movie.genres.slice(0, 3).join(" · ")}
         </Text>
 
@@ -41,19 +41,19 @@ export function MovieHero({
             <Pressable
               className="relative h-11 w-full flex-row items-center justify-center gap-2 rounded-lg"
               onPress={onTrailerPress}
-              style={{ backgroundColor: "blue" }}
+              style={{ backgroundColor: "#c6a15b" }}
             >
               <Ionicons name="play" size={15} />
-              <Text className="font-semibold">예고편</Text>
+              <Text className="font-semibold text-cinemo-bg-deep">예고편</Text>
             </Pressable>
           ) : null}
 
           <Pressable
             className="relative h-11 w-full items-center justify-center rounded-lg"
             onPress={onDetailPress}
-            style={{ backgroundColor: "yellow" }}
+            style={{ backgroundColor: "rgba(255, 255, 255, 0.12)" }}
           >
-            <Text className="font-semibold">자세히 보기</Text>
+            <Text className="font-semibold text-cinemo-text">자세히 보기</Text>
           </Pressable>
         </View>
       </View>

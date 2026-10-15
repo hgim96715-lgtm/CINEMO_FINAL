@@ -18,6 +18,17 @@ build/
 coverage/
 *.tsbuildinfo
 
+# Native local build output and signing artifacts
+apps/mobile/ios/Pods/
+apps/mobile/ios/build/
+apps/mobile/android/.gradle/
+apps/mobile/android/local.properties
+*.xcuserstate
+*.mobileprovision
+*.p8
+*.cer
+*.p12
+
 # Test and runtime output
 playwright-report/
 test-results/

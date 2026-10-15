@@ -19,7 +19,7 @@ export default function MovieDetailScreen() {
   const movieQuery = useQuery(movieDetailQueryOptions(movieId ?? ""));
   if (movieQuery.isPending) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center">
+      <SafeAreaView className="flex-1 items-center justify-center bg-cinemo-bg">
         <ActivityIndicator />
       </SafeAreaView>
     );
@@ -27,8 +27,8 @@ export default function MovieDetailScreen() {
 
   if (movieQuery.isError || !movieQuery.data) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center px-5">
-        <Text>영화 정보를 불러오지 못했습니다.</Text>
+      <SafeAreaView className="flex-1 items-center justify-center bg-cinemo-bg px-5">
+        <Text className="text-cinemo-text">영화 정보를 불러오지 못했습니다.</Text>
 
         <Pressable
           className="mt-4 rounded-xl px-5 py-3"
@@ -58,7 +58,7 @@ export default function MovieDetailScreen() {
     .map((credit) => credit.person.name);
 
   return (
-    <SafeAreaView className="flex-1">
+    <SafeAreaView className="flex-1 bg-cinemo-bg">
       <View className="flex-row items-center px-5 py-4">
         <Pressable
           accessibilityLabel="뒤로 가기"
@@ -68,7 +68,7 @@ export default function MovieDetailScreen() {
           <ChevronLeft size={24} />
         </Pressable>
 
-        <Text className="ml-2 text-lg font-semibold">영화 상세</Text>
+        <Text className="ml-2 text-lg font-semibold text-cinemo-text">영화 상세</Text>
       </View>
 
       <ScrollView
@@ -92,17 +92,17 @@ export default function MovieDetailScreen() {
         )}
 
         <View>
-          <Text className="text-3xl font-bold">
+          <Text className="text-3xl font-bold text-cinemo-text">
             {primaryTitle?.title ?? "제목 없음"}
           </Text>
 
           {primaryRelease?.releaseDate && (
-            <Text className="mt-3">개봉일 {primaryRelease.releaseDate}</Text>
+            <Text className="mt-3 text-cinemo-muted">개봉일 {primaryRelease.releaseDate}</Text>
           )}
 
           <View className="mt-4 flex-row flex-wrap gap-2">
             {movie.genres.map((genre) => (
-              <Text key={genre.id} className="rounded-lg px-3 py-1">
+              <Text key={genre.id} className="rounded-lg bg-cinemo-gold/15 px-3 py-1 text-cinemo-gold-light">
                 {genre.name}
               </Text>
             ))}
@@ -110,9 +110,9 @@ export default function MovieDetailScreen() {
         </View>
 
         <View className="gap-3">
-          <Text>감독: {directors.join(", ") || "정보 없음"}</Text>
+          <Text className="text-cinemo-muted">감독: {directors.join(", ") || "정보 없음"}</Text>
 
-          <Text>출연: {actors.join(", ") || "정보 없음"}</Text>
+          <Text className="text-cinemo-muted">출연: {actors.join(", ") || "정보 없음"}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

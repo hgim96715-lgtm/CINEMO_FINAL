@@ -1,4 +1,5 @@
 import { CINEMO_BRAND } from "@cinemo/shared";
+import { CinemoBackground } from "@/components/common/CinemoBackground";
 import { useEffect } from "react";
 import { router } from "expo-router";
 import { Text, View } from "react-native";
@@ -13,13 +14,14 @@ export default function IntroScreen() {
 
   return (
     <View
-      className="flex-1 items-center justify-center"
+      className="flex-1 items-center justify-center bg-cinemo-bg"
     >
-      <Text className="text-5xl font-bold tracking-[6px]">
+      <CinemoBackground />
+      <Text className="text-5xl font-bold tracking-[6px] text-cinemo-gold">
         {CINEMO_BRAND.name}
       </Text>
 
-      <Text className="mt-5 text-center text-base">
+      <Text className="mt-5 text-center text-base text-cinemo-muted">
         {CINEMO_BRAND.slogan}
       </Text>
     </View>

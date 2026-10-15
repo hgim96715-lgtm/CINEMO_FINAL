@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { CINEMO_COLORS } from "@cinemo/shared";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -57,7 +58,7 @@ export function MovieRanking({ onScroll }: MovieRankingProps) {
   if (rankingQuery.isPending) {
     return (
       <View className="flex-1 items-center justify-center">
-        <ActivityIndicator />
+        <ActivityIndicator color={CINEMO_COLORS.accent} />
       </View>
     );
   }
@@ -65,7 +66,9 @@ export function MovieRanking({ onScroll }: MovieRankingProps) {
   if (rankingQuery.isError) {
     return (
       <View className="flex-1 items-center justify-center px-5">
-        <Text className="text-center">영화 순위를 불러오지 못했습니다.</Text>
+        <Text style={{ color: CINEMO_COLORS.textPrimary }}>
+          영화 순위를 불러오지 못했습니다.
+        </Text>
       </View>
     );
   }
@@ -98,11 +101,19 @@ export function MovieRanking({ onScroll }: MovieRankingProps) {
           </View>
 
           <View className="mb-5 mt-10">
-            <Text className="text-xs font-semibold tracking-[4px]">
+            <Text
+              className="text-xs font-semibold tracking-[4px]"
+              style={{ color: CINEMO_COLORS.accentLight }}
+            >
               CINEMO RANKING
             </Text>
 
-            <Text className="mt-2 text-2xl font-bold">오늘의 영화 순위</Text>
+            <Text
+              className="mt-2 text-2xl font-bold"
+              style={{ color: CINEMO_COLORS.textPrimary }}
+            >
+              오늘의 영화 순위
+            </Text>
           </View>
         </View>
 

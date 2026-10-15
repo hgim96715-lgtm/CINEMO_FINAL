@@ -1,5 +1,6 @@
 import type { MovieSearchItemResponse } from "@cinemo/api-contract";
 import { Ionicons } from "@expo/vector-icons";
+import { CINEMO_COLORS } from "@cinemo/shared";
 import { Image, Pressable, Text, View } from "react-native";
 
 type MovieCardProps = {
@@ -31,9 +32,12 @@ function RankChange({ value }: { value: number | null }) {
     : "trending-down-outline";
   return (
     <View className="flex-row items-center gap-1">
-      <Ionicons name={iconName} size={16} />
+      <Ionicons name={iconName} size={16} color={CINEMO_COLORS.accentLight} />
 
-      <Text className="text-sm font-semibold">
+      <Text
+        className="text-sm font-semibold"
+        style={{ color: CINEMO_COLORS.accentLight }}
+      >
         {isUp ? `+${value}` : value}
       </Text>
     </View>
@@ -53,7 +57,10 @@ export function MovieCard({ movie, index, onPress }: MovieCardProps) {
         ) : (
           <View style={{ width: 136, height: 204 }} />
         )}
-        <Text className="absolute bottom-2 left-2 text-3xl font-black leading-none">
+      <Text
+        className="absolute bottom-2 left-2 text-3xl font-black leading-none"
+        style={{ color: CINEMO_COLORS.accent }}
+      >
           {movie.rank ?? index + 1}
         </Text>
       </View>
@@ -61,13 +68,14 @@ export function MovieCard({ movie, index, onPress }: MovieCardProps) {
       <Text
         numberOfLines={1}
         className="mt-3 text-sm font-medium"
+        style={{ color: CINEMO_COLORS.textPrimary }}
       >
         {movie.title}
       </Text>
 
       <View className="mt-1 flex-row items-center gap-2">
         {movie.totalAudienceCount !== null && (
-          <Text className="text-xs">
+          <Text className="text-xs" style={{ color: CINEMO_COLORS.textSecondary }}>
             {formatAudience(movie.totalAudienceCount)}
           </Text>
         )}

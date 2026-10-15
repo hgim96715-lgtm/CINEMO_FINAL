@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { popularMoviesQueryOptions } from "@/lib/queries/movie-popular.query";
+import { CinemoBackground } from "@/components/common/CinemoBackground";
 
 export default function SearchScreen() {
   const [keyword, setKeyword] = useState("");
@@ -50,7 +51,8 @@ export default function SearchScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1">
+    <SafeAreaView className="flex-1 bg-cinemo-bg">
+      <CinemoBackground />
       <View className="flex-row items-center gap-2 px-5 py-4">
         <Pressable
           accessibilityLabel="뒤로 가기"
@@ -71,8 +73,9 @@ export default function SearchScreen() {
           }}
           onSubmitEditing={submitSearch}
           placeholder="영화 제목 검색"
+          placeholderTextColor="#8fb8b3"
           returnKeyType="search"
-          className="h-12 flex-1 rounded-xl px-4"
+          className="h-12 flex-1 rounded-xl border border-cinemo-border bg-cinemo-surface px-4 text-cinemo-text"
         />
         {keyword.length > 0 && (
           <Pressable
@@ -90,7 +93,7 @@ export default function SearchScreen() {
         <Pressable
           accessibilityLabel="검색"
           onPress={submitSearch}
-          className="h-12 w-12 items-center justify-center rounded-xl"
+          className="h-12 w-12 items-center justify-center rounded-xl bg-cinemo-gold"
         >
           <Search size={22} />
         </Pressable>
@@ -112,7 +115,7 @@ export default function SearchScreen() {
         }}
         ListHeaderComponent={
           <View className="w-full pb-2">
-            <Text className="text-2xl font-bold">
+            <Text className="text-2xl font-bold text-cinemo-text">
               {submittedKeyword ? `${submittedKeyword} 검색 결과` : "인기 영화"}
             </Text>
           </View>
@@ -149,14 +152,14 @@ export default function SearchScreen() {
             )}
 
             <View className="flex-1 justify-center">
-              <Text className="text-lg font-semibold">{item.title}</Text>
+              <Text className="text-lg font-semibold text-cinemo-text">{item.title}</Text>
 
               {item.releaseDate && (
-                <Text className="mt-2">{item.releaseDate.slice(0, 10)}</Text>
+                <Text className="mt-2 text-cinemo-muted">{item.releaseDate.slice(0, 10)}</Text>
               )}
 
               {item.genres.length > 0 && (
-                <Text className="mt-1">{item.genres.join(" · ")}</Text>
+                <Text className="mt-1 text-cinemo-muted">{item.genres.join(" · ")}</Text>
               )}
             </View>
           </Pressable>
