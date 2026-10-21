@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, CalendarDays } from "lucide-react";
+import { CalendarDays, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -11,8 +11,8 @@ import {
   releasedMoviesQueryOptions,
 } from "@/lib/queries/movie-search.query";
 import {
-  getCurrentYearAndMonth,
   formatReleasedDate,
+  getCurrentYearAndMonth,
   sortMoviesForToday,
 } from "@/lib/released-movies";
 
@@ -81,11 +81,11 @@ export function ReleasedMovieCarousel() {
           className="inline-flex shrink-0 items-center gap-1 text-sm text-muted-foreground transition hover:text-primary"
         >
           더보기
-          <ArrowRight className="size-4" />
+          <ChevronRight className="size-4" />
         </Link>
       </div>
 
-      <ol className="flex gap-4 overflow-x-auto pb-4 scrollbar-none [&::-webkit-scrollbar]:hidden">
+      <ol className=" flex gap-4 overflow-x-auto pb-4 scrollbar-none [&::-webkit-scrollbar]:hidden">
         {movies.map((movie) => (
           <li
             key={movie.id}

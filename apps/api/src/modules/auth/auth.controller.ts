@@ -3,8 +3,8 @@ import {
   Controller,
   Delete,
   Get,
-  Post,
   Patch,
+  Post,
   Query,
   Req,
   Res,
@@ -43,6 +43,8 @@ import { OauthSignupRequestDto } from "./dto/requests/oauth-signup.request.dto";
 import { OptionalAuth } from "./decorators/optional-auth.decorator";
 import { UpdateProfileVisibilityRequestDto } from "./dto/requests/update-profile-visibility.request.dto";
 import { SESSION_COOKIE_NAME } from "./session-cookie";
+import { MobileRefreshRequestDto } from "@/modules/auth/dto/requests/mobile-refresh.request.dto";
+import { MobileAppleLoginRequestDto } from "@/modules/auth/dto/requests/mobile-apple-login.request.dto";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -175,6 +177,110 @@ export class AuthController {
       this.configService.getOrThrow<string>("app.frontendUrl");
 
     return response.redirect(302, `${frontendUrl}/login?verified=true`);
+  }
+
+  @Public()
+  @Post("mobile/login")
+  @ApiOperation({
+    summary: "모바일 이메일 로그인",
+  })
+  @ApiOkResponse({
+    description: "Access Token과 Refresh Token 발급",
+  })
+  @ApiUnauthorizedResponse({
+    description: "이메일 또는 비밀번호가 올바르지 않음",
+  })
+  async loginMobile(@Body() input: LoginRequestDto, @Req() request: Request) {
+    const deviceIdHeader = request.headers["x-device-id"];
+
+    const deviceId = Array.isArray(deviceIdHeader)
+      ? deviceIdHeader[0]
+      : deviceIdHeader;
+
+    return this.authService.loginMobile({
+      ...input,
+      deviceId,
+      userAgent: request.get("user-agent") ?? undefined,
+      ipAddress: request.ip,
+    });
+  }
+
+  @Public()
+  @Post("mobile/apple")
+  @ApiOperation({
+    summary: "모바일 Apple 로그인",
+  })
+  @ApiOkResponse({
+    description: "Apple identity token 검증 후 모바일 토큰 발급",
+  })
+  @ApiUnauthorizedResponse({
+    description: "Apple identity token이 유효하지 않음",
+  })
+  async loginMobileWithApple(
+    @Body() input: MobileAppleLoginRequestDto,
+    @Req() request: Request,
+  ) {
+    const appleUser = await this.appleAuthService.verifyMobileIdentityToken(
+      input.identityToken,
+    );
+    const deviceIdHeader = request.headers["x-device-id"];
+    const deviceId = Array.isArray(deviceIdHeader)
+      ? deviceIdHeader[0]
+      : input.deviceId ?? deviceIdHeader;
+
+    return this.authService.loginMobileWithApple({
+      ...appleUser,
+      deviceId,
+      userAgent: request.get("user-agent") ?? undefined,
+      ipAddress: request.ip,
+    });
+  }
+
+  @Public()
+  @Post("mobile/refresh")
+  @ApiOperation({
+    summary: "모바일 Access Token 갱신",
+  })
+  @ApiOkResponse({
+    description: "새 Access Token과 Refresh Token 발급",
+  })
+  @ApiUnauthorizedResponse({
+    description: "Refresh Token이 유효하지 않음",
+  })
+  async refreshMobileTokens(
+    @Body() input: MobileRefreshRequestDto,
+    @Req() request: Request,
+  ) {
+    return this.authService.refreshMobileTokens({
+      refreshToken: input.refreshToken,
+      deviceId: input.deviceId ?? request.get("x-device-id") ?? undefined,
+      userAgent: request.get("user-agent") ?? undefined,
+      ipAddress: request.ip,
+    });
+  }
+
+  @Public()
+  @Post("mobile/logout")
+  @ApiOperation({
+    summary: "모바일 로그아웃",
+  })
+  @ApiOkResponse({
+    description: "모바일 토큰 폐기 성공",
+  })
+  async logoutMobile(
+    @Req() request: Request,
+    @Body() input: MobileRefreshRequestDto,
+  ) {
+    const authorization = request.header("authorization");
+
+    const accessToken = authorization?.startsWith("Bearer ")
+      ? authorization.slice(7).trim()
+      : undefined;
+
+    return this.authService.logoutMobile({
+      accessToken,
+      refreshToken: input.refreshToken,
+    });
   }
 
   @Public()

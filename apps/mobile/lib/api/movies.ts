@@ -68,3 +68,29 @@ export async function getPopularMovies(
 
   return data;
 }
+
+export type UpcomingMoviesParams = {
+  period?: "this-week";
+  yearMonth?: string;
+  page?: number;
+  limit?: number;
+};
+
+export async function getUpcomingMovies(
+  params: UpcomingMoviesParams = {},
+  signal?: AbortSignal,
+): Promise<MovieSearchResponse> {
+  const { data } = await apiClient.get<MovieSearchResponse>(
+    "/movies/upcoming",
+    {
+      params: {
+        period: params.period,
+        yearMonth: params.yearMonth,
+        page: params.page ?? 1,
+        limit: params.limit ?? 10,
+      },
+      signal,
+    },
+  );
+  return data;
+}

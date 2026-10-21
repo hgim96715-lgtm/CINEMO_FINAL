@@ -27,6 +27,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - ExpoAppleAuthentication (57.0.2):
+    - ExpoModulesCore
   - ExpoAsset (57.0.18):
     - ExpoModulesCore
   - ExpoDomWebView (57.0.1):
@@ -2317,6 +2319,7 @@ PODS:
 DEPENDENCIES:
   - "EXConstants (from `../../../node_modules/.pnpm/expo-constants@57.0.20_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-col_d8dfefdf3861387e74c4dab397dc6863/node_modules/expo-constants/ios`)"
   - "Expo (from `../../../node_modules/.pnpm/expo@57.0.26_064f27a11b9745138f57c4441d19339e/node_modules/expo`)"
+  - "ExpoAppleAuthentication (from `../../../node_modules/.pnpm/expo-apple-authentication@57.0.2_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_su_584b61b919a8614be6e6d33b61f1c804/node_modules/expo-apple-authentication/ios`)"
   - "ExpoAsset (from `../../../node_modules/.pnpm/expo-asset@57.0.18_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-color@8_51a03afdc821b140e4e7927b57291fd4/node_modules/expo-asset/ios`)"
   - "ExpoDomWebView (from `../../../node_modules/.pnpm/@expo+dom-webview@57.0.1_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-c_625ad572851e160ad943c29084f20296/node_modules/@expo/dom-webview/ios`)"
   - "ExpoFileSystem (from `../../../node_modules/.pnpm/expo-file-system@57.0.7_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-co_fd53b88c2e5cf057672fab09ea8c47af/node_modules/expo-file-system/ios/ExpoFileSystem.podspec`)"
@@ -2424,6 +2427,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/.pnpm/expo-constants@57.0.20_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-col_d8dfefdf3861387e74c4dab397dc6863/node_modules/expo-constants/ios"
   Expo:
     :path: "../../../node_modules/.pnpm/expo@57.0.26_064f27a11b9745138f57c4441d19339e/node_modules/expo"
+  ExpoAppleAuthentication:
+    :path: "../../../node_modules/.pnpm/expo-apple-authentication@57.0.2_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_su_584b61b919a8614be6e6d33b61f1c804/node_modules/expo-apple-authentication/ios"
   ExpoAsset:
     :path: "../../../node_modules/.pnpm/expo-asset@57.0.18_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-color@8_51a03afdc821b140e4e7927b57291fd4/node_modules/expo-asset/ios"
   ExpoDomWebView:
@@ -2629,6 +2634,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   EXConstants: fdc6f92b1559e5bd69df9e684e8c7ba5d912890e
   Expo: 404a8f48f74f2d062911f965440380d98bfa879b
+  ExpoAppleAuthentication: 16c2955d33ec7315e5a99d17fb5d62ed33cdb5b9
   ExpoAsset: a917b756b2e4fe12cef1ac3bca5fd849ddb2b919
   ExpoDomWebView: beaec034e51bd028428b98bb1f2633ab79c6d095
   ExpoFileSystem: 28778f942725170102f7c6cf4dee05a526ddacd0

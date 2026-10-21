@@ -16,11 +16,28 @@ const numberFormatter = new Intl.NumberFormat("ko-KR", {
 });
 
 function formatAudience(count: number | null) {
-  if (count === null) return "-";
-
+  if (count === null) {
+    return "-";
+  }
   const flooredCount = Math.floor(count / 1_000) * 1_000;
+  if (flooredCount >= 10_000) {
+    const man = flooredCount / 10_000;
+    const formatted = Number.isInteger(man)
+      ? String(man)
+      : man.toFixed(1).replace(/\.0$/, "");
+    return `누적 ${formatted}만`;
+  }
+  if (flooredCount >= 1_000) {
+    return `누적 ${flooredCount / 1_000}천`;
+  }
 
-  return `누적 ${numberFormatter.format(flooredCount)}`;
+  return `누적 ${flooredCount.toLocaleString("ko-KR")}`;
+}
+
+function getMobileImageUrl(url: string | null) {
+  if (!url) return null;
+
+  return url.replace(/^http:\/\//i, "https://");
 }
 
 function RankChange({ value }: { value: number | null }) {
@@ -45,23 +62,47 @@ function RankChange({ value }: { value: number | null }) {
 }
 
 export function MovieCard({ movie, index, onPress }: MovieCardProps) {
+  const posterUrl = getMobileImageUrl(movie.posterUrl);
+  const rank = movie.rank ?? index + 1;
+
   return (
-    <Pressable className="mr-4 w-34" onPress={onPress}>
-      <View className="relative overflow-hidden rounded-2xl">
-        {movie.posterUrl ? (
+    <Pressable className="mr-4" style={{ width: 136 }} onPress={onPress}>
+      <View
+        className="relative overflow-hidden rounded-2xl"
+        style={{
+          width: 136,
+          height: 204,
+          backgroundColor: CINEMO_COLORS.surface,
+        }}
+      >
+        {posterUrl ? (
           <Image
-            source={{ uri: movie.posterUrl }}
+            source={{ uri: posterUrl }}
             resizeMode="cover"
-            style={{ width: 136, height: 204 }}
+            style={{ width: "100%", height: "100%" }}
+            accessibilityLabel={`${movie.title} 포스터`}
           />
         ) : (
-          <View style={{ width: 136, height: 204 }} />
+          <View className="flex-1 items-center justify-center">
+            <Text
+              className="text-center text-xs"
+              style={{ color: CINEMO_COLORS.textSecondary }}
+            >
+              포스터 준비중
+            </Text>
+          </View>
         )}
-      <Text
-        className="absolute bottom-2 left-2 text-3xl font-black leading-none"
-        style={{ color: CINEMO_COLORS.accent }}
-      >
-          {movie.rank ?? index + 1}
+
+        <Text
+          className="absolute bottom-2 left-2 text-3xl font-black leading-none"
+          style={{
+            color: CINEMO_COLORS.textPrimary,
+            textShadowColor: "rgba(0, 0, 0, 0.8)",
+            textShadowOffset: { width: 0, height: 2 },
+            textShadowRadius: 6,
+          }}
+        >
+          {rank}
         </Text>
       </View>
 
@@ -74,11 +115,14 @@ export function MovieCard({ movie, index, onPress }: MovieCardProps) {
       </Text>
 
       <View className="mt-1 flex-row items-center gap-2">
-        {movie.totalAudienceCount !== null && (
-          <Text className="text-xs" style={{ color: CINEMO_COLORS.textSecondary }}>
+        {movie.totalAudienceCount !== null ? (
+          <Text
+            className="text-sm"
+            style={{ color: CINEMO_COLORS.textSecondary }}
+          >
             {formatAudience(movie.totalAudienceCount)}
           </Text>
-        )}
+        ) : null}
 
         <RankChange value={movie.rankChange} />
       </View>

@@ -1,4 +1,4 @@
-import {Injectable} from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import {
   CreditType,
   MatchMethod,
@@ -13,8 +13,8 @@ import {
   TitleType,
 } from "@prisma/client";
 
-import {PrismaService} from "@/prisma/prisma.service";
-import {MoviePersonService} from "../movie-person.service";
+import { PrismaService } from "@/prisma/prisma.service";
+import { MoviePersonService } from "../movie-person.service";
 
 const publicMovieWhere: Prisma.MovieWhereInput = {
   visibility: MovieVisibility.PUBLIC,
@@ -159,8 +159,6 @@ export type SaveMoviePopularitySnapshotInput = {
   collectedAt?: Date;
 };
 
-
-
 @Injectable()
 export class MoviesRepository {
   constructor(
@@ -177,7 +175,6 @@ export class MoviesRepository {
       ...movieInclude,
     });
   }
-  
 
   async search(
     query: string,
@@ -194,7 +191,7 @@ export class MoviesRepository {
 
     const normalizedTitleMovies =
       normalizedKeyword.length > 0
-        ? await this.prisma.$queryRaw<Array<{movieId: string}>>(Prisma.sql`
+        ? await this.prisma.$queryRaw<Array<{ movieId: string }>>(Prisma.sql`
             SELECT DISTINCT "movieId"
             FROM "movie_titles"
             WHERE regexp_replace(
@@ -207,7 +204,7 @@ export class MoviesRepository {
         : [];
 
     const normalizedTitleMovieIds = normalizedTitleMovies.map(
-      ({movieId}) => movieId,
+      ({ movieId }) => movieId,
     );
 
     const where: Prisma.MovieWhereInput = {
@@ -1057,7 +1054,14 @@ export class MoviesRepository {
 
     const movies = await this.prisma.movie.findMany({
       where: {
-        AND: [publicMovieWhere, { id: { in: movieIds } }],
+        AND: [
+          publicMovieWhere,
+          {
+            id: {
+              in: movieIds,
+            },
+          },
+        ],
       },
       ...movieSearchInclude,
     });
@@ -1095,6 +1099,15 @@ export class MoviesRepository {
         {
           OR: [{ runtime: null }, { runtime: { gt: 30 } }],
         },
+        {
+          titles: {
+            some: {
+              languageCode: {
+                startsWith: "ko",
+              },
+            },
+          },
+        },
       ],
       releases: {
         some: {
@@ -1127,6 +1140,12 @@ export class MoviesRepository {
         AND movie."visibility" = 'PUBLIC'
         AND EXISTS (
           SELECT 1
+          FROM movie_titles AS title
+          WHERE title."movieId" = movie.id
+            AND title."languageCode" LIKE 'ko%'
+        )
+        AND EXISTS (
+          SELECT 1
           FROM movie_releases AS release
           WHERE release."movieId" = movie.id
             AND release."releaseDate" >= ${filter.startDate}
@@ -1150,7 +1169,21 @@ export class MoviesRepository {
         where: {
           AND: [publicMovieWhere, { id: { in: movieIds.map(({ id }) => id) } }],
         },
-        ...movieSearchInclude,
+        include: {
+          ...movieSearchInclude.include,
+          releases: {
+            where: {
+              releaseDate,
+              status: {
+                in: [ReleaseStatus.ANNOUNCED, ReleaseStatus.SCHEDULED],
+              },
+            },
+            orderBy: {
+              releaseDate: "asc",
+            },
+            take: 1,
+          },
+        },
       }),
       this.prisma.movie.count({ where }),
     ]);

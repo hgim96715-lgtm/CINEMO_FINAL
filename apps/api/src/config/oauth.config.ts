@@ -11,6 +11,7 @@ export const oauthConfig = registerAs("oauth", () => ({
 
   apple: {
     clientId: process.env[EnvKeys.APPLE_CLIENT_ID],
+    mobileClientId: process.env.APPLE_MOBILE_CLIENT_ID ?? "site.cinemo.app",
     teamId: process.env[EnvKeys.APPLE_TEAM_ID],
     keyId: process.env[EnvKeys.APPLE_KEY_ID],
     privateKey: process.env[EnvKeys.APPLE_PRIVATE_KEY]?.replace(/\\n/g, "\n"),

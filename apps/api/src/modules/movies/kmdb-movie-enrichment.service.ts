@@ -11,10 +11,12 @@ import {
   toSaveKmdbEnrichmentInput,
 } from "./mappers/kmdb-movie-enrichment.mapper";
 import { KmdbMovieEnrichmentRepository } from "./repositories/kmdb-movie-enrichment.repository";
+import sharp from "sharp";
 
 const normalizeTitle = (value?: string | null): string =>
-  cleanKmdbText(value)?.toLocaleLowerCase("ko-KR").replace(/[^\p{L}\p{N}]/gu, "") ??
-  "";
+  cleanKmdbText(value)
+    ?.toLocaleLowerCase("ko-KR")
+    .replace(/[^\p{L}\p{N}]/gu, "") ?? "";
 
 @Injectable()
 export class KmdbMovieEnrichmentService {
@@ -52,9 +54,7 @@ export class KmdbMovieEnrichmentService {
       : [];
 
     const candidates =
-      yearMatchedResults.length > 0
-        ? yearMatchedResults
-        : titleMatchedResults;
+      yearMatchedResults.length > 0 ? yearMatchedResults : titleMatchedResults;
 
     if (candidates.length === 0) {
       throw new NotFoundException(
@@ -94,9 +94,48 @@ export class KmdbMovieEnrichmentService {
       throw new NotFoundException("KMDb 영화를 찾을 수 없습니다.");
     }
 
-    return this.repository.saveEnrichment(
-      movieId,
-      toSaveKmdbEnrichmentInput(kmdbMovie),
-    );
+    const enrichment = toSaveKmdbEnrichmentInput(kmdbMovie);
+    const posterUrl = await this.selectVerticalPosterUrl(enrichment.posterUrls);
+
+    return this.repository.saveEnrichment(movieId, {
+      ...enrichment,
+      posterUrl,
+    });
+  }
+
+  private async selectVerticalPosterUrl(
+    posterUrls: string[],
+  ): Promise<string | null> {
+    for (const posterUrl of posterUrls) {
+      const imageSize = await this.getRemoteImageSize(posterUrl);
+      if (imageSize && imageSize.height > imageSize.width) {
+        return posterUrl;
+      }
+    }
+    return null;
+  }
+
+  private async getRemoteImageSize(
+    url: string,
+  ): Promise<{ width: number; height: number } | null> {
+    try {
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(8_000),
+      });
+      if (!response.ok) {
+        return null;
+      }
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const metadata = await sharp(buffer).metadata();
+      if (!metadata.width || !metadata.height) {
+        return null;
+      }
+      return {
+        width: metadata.width,
+        height: metadata.height,
+      };
+    } catch {
+      return null;
+    }
   }
 }

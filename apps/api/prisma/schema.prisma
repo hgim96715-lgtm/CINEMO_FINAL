@@ -236,19 +236,19 @@ enum PostcardMediaType {
 }
 
 model Postcard {
-  id                 String             @id @default(uuid(7)) @db.Uuid
-  userId             String             @db.Uuid
-  movieId            String             @db.Uuid
+  id                 String               @id @default(uuid(7)) @db.Uuid
+  userId             String               @db.Uuid
+  movieId            String               @db.Uuid
   type               PostcardType
-  source             PostcardSource     @default(USER)
+  source             PostcardSource       @default(USER)
   quoteSource        PostcardQuoteSource? @map("quote_source") // QUOTE 원문의 근거
-  content            String             @db.Text
-  backgroundStyle    String?            @map("background_style") @db.VarChar(100)
-  backgroundImageKey String?            @map("background_image_key") @db.VarChar(255)
+  content            String               @db.Text
+  backgroundStyle    String?              @map("background_style") @db.VarChar(100)
+  backgroundImageKey String?              @map("background_image_key") @db.VarChar(255)
   style              Json?
   metadata           Json?
-  visibility         PostcardVisibility @default(PRIVATE)
-  status             PostcardStatus     @default(DRAFT)
+  visibility         PostcardVisibility   @default(PRIVATE)
+  status             PostcardStatus       @default(DRAFT)
 
   reactionCount Int @default(0) @map("reaction_count")
   commentCount  Int @default(0) @map("comment_count")
@@ -582,6 +582,7 @@ model User {
   postcardDailyUsages        PostcardDailyUsage[]
   postcardNotifications      PostcardNotification[]    @relation("PostcardNotificationRecipient")
   postcardNotificationActors PostcardNotification[]    @relation("PostcardNotificationActor")
+  mobileRefreshTokens        MobileRefreshToken[]
 
   @@index([nickname])
   @@index([status])
@@ -1055,4 +1056,25 @@ model MovieCertification {
   @@unique([sourceProvider, auditNo])
   @@index([movieId])
   @@map("movie_certifications")
+}
+
+// Mobile
+model MobileRefreshToken {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  userId     String    @db.Uuid
+  tokenHash  String    @unique @db.Text
+  deviceId   String?   @db.VarChar(100)
+  userAgent  String?   @db.Text
+  ipAddress  String?   @db.VarChar(45)
+  expiresAt  DateTime  @db.Timestamptz(3)
+  revokedAt  DateTime? @db.Timestamptz(3)
+  lastUsedAt DateTime? @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([userId, revokedAt])
+  @@map("mobile_refresh_tokens")
 }

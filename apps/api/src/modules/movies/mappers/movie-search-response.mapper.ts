@@ -19,6 +19,9 @@ export function toMovieSearchItemResponseDto(
         item.titleType === "PRIMARY" &&
         item.languageCode?.toLocaleLowerCase().startsWith("ko"),
     ) ??
+    movie.titles.find((item) =>
+      item.languageCode?.toLocaleLowerCase().startsWith("ko"),
+    ) ??
     movie.titles.find((item) => item.titleType === "PRIMARY") ??
     movie.titles[0];
 

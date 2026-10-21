@@ -5,8 +5,8 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import {
-  EmailVerificationPurpose,
   AuthProvider,
+  EmailVerificationPurpose,
   TermsType,
   UserStatus,
   UserVisibility,
@@ -26,6 +26,39 @@ const EMAIL_VERIFICATION_EXPIRES_IN_MS = 30 * 60 * 1000;
 
 const SESSION_EXPIRES_IN_MS = 24 * 60 * 60 * 1000;
 const OAUTH_SIGNUP_TICKET_EXPIRES_IN_MS = 10 * 60 * 1000;
+
+const MOBILE_ACCESS_TOKEN_EXPIRES_IN_MS = 15 * 60 * 1000;
+const MOBILE_REFRESH_TOKEN_EXPIRES_IN_MS = 30 * 24 * 60 * 60 * 1000;
+
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+type MobileTokenPair = {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresAt: Date;
+  refreshTokenExpiresAt: Date;
+};
+
+type MobileTokenContext = {
+  deviceId?: string;
+  userAgent?: string;
+  ipAddress?: string;
+};
+
+type IssueMobileTokensInput = MobileTokenContext & {
+  userId: string;
+};
+
+type RefreshMobileTokensInput = MobileTokenContext & {
+  refreshToken: string;
+};
+
+type MobileLogoutInput = {
+  accessToken?: string;
+  refreshToken?: string;
+};
 
 @Injectable()
 export class AuthService {
@@ -52,20 +85,52 @@ export class AuthService {
       .digest("hex");
 
     const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_EXPIRES_IN_MS);
+    const termsAgreements = [
+      {
+        termsType: TermsType.SERVICE,
+        version: CURRENT_TERMS_VERSION,
+      },
+      {
+        termsType: TermsType.PRIVACY,
+        version: CURRENT_TERMS_VERSION,
+      },
+      ...(input.terms.marketing
+        ? [
+            {
+              termsType: TermsType.MARKETING,
+              version: CURRENT_TERMS_VERSION,
+            },
+          ]
+        : []),
+    ];
 
     const user = await this.prisma.$transaction(async (tx) => {
       const existingUser = await tx.user.findUnique({
         where: { email },
-        select: { id: true },
+        select: {
+          id: true,
+          status: true,
+          passwordCredential: {
+            select: {
+              emailVerifiedAt: true,
+            },
+          },
+        },
       });
 
-      if (existingUser) {
+      if (
+        existingUser &&
+        (!existingUser.passwordCredential ||
+          existingUser.passwordCredential.emailVerifiedAt ||
+          existingUser.status !== UserStatus.ACTIVE)
+      ) {
         throw new ConflictException("이미 가입된 이메일입니다.");
       }
 
       const existingNickname = await tx.user.findFirst({
         where: {
           nickname,
+          ...(existingUser ? { NOT: { id: existingUser.id } } : {}),
         },
         select: {
           id: true,
@@ -73,6 +138,38 @@ export class AuthService {
       });
       if (existingNickname) {
         throw new ConflictException("이미 사용 중인 닉네임입니다.");
+      }
+
+      if (existingUser) {
+        return tx.user.update({
+          where: { id: existingUser.id },
+          data: {
+            nickname,
+            passwordCredential: {
+              update: {
+                passwordHash,
+                emailVerifiedAt: null,
+              },
+            },
+            emailVerifications: {
+              create: {
+                tokenHash,
+                purpose: EmailVerificationPurpose.SIGNUP,
+                expiresAt,
+              },
+            },
+            termsAgreements: {
+              create: termsAgreements,
+            },
+          },
+          select: {
+            id: true,
+            email: true,
+            nickname: true,
+            status: true,
+            createdAt: true,
+          },
+        });
       }
 
       return tx.user.create({
@@ -95,24 +192,7 @@ export class AuthService {
           },
 
           termsAgreements: {
-            create: [
-              {
-                termsType: TermsType.SERVICE,
-                version: CURRENT_TERMS_VERSION,
-              },
-              {
-                termsType: TermsType.PRIVACY,
-                version: CURRENT_TERMS_VERSION,
-              },
-              ...(input.terms.marketing
-                ? [
-                    {
-                      termsType: TermsType.MARKETING,
-                      version: CURRENT_TERMS_VERSION,
-                    },
-                  ]
-                : []),
-            ],
+            create: termsAgreements,
           },
         },
         select: {
@@ -138,7 +218,7 @@ export class AuthService {
   }
 
   async login(input: LoginRequestDto) {
-    const email = input.email.trim().toLowerCase();
+    const email = normalizeEmail(input.email);
 
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -220,6 +300,49 @@ export class AuthService {
     });
   }
 
+  async logoutMobile(input: MobileLogoutInput) {
+    const revokedAt = new Date();
+
+    await this.prisma.$transaction(async (tx) => {
+      if (input.accessToken) {
+        const accessTokenHash = createHash("sha256")
+          .update(input.accessToken)
+          .digest("hex");
+
+        await tx.authSession.updateMany({
+          where: {
+            tokenHash: accessTokenHash,
+            revokedAt: null,
+          },
+          data: {
+            revokedAt,
+          },
+        });
+      }
+
+      if (input.refreshToken) {
+        const refreshTokenHash = createHash("sha256")
+          .update(input.refreshToken)
+          .digest("hex");
+
+        await tx.mobileRefreshToken.updateMany({
+          where: {
+            tokenHash: refreshTokenHash,
+            revokedAt: null,
+          },
+          data: {
+            revokedAt,
+            lastUsedAt: revokedAt,
+          },
+        });
+      }
+    });
+
+    return {
+      loggedOut: true,
+    };
+  }
+
   async deleteAccount(userId: string) {
     await this.prisma.$transaction(async (tx) => {
       await tx.authSession.deleteMany({
@@ -298,7 +421,7 @@ export class AuthService {
   }
 
   async checkEmail(emailInput: string) {
-    const email = emailInput.trim().toLowerCase();
+    const email = normalizeEmail(emailInput);
 
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
@@ -310,16 +433,12 @@ export class AuthService {
     };
   }
 
-  async loginWithApple(input: {
+  private async resolveAppleUser(input: {
     providerUserId: string;
     email: string | null;
     emailVerified: boolean;
   }) {
-    if (!input.email || !input.emailVerified) {
-      throw new UnauthorizedException("Apple 이메일 인증 정보가 필요합니다.");
-    }
-
-    const result = await this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       const existingIdentity = await tx.userIdentity.findUnique({
         where: {
           provider_providerUserId: {
@@ -337,6 +456,10 @@ export class AuthService {
           type: "login" as const,
           user: existingIdentity.user,
         };
+      }
+
+      if (!input.email || !input.emailVerified) {
+        throw new UnauthorizedException("Apple 이메일 인증 정보가 필요합니다.");
       }
 
       const existingUser = await tx.user.findUnique({
@@ -357,9 +480,7 @@ export class AuthService {
             provider: AuthProvider.APPLE,
             providerUserId: input.providerUserId,
             providerEmail: input.email,
-            expiresAt: new Date(
-              Date.now() + OAUTH_SIGNUP_TICKET_EXPIRES_IN_MS,
-            ),
+            expiresAt: new Date(Date.now() + OAUTH_SIGNUP_TICKET_EXPIRES_IN_MS),
           },
         });
 
@@ -392,6 +513,14 @@ export class AuthService {
         user: existingUser,
       };
     });
+  }
+
+  async loginWithApple(input: {
+    providerUserId: string;
+    email: string | null;
+    emailVerified: boolean;
+  }) {
+    const result = await this.resolveAppleUser(input);
 
     if (result.type === "signup") {
       return {
@@ -433,6 +562,53 @@ export class AuthService {
     };
   }
 
+  async loginMobileWithApple(
+    input: {
+      providerUserId: string;
+      email: string | null;
+      emailVerified: boolean;
+    } & MobileTokenContext,
+  ) {
+    const result = await this.resolveAppleUser(input);
+
+    if (result.type === "signup") {
+      return {
+        requiresRegistration: true as const,
+        signupToken: result.signupToken,
+      };
+    }
+
+    const user = result.user;
+
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException("로그인할 수 없는 계정입니다.");
+    }
+
+    const tokens = await this.issueMobileTokens({
+      userId: user.id,
+      deviceId: input.deviceId,
+      userAgent: input.userAgent,
+      ipAddress: input.ipAddress,
+    });
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        status: user.status,
+        profileVisibility: user.profileVisibility,
+        profileImageUrl: user.profileImageUrl,
+      },
+      ...tokens,
+    };
+  }
+
   async completeOauthSignup(input: {
     ticket: string;
     nickname: string;
@@ -449,20 +625,14 @@ export class AuthService {
       throw new BadRequestException(nicknameError);
     }
 
-    const tokenHash = createHash("sha256")
-      .update(input.ticket)
-      .digest("hex");
+    const tokenHash = createHash("sha256").update(input.ticket).digest("hex");
 
     return this.prisma.$transaction(async (tx) => {
       const ticket = await tx.oauthSignupTicket.findUnique({
         where: { tokenHash },
       });
 
-      if (
-        !ticket ||
-        ticket.consumedAt ||
-        ticket.expiresAt <= new Date()
-      ) {
+      if (!ticket || ticket.consumedAt || ticket.expiresAt <= new Date()) {
         throw new BadRequestException(
           "OAuth 가입 티켓이 만료되었거나 유효하지 않습니다.",
         );
@@ -555,9 +725,7 @@ export class AuthService {
       const sessionTokenHash = createHash("sha256")
         .update(sessionToken)
         .digest("hex");
-      const sessionExpiresAt = new Date(
-        Date.now() + SESSION_EXPIRES_IN_MS,
-      );
+      const sessionExpiresAt = new Date(Date.now() + SESSION_EXPIRES_IN_MS);
 
       await tx.authSession.create({
         data: {
@@ -573,5 +741,204 @@ export class AuthService {
         sessionExpiresAt,
       };
     });
+  }
+
+  async loginMobile(
+    input: LoginRequestDto & {
+      deviceId?: string;
+      userAgent?: string;
+      ipAddress?: string;
+    },
+  ) {
+    const email = input.email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        passwordCredential: true,
+      },
+    });
+    if (
+      !user ||
+      user.status !== UserStatus.ACTIVE ||
+      !user.passwordCredential ||
+      !user.passwordCredential.emailVerifiedAt
+    ) {
+      throw new UnauthorizedException(
+        "이메일 또는 비밀번호가 올바르지 않습니다.",
+      );
+    }
+    const isPasswordValid = await this.passwordHasher.verify(
+      user.passwordCredential.passwordHash,
+      input.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException(
+        "이메일 또는 비밀번호가 올바르지 않습니다.",
+      );
+    }
+    const tokens = await this.issueMobileTokens({
+      userId: user.id,
+      deviceId: input.deviceId,
+      userAgent: input.userAgent,
+      ipAddress: input.ipAddress,
+    });
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        status: user.status,
+        profileVisibility: user.profileVisibility,
+        profileImageUrl: user.profileImageUrl,
+      },
+      ...tokens,
+    };
+  }
+
+  async refreshMobileTokens(
+    input: RefreshMobileTokensInput,
+  ): Promise<MobileTokenPair> {
+    if (!input.refreshToken) {
+      throw new UnauthorizedException("Refresh Token이 필요합니다.");
+    }
+    const tokenHash = createHash("sha256")
+      .update(input.refreshToken)
+      .digest("hex");
+    const currentToken = await this.prisma.mobileRefreshToken.findUnique({
+      where: { tokenHash },
+      include: {
+        user: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    const now = new Date();
+    if (
+      !currentToken ||
+      currentToken.revokedAt ||
+      currentToken.expiresAt <= now ||
+      currentToken.user.status !== UserStatus.ACTIVE
+    ) {
+      throw new UnauthorizedException("Refresh Token이 유효하지 않습니다.");
+    }
+    const accessToken = randomBytes(32).toString("base64url");
+    const refreshToken = randomBytes(48).toString("base64url");
+
+    const accessTokenHash = createHash("sha256")
+      .update(accessToken)
+      .digest("hex");
+    const refreshTokenHash = createHash("sha256")
+      .update(refreshToken)
+      .digest("hex");
+    const accessTokenExpiresAt = new Date(
+      Date.now() + MOBILE_ACCESS_TOKEN_EXPIRES_IN_MS,
+    );
+    const refreshTokenExpiresAt = new Date(
+      Date.now() + MOBILE_REFRESH_TOKEN_EXPIRES_IN_MS,
+    );
+    await this.prisma.$transaction(async (tx) => {
+      const revoked = await tx.mobileRefreshToken.updateMany({
+        where: {
+          id: currentToken.id,
+          revokedAt: null,
+          expiresAt: {
+            gt: now,
+          },
+        },
+        data: {
+          revokedAt: now,
+          lastUsedAt: now,
+        },
+      });
+      if (revoked.count !== 1) {
+        throw new UnauthorizedException(
+          "Refresh Token이 이미 폐기되었거나 사용되었습니다.",
+        );
+      }
+      await tx.authSession.create({
+        data: {
+          userId: currentToken.user.id,
+          tokenHash: accessTokenHash,
+          expiresAt: accessTokenExpiresAt,
+          userAgent: input.userAgent ?? null,
+          ipAddress: input.ipAddress ?? null,
+        },
+      });
+
+      await tx.mobileRefreshToken.create({
+        data: {
+          userId: currentToken.user.id,
+          tokenHash: refreshTokenHash,
+          deviceId: input.deviceId ?? currentToken.deviceId ?? null,
+          userAgent: input.userAgent ?? null,
+          ipAddress: input.ipAddress ?? null,
+          expiresAt: refreshTokenExpiresAt,
+        },
+      });
+    });
+
+    return {
+      accessToken,
+      refreshToken,
+      accessTokenExpiresAt,
+      refreshTokenExpiresAt,
+    };
+  }
+
+  private async issueMobileTokens(
+    input: IssueMobileTokensInput,
+  ): Promise<MobileTokenPair> {
+    const accessToken = randomBytes(32).toString("base64url");
+    const refreshToken = randomBytes(48).toString("base64url");
+
+    const accessTokenHash = createHash("sha256")
+      .update(accessToken)
+      .digest("hex");
+    const refreshTokenHash = createHash("sha256")
+      .update(refreshToken)
+      .digest("hex");
+    const accessTokenExpiresAt = new Date(
+      Date.now() + MOBILE_ACCESS_TOKEN_EXPIRES_IN_MS,
+    );
+    const refreshTokenExpiresAt = new Date(
+      Date.now() + MOBILE_REFRESH_TOKEN_EXPIRES_IN_MS,
+    );
+    await this.prisma.$transaction([
+      this.prisma.authSession.create({
+        data: {
+          userId: input.userId,
+          tokenHash: accessTokenHash,
+          expiresAt: accessTokenExpiresAt,
+          userAgent: input.userAgent ?? null,
+          ipAddress: input.ipAddress ?? null,
+        },
+      }),
+      this.prisma.mobileRefreshToken.create({
+        data: {
+          userId: input.userId,
+          tokenHash: refreshTokenHash,
+          deviceId: input.deviceId ?? null,
+          userAgent: input.userAgent ?? null,
+          ipAddress: input.ipAddress ?? null,
+          expiresAt: refreshTokenExpiresAt,
+        },
+      }),
+    ]);
+    return {
+      accessToken,
+      refreshToken,
+      accessTokenExpiresAt,
+      refreshTokenExpiresAt,
+    };
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, CalendarDays } from "lucide-react";
+import { CalendarDays, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -22,12 +22,8 @@ const formatReleaseDate = (releaseDate: string | null) => {
   const targetDate = new Date(`${releaseDate}T00:00:00Z`);
   const days = Math.round((targetDate.getTime() - today.getTime()) / DAY_IN_MS);
 
-  const releaseYear = targetDate.getUTCFullYear();
-  const currentYear = today.getUTCFullYear();
-
   const dateLabel = new Intl.DateTimeFormat("ko-KR", {
     timeZone: CINEMO_TIME_ZONE,
-    ...(releaseYear !== currentYear && { year: "numeric" }),
     month: "long",
     day: "numeric",
   }).format(targetDate);
@@ -44,7 +40,9 @@ export function UpcomingMovieCarousel() {
   );
 
   const movies = [...(upcomingQuery.data?.items ?? [])].sort((a, b) =>
-    (a.releaseDate ?? "9999").localeCompare(b.releaseDate ?? "9999"),
+    (a.releaseDate ?? "9999-12-31").localeCompare(
+      b.releaseDate ?? "9999-12-31",
+    ),
   );
 
   if (upcomingQuery.isPending || upcomingQuery.isError || movies.length === 0) {
@@ -72,7 +70,7 @@ export function UpcomingMovieCarousel() {
           className="inline-flex shrink-0 items-center gap-1 text-sm text-muted-foreground transition hover:text-primary"
         >
           더보기
-          <ArrowRight className="size-4" />
+          <ChevronRight className="size-4" />
         </Link>
       </div>
 

@@ -12,6 +12,7 @@ import { AuthService } from "./auth.service";
 @Injectable()
 export class AppleAuthService {
   private readonly clientId: string;
+  private readonly mobileClientId: string;
   private readonly teamId: string;
   private readonly keyId: string;
   private readonly privateKey: string;
@@ -22,6 +23,9 @@ export class AppleAuthService {
     private readonly authService: AuthService,
   ) {
     this.clientId = configService.getOrThrow<string>("oauth.apple.clientId");
+    this.mobileClientId =
+      configService.get<string>("oauth.apple.mobileClientId") ??
+      "site.cinemo.app";
     this.teamId = configService.getOrThrow<string>("oauth.apple.teamId");
     this.keyId = configService.getOrThrow<string>("oauth.apple.keyId");
     this.privateKey = configService.getOrThrow<string>(
@@ -83,6 +87,24 @@ export class AppleAuthService {
         idToken.email_verified === true || idToken.email_verified === "true",
       refreshToken: tokenResponse.refresh_token,
     };
+  }
+
+  async verifyMobileIdentityToken(identityToken: string) {
+    try {
+      const idToken = await appleSignin.verifyIdToken(identityToken, {
+        audience: this.mobileClientId,
+        ignoreExpiration: false,
+      });
+
+      return {
+        providerUserId: idToken.sub,
+        email: idToken.email ?? null,
+        emailVerified:
+          idToken.email_verified === true || idToken.email_verified === "true",
+      };
+    } catch {
+      throw new UnauthorizedException("Apple 인증 토큰이 유효하지 않습니다.");
+    }
   }
 
   async completeLogin(input: {

@@ -10,6 +10,8 @@ import { UpcomingMovieActions } from "@/components/lobby/UpcomingMovieActions";
 import { upcomingMoviesQueryOptions } from "@/lib/queries/movie-search.query";
 
 type FilterValue = "all" | "this-week" | string;
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const CINEMO_TIME_ZONE = "Asia/Seoul";
 
 const getMonthOptions = () => {
   const currentMonth = new Intl.DateTimeFormat("en-CA", {
@@ -37,12 +39,23 @@ const getMonthOptions = () => {
 const formatReleaseDate = (releaseDate: string | null) => {
   if (!releaseDate) return "개봉일 미정";
 
-  return new Intl.DateTimeFormat("ko-KR", {
+  const todayString = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Seoul",
-    year: "numeric",
+  }).format(new Date());
+
+  const today = new Date(`${todayString}T00:00:00Z`);
+  const targetDate = new Date(`${releaseDate}T00:00:00Z`);
+  const days = Math.round(
+    (targetDate.getTime() - today.getTime()) / DAY_IN_MS,
+  );
+
+  const dateLabel = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: CINEMO_TIME_ZONE,
     month: "long",
     day: "numeric",
-  }).format(new Date(`${releaseDate}T00:00:00+09:00`));
+  }).format(targetDate);
+
+  return `D-${days} · ${dateLabel}`;
 };
 
 export default function UpcomingMoviesPage() {
@@ -60,7 +73,9 @@ export default function UpcomingMoviesPage() {
     }),
   );
   const movies = [...(upcomingQuery.data?.items ?? [])].sort((a, b) =>
-    (a.releaseDate ?? "9999").localeCompare(b.releaseDate ?? "9999"),
+    (a.releaseDate ?? "9999-12-31").localeCompare(
+      b.releaseDate ?? "9999-12-31",
+    ),
   );
   return (
     <main className="mx-auto w-full max-w-[120rem] px-4 pb-20 pt-8 sm:px-6 lg:px-10">
@@ -80,7 +95,6 @@ export default function UpcomingMoviesPage() {
         <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">
           개봉 예정작
         </h1>
-
       </div>
 
       <div className="mb-8 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
@@ -139,10 +153,7 @@ export default function UpcomingMoviesPage() {
       ) : (
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 lg:grid-cols-6">
           {movies.map((movie) => (
-            <article
-              key={movie.id}
-              className="group block"
-            >
+            <article key={movie.id} className="group block">
               <div className="relative aspect-2/3 overflow-hidden rounded-2xl bg-card">
                 <Link
                   href={`/movies/${movie.id}`}

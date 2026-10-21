@@ -57,6 +57,7 @@ export type SaveKmdbEnrichmentInput = {
   overview: string | null;
   releaseDates: Date[];
   posterUrl: string | null;
+  posterUrls: string[];
   genres: string[];
   credits: KmdbMovieCreditInput[];
 };
@@ -237,6 +238,22 @@ export class KmdbMovieEnrichmentRepository {
               releaseId = rerelease.id;
             }
           }
+        }
+
+        if (!input.posterUrl) {
+          await tx.movieMedia.updateMany({
+            where: {
+              movieId,
+              mediaType: MediaType.POSTER,
+              sourceProvider: SourceProvider.KMDB,
+              status: MediaStatus.ACTIVE,
+              isPrimary: true,
+            },
+            data: {
+              isPrimary: false,
+              status: MediaStatus.INACTIVE,
+            },
+          });
         }
 
         if (input.posterUrl) {

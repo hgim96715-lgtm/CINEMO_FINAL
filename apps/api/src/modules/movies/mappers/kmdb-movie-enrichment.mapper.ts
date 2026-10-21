@@ -121,7 +121,8 @@ export const toSaveKmdbEnrichmentInput = (
     ),
     overview: getOverview(movie),
     releaseDates: getReleaseDates(movie),
-    posterUrl: toStringArray(movie.posters)[0] ?? null,
+    posterUrl: null,
+    posterUrls: toStringArray(movie.posters),
     genres:
       cleanKmdbText(movie.genre)
         ?.split(",")
