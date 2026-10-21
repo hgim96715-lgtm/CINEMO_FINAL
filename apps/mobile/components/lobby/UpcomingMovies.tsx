@@ -4,7 +4,8 @@ import { CINEMO_COLORS } from "@cinemo/shared";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
 import { router } from "expo-router";
-import { ChevronRight } from "lucide-react-native";
+import { SectionHeader } from "@/components/lobby/SectionHeader";
+import { CalendarDays } from "lucide-react-native";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -28,8 +29,12 @@ function formatReleaseDate(releaseDate: string | null) {
     Math.round(targetDate.getTime() - todayDate.getTime()) / DAY_IN_MS;
   const month = targetDate.getMonth() + 1;
   const day = targetDate.getDate();
+  const dateLabel =
+    targetDate.getFullYear() === todayDate.getFullYear()
+      ? `${month}월 ${day}일`
+      : `${targetDate.getFullYear()}년 ${month}월 ${day}일`;
 
-  return `D-${days} · ${month}월 ${day}일`;
+  return `D-${days} · ${dateLabel}`;
 }
 
 export function UpcomingMovies() {
@@ -48,37 +53,12 @@ export function UpcomingMovies() {
   if (movies.length === 0) return null;
 
   return (
-    <View className="mt-10">
-      <View className="mb-5 flex-row items-end justify-between px-5">
-        <View>
-          <Text
-            className="text-xs font-semibold tracking-[4px]"
-            style={{ color: CINEMO_COLORS.accentLight }}
-          >
-            COMING SOON
-          </Text>
-
-          <Text
-            className="mt-2 text-2xl font-bold"
-            style={{ color: CINEMO_COLORS.textPrimary }}
-          >
-            개봉 예정작
-          </Text>
-        </View>
-        <Pressable
-          className="flex-row items-center gap-1"
-          onPress={() => router.push("/movies/upcoming")}
-        >
-          <Text
-            className="text-sm"
-            style={{ color: CINEMO_COLORS.textSecondary }}
-          >
-            더보기
-          </Text>
-
-          <ChevronRight size={16} color={CINEMO_COLORS.accentLight} />
-        </Pressable>
-      </View>
+    <View className="mt-6">
+      <SectionHeader
+        eyebrow="COMING SOON"
+        title="개봉 예정작"
+        morePath="/movies/upcoming"
+      />
 
       <ScrollView
         horizontal
@@ -95,14 +75,14 @@ export function UpcomingMovies() {
             <Pressable
               key={movie.id}
               className="mr-4"
-              style={{ width: 136 }}
+              style={{ width: 112 }}
               onPress={() => router.push(`/movies/${movie.id}`)}
             >
               <View
                 className="rounded-2xl overflow-hidden"
                 style={{
-                  width: 136,
-                  height: 204,
+                  width: 112,
+                  height: 168,
                   backgroundColor: CINEMO_COLORS.surface,
                 }}
               >
@@ -133,12 +113,18 @@ export function UpcomingMovies() {
                 {movie.title}
               </Text>
 
-              <Text
-                className="mt-1 text-xs"
-                style={{ color: CINEMO_COLORS.textSecondary }}
-              >
-                {formatReleaseDate(movie.releaseDate)}
-              </Text>
+              <View className="mt-1 flex-row items-center gap-1">
+                <CalendarDays
+                  size={13}
+                  color={CINEMO_COLORS.textSecondary}
+                />
+                <Text
+                  className="text-xs"
+                  style={{ color: CINEMO_COLORS.textSecondary }}
+                >
+                  {formatReleaseDate(movie.releaseDate)}
+                </Text>
+              </View>
             </Pressable>
           );
         })}

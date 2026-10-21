@@ -66,12 +66,12 @@ export function MovieCard({ movie, index, onPress }: MovieCardProps) {
   const rank = movie.rank ?? index + 1;
 
   return (
-    <Pressable className="mr-4" style={{ width: 136 }} onPress={onPress}>
+    <Pressable className="mr-4" style={{ width: 112 }} onPress={onPress}>
       <View
         className="relative overflow-hidden rounded-2xl"
         style={{
-          width: 136,
-          height: 204,
+          width: 112,
+          height: 168,
           backgroundColor: CINEMO_COLORS.surface,
         }}
       >

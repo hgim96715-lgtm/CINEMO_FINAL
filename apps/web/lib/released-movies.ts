@@ -47,9 +47,19 @@ export const sortMoviesForToday = <T extends MovieWithReleaseDate>(
 export const formatReleasedDate = (releaseDate: string | null) => {
   if (!releaseDate) return "개봉일 미정";
 
+  const currentYear = getCurrentYearAndMonth().year;
+  const targetDate = new Date(`${releaseDate}T00:00:00+09:00`);
+  const targetYear = Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: CINEMO_TIME_ZONE,
+      year: "numeric",
+    }).format(targetDate),
+  );
+
   return new Intl.DateTimeFormat("ko-KR", {
     timeZone: CINEMO_TIME_ZONE,
+    ...(targetYear !== currentYear ? { year: "numeric" } : {}),
     month: "long",
     day: "numeric",
-  }).format(new Date(`${releaseDate}T00:00:00+09:00`));
+  }).format(targetDate);
 };

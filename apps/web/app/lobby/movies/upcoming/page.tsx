@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { CalendarDays, ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -24,14 +24,15 @@ const getMonthOptions = () => {
 
   return Array.from({ length: 12 }, (_, index) => {
     const date = new Date(Date.UTC(year, month - 1 + index, 1));
+    const targetYear = date.getUTCFullYear();
+    const monthLabel = new Intl.DateTimeFormat("ko-KR", {
+      timeZone: "Asia/Seoul",
+      month: "long",
+    }).format(date);
 
     return {
       value: date.toISOString().slice(0, 7),
-      label: new Intl.DateTimeFormat("ko-KR", {
-        timeZone: "Asia/Seoul",
-        year: "numeric",
-        month: "long",
-      }).format(date),
+      label: targetYear === year ? monthLabel : `${targetYear}년 ${monthLabel}`,
     };
   });
 };
@@ -48,9 +49,22 @@ const formatReleaseDate = (releaseDate: string | null) => {
   const days = Math.round(
     (targetDate.getTime() - today.getTime()) / DAY_IN_MS,
   );
+  const currentYear = Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: CINEMO_TIME_ZONE,
+      year: "numeric",
+    }).format(new Date()),
+  );
+  const targetYear = Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: CINEMO_TIME_ZONE,
+      year: "numeric",
+    }).format(targetDate),
+  );
 
   const dateLabel = new Intl.DateTimeFormat("ko-KR", {
     timeZone: CINEMO_TIME_ZONE,
+    ...(targetYear !== currentYear ? { year: "numeric" } : {}),
     month: "long",
     day: "numeric",
   }).format(targetDate);
@@ -83,7 +97,7 @@ export default function UpcomingMoviesPage() {
         href="/lobby"
         className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-primary"
       >
-        <ArrowLeft className="size-4" />
+        <ChevronLeft className="size-4" />
         로비로 돌아가기
       </Link>
 

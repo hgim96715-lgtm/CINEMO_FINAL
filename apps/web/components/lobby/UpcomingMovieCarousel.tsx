@@ -21,9 +21,22 @@ const formatReleaseDate = (releaseDate: string | null) => {
   const today = new Date(`${todayString}T00:00:00Z`);
   const targetDate = new Date(`${releaseDate}T00:00:00Z`);
   const days = Math.round((targetDate.getTime() - today.getTime()) / DAY_IN_MS);
+  const currentYear = Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: CINEMO_TIME_ZONE,
+      year: "numeric",
+    }).format(new Date()),
+  );
+  const targetYear = Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: CINEMO_TIME_ZONE,
+      year: "numeric",
+    }).format(targetDate),
+  );
 
   const dateLabel = new Intl.DateTimeFormat("ko-KR", {
     timeZone: CINEMO_TIME_ZONE,
+    ...(targetYear !== currentYear ? { year: "numeric" } : {}),
     month: "long",
     day: "numeric",
   }).format(targetDate);

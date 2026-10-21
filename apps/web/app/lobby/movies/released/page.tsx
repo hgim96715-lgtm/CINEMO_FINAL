@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { CalendarDays, ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -24,7 +24,7 @@ const getMonthOptions = () => {
 
     return {
       value,
-      label: `${year}년 ${monthNumber}월`,
+      label: `${monthNumber}월`,
     };
   });
 };
@@ -58,7 +58,7 @@ export default function ReleasedMoviesPage() {
         href="/lobby"
         className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-primary"
       >
-        <ArrowLeft className="size-4" />
+        <ChevronLeft className="size-4" />
         로비로 돌아가기
       </Link>
 

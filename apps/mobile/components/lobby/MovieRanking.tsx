@@ -17,7 +17,7 @@ export function MovieRanking() {
 
   if (rankingQuery.isPending) {
     return (
-      <View className="flex-1 items-center justify-center">
+      <View className="items-center py-8">
         <ActivityIndicator color={CINEMO_COLORS.accent} />
       </View>
     );
@@ -25,7 +25,7 @@ export function MovieRanking() {
 
   if (rankingQuery.isError) {
     return (
-      <View className="flex-1 items-center justify-center px-5">
+      <View className="items-center px-5 py-8">
         <Text style={{ color: CINEMO_COLORS.textPrimary }}>
           영화 순위를 불러오지 못했습니다.
         </Text>
@@ -36,11 +36,7 @@ export function MovieRanking() {
   const movies = rankingQuery.data.items;
 
   return (
-    <ScrollView
-      className="flex-1"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 32 }}
-    >
+    <View>
       <View className="px-5 pt-8">
         <Text
           className="text-xs font-semibold tracking-[4px]"
@@ -92,6 +88,6 @@ export function MovieRanking() {
           ))}
         </ScrollView>
       )}
-    </ScrollView>
+    </View>
   );
 }
