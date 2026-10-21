@@ -93,7 +93,6 @@ export const toSaveTmdbMovieInput = (
       (person) =>
         person.department === "Directing" && person.job === "Director",
     )
-    .filter((person) => hasKoreanName(person.name))
     .map((person) => ({
       name: person.name,
       nameEn: person.original_name ?? null,

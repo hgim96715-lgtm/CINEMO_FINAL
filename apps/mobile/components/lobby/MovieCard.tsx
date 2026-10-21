@@ -2,6 +2,7 @@ import type { MovieSearchItemResponse } from "@cinemo/api-contract";
 import { Ionicons } from "@expo/vector-icons";
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { Image, Pressable, Text, View } from "react-native";
+import { getImageUrl } from "@/lib/utils";
 
 type MovieCardProps = {
   movie: MovieSearchItemResponse;
@@ -34,12 +35,6 @@ function formatAudience(count: number | null) {
   return `누적 ${flooredCount.toLocaleString("ko-KR")}`;
 }
 
-function getMobileImageUrl(url: string | null) {
-  if (!url) return null;
-
-  return url.replace(/^http:\/\//i, "https://");
-}
-
 function RankChange({ value }: { value: number | null }) {
   if (value === null || value === 0) return null;
 
@@ -62,7 +57,7 @@ function RankChange({ value }: { value: number | null }) {
 }
 
 export function MovieCard({ movie, index, onPress }: MovieCardProps) {
-  const posterUrl = getMobileImageUrl(movie.posterUrl);
+  const posterUrl = getImageUrl(movie.posterUrl);
   const rank = movie.rank ?? index + 1;
 
   return (

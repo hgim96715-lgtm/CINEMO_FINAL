@@ -16,15 +16,12 @@ import { CinemoBackground } from "@/components/common/CinemoBackground";
 import { Header } from "@/components/common/Header";
 import { MovieListHeader } from "@/components/movies/MovieListHeader";
 import { movieReleasedQueryOptions } from "@/lib/queries/movie-released.query";
+import { getImageUrl } from "@/lib/utils";
 import { router } from "expo-router";
 import { CalendarDays } from "lucide-react-native";
 
 const GRID_HORIZONTAL_PADDING = 32;
 const GRID_GAP = 16;
-
-function getPosterUrl(url: string | null) {
-  return url?.replace(/^http:\/\//i, "https://") ?? null;
-}
 
 function getReleasedMonthOptions() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -125,7 +122,7 @@ export default function ReleasedMoviesScreen() {
           }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item: movie }) => {
-            const posterUrl = getPosterUrl(movie.posterUrl);
+            const posterUrl = getImageUrl(movie.posterUrl);
 
             return (
               <Pressable

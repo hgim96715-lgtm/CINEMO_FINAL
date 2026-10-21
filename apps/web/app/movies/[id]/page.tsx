@@ -17,6 +17,10 @@ type MoviePageProps = {
   }>;
 };
 
+function getPersonName(person: { name: string; nameEn: string | null }) {
+  return person.name.trim() || person.nameEn?.trim() || "정보 없음";
+}
+
 export default async function MoviePage({
   params,
   searchParams,
@@ -96,11 +100,11 @@ export default async function MoviePage({
     ) ?? null;
 
   const directors = movie.credits.filter(
-    (credit) => credit.creditType === "DIRECTOR",
+    (credit) => credit.creditType.trim().toUpperCase() === "DIRECTOR",
   );
 
   const actors = movie.credits.filter(
-    (credit) => credit.creditType === "ACTOR",
+    (credit) => credit.creditType.trim().toUpperCase() === "ACTOR",
   );
 
   const runtimeText =
@@ -258,7 +262,7 @@ export default async function MoviePage({
                     href={`/people/${credit.person.id}`}
                     className="rounded-lg bg-white/10 px-4 py-2 text-white/80 transition hover:bg-white/20"
                   >
-                    {credit.person.name}
+                    {getPersonName(credit.person)}
                   </Link>
                 ))
               ) : (
@@ -278,7 +282,7 @@ export default async function MoviePage({
                     href={`/people/${credit.person.id}`}
                     className="rounded-lg bg-white/10 px-4 py-2 text-white/80 transition hover:bg-white/20"
                   >
-                    {credit.person.name}
+                    {getPersonName(credit.person)}
                   </Link>
                 ))
               ) : (

@@ -1,6 +1,4 @@
 import { CINEMO_COLORS } from "@cinemo/shared";
-import { router } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 export type MovieListFilterOption = {
@@ -25,19 +23,6 @@ export function MovieListHeader({
 }: MovieListHeaderProps) {
   return (
     <View>
-      <Pressable
-        className="mb-6 flex-row items-center gap-2 px-5"
-        onPress={() => router.replace("/lobby")}
-      >
-        <ChevronLeft size={18} color={CINEMO_COLORS.textSecondary} />
-        <Text
-          className="text-sm"
-          style={{ color: CINEMO_COLORS.textSecondary }}
-        >
-          로비로 돌아가기
-        </Text>
-      </Pressable>
-
       <View className="mb-6 px-5">
         <Text
           className="text-xs font-semibold tracking-[4px]"

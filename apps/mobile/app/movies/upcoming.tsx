@@ -15,16 +15,13 @@ import { CINEMO_COLORS } from "@cinemo/shared";
 import { CinemoBackground } from "@/components/common/CinemoBackground";
 import { Header } from "@/components/common/Header";
 import { MovieListHeader } from "@/components/movies/MovieListHeader";
+import { getImageUrl } from "@/lib/utils";
 import { router } from "expo-router";
 import { CalendarDays } from "lucide-react-native";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const GRID_HORIZONTAL_PADDING = 32;
 const GRID_GAP = 16;
-
-function getPosterUrl(url: string | null) {
-  return url?.replace(/^http:\/\//i, "https://") ?? null;
-}
 
 function getUpcomingMonthOptions() {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -149,7 +146,7 @@ export default function UpcomingMoviesScreen() {
             </View>
           }
           renderItem={({ item: movie }) => {
-            const posterUrl = getPosterUrl(movie.posterUrl);
+            const posterUrl = getImageUrl(movie.posterUrl);
 
             return (
               <Pressable

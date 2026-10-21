@@ -1,120 +1,438 @@
-import { movieDetailQueryOptions } from "@/lib/queries/movie-detail.query";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft } from "lucide-react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
+import { movieDetailQueryOptions } from "@/lib/queries/movie-detail.query";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ActivityIndicator,
   Image,
+  ImageBackground,
+  Linking,
   Pressable,
   ScrollView,
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { CINEMO_COLORS } from "@cinemo/shared";
+import { getImageUrl } from "@/lib/utils";
+import { Header } from "@/components/common/Header";
+import { CalendarDays, Clock3, Play, Star } from "lucide-react-native";
+import { useState } from "react";
+import { MovieTrailerDialog } from "@/components/lobby/MovieTrailerDialog";
+
+function formatReleaseDate(date: string | null) {
+  if (!date) return "개봉일 미정";
+  const targetDate = new Date(`${date}T00:00:00`);
+  const currentYear = new Date().getFullYear();
+  const dateLabel = `${targetDate.getMonth() + 1}월 ${targetDate.getDate()}일`;
+
+  return targetDate.getFullYear() === currentYear
+    ? dateLabel
+    : `${targetDate.getFullYear()}년 ${dateLabel}`;
+}
+
+function formatRuntime(runtime: number | null) {
+  if (!runtime) return "정보 없음";
+  const hours = Math.floor(runtime / 60);
+  const minutes = Math.floor(runtime % 60);
+
+  return `${hours > 0 ? `${hours}시간 ` : ""}${minutes}분`;
+}
+
+function getPersonName(person: { name: string; nameEn: string | null }) {
+  return person.name.trim() || person.nameEn?.trim() || "정보 없음";
+}
 
 export default function MovieDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const movieId = Array.isArray(params.id) ? params.id[0] : params.id;
-
   const movieQuery = useQuery(movieDetailQueryOptions(movieId ?? ""));
+  const [isTrailerOpen, setIsTrailerOpen] = useState(false);
+
   if (movieQuery.isPending) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-cinemo-bg">
-        <ActivityIndicator />
+        <ActivityIndicator color={CINEMO_COLORS.accentLight} />
       </SafeAreaView>
     );
   }
-
   if (movieQuery.isError || !movieQuery.data) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-cinemo-bg px-5">
-        <Text className="text-cinemo-text">영화 정보를 불러오지 못했습니다.</Text>
+        <Text style={{ color: CINEMO_COLORS.textPrimary }}>
+          영화 정보를 불러오지 못했습니다.
+        </Text>
 
         <Pressable
-          className="mt-4 rounded-xl px-5 py-3"
-          onPress={() => router.back()}
+          className="mt-4 rounded-xl bg-cinemo-gold px-5 py-3"
+          onPress={() => movieQuery.refetch()}
         >
-          <Text>뒤로 가기</Text>
+          <Text className="font-semibold text-cinemo-bg">다시 시도</Text>
         </Pressable>
       </SafeAreaView>
     );
   }
-
   const movie = movieQuery.data;
 
+  const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w185";
+
+  const providerSearchUrls: Record<string, string> = {
+    NETFLIX: "https://www.netflix.com/kr/search?q=",
+    WATCHA: "https://pedia.watcha.com/ko/search?query=",
+    TVING: "https://www.tving.com/search?query=",
+    DISNEY_PLUS: "https://www.disneyplus.com/ko-kr/search?q=",
+    WAVVE: "https://www.wavve.com/search?searchWord=",
+    APPLE_TV: "https://tv.apple.com/kr/search?term=",
+    PRIME_VIDEO: "https://www.primevideo.com/search/ref=atv_nb_sr?phrase=",
+  };
+
+  function getProviderUrl(
+    provider: string,
+    movieTitle: string,
+    fallbackUrl: string,
+  ) {
+    const searchUrl = providerSearchUrls[provider];
+    return searchUrl
+      ? `${searchUrl}${encodeURIComponent(movieTitle)}`
+      : fallbackUrl;
+  }
+
   const primaryTitle =
-    movie.titles.find((title) => title.title === "PRIMARY") ?? movie.titles[0];
-  const primaryRelease =
-    movie.releases.find((release) => release.isPrimary) ?? movie.releases[0];
-  const poster = movie.media.find(
-    (media) => media.mediaType === "POSTER" && media.isPrimary,
+    movie.titles.find((title) => title.titleType === "PRIMARY") ??
+    movie.titles[0];
+
+  const originalTitle = movie.titles.find(
+    (title) => title.titleType === "ORIGINAL",
   );
-  const directors = movie.credits
-    .filter((credit) => credit.creditType === "DIRECTOR")
-    .map((credit) => credit.person.name);
+
+  const activeReleases = movie.releases.filter(
+    (release) => release.status !== "CANCELLED" && release.releaseDate,
+  );
+
+  const primaryRelease =
+    activeReleases.find((release) => release.isPrimary) ?? activeReleases[0];
+
+  const poster =
+    movie.media.find(
+      (media) => media.mediaType === "POSTER" && media.isPrimary,
+    ) ?? movie.media.find((media) => media.mediaType === "POSTER");
+
+  const backdrop =
+    movie.media.find(
+      (media) => media.mediaType === "BACKDROP" && media.isPrimary,
+    ) ?? movie.media.find((media) => media.mediaType === "BACKDROP");
+
+  const posterUrl = getImageUrl(poster?.url);
+  const backdropUrl = getImageUrl(backdrop?.url ?? poster?.url);
+
+  const directors = movie.credits.filter(
+    (credit) => credit.creditType.trim().toUpperCase() === "DIRECTOR",
+  );
+
   const actors = movie.credits
-    .filter((credit) => credit.creditType === "ACTOR")
-    .slice(0, 10)
-    .map((credit) => credit.person.name);
+    .filter((credit) => credit.creditType.trim().toUpperCase() === "ACTOR")
+    .slice(0, 10);
+
+  const providers = Array.from(
+    new Map(
+      movie.watchOptions.map((option) => [
+        option.tmdbProviderId ?? option.watchProvider,
+        option,
+      ]),
+    ).values(),
+  );
+
+  const trailer =
+    movie.media.find(
+      (media) =>
+        media.mediaType.toUpperCase() === "TRAILER" &&
+        media.sourceProvider.toUpperCase() === "YOUTUBE",
+    ) ?? null;
+
+  const movieTitle = primaryTitle.title ?? "영화";
 
   return (
     <SafeAreaView className="flex-1 bg-cinemo-bg">
-      <View className="flex-row items-center px-5 py-4">
-        <Pressable
-          accessibilityLabel="뒤로 가기"
-          className="h-12 w-12 items-center justify-center"
-          onPress={() => router.back()}
-        >
-          <ChevronLeft size={24} />
-        </Pressable>
-
-        <Text className="ml-2 text-lg font-semibold text-cinemo-text">영화 상세</Text>
-      </View>
+      <Header onSearchPress={() => router.push("/search")} />
 
       <ScrollView
-        contentContainerClassName="gap-6 px-5 pb-28"
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 80 }}
       >
-        {poster ? (
-          <Image
-            source={{ uri: poster.url }}
+        {/*<View className="px-5 pb-4">*/}
+        {/*  <Pressable*/}
+        {/*    className="flex-row items-center gap-1"*/}
+        {/*    onPress={() => router.back()}*/}
+        {/*  >*/}
+        {/*    <ChevronLeft size={20} color={CINEMO_COLORS.textSecondary} />*/}
+        {/*    <Text style={{ color: CINEMO_COLORS.textSecondary }}>*/}
+        {/*      뒤로 가기*/}
+        {/*    </Text>*/}
+        {/*  </Pressable>*/}
+        {/*</View>*/}
+
+        {backdropUrl ? (
+          <ImageBackground
+            source={{ uri: backdropUrl }}
             resizeMode="cover"
-            className="w-full rounded-2xl"
-            style={{ aspectRatio: 2 / 3 }}
-          />
-        ) : (
-          <View
-            className="w-full items-center justify-center rounded-2xl"
-            style={{ aspectRatio: 2 / 3 }}
+            style={{ minHeight: 320 }}
           >
-            <Text>포스터 없음</Text>
+            <View
+              className="flex-1 items-center px-5 pb-8 pt-16"
+              style={{ backgroundColor: "rgba(7, 22, 25, 0.78)" }}
+            >
+              {posterUrl ? (
+                <Image
+                  source={{ uri: posterUrl }}
+                  resizeMode="cover"
+                  className="rounded-2xl"
+                  style={{
+                    width: 180,
+                    aspectRatio: 2 / 3,
+                  }}
+                />
+              ) : (
+                <View
+                  className="items-center justify-center rounded-2xl"
+                  style={{
+                    width: 180,
+                    aspectRatio: 2 / 3,
+                    backgroundColor: CINEMO_COLORS.surface,
+                  }}
+                >
+                  <Text style={{ color: CINEMO_COLORS.textSecondary }}>
+                    포스터 준비중
+                  </Text>
+                </View>
+              )}
+            </View>
+          </ImageBackground>
+        ) : null}
+
+        <View className="gap-6 px-5 pt-6">
+          <View>
+            <View className="mb-3 flex-row flex-wrap gap-2">
+              {movie.genres.map((genre) => (
+                <View
+                  key={genre.id}
+                  className="rounded-full border px-3 py-1"
+                  style={{
+                    borderColor: "rgba(212, 166, 76, 0.45)",
+                    backgroundColor: "rgba(212, 166, 76, 0.12)",
+                  }}
+                >
+                  <Text
+                    className="text-xs"
+                    style={{ color: CINEMO_COLORS.accentLight }}
+                  >
+                    {genre.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            <Text
+              className="text-3xl font-bold"
+              style={{ color: CINEMO_COLORS.textPrimary }}
+            >
+              {primaryTitle?.title ?? "제목 없음"}
+            </Text>
+
+            {originalTitle && (
+              <Text
+                className="mt-2 text-base"
+                style={{ color: CINEMO_COLORS.textSecondary }}
+              >
+                {originalTitle.title}
+              </Text>
+            )}
           </View>
-        )}
-
-        <View>
-          <Text className="text-3xl font-bold text-cinemo-text">
-            {primaryTitle?.title ?? "제목 없음"}
-          </Text>
-
-          {primaryRelease?.releaseDate && (
-            <Text className="mt-3 text-cinemo-muted">개봉일 {primaryRelease.releaseDate}</Text>
+          {trailer?.externalId && (
+            <Pressable
+              className="mt-5 flex-row items-center gap-2 self-start rounded-xl border border-white/20 bg-white/5 px-4 py-3"
+              onPress={() => setIsTrailerOpen(true)}
+            >
+              <Play
+                size={16}
+                color={CINEMO_COLORS.accentLight}
+                fill={CINEMO_COLORS.accentLight}
+              />
+            </Pressable>
           )}
 
-          <View className="mt-4 flex-row flex-wrap gap-2">
-            {movie.genres.map((genre) => (
-              <Text key={genre.id} className="rounded-lg bg-cinemo-gold/15 px-3 py-1 text-cinemo-gold-light">
-                {genre.name}
+          <View className="flex-row flex-wrap gap-4">
+            <View className="flex-row items-center gap-1">
+              <CalendarDays size={15} color={CINEMO_COLORS.textSecondary} />
+              <Text style={{ color: CINEMO_COLORS.textSecondary }}>
+                {formatReleaseDate(primaryRelease?.releaseDate ?? null)}
               </Text>
-            ))}
+            </View>
+
+            <View className="flex-row items-center gap-1">
+              <Clock3 size={15} color={CINEMO_COLORS.textSecondary} />
+              <Text style={{ color: CINEMO_COLORS.textSecondary }}>
+                {formatRuntime(movie.runtime)}
+              </Text>
+            </View>
+
+            {movie.tmdbVoteAverage !== null && (
+              <View className="flex-row items-center gap-1">
+                <Star size={15} color={CINEMO_COLORS.accentLight} />
+                <Text style={{ color: CINEMO_COLORS.accentLight }}>
+                  {movie.tmdbVoteAverage.toFixed(1)}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {providers.length > 0 && (
+            <View>
+              <View className="flex-row items-end justify-between">
+                <View>
+                  <Text
+                    className="text-xl font-bold"
+                    style={{ color: CINEMO_COLORS.textPrimary }}
+                  >
+                    어디서 볼 수 있나요?
+                  </Text>
+
+                  <Text
+                    className="mt-1 text-xs"
+                    style={{ color: CINEMO_COLORS.textSecondary }}
+                  >
+                    대한민국에서 이용 가능한 플랫폼
+                  </Text>
+                </View>
+
+                <Text
+                  className="text-xs"
+                  style={{ color: CINEMO_COLORS.textSecondary }}
+                >
+                  {providers.length}개 플랫폼
+                </Text>
+              </View>
+
+              <View className="mt-4 flex-row flex-wrap gap-6">
+                {providers.map((provider) => (
+                  <Pressable
+                    key={`${provider.tmdbProviderId ?? provider.watchProvider}`}
+                    className="h-12 px-0"
+                    onPress={() =>
+                      Linking.openURL(
+                        getProviderUrl(
+                          provider.watchProvider,
+                          movieTitle,
+                          provider.url,
+                        ),
+                      )
+                    }
+                  >
+                    {provider.logoPath ? (
+                      <Image
+                        source={{
+                          uri: `${TMDB_IMAGE_BASE_URL}${provider.logoPath}`,
+                        }}
+                        resizeMode="contain"
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 12,
+                        }}
+                        accessibilityLabel={`${provider.watchProvider} 로고`}
+                      />
+                    ) : (
+                      <Text style={{ color: CINEMO_COLORS.textPrimary }}>
+                        {provider.watchProvider}
+                      </Text>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View>
+            <Text
+              className="text-xl font-bold"
+              style={{ color: CINEMO_COLORS.textPrimary }}
+            >
+              영화 소개
+            </Text>
+
+            <Text
+              className="mt-3 leading-6"
+              style={{ color: CINEMO_COLORS.textSecondary }}
+            >
+              {movie.overview || "줄거리 정보가 없습니다."}
+            </Text>
+          </View>
+
+          <View>
+            <Text
+              className="text-xl font-bold"
+              style={{ color: CINEMO_COLORS.textPrimary }}
+            >
+              감독
+            </Text>
+
+            <View className="mt-3 flex-row flex-wrap gap-2">
+              {directors.length > 0 ? (
+                directors.map((credit) => (
+                  <Pressable
+                    key={credit.id}
+                    className="rounded-lg px-3 py-2"
+                    style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+                    onPress={() => router.push(`/people/${credit.person.id}`)}
+                  >
+                    <Text style={{ color: CINEMO_COLORS.textPrimary }}>
+                      {getPersonName(credit.person)}
+                    </Text>
+                  </Pressable>
+                ))
+              ) : (
+                <Text style={{ color: CINEMO_COLORS.textSecondary }}>
+                  정보 없음
+                </Text>
+              )}
+            </View>
+          </View>
+
+          <View>
+            <Text
+              className="text-xl font-bold"
+              style={{ color: CINEMO_COLORS.textPrimary }}
+            >
+              등장인물
+            </Text>
+
+            <View className="mt-3 flex-row flex-wrap gap-2">
+              {actors.length > 0 ? (
+                actors.map((credit) => (
+                  <Pressable
+                    key={credit.id}
+                    className="rounded-lg px-3 py-2"
+                    style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+                    onPress={() => router.push(`/people/${credit.person.id}`)}
+                  >
+                    <Text style={{ color: CINEMO_COLORS.textPrimary }}>
+                      {getPersonName(credit.person)}
+                    </Text>
+                  </Pressable>
+                ))
+              ) : (
+                <Text style={{ color: CINEMO_COLORS.textSecondary }}>
+                  정보 없음
+                </Text>
+              )}
+            </View>
           </View>
         </View>
-
-        <View className="gap-3">
-          <Text className="text-cinemo-muted">감독: {directors.join(", ") || "정보 없음"}</Text>
-
-          <Text className="text-cinemo-muted">출연: {actors.join(", ") || "정보 없음"}</Text>
-        </View>
       </ScrollView>
+      <MovieTrailerDialog
+        open={isTrailerOpen}
+        videoKey={trailer?.externalId ?? null}
+        title={movieTitle}
+        onOpenChange={setIsTrailerOpen}
+      />
     </SafeAreaView>
   );
 }

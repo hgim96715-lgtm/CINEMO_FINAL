@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { movieUpcomingQueryOptions } from "@/lib/queries/movie-upcoming.query";
+import { getImageUrl } from "@/lib/utils";
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
@@ -8,10 +9,6 @@ import { SectionHeader } from "@/components/lobby/SectionHeader";
 import { CalendarDays } from "lucide-react-native";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-
-function getPosterUrl(url: string | null) {
-  return url?.replace(/^http:\/\//i, "https://") ?? null;
-}
 
 function formatReleaseDate(releaseDate: string | null) {
   if (!releaseDate) return "개봉일 미정";
@@ -69,7 +66,7 @@ export function UpcomingMovies() {
         }}
       >
         {movies.map((movie) => {
-          const posterUrl = getPosterUrl(movie.posterUrl);
+          const posterUrl = getImageUrl(movie.posterUrl);
 
           return (
             <Pressable

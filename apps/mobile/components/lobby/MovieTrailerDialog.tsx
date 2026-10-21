@@ -31,7 +31,6 @@ export function MovieTrailerDialog({
   if (!videoKey) return null;
 
   const origin = encodeURIComponent("https://site.cinemo.app");
-  console.log(origin);
 
   const embedUrl =
     `https://www.youtube.com/embed/${videoKey}` +

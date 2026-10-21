@@ -337,36 +337,40 @@ export class KmdbMovieEnrichmentRepository {
           select: { id: true },
         });
 
-        if (!tmdbLink) {
-          for (const [index, credit] of input.credits.entries()) {
-            const person = await this.moviePersonService.resolve(tx, {
-              name: credit.name,
-              nameEn: credit.nameEn,
-              sourceProvider: SourceProvider.KMDB,
-              externalId: credit.externalId,
-              movieId,
-              creditType: credit.creditType,
-            });
+        const creditsToSave = tmdbLink
+          ? input.credits.filter(
+              (credit) => credit.creditType === CreditType.DIRECTOR,
+            )
+          : input.credits;
 
-            await tx.movieCredit.upsert({
-              where: {
-                movieId_personId_creditType: {
-                  movieId,
-                  personId: person.id,
-                  creditType: credit.creditType,
-                },
-              },
-              create: {
+        for (const [index, credit] of creditsToSave.entries()) {
+          const person = await this.moviePersonService.resolve(tx, {
+            name: credit.name,
+            nameEn: credit.nameEn,
+            sourceProvider: SourceProvider.KMDB,
+            externalId: credit.externalId,
+            movieId,
+            creditType: credit.creditType,
+          });
+
+          await tx.movieCredit.upsert({
+            where: {
+              movieId_personId_creditType: {
                 movieId,
                 personId: person.id,
                 creditType: credit.creditType,
-                displayOrder: index,
               },
-              update: {
-                displayOrder: index,
-              },
-            });
-          }
+            },
+            create: {
+              movieId,
+              personId: person.id,
+              creditType: credit.creditType,
+              displayOrder: index,
+            },
+            update: {
+              displayOrder: index,
+            },
+          });
         }
 
         return movieId;

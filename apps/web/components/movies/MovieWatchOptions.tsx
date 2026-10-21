@@ -77,9 +77,9 @@ export function MovieWatchOptions({
               <Image
                 src={`${TMDB_IMAGE_BASE_URL}${provider.logoPath}`}
                 alt={provider.watchProvider}
-                width={160}
-                height={48}
-                className="h-10 w-auto max-w-24 rounded-xl object-contain object-left"
+                width={40}
+                height={40}
+                className="h-10 w-10 rounded-xl object-contain"
               />
             ) : (
               <span className="text-sm font-medium text-white/75">
