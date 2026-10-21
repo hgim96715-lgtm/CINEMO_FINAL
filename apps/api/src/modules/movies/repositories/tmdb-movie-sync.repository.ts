@@ -288,6 +288,20 @@ export class TmdbMovieSyncRepository {
             },
           });
 
+          await tx.movieMedia.updateMany({
+            where: {
+              movieId,
+              mediaType: media.mediaType,
+              status: MediaStatus.ACTIVE,
+              isPrimary: true,
+              ...(existingMedia ? { id: { not: existingMedia.id } } : {}),
+            },
+            data: {
+              isPrimary: false,
+              status: MediaStatus.INACTIVE,
+            },
+          });
+
           if (existingMedia) {
             await tx.movieMedia.update({
               where: {
@@ -296,25 +310,12 @@ export class TmdbMovieSyncRepository {
               data: {
                 url: media.url,
                 status: MediaStatus.ACTIVE,
+                isPrimary: true,
                 verifiedAt: new Date(),
               },
             });
             continue;
           }
-
-          await tx.movieMedia.updateMany({
-            where: {
-              movieId,
-              mediaType: media.mediaType,
-              sourceProvider: media.sourceProvider,
-              status: MediaStatus.ACTIVE,
-              isPrimary: true,
-            },
-            data: {
-              isPrimary: false,
-              status: MediaStatus.INACTIVE,
-            },
-          });
 
           await tx.movieMedia.create({
             data: {
