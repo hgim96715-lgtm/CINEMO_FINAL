@@ -39,12 +39,18 @@ import { SkipThrottle, Throttle } from "@nestjs/throttler";
 import { CheckNicknameRequestDto } from "./dto/requests/check-nickname.request.dto";
 import { CheckEmailRequestDto } from "./dto/requests/check-email.request.dto";
 import { AppleAuthService } from "./apple-auth.service";
+import { GoogleAuthService } from "./google-auth.service";
 import { OauthSignupRequestDto } from "./dto/requests/oauth-signup.request.dto";
 import { OptionalAuth } from "./decorators/optional-auth.decorator";
 import { UpdateProfileVisibilityRequestDto } from "./dto/requests/update-profile-visibility.request.dto";
 import { SESSION_COOKIE_NAME } from "./session-cookie";
 import { MobileRefreshRequestDto } from "@/modules/auth/dto/requests/mobile-refresh.request.dto";
 import { MobileAppleLoginRequestDto } from "@/modules/auth/dto/requests/mobile-apple-login.request.dto";
+import { MobileGoogleLoginRequestDto } from "@/modules/auth/dto/requests/mobile-google-login.request.dto";
+import { MobileOauthSignupRequestDto } from "@/modules/auth/dto/requests/mobile-oauth-signup.request.dto";
+import { NaverAuthService } from "@/modules/auth/naver-auth.service";
+import { MobileNaverStartRequestDto } from "@/modules/auth/dto/requests/mobile-naver-start.request.dto";
+import { MobileNaverExchangeRequestDto } from "@/modules/auth/dto/requests/mobile-naver-exchange.request.dto";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -55,6 +61,8 @@ export class AuthController {
     private readonly passwordResetService: PasswordResetService,
     private readonly configService: ConfigService,
     private readonly appleAuthService: AppleAuthService,
+    private readonly googleAuthService: GoogleAuthService,
+    private readonly naverAuthService: NaverAuthService,
   ) {}
 
   @ApiCookieAuth("cinemo_session")
@@ -226,10 +234,266 @@ export class AuthController {
     const deviceIdHeader = request.headers["x-device-id"];
     const deviceId = Array.isArray(deviceIdHeader)
       ? deviceIdHeader[0]
-      : input.deviceId ?? deviceIdHeader;
+      : (input.deviceId ?? deviceIdHeader);
 
     return this.authService.loginMobileWithApple({
       ...appleUser,
+      deviceId,
+      userAgent: request.get("user-agent") ?? undefined,
+      ipAddress: request.ip,
+    });
+  }
+
+  @Public()
+  @Post("mobile/google")
+  @ApiOperation({
+    summary: "모바일 Google 로그인",
+    description:
+      "Google ID token 검증 후 기존 회원은 로그인하고 신규 회원은 가입 티켓을 발급",
+  })
+  @ApiOkResponse({
+    description: "Google 인증 성공 또는 약관 동의용 가입 티켓 발급",
+  })
+  @ApiUnauthorizedResponse({
+    description: "Google identity token이 유효하지 않음",
+  })
+  async loginMobileWithGoogle(
+    @Body() input: MobileGoogleLoginRequestDto,
+    @Req() request: Request,
+  ) {
+    const googleUser = await this.googleAuthService.verifyMobileIdentityToken(
+      input.identityToken,
+    );
+    const deviceIdHeader = request.headers["x-device-id"];
+    const deviceId = Array.isArray(deviceIdHeader)
+      ? deviceIdHeader[0]
+      : (input.deviceId ?? deviceIdHeader);
+
+    return this.authService.loginMobileWithGoogle({
+      ...googleUser,
+      deviceId,
+      userAgent: request.get("user-agent") ?? undefined,
+      ipAddress: request.ip,
+    });
+  }
+
+  @Public()
+  @Get("mobile/naver/start")
+  @ApiOperation({
+    summary: "모바일 Naver 로그인 시작",
+    description: "모바일 앱이 전달한 state로 Naver 인증 URL을 생성",
+  })
+  @ApiOkResponse({
+    description: "Naver 인증 URL 반환",
+  })
+  startMobileNaverLogin(@Query() input: MobileNaverStartRequestDto) {
+    return this.naverAuthService.createMobileAuthorizationRequest(input.state);
+  }
+
+  @Public()
+  @Get("mobile/naver/callback")
+  @ApiOperation({
+    summary: "모바일 Naver 로그인 Callback",
+    description: "Naver 인증 결과를 모바일 앱 딥링크로 전달",
+  })
+  async mobileNaverCallback(
+    @Req() request: Request,
+    @Res() response: Response,
+  ) {
+    const deepLink = new URL("cinemo://oauth/naver");
+
+    for (const key of [
+      "code",
+      "state",
+      "error",
+      "error_description",
+    ] as const) {
+      const value = request.query[key];
+
+      if (typeof value === "string") {
+        deepLink.searchParams.set(key, value);
+      }
+    }
+
+    return response.redirect(302, deepLink.toString());
+  }
+
+  @Public()
+  @Post("mobile/naver/exchange")
+  @ApiOperation({
+    summary: "모바일 Naver 인증 코드 교환",
+    description: "Naver 인증 코드를 검증하고 모바일 토큰을 발급",
+  })
+  @ApiOkResponse({
+    description: "Naver 인증 성공 또는 가입 티켓 발급",
+  })
+  async exchangeMobileNaverCode(
+    @Body() input: MobileNaverExchangeRequestDto,
+    @Req() request: Request,
+  ) {
+    const naverUser = await this.naverAuthService.completeMobileLogin({
+      code: input.code,
+      state: input.state,
+    });
+
+    const deviceIdHeader = request.headers["x-device-id"];
+    const deviceId = Array.isArray(deviceIdHeader)
+      ? deviceIdHeader[0]
+      : (input.deviceId ?? deviceIdHeader);
+
+    return this.authService.loginMobileWithNaver({
+      ...naverUser,
+      deviceId,
+      userAgent: request.get("user-agent") ?? undefined,
+      ipAddress: request.ip,
+    });
+  }
+
+  @Public()
+  @Get("naver")
+  @ApiOperation({
+    summary: "네이버 로그인 시작",
+  })
+  naverLogin(@Res() response: Response) {
+    const { authorizationUrl, state } =
+      this.naverAuthService.createAuthorizationRequest();
+
+    const isProduction = process.env.NODE_ENV === "production";
+
+    response.cookie("naver_oauth_state", state, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      maxAge: 10 * 60 * 1000,
+      path: "/",
+    });
+
+    return response.redirect(302, authorizationUrl);
+  }
+
+  @Public()
+  @Get("google")
+  @ApiOperation({
+    summary: "Google 로그인 시작",
+  })
+  googleLogin(@Res() response: Response) {
+    const { authorizationUrl, state } =
+      this.googleAuthService.createAuthorizationRequest();
+
+    response.cookie("google_oauth_state", state, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 10 * 60 * 1000,
+      path: "/",
+    });
+
+    return response.redirect(302, authorizationUrl);
+  }
+
+  @Public()
+  @Get("google/callback")
+  @ApiOperation({
+    summary: "Google 로그인 Callback",
+  })
+  async googleCallback(@Req() request: Request, @Res() response: Response) {
+    const googleUser = await this.googleAuthService.completeLogin({
+      code: request.query.code,
+      state: request.query.state,
+      error: request.query.error,
+      savedState: request.cookies?.google_oauth_state,
+    });
+
+    const result = await this.authService.loginWithGoogle(googleUser);
+    const frontendUrl =
+      this.configService.getOrThrow<string>("app.frontendUrl");
+
+    response.clearCookie("google_oauth_state", {
+      path: "/",
+    });
+
+    if (result.requiresRegistration) {
+      return response.redirect(
+        302,
+        `${frontendUrl}/oauth-register?oauth=google&ticket=${encodeURIComponent(
+          result.signupToken,
+        )}`,
+      );
+    }
+
+    response.cookie(SESSION_COOKIE_NAME, result.sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+      path: "/",
+    });
+
+    return response.redirect(302, `${frontendUrl}/lobby`);
+  }
+
+  @Public()
+  @Get("naver/callback")
+  @ApiOperation({
+    summary: "네이버 로그인 Callback",
+  })
+  async naverCallback(@Req() request: Request, @Res() response: Response) {
+    const naverUser = await this.naverAuthService.completeLogin({
+      code: request.query.code,
+      state: request.query.state,
+      error: request.query.error,
+      savedState: request.cookies?.naver_oauth_state,
+    });
+
+    const result = await this.authService.loginWithNaver(naverUser);
+
+    const frontendUrl =
+      this.configService.getOrThrow<string>("app.frontendUrl");
+
+    response.clearCookie("naver_oauth_state", {
+      path: "/",
+    });
+
+    if (result.requiresRegistration) {
+      return response.redirect(
+        302,
+        `${frontendUrl}/oauth-register?oauth=naver&ticket=${encodeURIComponent(
+          result.signupToken,
+        )}`,
+      );
+    }
+
+    response.cookie(SESSION_COOKIE_NAME, result.sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+      path: "/",
+    });
+
+    return response.redirect(302, `${frontendUrl}/lobby`);
+  }
+
+  @Public()
+  @Post("mobile/oauth/signup")
+  @ApiOperation({
+    summary: "모바일 소셜 로그인 약관 동의 후 가입 완료",
+  })
+  @ApiCreatedResponse({
+    description: "모바일 Access Token과 Refresh Token 발급",
+  })
+  async completeMobileOauthSignup(
+    @Body() input: MobileOauthSignupRequestDto,
+    @Req() request: Request,
+  ) {
+    const deviceIdHeader = request.headers["x-device-id"];
+
+    const deviceId = Array.isArray(deviceIdHeader)
+      ? deviceIdHeader[0]
+      : (input.deviceId ?? deviceIdHeader);
+
+    return this.authService.completeMobileOauthSignup({
+      ...input,
       deviceId,
       userAgent: request.get("user-agent") ?? undefined,
       ipAddress: request.ip,
@@ -378,7 +642,7 @@ export class AuthController {
       secure: isProduction,
       sameSite: isProduction ? ("none" as const) : ("lax" as const),
       maxAge: 10 * 60 * 1000,
-      path: "/v1/auth/apple",
+      path: "/",
     };
 
     response.cookie("apple_oauth_state", state, cookieOptions);
@@ -409,7 +673,7 @@ export class AuthController {
     if (result.requiresRegistration) {
       return response.redirect(
         302,
-        `${frontendUrl}/register?oauth=apple&ticket=${encodeURIComponent(
+        `${frontendUrl}/oauth-register?oauth=apple&ticket=${encodeURIComponent(
           result.signupToken,
         )}`,
       );
@@ -426,11 +690,11 @@ export class AuthController {
     });
 
     response.clearCookie("apple_oauth_state", {
-      path: "/v1/auth/apple",
+      path: "/",
     });
 
     response.clearCookie("apple_oauth_nonce", {
-      path: "/v1/auth/apple",
+      path: "/",
     });
 
     return response.redirect(302, `${frontendUrl}/lobby`);

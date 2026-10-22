@@ -128,3 +128,219 @@ export async function restoreMobileSession(): Promise<MobileLoginResponse | null
     return null;
   }
 }
+
+export type MobileOauthSignupInput = {
+  ticket: string;
+  nickname: string;
+  terms: {
+    service: boolean;
+    privacy: boolean;
+    marketing: boolean;
+  };
+  deviceId?: string;
+};
+
+export async function completeMobileOauthSignup(
+  input: MobileOauthSignupInput,
+): Promise<MobileLoginResponse> {
+  const response = await apiClient.post<MobileLoginResponse>(
+    "/auth/mobile/oauth/signup",
+    {
+      ticket: input.ticket,
+      nickname: input.nickname,
+      terms: input.terms,
+      deviceId: input.deviceId,
+    },
+    {
+      headers: input.deviceId ? { "X-Device-Id": input.deviceId } : undefined,
+    },
+  );
+  const data = response.data;
+  setAccessToken(data.accessToken);
+  await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken);
+  return data;
+}
+
+export type MobileEmailLoginInput = {
+  email: string;
+  password: string;
+  deviceId?: string;
+};
+
+export async function loginEmailMobile(
+  input: MobileEmailLoginInput,
+): Promise<MobileLoginResponse> {
+  const response = await apiClient.post<MobileLoginResponse>(
+    "/auth/mobile/login",
+    {
+      email: input.email.trim().toLowerCase(),
+      password: input.password,
+      deviceId: input.deviceId,
+    },
+    {
+      headers: input.deviceId ? { "X-Device-Id": input.deviceId } : undefined,
+    },
+  );
+
+  const data = response.data;
+
+  setAccessToken(data.accessToken);
+
+  await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken);
+
+  return data;
+}
+
+export type CheckEmailResponse = {
+  available: boolean;
+};
+
+export type CheckNicknameResponse = {
+  available: boolean;
+};
+
+export async function checkNicknameMobile(
+  nickname: string,
+): Promise<CheckNicknameResponse> {
+  const response = await apiClient.get<CheckNicknameResponse>(
+    "/auth/check-nickname",
+    {
+      params: {
+        nickname: nickname.trim(),
+      },
+    },
+  );
+
+  return response.data;
+}
+
+export async function checkEmailMobile(
+  email: string,
+): Promise<CheckEmailResponse> {
+  const response = await apiClient.get<CheckEmailResponse>(
+    "/auth/check-email",
+    {
+      params: {
+        email: email.trim().toLowerCase(),
+      },
+    },
+  );
+
+  return response.data;
+}
+
+export type MobileEmailSignupInput = {
+  email: string;
+  password: string;
+  nickname: string;
+  terms: {
+    service: true;
+    privacy: true;
+    marketing: boolean;
+  };
+};
+
+export type MobileEmailSignupResponse = {
+  user: {
+    id: string;
+    email: string;
+    nickname: string;
+    status: string;
+    createdAt: string;
+  };
+  emailVerificationRequired: boolean;
+};
+
+export async function registerEmailMobile(
+  input: MobileEmailSignupInput,
+): Promise<MobileEmailSignupResponse> {
+  const response = await apiClient.post<MobileEmailSignupResponse>(
+    "/auth/register",
+    {
+      ...input,
+      email: input.email.trim().toLowerCase(),
+    },
+  );
+
+  return response.data;
+}
+
+export type MobileGoogleLoginInput = {
+  identityToken: string;
+  deviceId?: string;
+};
+
+export type MobileGoogleLoginResponse = MobileAppleLoginResponse;
+
+export async function loginGoogleMobile(
+  input: MobileGoogleLoginInput,
+): Promise<MobileGoogleLoginResponse> {
+  const response = await apiClient.post<MobileGoogleLoginResponse>(
+    "/auth/mobile/google",
+    {
+      identityToken: input.identityToken,
+      deviceId: input.deviceId,
+    },
+    {
+      headers: input.deviceId ? { "X-Device-Id": input.deviceId } : undefined,
+    },
+  );
+  const data = response.data;
+  if ("accessToken" in data) {
+    setAccessToken(data.accessToken);
+    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken);
+  }
+  return data;
+}
+
+export type MobileNaverAuthorizationResponse = {
+  authorizationUrl: string;
+};
+
+export type MobileNaverExchangeInput = {
+  code: string;
+  state: string;
+  deviceId?: string;
+};
+
+export type MobileNaverLoginResponse = MobileAppleLoginResponse;
+
+export async function getNaverMobileAuthorizationUrl(
+  state: string,
+): Promise<MobileNaverAuthorizationResponse> {
+  const response = await apiClient.get<MobileNaverAuthorizationResponse>(
+    "/auth/mobile/naver/start",
+    {
+      params: {
+        state,
+      },
+    },
+  );
+  return response.data;
+}
+
+export async function loginNaverMobile(
+  input: MobileNaverExchangeInput,
+): Promise<MobileNaverLoginResponse> {
+  const response = await apiClient.post<MobileNaverLoginResponse>(
+    "/auth/mobile/naver/exchange",
+    {
+      code: input.code,
+      state: input.state,
+      deviceId: input.deviceId,
+    },
+    {
+      headers: input.deviceId
+        ? {
+            "X-Device-Id": input.deviceId,
+          }
+        : undefined,
+    },
+  );
+  const data = response.data;
+  if ("accessToken" in data) {
+    setAccessToken(data.accessToken);
+    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken);
+  }
+  return data;
+}

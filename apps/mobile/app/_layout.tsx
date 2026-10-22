@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { PortalHost } from "@rn-primitives/portal";
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { Stack } from "expo-router";
@@ -8,6 +9,16 @@ import "../global.css";
 
 import { QueryProvider } from "@/provider/query-provider";
 import { restoreMobileSession } from "@/lib/api/auth";
+
+const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+
+if (googleWebClientId && googleIosClientId) {
+  GoogleSignin.configure({
+    webClientId: googleWebClientId,
+    iosClientId: googleIosClientId,
+  });
+}
 
 export default function RootLayout() {
   const [isAuthReady, setIsAuthReady] = useState(false);

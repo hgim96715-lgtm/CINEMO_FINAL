@@ -18,6 +18,16 @@ export type LoginResponse = {
   sessionExpiresAt: string;
 };
 
+export type OauthSignupInput = {
+  ticket: string;
+  nickname: string;
+  terms: {
+    service: true;
+    privacy: true;
+    marketing: boolean;
+  };
+};
+
 export type RegisterInput = {
   email: string;
   password: string;
@@ -67,6 +77,17 @@ export async function getMe(): Promise<AuthUser | null> {
 
 export async function login(input: LoginInput): Promise<LoginResponse> {
   const { data } = await apiClient.post<LoginResponse>("/auth/login", input);
+  return data;
+}
+
+export async function completeOauthSignup(
+  input: OauthSignupInput,
+): Promise<LoginResponse> {
+  const { data } = await apiClient.post<LoginResponse>(
+    "/auth/oauth/register",
+    input,
+  );
+
   return data;
 }
 

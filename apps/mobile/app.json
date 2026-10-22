@@ -14,7 +14,9 @@
       "backgroundColor": "#101014"
     },
     "ios": {
-      "associatedDomains": ["applinks:www.cinemo.site"],
+      "associatedDomains": [
+        "applinks:www.cinemo.site"
+      ],
       "usesAppleSignIn": true,
       "supportsTablet": true,
       "deploymentTarget": "16.4",
@@ -30,7 +32,10 @@
         {
           "action": "VIEW",
           "autoVerify": true,
-          "category": ["BROWSABLE", "DEFAULT"],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
           "data": {
             "scheme": "https",
             "host": "www.cinemo.site",
@@ -46,14 +51,21 @@
       "expo-router",
       "expo-apple-authentication",
       [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.63241350874-9d7o330encrqsdevourf7522hus3f74g"
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "ios": {
-            "deploymentTarget": "16.4"
-          },
-          "enableSceneSupport": true
+            "deploymentTarget": "16.4",
+            "enableSceneSupport": true
+          }
         }
-      ]
+      ],
+      "expo-web-browser"
     ]
   }
 }

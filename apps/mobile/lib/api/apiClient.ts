@@ -42,6 +42,9 @@ apiClient.interceptors.response.use(
 
     const isAuthRequest = [
       "/auth/mobile/login",
+      "/auth/mobile/apple",
+      "/auth/mobile/google",
+      "/auth/mobile/oauth/signup",
       "/auth/mobile/refresh",
       "/auth/mobile/logout",
     ].some((path) => request?.url?.includes(path));

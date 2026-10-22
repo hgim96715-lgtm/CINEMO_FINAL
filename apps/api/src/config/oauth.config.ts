@@ -5,6 +5,7 @@ import { EnvKeys } from "@/config/env-keys";
 export const oauthConfig = registerAs("oauth", () => ({
   google: {
     clientId: process.env[EnvKeys.GOOGLE_CLIENT_ID],
+    mobileClientId: process.env.GOOGLE_MOBILE_CLIENT_ID,
     clientSecret: process.env[EnvKeys.GOOGLE_CLIENT_SECRET],
     callbackUrl: process.env[EnvKeys.GOOGLE_CALLBACK_URL],
   },
@@ -22,5 +23,6 @@ export const oauthConfig = registerAs("oauth", () => ({
     clientId: process.env[EnvKeys.NAVER_CLIENT_ID],
     clientSecret: process.env[EnvKeys.NAVER_CLIENT_SECRET],
     callbackUrl: process.env[EnvKeys.NAVER_CALLBACK_URL],
+    mobileCallbackUrl: process.env[EnvKeys.NAVER_MOBILE_CALLBACK_URL],
   },
 }));

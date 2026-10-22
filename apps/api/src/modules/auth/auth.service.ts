@@ -1,25 +1,18 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
-import {
-  AuthProvider,
-  EmailVerificationPurpose,
-  TermsType,
-  UserStatus,
-  UserVisibility,
-} from "@prisma/client";
+import { AuthProvider, UserStatus, UserVisibility } from "@prisma/client";
 import { createHash, randomBytes } from "node:crypto";
-
-import { PrismaService } from "@/prisma/prisma.service";
 
 import { RegisterRequestDto } from "./dto/requests/register.request.dto";
 import { PasswordHasherService } from "./password-hasher.service";
 import { LoginRequestDto } from "./dto/requests/login.request.dto";
 import { MailService } from "./mail.service";
 import { normalizeNickname, validateNickname } from "./nickname.policy";
+import { MobileOauthSignupRequestDto } from "@/modules/auth/dto/requests/mobile-oauth-signup.request.dto";
+import { AuthRepository } from "./auth.repository";
 
 const CURRENT_TERMS_VERSION = "1.0.0";
 const EMAIL_VERIFICATION_EXPIRES_IN_MS = 30 * 60 * 1000;
@@ -63,7 +56,7 @@ type MobileLogoutInput = {
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly authRepository: AuthRepository,
     private readonly passwordHasher: PasswordHasherService,
     private readonly mailService: MailService,
   ) {}
@@ -85,124 +78,14 @@ export class AuthService {
       .digest("hex");
 
     const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_EXPIRES_IN_MS);
-    const termsAgreements = [
-      {
-        termsType: TermsType.SERVICE,
-        version: CURRENT_TERMS_VERSION,
-      },
-      {
-        termsType: TermsType.PRIVACY,
-        version: CURRENT_TERMS_VERSION,
-      },
-      ...(input.terms.marketing
-        ? [
-            {
-              termsType: TermsType.MARKETING,
-              version: CURRENT_TERMS_VERSION,
-            },
-          ]
-        : []),
-    ];
-
-    const user = await this.prisma.$transaction(async (tx) => {
-      const existingUser = await tx.user.findUnique({
-        where: { email },
-        select: {
-          id: true,
-          status: true,
-          passwordCredential: {
-            select: {
-              emailVerifiedAt: true,
-            },
-          },
-        },
-      });
-
-      if (
-        existingUser &&
-        (!existingUser.passwordCredential ||
-          existingUser.passwordCredential.emailVerifiedAt ||
-          existingUser.status !== UserStatus.ACTIVE)
-      ) {
-        throw new ConflictException("이미 가입된 이메일입니다.");
-      }
-
-      const existingNickname = await tx.user.findFirst({
-        where: {
-          nickname,
-          ...(existingUser ? { NOT: { id: existingUser.id } } : {}),
-        },
-        select: {
-          id: true,
-        },
-      });
-      if (existingNickname) {
-        throw new ConflictException("이미 사용 중인 닉네임입니다.");
-      }
-
-      if (existingUser) {
-        return tx.user.update({
-          where: { id: existingUser.id },
-          data: {
-            nickname,
-            passwordCredential: {
-              update: {
-                passwordHash,
-                emailVerifiedAt: null,
-              },
-            },
-            emailVerifications: {
-              create: {
-                tokenHash,
-                purpose: EmailVerificationPurpose.SIGNUP,
-                expiresAt,
-              },
-            },
-            termsAgreements: {
-              create: termsAgreements,
-            },
-          },
-          select: {
-            id: true,
-            email: true,
-            nickname: true,
-            status: true,
-            createdAt: true,
-          },
-        });
-      }
-
-      return tx.user.create({
-        data: {
-          email,
-          nickname,
-
-          passwordCredential: {
-            create: {
-              passwordHash,
-            },
-          },
-
-          emailVerifications: {
-            create: {
-              tokenHash,
-              purpose: EmailVerificationPurpose.SIGNUP,
-              expiresAt,
-            },
-          },
-
-          termsAgreements: {
-            create: termsAgreements,
-          },
-        },
-        select: {
-          id: true,
-          email: true,
-          nickname: true,
-          status: true,
-          createdAt: true,
-        },
-      });
+    const user = await this.authRepository.createEmailSignup({
+      email,
+      nickname,
+      passwordHash,
+      verificationTokenHash: tokenHash,
+      verificationExpiresAt: expiresAt,
+      termsVersion: CURRENT_TERMS_VERSION,
+      marketing: input.terms.marketing,
     });
 
     await this.mailService.sendSignupVerificationEmail({
@@ -220,12 +103,7 @@ export class AuthService {
   async login(input: LoginRequestDto) {
     const email = normalizeEmail(input.email);
 
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-      include: {
-        passwordCredential: true,
-      },
-    });
+    const user = await this.authRepository.findUserWithPassword(email);
 
     if (
       !user ||
@@ -255,18 +133,13 @@ export class AuthService {
 
     const expiresAt = new Date(Date.now() + SESSION_EXPIRES_IN_MS);
 
-    const session = await this.prisma.authSession.create({
-      data: {
-        userId: user.id,
-        tokenHash,
-        expiresAt,
-      },
+    const session = await this.authRepository.createSession({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
     });
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+    await this.authRepository.updateLastLogin(user.id);
 
     return {
       user: {
@@ -289,53 +162,20 @@ export class AuthService {
 
     const tokenHash = createHash("sha256").update(sessionToken).digest("hex");
 
-    await this.prisma.authSession.updateMany({
-      where: {
-        tokenHash,
-        revokedAt: null,
-      },
-      data: {
-        revokedAt: new Date(),
-      },
-    });
+    await this.authRepository.revokeSession(tokenHash);
   }
 
   async logoutMobile(input: MobileLogoutInput) {
     const revokedAt = new Date();
 
-    await this.prisma.$transaction(async (tx) => {
-      if (input.accessToken) {
-        const accessTokenHash = createHash("sha256")
-          .update(input.accessToken)
-          .digest("hex");
-
-        await tx.authSession.updateMany({
-          where: {
-            tokenHash: accessTokenHash,
-            revokedAt: null,
-          },
-          data: {
-            revokedAt,
-          },
-        });
-      }
-
-      if (input.refreshToken) {
-        const refreshTokenHash = createHash("sha256")
-          .update(input.refreshToken)
-          .digest("hex");
-
-        await tx.mobileRefreshToken.updateMany({
-          where: {
-            tokenHash: refreshTokenHash,
-            revokedAt: null,
-          },
-          data: {
-            revokedAt,
-            lastUsedAt: revokedAt,
-          },
-        });
-      }
+    await this.authRepository.revokeMobileTokens({
+      accessTokenHash: input.accessToken
+        ? createHash("sha256").update(input.accessToken).digest("hex")
+        : undefined,
+      refreshTokenHash: input.refreshToken
+        ? createHash("sha256").update(input.refreshToken).digest("hex")
+        : undefined,
+      revokedAt,
     });
 
     return {
@@ -344,27 +184,17 @@ export class AuthService {
   }
 
   async deleteAccount(userId: string) {
-    await this.prisma.$transaction(async (tx) => {
-      await tx.authSession.deleteMany({
-        where: { userId },
-      });
-      await tx.user.delete({
-        where: { id: userId },
-      });
-    });
+    await this.authRepository.deleteAccount(userId);
   }
 
   async updateProfileVisibility(
     userId: string,
     profileVisibility: UserVisibility,
   ) {
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { profileVisibility },
-      select: {
-        profileVisibility: true,
-      },
-    });
+    return this.authRepository.updateProfileVisibility(
+      userId,
+      profileVisibility,
+    );
   }
 
   async validateSession(sessionToken?: string) {
@@ -374,21 +204,7 @@ export class AuthService {
 
     const tokenHash = createHash("sha256").update(sessionToken).digest("hex");
 
-    const session = await this.prisma.authSession.findUnique({
-      where: { tokenHash },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            nickname: true,
-            status: true,
-            profileVisibility: true,
-            profileImageUrl: true,
-          },
-        },
-      },
-    });
+    const session = await this.authRepository.findSessionWithUser(tokenHash);
 
     if (
       !session ||
@@ -410,10 +226,7 @@ export class AuthService {
       throw new BadRequestException(validationMessage);
     }
 
-    const existingUser = await this.prisma.user.findFirst({
-      where: { nickname },
-      select: { id: true },
-    });
+    const existingUser = await this.authRepository.findUserByNickname(nickname);
 
     return {
       available: !existingUser,
@@ -423,96 +236,11 @@ export class AuthService {
   async checkEmail(emailInput: string) {
     const email = normalizeEmail(emailInput);
 
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    });
+    const existingUser = await this.authRepository.findUserByEmail(email);
 
     return {
       available: !existingUser,
     };
-  }
-
-  private async resolveAppleUser(input: {
-    providerUserId: string;
-    email: string | null;
-    emailVerified: boolean;
-  }) {
-    return this.prisma.$transaction(async (tx) => {
-      const existingIdentity = await tx.userIdentity.findUnique({
-        where: {
-          provider_providerUserId: {
-            provider: AuthProvider.APPLE,
-            providerUserId: input.providerUserId,
-          },
-        },
-        include: {
-          user: true,
-        },
-      });
-
-      if (existingIdentity) {
-        return {
-          type: "login" as const,
-          user: existingIdentity.user,
-        };
-      }
-
-      if (!input.email || !input.emailVerified) {
-        throw new UnauthorizedException("Apple 이메일 인증 정보가 필요합니다.");
-      }
-
-      const existingUser = await tx.user.findUnique({
-        where: {
-          email: input.email!,
-        },
-      });
-
-      if (!existingUser) {
-        const signupToken = randomBytes(32).toString("base64url");
-        const tokenHash = createHash("sha256")
-          .update(signupToken)
-          .digest("hex");
-
-        await tx.oauthSignupTicket.create({
-          data: {
-            tokenHash,
-            provider: AuthProvider.APPLE,
-            providerUserId: input.providerUserId,
-            providerEmail: input.email,
-            expiresAt: new Date(Date.now() + OAUTH_SIGNUP_TICKET_EXPIRES_IN_MS),
-          },
-        });
-
-        return {
-          type: "signup" as const,
-          signupToken,
-        };
-      }
-
-      await tx.userIdentity.upsert({
-        where: {
-          provider_providerUserId: {
-            provider: AuthProvider.APPLE,
-            providerUserId: input.providerUserId,
-          },
-        },
-        update: {
-          providerEmail: input.email,
-        },
-        create: {
-          userId: existingUser.id,
-          provider: AuthProvider.APPLE,
-          providerUserId: input.providerUserId,
-          providerEmail: input.email,
-        },
-      });
-
-      return {
-        type: "login" as const,
-        user: existingUser,
-      };
-    });
   }
 
   async loginWithApple(input: {
@@ -520,7 +248,10 @@ export class AuthService {
     email: string | null;
     emailVerified: boolean;
   }) {
-    const result = await this.resolveAppleUser(input);
+    const result = await this.resolveOAuthUser({
+      ...input,
+      provider: AuthProvider.APPLE,
+    });
 
     if (result.type === "signup") {
       return {
@@ -540,12 +271,10 @@ export class AuthService {
 
     const expiresAt = new Date(Date.now() + SESSION_EXPIRES_IN_MS);
 
-    await this.prisma.authSession.create({
-      data: {
-        userId: user.id,
-        tokenHash,
-        expiresAt,
-      },
+    await this.authRepository.createSession({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
     });
 
     return {
@@ -562,6 +291,97 @@ export class AuthService {
     };
   }
 
+  async loginWithNaver(input: {
+    providerUserId: string;
+    email: string | null;
+    emailVerified: boolean;
+  }) {
+    const result = await this.resolveOAuthUser({
+      ...input,
+      provider: AuthProvider.NAVER,
+    });
+    if (result.type === "signup") {
+      return {
+        requiresRegistration: true as const,
+        signupToken: result.signupToken,
+      };
+    }
+    const user = result.user;
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException("로그인 할 수 없는 계정입니다.");
+    }
+    const sessionToken = randomBytes(32).toString("base64url");
+    const tokenHash = createHash("sha256").update(sessionToken).digest("hex");
+    const sessionExpiresAt = new Date(Date.now() + SESSION_EXPIRES_IN_MS);
+
+    await this.authRepository.createSession({
+      userId: user.id,
+      tokenHash,
+      expiresAt: sessionExpiresAt,
+    });
+    await this.authRepository.updateLastLogin(user.id);
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        status: user.status,
+        profileVisibility: user.profileVisibility,
+        profileImageUrl: user.profileImageUrl,
+      },
+      sessionToken,
+      sessionExpiresAt,
+    };
+  }
+
+  async loginWithGoogle(input: {
+    providerUserId: string;
+    email: string | null;
+    emailVerified: boolean;
+  }) {
+    const result = await this.resolveOAuthUser({
+      ...input,
+      provider: AuthProvider.GOOGLE,
+    });
+
+    if (result.type === "signup") {
+      return {
+        requiresRegistration: true as const,
+        signupToken: result.signupToken,
+      };
+    }
+
+    const user = result.user;
+
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException("로그인할 수 없는 계정입니다.");
+    }
+
+    const sessionToken = randomBytes(32).toString("base64url");
+    const tokenHash = createHash("sha256").update(sessionToken).digest("hex");
+    const sessionExpiresAt = new Date(Date.now() + SESSION_EXPIRES_IN_MS);
+
+    await this.authRepository.createSession({
+      userId: user.id,
+      tokenHash,
+      expiresAt: sessionExpiresAt,
+    });
+    await this.authRepository.updateLastLogin(user.id);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        status: user.status,
+        profileVisibility: user.profileVisibility,
+        profileImageUrl: user.profileImageUrl,
+      },
+      sessionToken,
+      sessionExpiresAt,
+    };
+  }
+
   async loginMobileWithApple(
     input: {
       providerUserId: string;
@@ -569,7 +389,10 @@ export class AuthService {
       emailVerified: boolean;
     } & MobileTokenContext,
   ) {
-    const result = await this.resolveAppleUser(input);
+    const result = await this.resolveOAuthUser({
+      ...input,
+      provider: AuthProvider.APPLE,
+    });
 
     if (result.type === "signup") {
       return {
@@ -591,10 +414,7 @@ export class AuthService {
       ipAddress: input.ipAddress,
     });
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+    await this.authRepository.updateLastLogin(user.id);
 
     return {
       user: {
@@ -607,6 +427,127 @@ export class AuthService {
       },
       ...tokens,
     };
+  }
+
+  async loginMobileWithGoogle(
+    input: {
+      providerUserId: string;
+      email: string | null;
+      emailVerified: boolean;
+    } & MobileTokenContext,
+  ) {
+    const result = await this.resolveOAuthUser({
+      ...input,
+      provider: AuthProvider.GOOGLE,
+    });
+
+    if (result.type === "signup") {
+      return {
+        requiresRegistration: true as const,
+        signupToken: result.signupToken,
+      };
+    }
+
+    const user = result.user;
+
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException("로그인할 수 없는 계정입니다.");
+    }
+
+    const tokens = await this.issueMobileTokens({
+      userId: user.id,
+      deviceId: input.deviceId,
+      userAgent: input.userAgent,
+      ipAddress: input.ipAddress,
+    });
+
+    await this.authRepository.updateLastLogin(user.id);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        status: user.status,
+        profileVisibility: user.profileVisibility,
+        profileImageUrl: user.profileImageUrl,
+      },
+      ...tokens,
+    };
+  }
+
+  async loginMobileWithNaver(
+    input: {
+      providerUserId: string;
+      email: string | null;
+      emailVerified: boolean;
+    } & MobileTokenContext,
+  ) {
+    const result = await this.resolveOAuthUser({
+      ...input,
+      provider: AuthProvider.NAVER,
+    });
+
+    if (result.type === "signup") {
+      return {
+        requiresRegistration: true as const,
+        signupToken: result.signupToken,
+      };
+    }
+
+    const user = result.user;
+
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException("로그인할 수 없는 계정입니다.");
+    }
+
+    const tokens = await this.issueMobileTokens({
+      userId: user.id,
+      deviceId: input.deviceId,
+      userAgent: input.userAgent,
+      ipAddress: input.ipAddress,
+    });
+
+    await this.authRepository.updateLastLogin(user.id);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        status: user.status,
+        profileVisibility: user.profileVisibility,
+        profileImageUrl: user.profileImageUrl,
+      },
+      ...tokens,
+    };
+  }
+
+  async completeMobileOauthSignup(
+    input: MobileOauthSignupRequestDto & MobileTokenContext,
+  ) {
+    const nickname = normalizeNickname(input.nickname);
+    const nicknameError = validateNickname(nickname);
+
+    if (nicknameError) {
+      throw new BadRequestException(nicknameError);
+    }
+    const tokenHash = createHash("sha256").update(input.ticket).digest("hex");
+    const user = await this.authRepository.createOauthUser({
+      ticketHash: tokenHash,
+      nickname,
+      termsVersion: CURRENT_TERMS_VERSION,
+      marketing: input.terms.marketing ?? false,
+    });
+
+    const tokens = await this.issueMobileTokens({
+      userId: user.id,
+      deviceId: input.deviceId,
+      userAgent: input.userAgent,
+      ipAddress: input.ipAddress,
+    });
+
+    return { user, ...tokens };
   }
 
   async completeOauthSignup(input: {
@@ -626,121 +567,26 @@ export class AuthService {
     }
 
     const tokenHash = createHash("sha256").update(input.ticket).digest("hex");
-
-    return this.prisma.$transaction(async (tx) => {
-      const ticket = await tx.oauthSignupTicket.findUnique({
-        where: { tokenHash },
-      });
-
-      if (!ticket || ticket.consumedAt || ticket.expiresAt <= new Date()) {
-        throw new BadRequestException(
-          "OAuth 가입 티켓이 만료되었거나 유효하지 않습니다.",
-        );
-      }
-
-      const existingIdentity = await tx.userIdentity.findUnique({
-        where: {
-          provider_providerUserId: {
-            provider: ticket.provider,
-            providerUserId: ticket.providerUserId,
-          },
-        },
-        select: { id: true },
-      });
-
-      if (existingIdentity) {
-        throw new ConflictException("이미 연결된 계정입니다.");
-      }
-
-      const existingEmail = ticket.providerEmail
-        ? await tx.user.findUnique({
-            where: { email: ticket.providerEmail },
-            select: { id: true },
-          })
-        : null;
-
-      if (existingEmail) {
-        throw new ConflictException("이미 가입된 이메일입니다.");
-      }
-
-      const existingNickname = await tx.user.findUnique({
-        where: { nickname },
-        select: { id: true },
-      });
-
-      if (existingNickname) {
-        throw new ConflictException("이미 사용 중인 닉네임입니다.");
-      }
-
-      const user = await tx.user.create({
-        data: {
-          email: ticket.providerEmail,
-          nickname,
-          lastLoginAt: new Date(),
-          identities: {
-            create: {
-              provider: ticket.provider,
-              providerUserId: ticket.providerUserId,
-              providerEmail: ticket.providerEmail,
-              providerImageUrl: ticket.providerImageUrl,
-            },
-          },
-          termsAgreements: {
-            create: [
-              {
-                termsType: TermsType.SERVICE,
-                version: CURRENT_TERMS_VERSION,
-              },
-              {
-                termsType: TermsType.PRIVACY,
-                version: CURRENT_TERMS_VERSION,
-              },
-              ...(input.terms.marketing
-                ? [
-                    {
-                      termsType: TermsType.MARKETING,
-                      version: CURRENT_TERMS_VERSION,
-                    },
-                  ]
-                : []),
-            ],
-          },
-        },
-        select: {
-          id: true,
-          email: true,
-          nickname: true,
-          status: true,
-          profileVisibility: true,
-          profileImageUrl: true,
-        },
-      });
-
-      await tx.oauthSignupTicket.update({
-        where: { id: ticket.id },
-        data: { consumedAt: new Date() },
-      });
-
-      const sessionToken = randomBytes(32).toString("base64url");
-      const sessionTokenHash = createHash("sha256")
-        .update(sessionToken)
-        .digest("hex");
-      const sessionExpiresAt = new Date(Date.now() + SESSION_EXPIRES_IN_MS);
-
-      await tx.authSession.create({
-        data: {
-          userId: user.id,
-          tokenHash: sessionTokenHash,
-          expiresAt: sessionExpiresAt,
-        },
-      });
-
-      return {
-        user,
-        sessionToken,
-        sessionExpiresAt,
-      };
+    const user = await this.authRepository.createOauthUser({
+      ticketHash: tokenHash,
+      nickname,
+      termsVersion: CURRENT_TERMS_VERSION,
+      marketing: input.terms.marketing ?? false,
     });
+
+    const sessionToken = randomBytes(32).toString("base64url");
+    const sessionTokenHash = createHash("sha256")
+      .update(sessionToken)
+      .digest("hex");
+    const sessionExpiresAt = new Date(Date.now() + SESSION_EXPIRES_IN_MS);
+
+    await this.authRepository.createSession({
+      userId: user.id,
+      tokenHash: sessionTokenHash,
+      expiresAt: sessionExpiresAt,
+    });
+
+    return { user, sessionToken, sessionExpiresAt };
   }
 
   async loginMobile(
@@ -751,12 +597,7 @@ export class AuthService {
     },
   ) {
     const email = input.email.trim().toLowerCase();
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-      include: {
-        passwordCredential: true,
-      },
-    });
+    const user = await this.authRepository.findUserWithPassword(email);
     if (
       !user ||
       user.status !== UserStatus.ACTIVE ||
@@ -784,10 +625,7 @@ export class AuthService {
       ipAddress: input.ipAddress,
     });
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+    await this.authRepository.updateLastLogin(user.id);
     return {
       user: {
         id: user.id,
@@ -810,17 +648,8 @@ export class AuthService {
     const tokenHash = createHash("sha256")
       .update(input.refreshToken)
       .digest("hex");
-    const currentToken = await this.prisma.mobileRefreshToken.findUnique({
-      where: { tokenHash },
-      include: {
-        user: {
-          select: {
-            id: true,
-            status: true,
-          },
-        },
-      },
-    });
+    const currentToken =
+      await this.authRepository.findMobileRefreshToken(tokenHash);
 
     const now = new Date();
     if (
@@ -846,46 +675,25 @@ export class AuthService {
     const refreshTokenExpiresAt = new Date(
       Date.now() + MOBILE_REFRESH_TOKEN_EXPIRES_IN_MS,
     );
-    await this.prisma.$transaction(async (tx) => {
-      const revoked = await tx.mobileRefreshToken.updateMany({
-        where: {
-          id: currentToken.id,
-          revokedAt: null,
-          expiresAt: {
-            gt: now,
-          },
-        },
-        data: {
-          revokedAt: now,
-          lastUsedAt: now,
-        },
-      });
-      if (revoked.count !== 1) {
-        throw new UnauthorizedException(
-          "Refresh Token이 이미 폐기되었거나 사용되었습니다.",
-        );
-      }
-      await tx.authSession.create({
-        data: {
-          userId: currentToken.user.id,
-          tokenHash: accessTokenHash,
-          expiresAt: accessTokenExpiresAt,
-          userAgent: input.userAgent ?? null,
-          ipAddress: input.ipAddress ?? null,
-        },
-      });
-
-      await tx.mobileRefreshToken.create({
-        data: {
-          userId: currentToken.user.id,
-          tokenHash: refreshTokenHash,
-          deviceId: input.deviceId ?? currentToken.deviceId ?? null,
-          userAgent: input.userAgent ?? null,
-          ipAddress: input.ipAddress ?? null,
-          expiresAt: refreshTokenExpiresAt,
-        },
-      });
+    const rotated = await this.authRepository.rotateMobileRefreshToken({
+      currentTokenId: currentToken.id,
+      userId: currentToken.user.id,
+      currentExpiresAt: currentToken.expiresAt,
+      now,
+      accessTokenHash,
+      refreshTokenHash,
+      accessTokenExpiresAt,
+      refreshTokenExpiresAt,
+      deviceId: input.deviceId ?? currentToken.deviceId ?? undefined,
+      userAgent: input.userAgent,
+      ipAddress: input.ipAddress,
     });
+
+    if (!rotated) {
+      throw new UnauthorizedException(
+        "Refresh Token이 이미 폐기되었거나 사용되었습니다.",
+      );
+    }
 
     return {
       accessToken,
@@ -893,6 +701,31 @@ export class AuthService {
       accessTokenExpiresAt,
       refreshTokenExpiresAt,
     };
+  }
+
+  private async resolveOAuthUser(input: {
+    provider: AuthProvider;
+    providerUserId: string;
+    email: string | null;
+    emailVerified: boolean;
+  }) {
+    const signupToken = randomBytes(32).toString("base64url");
+    const result = await this.authRepository.resolveOAuthUser({
+      ...input,
+      signupTokenHash: createHash("sha256").update(signupToken).digest("hex"),
+      signupTokenExpiresAt: new Date(
+        Date.now() + OAUTH_SIGNUP_TICKET_EXPIRES_IN_MS,
+      ),
+    });
+
+    if (result.type === "signup") {
+      return {
+        type: "signup" as const,
+        signupToken,
+      };
+    }
+
+    return result;
   }
 
   private async issueMobileTokens(
@@ -913,27 +746,16 @@ export class AuthService {
     const refreshTokenExpiresAt = new Date(
       Date.now() + MOBILE_REFRESH_TOKEN_EXPIRES_IN_MS,
     );
-    await this.prisma.$transaction([
-      this.prisma.authSession.create({
-        data: {
-          userId: input.userId,
-          tokenHash: accessTokenHash,
-          expiresAt: accessTokenExpiresAt,
-          userAgent: input.userAgent ?? null,
-          ipAddress: input.ipAddress ?? null,
-        },
-      }),
-      this.prisma.mobileRefreshToken.create({
-        data: {
-          userId: input.userId,
-          tokenHash: refreshTokenHash,
-          deviceId: input.deviceId ?? null,
-          userAgent: input.userAgent ?? null,
-          ipAddress: input.ipAddress ?? null,
-          expiresAt: refreshTokenExpiresAt,
-        },
-      }),
-    ]);
+    await this.authRepository.createMobileTokenRecords({
+      userId: input.userId,
+      accessTokenHash,
+      refreshTokenHash,
+      accessTokenExpiresAt,
+      refreshTokenExpiresAt,
+      deviceId: input.deviceId,
+      userAgent: input.userAgent,
+      ipAddress: input.ipAddress,
+    });
     return {
       accessToken,
       refreshToken,
