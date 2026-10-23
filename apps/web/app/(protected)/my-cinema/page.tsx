@@ -3,6 +3,7 @@ import { UserRound } from "lucide-react";
 
 import { requireUser } from "@/lib/auth/server";
 import { MyCinemaTabs } from "@/components/my-cinema/MyCinemaTabs";
+import { MyCinemaStats } from "@/components/my-cinema/MyCinemaStats";
 
 export default async function MyCinemaPage() {
   const user = await requireUser();
@@ -60,6 +61,8 @@ export default async function MyCinemaPage() {
             나만의 영화 기록을 차곡차곡 쌓아보세요.
           </div>
         </section>
+
+        <MyCinemaStats />
 
         <MyCinemaTabs />
       </div>
