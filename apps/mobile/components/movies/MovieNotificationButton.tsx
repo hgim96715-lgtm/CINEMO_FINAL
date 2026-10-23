@@ -15,7 +15,10 @@ type Props = {
 export function MovieNotificationButton({ movieId, isReleased }: Props) {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [isResultModalVisible, setIsResultModalVisible] = useState(false);
-  const [resultMessage, setResultMessage] = useState("");
+  const [modalContent, setModalContent] = useState({
+    title: "",
+    description: "",
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -67,10 +70,16 @@ export function MovieNotificationButton({ movieId, isReleased }: Props) {
         onPress={() => {
           notificationMutation.mutate(isEnabled, {
             onSuccess: () => {
-              setResultMessage(
+              setModalContent(
                 isEnabled
-                  ? "개봉 알림이 해제되었습니다."
-                  : "알림이 설정되었습니다.",
+                  ? {
+                      title: "개봉 알림을 해제했어요",
+                      description: "더 이상 개봉 알림을 보내지 않아요.",
+                    }
+                  : {
+                      title: "개봉 알림을 신청했어요",
+                      description: "개봉일에 알려드릴게요.",
+                    },
               );
               setIsResultModalVisible(true);
             },
@@ -102,13 +111,13 @@ export function MovieNotificationButton({ movieId, isReleased }: Props) {
       >
         <View
           className="flex-1 items-center justify-center px-6"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.72)" }}
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.62)" }}
         >
           <View
-            className="w-full rounded-2xl p-6"
+            className="w-full max-w-md overflow-hidden rounded-3xl"
             style={{
-              backgroundColor: "#1b2a2d",
-              borderColor: "rgba(212, 181, 106, 0.45)",
+              backgroundColor: "rgba(16, 31, 33, 0.97)",
+              borderColor: "rgba(212, 181, 106, 0.35)",
               borderWidth: 1,
               elevation: 12,
               shadowColor: "#000000",
@@ -117,25 +126,39 @@ export function MovieNotificationButton({ movieId, isReleased }: Props) {
               shadowRadius: 18,
             }}
           >
-            <Text
-              className="text-center text-lg font-semibold"
-              style={{ color: CINEMO_COLORS.textPrimary }}
-            >
-              {resultMessage}
-            </Text>
-
-            <Pressable
-              className="mt-6 items-center rounded-xl py-3"
-              style={{ backgroundColor: CINEMO_COLORS.accentLight }}
-              onPress={() => setIsResultModalVisible(false)}
-            >
+            <View className="items-center px-6 pb-6 pt-7">
               <Text
-                className="font-semibold"
-                style={{ color: CINEMO_COLORS.background }}
+                className="text-center text-xl font-bold"
+                style={{ color: CINEMO_COLORS.accentLight }}
               >
-                확인
+                {modalContent.title}
               </Text>
-            </Pressable>
+
+              <Text
+                className="mt-4 text-center text-base"
+                style={{ color: CINEMO_COLORS.textSecondary }}
+              >
+                {modalContent.description}
+              </Text>
+            </View>
+
+            <View
+              className="items-center border-t px-6 py-5"
+              style={{ borderColor: "rgba(255,255,255,0.1)" }}
+            >
+              <Pressable
+                className="min-w-24 items-center rounded-2xl px-7 py-3"
+                style={{ backgroundColor: CINEMO_COLORS.accentLight }}
+                onPress={() => setIsResultModalVisible(false)}
+              >
+                <Text
+                  className="text-base font-bold"
+                  style={{ color: CINEMO_COLORS.background }}
+                >
+                  확인
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>

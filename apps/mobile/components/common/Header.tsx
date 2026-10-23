@@ -80,7 +80,7 @@ export function Header({ onSearchPress }: HeaderProps) {
             accessibilityRole="button"
             accessibilityLabel={`${user.nickname} 프로필`}
             className="flex-row items-center gap-2 rounded-full px-1 py-1"
-            onPress={() => router.push("/my-profile")}
+            onPress={() => router.push("/my-cinema")}
           >
             <View
               style={{

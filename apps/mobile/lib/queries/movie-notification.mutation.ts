@@ -5,6 +5,7 @@ import {
   unsubscribeMovieNotification,
 } from "@/lib/api/movie-notifications";
 
+import { myCinemaKeys } from "./my-cinema.query";
 import { movieNotificationKeys } from "./movie-notification.query";
 
 export function useMovieNotificationMutation(movieId: string) {
@@ -21,6 +22,9 @@ export function useMovieNotificationMutation(movieId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: movieNotificationKeys.detail(movieId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: myCinemaKeys.notifications(),
       });
     },
   });
