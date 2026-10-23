@@ -15,9 +15,11 @@ import {
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { getImageUrl } from "@/lib/utils";
 import { Header } from "@/components/common/Header";
-import { CalendarDays, Clock3, Play, Star } from "lucide-react-native";
+import { CalendarDays, Clock3, Star } from "lucide-react-native";
 import { useState } from "react";
 import { MovieTrailerDialog } from "@/components/lobby/MovieTrailerDialog";
+import { MovieTrailerButton } from "@/components/movies/MovieTrailerButton";
+import { MovieNotificationButton } from "@/components/movies/MovieNotificationButton";
 
 function formatReleaseDate(date: string | null) {
   if (!date) return "개봉일 미정";
@@ -246,18 +248,17 @@ export default function MovieDetailScreen() {
               </Text>
             )}
           </View>
-          {trailer?.externalId && (
-            <Pressable
-              className="mt-5 flex-row items-center gap-2 self-start rounded-xl border border-white/20 bg-white/5 px-4 py-3"
-              onPress={() => setIsTrailerOpen(true)}
-            >
-              <Play
-                size={16}
-                color={CINEMO_COLORS.accentLight}
-                fill={CINEMO_COLORS.accentLight}
-              />
-            </Pressable>
-          )}
+
+          <View className="flex-row flex-wrap items-center gap-2">
+            {trailer?.externalId && (
+              <MovieTrailerButton onPress={() => setIsTrailerOpen(true)} />
+            )}
+
+            <MovieNotificationButton
+              movieId={movieId ?? ""}
+              isReleased={primaryRelease?.status === "RELEASED"}
+            />
+          </View>
 
           <View className="flex-row flex-wrap gap-4">
             <View className="flex-row items-center gap-1">

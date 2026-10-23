@@ -235,6 +235,11 @@ enum PostcardMediaType {
   IMAGE
 }
 
+enum PushTokenPlatform {
+  IOS     // iOS 기기에서 발급된 Expo Push Token
+  ANDROID // Android 기기에서 발급된 Expo Push Token
+}
+
 model Postcard {
   id                 String               @id @default(uuid(7)) @db.Uuid
   userId             String               @db.Uuid
@@ -583,10 +588,26 @@ model User {
   postcardNotifications      PostcardNotification[]    @relation("PostcardNotificationRecipient")
   postcardNotificationActors PostcardNotification[]    @relation("PostcardNotificationActor")
   mobileRefreshTokens        MobileRefreshToken[]
+  pushTokens                 PushToken[]                 // 사용자의 기기별 푸시 토큰
 
   @@index([nickname])
   @@index([status])
   @@map("users")
+}
+
+model PushToken {
+  id         String            @id @default(uuid(7)) @db.Uuid // 푸시 토큰 레코드 식별자
+  userId     String            @db.Uuid                    // 토큰을 발급받은 사용자
+  token      String            @unique @db.Text             // Expo Push Token 원문
+  platform   PushTokenPlatform                              // 토큰이 발급된 모바일 플랫폼
+  lastUsedAt DateTime          @default(now()) @map("last_used_at") @db.Timestamptz(3) // 마지막 등록·갱신 시각
+  createdAt  DateTime          @default(now()) @map("created_at") @db.Timestamptz(3) // 생성 시각
+  updatedAt  DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3) // 수정 시각
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade) // 사용자 삭제 시 토큰도 삭제
+
+  @@index([userId, platform]) // 사용자·플랫폼별 조회 최적화
+  @@map("push_tokens")       // PostgreSQL 테이블명
 }
 
 model UserIdentity {

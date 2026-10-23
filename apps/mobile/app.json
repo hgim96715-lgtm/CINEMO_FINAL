@@ -65,7 +65,22 @@
           }
         }
       ],
-      "expo-web-browser"
-    ]
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffffff",
+          "sounds": []
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b2d00ecf-34e3-4d8b-9ba1-6e0d75cdb2d5"
+      }
+    },
+    "owner": "hgims-team"
   }
 }

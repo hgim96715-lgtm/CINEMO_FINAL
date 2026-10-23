@@ -26,6 +26,7 @@ import { PostcardsModule } from "@/modules/postcards/postcards.module";
 import { openaiConfig } from "@/config/openai.config";
 import { openSubtitlesConfig } from "@/config/opensubtitles.config";
 import { OpenAiModule } from "@/integrations/openai/openai.module";
+import { NotificationsModule } from "@/modules/notifications/notifications.module";
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { OpenAiModule } from "@/integrations/openai/openai.module";
     MapModule,
     PostcardsModule,
     OpenAiModule,
+    NotificationsModule,
   ],
   providers: [
     {

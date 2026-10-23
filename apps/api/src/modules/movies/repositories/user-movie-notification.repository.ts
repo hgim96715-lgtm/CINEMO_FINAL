@@ -1,7 +1,7 @@
-import {Injectable} from "@nestjs/common";
-import {MovieNotificationType, ReleaseStatus} from "@prisma/client";
+import { Injectable } from "@nestjs/common";
+import { MovieNotificationType, ReleaseStatus } from "@prisma/client";
 
-import {PrismaService} from "@/prisma/prisma.service";
+import { PrismaService } from "@/prisma/prisma.service";
 
 @Injectable()
 export class UserMovieNotificationRepository {
@@ -83,7 +83,7 @@ export class UserMovieNotificationRepository {
       },
     });
   }
-  
+
   findDueReleaseNotifications(now = new Date()) {
     return this.prisma.userMovieNotification.findMany({
       where: {
@@ -92,8 +92,8 @@ export class UserMovieNotificationRepository {
         notifiedAt: null,
         user: {
           email: {
-            not: null
-          }
+            not: null,
+          },
         },
         release: {
           is: {
@@ -101,55 +101,56 @@ export class UserMovieNotificationRepository {
               lte: now,
             },
             status: {
-              not: ReleaseStatus.CANCELLED
-            }
-          }
+              in: [ReleaseStatus.SCHEDULED, ReleaseStatus.SCHEDULED],
+            },
+          },
         },
       },
-        select:{
-          id:true,
-          user:{
-            select:{
-              email:true,
-            }
+      select: {
+        id: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
           },
-          movie:{
-            select:{
-              id:true,
-              titles:{
-                where:{
-                  titleType:'PRIMARY',
-                },
-                orderBy:{
-                  createdAt:'asc'
-                },
-                take:1,
-                select:{
-                  title:true
-                },
+        },
+        movie: {
+          select: {
+            id: true,
+            titles: {
+              where: {
+                titleType: "PRIMARY",
+              },
+              orderBy: {
+                createdAt: "asc",
+              },
+              take: 1,
+              select: {
+                title: true,
               },
             },
           },
-          release:{
-            select:{
-              releaseDate:true
-            }
-          }
-        }
-    })
-  }
-  async marksNotified(notificationId:string){
-    return this.prisma.userMovieNotification.update({
-      where:{
-        id:notificationId,
+        },
+        release: {
+          select: {
+            releaseDate: true,
+          },
+        },
       },
-      data:{
-        notifiedAt:new Date(),
-      }
-    })
+    });
   }
-  
-  findEnabledReleasNotifications(userId:string){
+  async marksNotified(notificationId: string) {
+    return this.prisma.userMovieNotification.update({
+      where: {
+        id: notificationId,
+      },
+      data: {
+        notifiedAt: new Date(),
+      },
+    });
+  }
+
+  findEnabledReleasNotifications(userId: string) {
     return this.prisma.userMovieNotification.findMany({
       where: {
         userId,
@@ -157,46 +158,46 @@ export class UserMovieNotificationRepository {
         enabled: true,
       },
       orderBy: {
-        release:{
-          releaseDate:'asc'
-        }
-      },
-      select:{
-        id:true,
-        movieId:true,
-        release:{
-          select:{
-            releaseDate:true,
-          }
+        release: {
+          releaseDate: "asc",
         },
-        movie:{
-          select:{
-            titles:{
-              where:{
-                titleType:'PRIMARY',
+      },
+      select: {
+        id: true,
+        movieId: true,
+        release: {
+          select: {
+            releaseDate: true,
+          },
+        },
+        movie: {
+          select: {
+            titles: {
+              where: {
+                titleType: "PRIMARY",
               },
-              orderBy:{
-                createdAt:'asc'
+              orderBy: {
+                createdAt: "asc",
               },
-              take:1,
-              select:{
-                title:true
-              }
+              take: 1,
+              select: {
+                title: true,
+              },
             },
-            media:{
-              where:{
-                mediaType:'POSTER',
-                isPrimary:true,
-                status:'ACTIVE'
+            media: {
+              where: {
+                mediaType: "POSTER",
+                isPrimary: true,
+                status: "ACTIVE",
               },
-              take:1,
-              select:{
-                url:true
-              }
-            }
-          }
-        }
-      }
-    })
+              take: 1,
+              select: {
+                url: true,
+              },
+            },
+          },
+        },
+      },
+    });
   }
 }
