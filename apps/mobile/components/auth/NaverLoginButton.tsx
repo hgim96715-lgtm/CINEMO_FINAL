@@ -114,8 +114,8 @@ export function NaverLoginButton({
         accessibilityLabel="네이버 로고"
         resizeMode="contain"
         style={{
-          width: 24,
-          height: 24,
+          width: 32,
+          height: 32,
           borderRadius: 12,
         }}
       />

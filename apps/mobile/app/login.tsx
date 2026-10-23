@@ -2,7 +2,7 @@ import { CINEMO_COLORS } from "@cinemo/shared";
 import axios from "axios";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppleAuthenticationCredential } from "expo-apple-authentication";
 
@@ -193,20 +193,20 @@ export default function LoginScreen() {
               }}
             />
 
-            <Pressable
-              onPress={() => {
-                setErrorMessage(null);
-                router.push("/email-login");
-              }}
-              className="mt-6 items-center rounded-xl py-4"
-              style={{
-                backgroundColor: CINEMO_COLORS.accent,
-              }}
-            >
-              <Text className="text-base font-semibold text-white">
-                이메일로 로그인
-              </Text>
-            </Pressable>
+            {/*<Pressable*/}
+            {/*  onPress={() => {*/}
+            {/*    setErrorMessage(null);*/}
+            {/*    router.push("/email-login");*/}
+            {/*  }}*/}
+            {/*  className="mt-6 items-center rounded-xl py-4"*/}
+            {/*  style={{*/}
+            {/*    backgroundColor: CINEMO_COLORS.accent,*/}
+            {/*  }}*/}
+            {/*>*/}
+            {/*  <Text className="text-base font-semibold text-white">*/}
+            {/*    이메일로 로그인*/}
+            {/*  </Text>*/}
+            {/*</Pressable>*/}
           </View>
         </View>
       </View>
