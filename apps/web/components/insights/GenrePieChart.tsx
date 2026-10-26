@@ -45,19 +45,9 @@ export function GenrePieChart({
       return sorted;
     }
 
-    const topGenres = sorted.slice(0, 4);
-    const otherCount = sorted
-      .slice(4)
-      .reduce((sum, item) => sum + item.value, 0);
+    const topGenres = sorted.slice(0, 5);
 
-    return [
-      ...topGenres,
-      {
-        id: "기타",
-        label: "기타",
-        value: otherCount,
-      },
-    ];
+    return [...topGenres];
   }, [data]);
 
   if (isPending) {

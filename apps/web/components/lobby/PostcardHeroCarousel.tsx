@@ -145,7 +145,7 @@ export function PostcardHeroCarousel() {
                   CINEMO INSIGHT
                 </p>
                 <h2 className="mt-3 text-2xl font-semibold text-cinemo-text sm:text-3xl">
-                  이번 달 많이 개봉한 장르
+                  이번 달 개봉이 많은 장르 TOP 5
                 </h2>
               </div>
             </div>
@@ -175,9 +175,7 @@ export function PostcardHeroCarousel() {
                 aria-current={isAnalyticsSlide}
                 onClick={() => setActiveIndex(analyticsSlideIndex)}
                 className={`h-2 rounded-full transition-all ${
-                  isAnalyticsSlide
-                    ? "w-8 bg-cinemo-gold"
-                    : "w-2 bg-white/40"
+                  isAnalyticsSlide ? "w-8 bg-cinemo-gold" : "w-2 bg-white/40"
                 }`}
               />
             </div>
@@ -296,9 +294,7 @@ export function PostcardHeroCarousel() {
                 aria-current={isAnalyticsSlide}
                 onClick={() => setActiveIndex(analyticsSlideIndex)}
                 className={`h-2 rounded-full transition-all ${
-                  isAnalyticsSlide
-                    ? "w-8 bg-cinemo-gold"
-                    : "w-2 bg-white/40"
+                  isAnalyticsSlide ? "w-8 bg-cinemo-gold" : "w-2 bg-white/40"
                 }`}
               />
             </div>
