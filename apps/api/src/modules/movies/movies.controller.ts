@@ -1,4 +1,13 @@
-import {Body, Controller, Delete, Get, Param, Patch, Post, Query} from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from "@nestjs/common";
 import {
   ApiConflictResponse,
   ApiCookieAuth,
@@ -7,26 +16,29 @@ import {
   ApiOperation,
   ApiTags,
 } from "@nestjs/swagger";
-import {Throttle} from "@nestjs/throttler";
+import { Throttle } from "@nestjs/throttler";
 
-import {MovieResponseDto} from "./dto/responses/movie.response.dto";
-import {MoviesService} from "./movies.service";
-import {GetMovieRequestDto} from "./dto/requests/get-movie.request.dto";
-import {SearchMoviesRequestDto} from "./dto/requests/search-movies.request.dto";
-import {MovieSearchResponseDto} from "./dto/responses/movie-search.response.dto";
-import {MovieSitemapResponseDto} from "./dto/responses/movie-sitemap.response.dto";
-import {GetPopularMoviesRequestDto} from "./dto/requests/get-popular-movies.request.dto";
-import {GetUpcomingMoviesRequestDto} from "./dto/requests/get-upcoming-movies.request.dto";
-import {Public} from "../auth/decorators/public.decorator";
-import {UserMovieRecordService} from "./user-movie-record.service";
-import {UpdateMovieRecordRequestDto} from "../auth/dto/requests/update-movie-record.request.dto";
-import {UserMovieRecordResponseDto} from "./dto/responses/user-movie-record.response.dto";
-import type {SessionUser} from "../auth/types/session-user.type";
-import {CurrentUser} from "../auth/decorators/current-user.decorator";
-import {GetReleasedMoviesRequestDto} from "./dto/requests/get-released-movies.request.dto";
-import {UserMovieNotificationService} from "./user-movie-notification.service";
-import {MovieCalendarDayResponseDto} from "@/modules/movies/dto/responses/movie-calendar.response.dto";
-import {GetMovieCalendarRequestDto} from "@/modules/movies/dto/requests/get-movie-calendar.request.dto";
+import { MovieResponseDto } from "./dto/responses/movie.response.dto";
+import { MoviesService } from "./movies.service";
+import { GetMovieRequestDto } from "./dto/requests/get-movie.request.dto";
+import { SearchMoviesRequestDto } from "./dto/requests/search-movies.request.dto";
+import { MovieSearchResponseDto } from "./dto/responses/movie-search.response.dto";
+import { MovieSitemapResponseDto } from "./dto/responses/movie-sitemap.response.dto";
+import { GetPopularMoviesRequestDto } from "./dto/requests/get-popular-movies.request.dto";
+import { GetUpcomingMoviesRequestDto } from "./dto/requests/get-upcoming-movies.request.dto";
+import { Public } from "../auth/decorators/public.decorator";
+import { UserMovieRecordService } from "./user-movie-record.service";
+import { UpdateMovieRecordRequestDto } from "../auth/dto/requests/update-movie-record.request.dto";
+import { UserMovieRecordResponseDto } from "./dto/responses/user-movie-record.response.dto";
+import type { SessionUser } from "../auth/types/session-user.type";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { GetReleasedMoviesRequestDto } from "./dto/requests/get-released-movies.request.dto";
+import { UserMovieNotificationService } from "./user-movie-notification.service";
+import { MovieCalendarDayResponseDto } from "@/modules/movies/dto/responses/movie-calendar.response.dto";
+import { GetMovieCalendarRequestDto } from "@/modules/movies/dto/requests/get-movie-calendar.request.dto";
+import { MovieGenreCountResponseDto } from "@/modules/movies/dto/responses/movie-genre-count.response.dto";
+import { GetMovieGenreAnalyticsRequestDto } from "@/modules/movies/dto/requests/get-movie-genre-analytics.request.dto";
+import { toMovieGenreDateRange } from "./mappers/movie-genre-analytics.mapper";
 
 @ApiTags("Movies")
 @Controller("movies")
@@ -151,7 +163,19 @@ export class MoviesController {
   getReleasedMovies(@Query() params: GetReleasedMoviesRequestDto) {
     return this.moviesService.getReleasedMovies(params);
   }
-  
+
+  @Public()
+  @Get("analytics/genres")
+  @ApiOkResponse({
+    type: [MovieGenreCountResponseDto],
+    description: "기간별 장르별 개봉 영화 수",
+  })
+  getGenreAnalytics(@Query() query: GetMovieGenreAnalyticsRequestDto) {
+    return this.moviesService.getGenreCountsByReleasePeriod(
+      toMovieGenreDateRange(query),
+    );
+  }
+
   @ApiCookieAuth("cinemo_session")
   @Get("my/calendar")
   @ApiOperation({
@@ -163,13 +187,13 @@ export class MoviesController {
     description: "날짜별 관람 영화 목록",
   })
   getMyMovieCalendar(
-      @Query() query: GetMovieCalendarRequestDto,
-      @CurrentUser() user: SessionUser,
+    @Query() query: GetMovieCalendarRequestDto,
+    @CurrentUser() user: SessionUser,
   ) {
     return this.userMovieRecordService.findCalendarByUser(
-        user.id,
-        query.year,
-        query.month,
+      user.id,
+      query.year,
+      query.month,
     );
   }
 
@@ -188,7 +212,7 @@ export class MoviesController {
   async getMyMovies(@CurrentUser() user: SessionUser) {
     return this.userMovieRecordService.findAllByUser(user.id);
   }
-  
+
   @ApiCookieAuth("cinemo_session")
   @Throttle({
     default: {
@@ -202,7 +226,7 @@ export class MoviesController {
   })
   getMyMovieNotifications(@CurrentUser() user: SessionUser) {
     return this.userMovieNotificationService.findMyReleaseNotifications(
-        user.id,
+      user.id,
     );
   }
 
@@ -338,7 +362,7 @@ export class MoviesController {
   findById(@Param() params: GetMovieRequestDto) {
     return this.moviesService.findById(params.movieId);
   }
-  
+
   @Delete(":movieId/record")
   @ApiOperation({
     summary: "사용자 영화 기록 삭제",
@@ -348,12 +372,9 @@ export class MoviesController {
     description: "사용자 영화 기록 삭제 성공",
   })
   deleteMovieRecord(
-      @Param() params: GetMovieRequestDto,
-      @CurrentUser() user: SessionUser,
+    @Param() params: GetMovieRequestDto,
+    @CurrentUser() user: SessionUser,
   ) {
-    return this.userMovieRecordService.delete(
-        user.id,
-        params.movieId,
-    );
+    return this.userMovieRecordService.delete(user.id, params.movieId);
   }
 }

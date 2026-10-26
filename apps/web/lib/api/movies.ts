@@ -4,20 +4,19 @@ import type {
   SearchTmdbMoviesResponse,
   UserMovieRecordResponse,
 } from "@cinemo/api-contract";
-import {apiClient} from "./apiClient";
+import { apiClient } from "./apiClient";
 
 export type ViewingPlatform =
-    | "NETFLIX"
-    | "WATCHA"
-    | "TVING"
-    | "DISNEY_PLUS"
-    | "WAVVE"
-    | "APPLE_TV"
-    | "PRIME_VIDEO"
-    | "COUPANG_PLAY"
-    | "TV"
-    | "OTHER";
-
+  | "NETFLIX"
+  | "WATCHA"
+  | "TVING"
+  | "DISNEY_PLUS"
+  | "WAVVE"
+  | "APPLE_TV"
+  | "PRIME_VIDEO"
+  | "COUPANG_PLAY"
+  | "TV"
+  | "OTHER";
 
 export type SearchMoviesParams = {
   query: string;
@@ -114,7 +113,7 @@ export type UpdateMovieRecordInput = {
   rating?: string | null;
   venueId?: string | null;
   viewingPlaceType?: "HOME" | "VENUE" | null;
-  viewingPlatform?:ViewingPlatform |null;
+  viewingPlatform?: ViewingPlatform | null;
   viewingPlatformCustom?: string | null;
 };
 export async function getMovieRecord(
@@ -225,13 +224,18 @@ export async function unsubscribeMovieNotification(
 
 export type MyMovieVenue = {
   id: string;
-  type: "CINEMA" | "HOME" | "MUSEUM" | "EXHIBITION_HALL" | "PERFORMANCE_HALL" | "OTHER";
+  type:
+    | "CINEMA"
+    | "HOME"
+    | "MUSEUM"
+    | "EXHIBITION_HALL"
+    | "PERFORMANCE_HALL"
+    | "OTHER";
   name: string;
   brandName: string | null;
   roadAddress: string | null;
   jibunAddress: string | null;
 };
-
 
 export type MyMovie = {
   id: string;
@@ -245,14 +249,12 @@ export type MyMovie = {
   rating: string | null;
   venueId: string | null;
   viewingPlaceType: "HOME" | "VENUE" | null;
-  viewingPlatform:ViewingPlatform | null;
+  viewingPlatform: ViewingPlatform | null;
   viewingPlatformCustom: string | null;
   venue: MyMovieVenue | null;
 };
 
-export async function getMyMovies(
-  signal?: AbortSignal,
-): Promise<MyMovie[]> {
+export async function getMyMovies(signal?: AbortSignal): Promise<MyMovie[]> {
   const { data } = await apiClient.get<MyMovie[]>("/movies/my", {
     signal,
   });
@@ -264,48 +266,85 @@ export async function deleteMovieRecord(movieId: string): Promise<void> {
   await apiClient.delete(`/movies/${movieId}/record`);
 }
 
-export type MovieCalendarParams={
-  year:number;
-  month:number;
-}
+export type MovieCalendarParams = {
+  year: number;
+  month: number;
+};
 
-export type MovieCalendarMovie={
+export type MovieCalendarMovie = {
   movieId: string;
   title: string;
   posterUrl: string | null;
-  genres:string[];
-}
+  genres: string[];
+};
 
-export type MovieCalendarDay={
-  date:string;
-  movies:MovieCalendarMovie[];
-}
+export type MovieCalendarDay = {
+  date: string;
+  movies: MovieCalendarMovie[];
+};
 
-export async function  getMovieCalendar(params:MovieCalendarParams,signal?: AbortSignal): Promise<MovieCalendarDay[]> {
-  const {data}=await apiClient.get<MovieCalendarDay[]>('/movies/my/calendar', {
-    params: {
-      year: params.year,
-      month: params.month,
+export async function getMovieCalendar(
+  params: MovieCalendarParams,
+  signal?: AbortSignal,
+): Promise<MovieCalendarDay[]> {
+  const { data } = await apiClient.get<MovieCalendarDay[]>(
+    "/movies/my/calendar",
+    {
+      params: {
+        year: params.year,
+        month: params.month,
+      },
+      signal,
     },
-    signal,
-  })
+  );
   return data;
 }
 
-export type MovieNotificationItem={
-  id:string;
-  movieId:string;
-  release:{
-    releaseDate:string|null;
-  }|null;
-  movie:{
-    titles:Array<{title:string;}>
-    media:Array<{url:string;}>
-  }
-}
+export type MovieNotificationItem = {
+  id: string;
+  movieId: string;
+  release: {
+    releaseDate: string | null;
+  } | null;
+  movie: {
+    titles: Array<{ title: string }>;
+    media: Array<{ url: string }>;
+  };
+};
 export async function getMovieNotifications(
-    signal?: AbortSignal,
+  signal?: AbortSignal,
 ): Promise<MovieNotificationItem[]> {
-  const {data}=await apiClient.get<MovieNotificationItem[]>('/movies/notifications', {signal} );
+  const { data } = await apiClient.get<MovieNotificationItem[]>(
+    "/movies/notifications",
+    { signal },
+  );
+  return data;
+}
+
+export type MovieGenreCountResponse = {
+  genre: string;
+  count: number;
+};
+
+export type MovieGenreAnalyticsParams = {
+  year?: number;
+  month?: number;
+};
+
+export async function getMovieGenreAnalytics(
+  params: MovieGenreAnalyticsParams = {},
+  signal?: AbortSignal,
+): Promise<MovieGenreCountResponse[]> {
+  const now = new Date();
+  const { data } = await apiClient.get<MovieGenreCountResponse[]>(
+    "/movies/analytics/genres",
+    {
+      params: {
+        year: params.year ?? now.getFullYear(),
+        month: params.month ?? now.getMonth() + 1,
+      },
+      signal,
+    },
+  );
   return data;
 }

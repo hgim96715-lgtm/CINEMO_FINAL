@@ -7,9 +7,23 @@ import Link from "next/link";
 import Image from "next/image";
 import { PostcardSceneMeta } from "@/components/postcard/PostcardSceneMeta";
 import { PostcardQuoteContent } from "@/components/postcard/PostcardQuoteContent";
+import { GenrePieChart } from "@/components/insights/GenrePieChart";
 import { ArrowUpRight } from "lucide-react";
 
 const AUTO_PLAY_INTERVAL = 6_000;
+
+function getKoreaYearMonth() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "numeric",
+  }).formatToParts(new Date());
+
+  return {
+    year: Number(parts.find((part) => part.type === "year")?.value),
+    month: Number(parts.find((part) => part.type === "month")?.value),
+  };
+}
 
 const formatPostcardDate = (value: string) => {
   const date = new Date(value);
@@ -35,8 +49,13 @@ export function PostcardHeroCarousel() {
   );
 
   const postcards = data?.pages.flatMap((page) => page.items) ?? [];
+  const carouselItemCount = postcards.length > 0 ? postcards.length + 1 : 0;
+  const analyticsSlideIndex = postcards.length;
+  const isAnalyticsSlide =
+    carouselItemCount > 0 && activeIndex === analyticsSlideIndex;
+  const { year, month } = getKoreaYearMonth();
 
-  const activePostcard = postcards[activeIndex];
+  const activePostcard = postcards[activeIndex] ?? postcards[0];
   const activeImageUrl =
     activePostcard?.movie?.posterUrl ?? activePostcard?.media[0]?.url;
   const activeImageAlt =
@@ -58,29 +77,29 @@ export function PostcardHeroCarousel() {
 
   // 배열이 새로 바뀌었을 때 현재 선택된 인덱스를 확인하고, 존재하지 않으면 0번 엽서로 초기화
   useEffect(() => {
-    if (activeIndex >= postcards.length) {
+    if (activeIndex >= carouselItemCount) {
       setActiveIndex(0);
     }
-  }, [activeIndex, postcards.length]);
+  }, [activeIndex, carouselItemCount]);
 
   useEffect(() => {
-    if (postcards.length <= 1 || isPaused) {
+    if (carouselItemCount <= 1 || isPaused) {
       return;
     }
     const timerId = window.setInterval(() => {
-      setActiveIndex((index) => (index + 1) % postcards.length);
+      setActiveIndex((index) => (index + 1) % carouselItemCount);
     }, AUTO_PLAY_INTERVAL);
     return () => {
       window.clearInterval(timerId);
     };
-  }, [isPaused, postcards.length]);
+  }, [carouselItemCount, isPaused]);
 
   if (isPending) {
     return (
       <section className="min-h-[clamp(22rem,42vw,28rem)] rounded-[2rem] bg-cinemo-surface/70" />
     );
   }
-  if (isError || !activePostcard) {
+  if (isError || (!activePostcard && !isAnalyticsSlide)) {
     return (
       <section className="flex min-h-[clamp(22rem,42vw,28rem)] items-center rounded-[2rem] bg-cinemo-surface px-8 py-12 sm:px-14">
         <div className="max-w-xl">
@@ -118,7 +137,58 @@ export function PostcardHeroCarousel() {
       />
 
       <div className="relative z-10 flex h-full min-h-0 flex-col gap-4 p-5 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(18rem,0.85fr)] sm:grid-rows-1 sm:gap-10 sm:p-10 lg:p-14">
-        <div className="order-1 flex min-h-0 min-w-0 flex-1 flex-col justify-between overflow-hidden sm:order-1 sm:justify-between">
+        {isAnalyticsSlide && (
+          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col sm:col-span-2">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs tracking-[0.28em] text-cinemo-gold">
+                  CINEMO INSIGHT
+                </p>
+                <h2 className="mt-3 text-2xl font-semibold text-cinemo-text sm:text-3xl">
+                  이번 달 많이 개봉한 장르
+                </h2>
+              </div>
+            </div>
+
+            <div className="flex min-h-0 flex-1 items-center">
+              <GenrePieChart compact year={year} month={month} />
+            </div>
+
+            <div className="flex shrink-0 justify-end gap-2">
+              {postcards.map((postcard, index) => (
+                <button
+                  key={postcard.id}
+                  type="button"
+                  aria-label={`${index + 1}번째 엽서 보기`}
+                  aria-current={index === activeIndex}
+                  onClick={() => setActiveIndex(index)}
+                  className={`h-2 rounded-full transition-all ${
+                    index === activeIndex
+                      ? "w-8 bg-cinemo-gold"
+                      : "w-2 bg-white/40"
+                  }`}
+                />
+              ))}
+              <button
+                type="button"
+                aria-label="장르 분석 보기"
+                aria-current={isAnalyticsSlide}
+                onClick={() => setActiveIndex(analyticsSlideIndex)}
+                className={`h-2 rounded-full transition-all ${
+                  isAnalyticsSlide
+                    ? "w-8 bg-cinemo-gold"
+                    : "w-2 bg-white/40"
+                }`}
+              />
+            </div>
+          </div>
+        )}
+
+        <div
+          className={`order-1 flex min-h-0 min-w-0 flex-1 flex-col justify-between overflow-hidden sm:order-1 sm:justify-between ${
+            isAnalyticsSlide ? "hidden" : ""
+          }`}
+        >
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 overflow-hidden">
               <div className="flex items-center justify-between gap-3 sm:justify-start">
@@ -220,11 +290,26 @@ export function PostcardHeroCarousel() {
                   }`}
                 />
               ))}
+              <button
+                type="button"
+                aria-label="장르 분석 보기"
+                aria-current={isAnalyticsSlide}
+                onClick={() => setActiveIndex(analyticsSlideIndex)}
+                className={`h-2 rounded-full transition-all ${
+                  isAnalyticsSlide
+                    ? "w-8 bg-cinemo-gold"
+                    : "w-2 bg-white/40"
+                }`}
+              />
             </div>
           </div>
         </div>
 
-        <div className="relative order-1 hidden w-full items-center justify-center sm:order-2 sm:flex">
+        <div
+          className={`relative order-1 hidden w-full items-center justify-center sm:order-2 sm:flex ${
+            isAnalyticsSlide ? "!hidden" : ""
+          }`}
+        >
           {activeImageUrl ? (
             <div className="relative flex h-full w-full items-center justify-center">
               <div className="relative aspect-2/3 h-full max-h-full w-auto max-w-full rotate-1 overflow-hidden rounded-[1.75rem] transition-transform duration-500 hover:rotate-0">

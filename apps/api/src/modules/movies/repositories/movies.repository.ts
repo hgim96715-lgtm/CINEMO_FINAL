@@ -159,6 +159,11 @@ export type SaveMoviePopularitySnapshotInput = {
   collectedAt?: Date;
 };
 
+export type MovieGenreCount = {
+  genre: string;
+  count: number;
+};
+
 @Injectable()
 export class MoviesRepository {
   constructor(
@@ -1488,5 +1493,37 @@ export class MoviesRepository {
         collectedAt: input.collectedAt ?? new Date(),
       },
     });
+  }
+
+  async findGenreCountsByReleasePeriod(
+    startDate: Date,
+    endDate: Date,
+  ): Promise<MovieGenreCount[]> {
+    return this.prisma.$queryRaw<MovieGenreCount[]>(Prisma.sql`
+    SELECT
+      genre.name AS "genre",
+      COUNT(DISTINCT genre."movieId")::int AS "count"
+    FROM movie_genres AS genre
+    INNER JOIN movies AS movie
+      ON movie.id = genre."movieId"
+    WHERE movie.visibility = 'PUBLIC'
+      AND EXISTS (
+        SELECT 1
+        FROM movie_releases AS release
+        WHERE release."movieId" = movie.id
+          AND release."releaseDate" >= ${startDate}
+          AND release."releaseDate" < ${endDate}
+          AND release.status = 'RELEASED'
+          AND (
+            release."countryCode" = 'KR'
+            OR (
+              release."countryCode" IS NULL
+              AND release."isPrimary" = true
+            )
+          )
+      )
+    GROUP BY genre.name
+    ORDER BY "count" DESC, genre.name ASC
+  `);
   }
 }

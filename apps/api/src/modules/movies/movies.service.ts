@@ -317,4 +317,14 @@ export class MoviesService {
       moderationReason,
     );
   }
+
+  async getGenreCountsByReleasePeriod(params: {
+    startDate: Date;
+    endDate: Date;
+  }) {
+    return this.movieRepository.findGenreCountsByReleasePeriod(
+      params.startDate,
+      params.endDate,
+    );
+  }
 }

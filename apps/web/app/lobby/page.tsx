@@ -1,7 +1,7 @@
-import {MovieRankingCarousel} from "@/components/lobby/MovieRankingCarousel";
-import {ReleasedMovieCarousel} from "@/components/lobby/ReleasedMovieCarousel";
-import {UpcomingMovieCarousel} from "@/components/lobby/UpcomingMovieCarousel";
-import {PostcardHeroCarousel} from "@/components/lobby/PostcardHeroCarousel";
+import { MovieRankingCarousel } from "@/components/lobby/MovieRankingCarousel";
+import { ReleasedMovieCarousel } from "@/components/lobby/ReleasedMovieCarousel";
+import { UpcomingMovieCarousel } from "@/components/lobby/UpcomingMovieCarousel";
+import { PostcardHeroCarousel } from "@/components/lobby/PostcardHeroCarousel";
 
 export default function LobbyPage() {
   return (
