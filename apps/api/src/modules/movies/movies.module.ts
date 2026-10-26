@@ -79,6 +79,7 @@ import { NotificationsModule } from "@/modules/notifications/notifications.modul
     MailService,
   ],
   exports: [
+    MoviesRepository,
     MoviesService,
     KobisMovieImportService,
     KobisMovieBatchImportService,

@@ -25,6 +25,7 @@ import { MapModule } from "@/modules/map/map.module";
 import { PostcardsModule } from "@/modules/postcards/postcards.module";
 import { openaiConfig } from "@/config/openai.config";
 import { openSubtitlesConfig } from "@/config/opensubtitles.config";
+import { subdlConfig } from "@/config/subdl.config";
 import { OpenAiModule } from "@/integrations/openai/openai.module";
 import { NotificationsModule } from "@/modules/notifications/notifications.module";
 
@@ -51,6 +52,7 @@ import { NotificationsModule } from "@/modules/notifications/notifications.modul
         mapConfig,
         openaiConfig,
         openSubtitlesConfig,
+        subdlConfig,
       ],
       validationSchema: envValidationSchema,
       validationOptions: {

@@ -13,6 +13,7 @@ type PostcardQuoteFieldsProps = {
   quoteSource?: CreatePostcardFormValues["quoteSource"];
   error?: string;
   aiError?: string;
+  isAiSuggestionLoading?: boolean;
   contentLength: number;
   onRequestAiSuggestion?: () => void | Promise<void>;
 };
@@ -22,6 +23,7 @@ export function PostcardQuoteFields({
   quoteSource,
   error,
   aiError,
+  isAiSuggestionLoading = false,
   contentLength,
   onRequestAiSuggestion,
 }: PostcardQuoteFieldsProps) {
@@ -151,12 +153,14 @@ export function PostcardQuoteFields({
 
               <button
                 type="button"
+                disabled={isAiSuggestionLoading}
+                aria-busy={isAiSuggestionLoading}
                 onClick={() => {
                   void onRequestAiSuggestion?.();
                 }}
-                className="rounded-lg border border-cinemo-gold/50 px-3 py-2 text-xs text-cinemo-gold transition hover:bg-cinemo-gold/10"
+                className="rounded-lg border border-cinemo-gold/50 px-3 py-2 text-xs text-cinemo-gold transition hover:bg-cinemo-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                AI 추천받기
+                {isAiSuggestionLoading ? "추천 중..." : "AI 추천받기"}
               </button>
             </div>
 

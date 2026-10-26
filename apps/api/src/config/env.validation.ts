@@ -37,6 +37,11 @@ export const envValidationSchema = Joi.object({
   [EnvKeys.OPENSUBTITLES_USER_AGENT]: Joi.string().trim().min(1).required(),
   [EnvKeys.OPENSUBTITLES_API_KEY]: Joi.string().trim().min(1).required(),
 
+  [EnvKeys.SUBDL_API_BASE_URL]: Joi.string()
+    .uri({ scheme: ["http", "https"] })
+    .default("https://api.subdl.com/api/v1"),
+  [EnvKeys.SUBDL_API_KEY]: Joi.string().trim().min(1).optional(),
+
   [EnvKeys.API_URL]: Joi.string()
     .uri({ scheme: ["http", "https"] })
     .required(),

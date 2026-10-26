@@ -334,7 +334,7 @@ export function PostcardCreateForm({
       }
 
       setAiSuggestionError(
-        "AI 추천을 불러오지 못했습니다. 잠시 후 다시 시도해줘.",
+        "AI 추천을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.",
       );
     }
   };
@@ -461,6 +461,7 @@ export function PostcardCreateForm({
               quoteSource={quoteSource}
               error={form.formState.errors.content?.message}
               aiError={aiSuggestionError ?? undefined}
+              isAiSuggestionLoading={quoteSuggestionMutation.isPending}
               contentLength={postcardContent.length}
               onRequestAiSuggestion={handleRequestAiSuggestion}
             />

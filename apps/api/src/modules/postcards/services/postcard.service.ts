@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   ConflictException,
   Injectable,
   Logger,
@@ -27,10 +28,48 @@ import {
 } from "@/integrations/openai/openai.service";
 import { CreatePostcardQuoteSuggestionRequestDto } from "@/modules/postcards/dto/requests/create-postcard-quote-suggestion-request.dto";
 import { OpenSubtitlesService } from "@/integrations/opensubtitles/opensubtitles.service";
+import { MoviesService } from "@/modules/movies/movies.service";
 import type {
   OpenSubtitlesSubtitleContent,
   OpenSubtitlesSubtitleSearchItem,
 } from "@/integrations/opensubtitles/opensubtitles.types";
+import { SubdlService } from "@/integrations/subdl/subdl.service";
+import {
+  isSameSubtitleLanguage,
+  normalizeSubtitleLanguage,
+} from "@/integrations/subtitles/subtitle-language";
+
+const COUNTRY_LANGUAGE_MAP: Record<string, string> = {
+  AR: "es",
+  AT: "de",
+  AU: "en",
+  BR: "pt",
+  CA: "en",
+  CH: "de",
+  CN: "zh",
+  DE: "de",
+  ES: "es",
+  FR: "fr",
+  GB: "en",
+  HK: "zh",
+  IE: "en",
+  IN: "hi",
+  IT: "it",
+  JP: "ja",
+  KR: "ko",
+  MX: "es",
+  NZ: "en",
+  PT: "pt",
+  RU: "ru",
+  TW: "zh",
+  US: "en",
+};
+
+type SubtitleSearchContext = {
+  language: string | null;
+  tmdbId: number | null;
+  originalTitle: string | null;
+};
 
 @Injectable()
 export class PostcardService {
@@ -40,20 +79,36 @@ export class PostcardService {
     private readonly postcardRepository: PostcardRepository,
     private readonly openAiService: OpenAiService,
     private readonly openSubtitlesService: OpenSubtitlesService,
+    private readonly subdlService: SubdlService,
+    private readonly moviesService: MoviesService,
   ) {}
 
   async suggestQuote(
     request: CreatePostcardQuoteSuggestionRequestDto,
   ): Promise<SuggestQuoteResult> {
-    const subtitleContent = await this.tryFetchSubtitleContent(request);
+    const subtitleContext = await this.findSubtitleSearchContext(
+      request.movieId,
+    );
+    const subtitleContent = await this.tryFetchSubtitleContent(
+      request,
+      subtitleContext,
+    );
 
     if (subtitleContent?.cues.length) {
       return this.openAiService.suggestQuoteFromSubtitles({
         movieTitle: request.movieTitle,
         review: request.review,
-        language: request.language,
+        language: subtitleContext.language ?? request.language ?? undefined,
         subtitles: subtitleContent.cues,
       });
+    }
+
+    // 원문 언어를 알고 있는데 해당 언어 자막을 찾지 못한 경우
+    // 영어 등 다른 언어의 공개 인용구를 잘못 반환하지 않음.
+    if (subtitleContext.language) {
+      throw new BadGatewayException(
+        `${subtitleContext.language} 원문 자막을 찾지 못했습니다.`,
+      );
     }
 
     const candidates =
@@ -70,18 +125,86 @@ export class PostcardService {
 
   private async tryFetchSubtitleContent(
     request: CreatePostcardQuoteSuggestionRequestDto,
+    subtitleContext: SubtitleSearchContext,
+  ): Promise<OpenSubtitlesSubtitleContent | null> {
+    const openSubtitlesContent = await this.tryFetchOpenSubtitlesContent(
+      request,
+      subtitleContext,
+    );
+
+    if (openSubtitlesContent?.cues.length) {
+      return openSubtitlesContent;
+    }
+
+    return this.subdlService.searchAndFetchSubtitle({
+      movieTitle: subtitleContext.originalTitle ?? request.movieTitle,
+      tmdbId: subtitleContext.tmdbId,
+      language: subtitleContext.language ?? request.language?.trim() ?? null,
+    });
+  }
+
+  private async tryFetchOpenSubtitlesContent(
+    request: CreatePostcardQuoteSuggestionRequestDto,
+    subtitleContext: SubtitleSearchContext,
   ): Promise<OpenSubtitlesSubtitleContent | null> {
     try {
-      const searchResult = await this.openSubtitlesService.searchSubtitles({
-        query: request.movieTitle.trim(),
-        languages: request.language?.trim() || "en,ko",
-        type: "movie",
-      });
+      const preferredLanguage =
+        normalizeSubtitleLanguage(
+          subtitleContext.language ?? request.language?.trim() ?? null,
+        );
+      const searchParams = [
+        ...(subtitleContext.tmdbId
+          ? [{ type: "movie" as const, tmdb_id: subtitleContext.tmdbId }]
+          : []),
+        ...[
+          subtitleContext.originalTitle,
+          request.movieTitle.trim(),
+        ]
+          .filter((title): title is string => Boolean(title?.trim()))
+          .filter(
+            (title, index, titles) =>
+              titles.findIndex(
+                (candidate) => candidate.toLowerCase() === title.toLowerCase(),
+              ) === index,
+          )
+          .map((query) => ({ type: "movie" as const, query })),
+      ];
 
-      const subtitle = this.selectSubtitleSearchItem(
-        searchResult.items,
-        request.language,
-      );
+      let subtitle: OpenSubtitlesSubtitleSearchItem | undefined;
+
+      for (const params of searchParams) {
+        const preferredSearchResult =
+          await this.openSubtitlesService.searchSubtitles({
+            ...params,
+            languages: preferredLanguage || "en,ko,ja",
+          });
+
+        subtitle = this.selectSubtitleSearchItem(
+          preferredSearchResult.items,
+          preferredLanguage ?? undefined,
+        );
+
+        if (subtitle) {
+          break;
+        }
+
+        if (preferredLanguage) {
+          const fallbackSearchResult =
+            await this.openSubtitlesService.searchSubtitles({
+              ...params,
+              languages: "en,ko,ja",
+            });
+
+          subtitle = this.selectSubtitleSearchItem(
+            fallbackSearchResult.items,
+            preferredLanguage,
+          );
+
+          if (subtitle) {
+            break;
+          }
+        }
+      }
 
       if (!subtitle) {
         return null;
@@ -100,22 +223,71 @@ export class PostcardService {
     }
   }
 
+  private isOriginalSubtitle(item: OpenSubtitlesSubtitleSearchItem) {
+    return !item.aiTranslated && !item.machineTranslated;
+  }
+
+  private async findSubtitleSearchContext(
+    movieId?: string,
+  ): Promise<SubtitleSearchContext> {
+    if (!movieId) {
+      return { language: null, tmdbId: null, originalTitle: null };
+    }
+
+    try {
+      const movie = await this.moviesService.findById(movieId);
+      const tmdbLink = movie.providerLinks.find(
+        (link) =>
+          link.sourceProvider === "TMDB" &&
+          link.matchStatus !== "REJECTED",
+      );
+      const originalTitle = movie.titles.find(
+        (title) => title.titleType === "ORIGINAL" && title.title.trim(),
+      )?.title.trim() ?? null;
+      const originalTitleLanguage = movie.titles.find(
+        (title) =>
+          title.titleType === "ORIGINAL" && Boolean(title.languageCode),
+      )?.languageCode?.trim().toLowerCase();
+      const language =
+        originalTitleLanguage ||
+        (movie.productionCountryCodes
+          .map(
+            (countryCode) => COUNTRY_LANGUAGE_MAP[countryCode.toUpperCase()],
+          )
+          .find(Boolean) ?? null);
+
+      const tmdbId = tmdbLink ? Number(tmdbLink.externalId) : NaN;
+
+      return {
+        language: normalizeSubtitleLanguage(language),
+        tmdbId: Number.isInteger(tmdbId) && tmdbId > 0 ? tmdbId : null,
+        originalTitle,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      this.logger.warn(`TMDB 영화 ID 조회 실패: ${message}`);
+      return { language: null, tmdbId: null, originalTitle: null };
+    }
+  }
+
   private selectSubtitleSearchItem(
     items: OpenSubtitlesSubtitleSearchItem[],
     language?: string,
   ) {
-    const requestedLanguage = language?.trim().toLowerCase();
+    const requestedLanguage = normalizeSubtitleLanguage(language);
+
+    if (requestedLanguage) {
+      return items.find(
+        (item) =>
+          isSameSubtitleLanguage(item.language, requestedLanguage) &&
+          this.isOriginalSubtitle(item),
+      );
+    }
 
     return (
-      (requestedLanguage
-        ? items.find(
-            (item) => item.language.toLowerCase() === requestedLanguage,
-          )
-        : undefined) ??
-      items.find((item) => item.language.toLowerCase() === "en") ??
-      items.find(
-        (item) => !item.aiTranslated && !item.machineTranslated,
-      ) ??
+      items.find((item) => this.isOriginalSubtitle(item)) ??
+      items.find((item) => isSameSubtitleLanguage(item.language, "en")) ??
       items[0]
     );
   }
