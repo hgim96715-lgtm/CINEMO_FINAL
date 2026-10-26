@@ -4,6 +4,7 @@ import { UserRound } from "lucide-react";
 import { requireUser } from "@/lib/auth/server";
 import { MyCinemaTabs } from "@/components/my-cinema/MyCinemaTabs";
 import { MyCinemaStats } from "@/components/my-cinema/MyCinemaStats";
+import { LogoutButton } from "@/components/my-cinema/LogoutButton";
 
 export default async function MyCinemaPage() {
   const user = await requireUser();
@@ -57,8 +58,9 @@ export default async function MyCinemaPage() {
             </div>
           </div>
 
-          <div className="mt-6 border-t border-white/10 pt-5 text-sm text-white/55">
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-sm text-white/55">
             나만의 영화 기록을 차곡차곡 쌓아보세요.
+            <LogoutButton />
           </div>
         </section>
 

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import {
   CalendarDays,
@@ -15,6 +15,7 @@ import { CINEMO_COLORS } from "@cinemo/shared";
 import { getRefreshToken } from "@/lib/api/auth";
 import { movieRecordQueryOptions } from "@/lib/queries/movie-record.query";
 import { useUpdateMovieRecord } from "@/lib/queries/movie-record.mutation";
+import { myPostcardsQueryOptions } from "@/lib/queries/postcard-feed.query";
 import { MovieRecordCalendar } from "./MovieRecordCalendar";
 import { MovieViewingDetailsModal } from "./MovieViewingDetailsModal";
 
@@ -81,8 +82,16 @@ export function MovieRecordActions({ movieId, openEdit = false }: Props) {
   const recordQuery = useQuery(
     movieRecordQueryOptions(movieId, isLoggedIn === true),
   );
+  const myPostcardsQuery = useInfiniteQuery({
+    ...myPostcardsQueryOptions(),
+    enabled: isLoggedIn === true,
+  });
   const updateRecord = useUpdateMovieRecord(movieId);
   const record = recordQuery.data;
+  const hasPostcard =
+    myPostcardsQuery.data?.pages.some((page) =>
+      page.items.some((postcard) => postcard.movieId === movieId),
+    ) ?? false;
   const isDisabled = isLoggedIn === null || updateRecord.isPending;
   const selectedRating = record?.rating
     ? Number(record.rating).toFixed(1)
@@ -156,7 +165,9 @@ export function MovieRecordActions({ movieId, openEdit = false }: Props) {
     setIsViewingDetailsVisible(true);
   };
 
-  const saveViewingDetails = (input: Parameters<typeof updateRecord.mutate>[0]) => {
+  const saveViewingDetails = (
+    input: Parameters<typeof updateRecord.mutate>[0],
+  ) => {
     setIsViewingDetailsVisible(false);
     updateRecord.mutate(input);
   };
@@ -292,16 +303,29 @@ export function MovieRecordActions({ movieId, openEdit = false }: Props) {
               return;
             }
 
-            router.push(`/postcards/new?movieId=${encodeURIComponent(movieId)}`);
+            router.push(
+              `/postcards/new?movieId=${encodeURIComponent(movieId)}`,
+            );
           }}
           className="min-w-0 flex-1 items-center justify-center rounded-xl border py-3"
           style={{
-            borderColor: "rgba(212,181,106,0.45)",
-            backgroundColor: "rgba(212,181,106,0.1)",
-            opacity: isLoggedIn === null ? 0.5 : 1,
+            borderColor: hasPostcard
+              ? "rgba(212,181,106,0.6)"
+              : "rgba(255,255,255,0.2)",
+            backgroundColor: hasPostcard
+              ? "rgba(212,181,106,0.15)"
+              : "rgba(255,255,255,0.05)",
+            opacity: isDisabled ? 0.5 : 1,
           }}
         >
-          <Mail size={18} color={CINEMO_COLORS.accentLight} />
+          <Mail
+            size={18}
+            color={
+              hasPostcard
+                ? CINEMO_COLORS.accentLight
+                : CINEMO_COLORS.textSecondary
+            }
+          />
         </Pressable>
       </View>
 
@@ -344,9 +368,7 @@ export function MovieRecordActions({ movieId, openEdit = false }: Props) {
                   router.push("/login");
                 }}
               >
-                <Text className="font-semibold text-cinemo-bg">
-                  로그인하기
-                </Text>
+                <Text className="font-semibold text-cinemo-bg">로그인하기</Text>
               </Pressable>
             </View>
           </View>

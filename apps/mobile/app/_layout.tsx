@@ -43,6 +43,8 @@ export default function RootLayout() {
     segments[0] === "people" && segments.includes("[id]");
   const isPostcardDetailScreen =
     segments[0] === "postcards" && segments.includes("[id]");
+  const isIntroScreen = segments[0] === undefined;
+  const showHeader = !isIntroScreen;
   const showBottomTabBar =
     ["lobby", "search", "postcards", "my-cinema"].includes(
       segments[0] ?? "",
@@ -88,7 +90,7 @@ export default function RootLayout() {
     <QueryProvider>
       <SafeAreaProvider>
         <View className="flex-1">
-          <View style={{ display: showBottomTabBar ? "flex" : "none" }}>
+          <View style={{ display: showHeader ? "flex" : "none" }}>
             <SafeAreaView edges={["top"]} className="bg-cinemo-bg">
               <Header showSearch={false} showAccount={false} />
             </SafeAreaView>

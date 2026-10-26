@@ -22,7 +22,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { popularMoviesQueryOptions } from "@/lib/queries/movie-popular.query";
 import { CinemoBackground } from "@/components/common/CinemoBackground";
-import { getTmdbPosterPath } from "@/lib/utils";
+import { getImageUrl, getTmdbPosterPath } from "@/lib/utils";
 
 export default function SearchScreen() {
   const [keyword, setKeyword] = useState("");
@@ -193,63 +193,64 @@ export default function SearchScreen() {
             </View>
           ) : null
         }
-        renderItem={({ item }) => (
-          <Pressable
-            className="flex-row gap-4"
-            disabled={item.kind === "tmdb" && importingTmdbId !== null}
-            onPress={() =>
-              item.kind === "tmdb"
-                ? void selectTmdbMovie(item.movie.id)
-                : router.push(`/movies/${item.movie.id}`)
-            }
-          >
-            {item.kind === "local" && item.movie.posterUrl ? (
-              <Image
-                source={{ uri: item.movie.posterUrl }}
-                resizeMode="cover"
-                className="h-32 w-24 rounded-xl"
-              />
-            ) : item.kind === "tmdb" && tmdbPosterById.get(item.movie.id) ? (
-              <Image
-                source={{
-                  uri: `https://image.tmdb.org/t/p/w185${tmdbPosterById.get(item.movie.id)}`,
-                }}
-                resizeMode="cover"
-                className="h-32 w-24 rounded-xl"
-              />
-            ) : (
-              <View className="h-32 w-24 rounded-xl bg-cinemo-surface" />
-            )}
+        renderItem={({ item }) => {
+          const posterUrl =
+            item.kind === "local"
+              ? getImageUrl(item.movie.posterUrl)
+              : tmdbPosterById.get(item.movie.id)
+                ? `https://image.tmdb.org/t/p/w185${tmdbPosterById.get(item.movie.id)}`
+                : null;
 
-            <View className="flex-1 justify-center">
-              <Text className="text-lg font-semibold text-cinemo-text">
-                {item.movie.title}
-              </Text>
-
-              {(item.kind === "local"
-                ? item.movie.releaseDate
-                : item.movie.release_date) && (
-                <Text className="mt-2 text-cinemo-muted">
-                  {(item.kind === "local"
-                    ? item.movie.releaseDate
-                    : item.movie.release_date
-                  )?.slice(0, 10)}
-                </Text>
+          return (
+            <Pressable
+              className="flex-row gap-4"
+              disabled={item.kind === "tmdb" && importingTmdbId !== null}
+              onPress={() =>
+                item.kind === "tmdb"
+                  ? void selectTmdbMovie(item.movie.id)
+                  : router.push(`/movies/${item.movie.id}`)
+              }
+            >
+              {posterUrl ? (
+                <Image
+                  source={{ uri: posterUrl }}
+                  resizeMode="cover"
+                  className="h-32 w-24 rounded-xl"
+                />
+              ) : (
+                <View className="h-32 w-24 rounded-xl bg-cinemo-surface" />
               )}
 
-              {item.kind === "local" && item.movie.genres.length > 0 && (
-                <Text className="mt-1 text-cinemo-muted">
-                  {item.movie.genres.join(" · ")}
+              <View className="flex-1 justify-center">
+                <Text className="text-lg font-semibold text-cinemo-text">
+                  {item.movie.title}
                 </Text>
-              )}
-              {item.kind === "tmdb" && importingTmdbId === item.movie.id && (
-                <Text className="mt-1 text-cinemo-gold">
-                  영화 불러오는 중...
-                </Text>
-              )}
-            </View>
-          </Pressable>
-        )}
+
+                {(item.kind === "local"
+                  ? item.movie.releaseDate
+                  : item.movie.release_date) && (
+                  <Text className="mt-2 text-cinemo-muted">
+                    {(item.kind === "local"
+                      ? item.movie.releaseDate
+                      : item.movie.release_date
+                    )?.slice(0, 10)}
+                  </Text>
+                )}
+
+                {item.kind === "local" && item.movie.genres.length > 0 && (
+                  <Text className="mt-1 text-cinemo-muted">
+                    {item.movie.genres.join(" · ")}
+                  </Text>
+                )}
+                {item.kind === "tmdb" && importingTmdbId === item.movie.id && (
+                  <Text className="mt-1 text-cinemo-gold">
+                    영화 불러오는 중...
+                  </Text>
+                )}
+              </View>
+            </Pressable>
+          );
+        }}
       />
     </SafeAreaView>
   );

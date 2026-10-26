@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Eye, EyeClosed, Heart, Mail, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,6 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { MovieRecordSummary } from "@/components/movies/MovieRecordSummary";
 import { movieRecordQueryOptions } from "@/lib/queries/movie-record.query";
 import { useUpdateMovieRecord } from "@/lib/queries/movie-record.mutation";
+import { myPostcardsQueryOptions } from "@/lib/queries/postcard-feed.query";
 import { useAuthStore } from "@/stores/auth.store";
 import { VenueSearch } from "@/components/map/CinemaVenueSearch";
 import { ViewingPlatform } from "@/lib/api/movies";
@@ -66,6 +67,10 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
     ...movieRecordQueryOptions(movieId),
     enabled: Boolean(user),
   });
+  const myPostcardsQuery = useInfiniteQuery({
+    ...myPostcardsQueryOptions(),
+    enabled: Boolean(user),
+  });
   const updateRecord = useUpdateMovieRecord(movieId);
   const [loginRequired, setLoginRequired] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
@@ -84,6 +89,10 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
   const today = parseDateValue(getLocalDateValue());
   const isFavorite = record?.isFavorite ?? false;
   const isWatched = record?.isWatched ?? false;
+  const hasPostcard =
+    myPostcardsQuery.data?.pages.some((page) =>
+      page.items.some((postcard) => postcard.movieId === movieId),
+    ) ?? false;
   const selectedRating = record?.rating
     ? Number(record.rating).toFixed(1)
     : null;
@@ -177,7 +186,6 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
   };
 
   const openPostcardCreate = () => {
-    if (!isWatched) return;
     router.push(
       `/my-cinema/postcards/new?movieId=${encodeURIComponent(movieId)}`,
     );
@@ -457,26 +465,16 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
           </button>
         </div>
 
-        <div
-          title={
-            isWatched
-              ? "이 영화의 엽서 만들기"
-              : "봤어요 기록 후 엽서를 만들 수 있습니다."
-          }
-        >
+        <div title="이 영화의 엽서 만들기">
           <button
             type="button"
             onClick={openPostcardCreate}
-            disabled={isDisabled || !isWatched}
-            aria-label={
-              isWatched
-                ? "이 영화의 엽서 만들기"
-                : "봤어요 기록 후 엽서를 만들 수 있습니다"
-            }
-            className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border transition sm:h-[52px] sm:w-28 sm:gap-2 ${
-              isWatched
+            disabled={isDisabled}
+            aria-label="이 영화의 엽서 만들기"
+            className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border transition disabled:opacity-50 sm:h-[52px] sm:w-28 sm:gap-2 ${
+              hasPostcard
                 ? "border-cinemo-gold/60 bg-cinemo-gold/15 text-cinemo-gold-light hover:bg-cinemo-gold/25"
-                : "cursor-not-allowed border-white/10 bg-white/5 text-white/25"
+                : "border-white/20 bg-white/5 text-cinemo-muted hover:border-cinemo-gold/50 hover:bg-cinemo-gold/10"
             }`}
           >
             <Mail className="size-4" />

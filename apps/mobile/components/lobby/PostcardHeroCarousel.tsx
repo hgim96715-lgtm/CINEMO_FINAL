@@ -14,6 +14,7 @@ import { CINEMO_COLORS } from "@cinemo/shared";
 import type { Postcard, PostcardMetadata } from "@/lib/api/postcards";
 import { postcardFeedQueryOptions } from "@/lib/queries/postcard-feed.query";
 import { getImageUrl } from "@/lib/utils";
+import { ArrowUpRight } from "lucide-react-native";
 
 const AUTO_PLAY_INTERVAL = 6000;
 
@@ -60,7 +61,8 @@ function getPostcardTranslation(metadata: PostcardMetadata | null) {
 export function PostcardHeroCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const postcardsQuery = useInfiniteQuery(postcardFeedQueryOptions());
-  const postcards = postcardsQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const postcards =
+    postcardsQuery.data?.pages.flatMap((page) => page.items) ?? [];
   const visiblePostcards = postcards.slice(0, 8);
   const activePostcard = visiblePostcards[activeIndex];
 
@@ -98,18 +100,16 @@ export function PostcardHeroCarousel() {
   const translation = getPostcardTranslation(
     activePostcard.metadata as PostcardMetadata | null,
   );
+  const hasMoreContent =
+    activePostcard.type === "QUOTE"
+      ? activePostcard.content.length > 90 ||
+        (translation?.length ?? 0) > 90 ||
+        (translation?.split(/\r?\n/).length ?? 0) > 3
+      : activePostcard.content.length > 160;
 
   return (
     <View className="mx-5 mt-5 overflow-hidden rounded-3xl border border-white/10 bg-cinemo-surface">
       <View className="h-[310px] overflow-hidden">
-        {imageUrl && (
-          <Image
-            source={{ uri: imageUrl }}
-            resizeMode="cover"
-            style={[StyleSheet.absoluteFill, { opacity: 0.3 }]}
-          />
-        )}
-
         <View
           className="absolute inset-0"
           style={{ backgroundColor: "rgba(8,25,24,0.84)" }}
@@ -118,7 +118,8 @@ export function PostcardHeroCarousel() {
         <View className="flex-1 justify-between p-5">
           <View className="flex-row items-center justify-between gap-3">
             <Text className="text-xs text-cinemo-muted">
-              {formatDate(activePostcard.createdAt)} · {activePostcard.author?.nickname ?? "익명"}
+              {formatDate(activePostcard.createdAt)} ·{" "}
+              {activePostcard.author?.nickname ?? "익명"}
             </Text>
             <View className="rounded-full border border-cinemo-gold/40 bg-cinemo-gold/10 px-3 py-1">
               <Text className="text-xs text-cinemo-gold">
@@ -160,17 +161,39 @@ export function PostcardHeroCarousel() {
             )}
           </View>
 
-          <View className="flex-row items-center justify-between">
+          {hasMoreContent && (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="공개 엽서 둘러보기"
-              onPress={() => router.push("/postcards")}
-              className="rounded-lg px-1 py-1"
+              accessibilityLabel="엽서 더보기"
+              onPress={() => router.push(`/postcards/${activePostcard.id}`)}
+              className="mt-2 self-start"
+              style={{ alignSelf: "flex-start" }}
             >
-              <Text className="text-xs font-semibold text-cinemo-gold-light">
-                엽서 둘러보기
+              <Text className="text-sm font-medium text-cinemo-gold">
+                더보기
               </Text>
             </Pressable>
+          )}
+
+          <View className="flex-row items-end justify-between gap-4">
+            <View>
+              {/*<Text className="text-sm text-cinemo-muted">*/}
+              {/*  영화와 함께 남긴 한 장의 기록*/}
+              {/*</Text>*/}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="공개 엽서 둘러보기"
+                onPress={() => router.push("/postcards")}
+                className="mt-4 flex-row items-center rounded-lg bg-cinemo-gold/10 px-3.5 py-2"
+                style={{ alignSelf: "flex-start" }}
+              >
+                <Text className="text-xs font-medium text-cinemo-gold">
+                  엽서 둘러보기
+                </Text>
+                <ArrowUpRight size={14} color={CINEMO_COLORS.accentLight} />
+              </Pressable>
+            </View>
+
             <View className="flex-row items-center gap-2">
               {visiblePostcards.map((postcard, index) => (
                 <Pressable

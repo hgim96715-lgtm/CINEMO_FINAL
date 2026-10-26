@@ -201,13 +201,13 @@ export function PostcardHeroCarousel() {
 
           <div className="mt-4 flex shrink-0 items-end justify-between gap-4 sm:mt-6 sm:gap-6">
             <div>
-              <p className="text-sm text-cinemo-muted">
-                영화와 함께 남긴 한 장의 기록
-              </p>
+              {/*<p className="text-sm text-cinemo-muted">*/}
+              {/*  영화와 함께 남긴 한 장의 기록*/}
+              {/*</p>*/}
 
               <Link
                 href="/lobby/postcards"
-                className="mt-4 inline-flex items-center rounded-lg border border-cinemo-gold/40 bg-cinemo-gold/10 px-3.5 py-2 text-xs font-medium text-cinemo-gold transition hover:border-cinemo-gold/70 hover:bg-cinemo-gold/15"
+                className="mt-4 inline-flex items-center rounded-lg border  bg-cinemo-gold/10 px-3.5 py-2 text-xs font-medium text-cinemo-gold transition hover:border-cinemo-gold/70 hover:bg-cinemo-gold/15"
               >
                 엽서 둘러보기
                 <ArrowUpRight aria-hidden="true" className="size-3.5" />

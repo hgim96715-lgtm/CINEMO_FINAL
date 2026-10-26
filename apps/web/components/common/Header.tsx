@@ -1,7 +1,7 @@
 "use client";
 
 import {zodResolver} from "@hookform/resolvers/zod";
-import {LogOut, Search, UserRound, X} from "lucide-react";
+import {Search, UserRound, X} from "lucide-react";
 import {usePathname, useRouter} from "next/navigation";
 import {useForm} from "react-hook-form";
 import {CINEMO_BRAND} from "@cinemo/shared";
@@ -14,12 +14,9 @@ import {useCallback, useEffect, useRef, useState} from "react";
 import {MovieSearchSuggestions} from "../movies/MovieSearchSuggestions";
 import {cn} from "@/lib/utils";
 import {useAuthStore} from "@/stores/auth.store";
-import {logout as logoutRequest} from "@/lib/api/auth";
 
 export function Header() {
   const user = useAuthStore((state) => state.user);
-  const clearUser = useAuthStore((state) => state.clearUser);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const isLobby = pathname === "/lobby";
@@ -83,19 +80,6 @@ export function Header() {
     const query = values.query.trim();
     resetSearchForm();
     router.push(`/lobby/movies?query=${encodeURIComponent(query)}`);
-  };
-
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
-    setIsLoggingOut(true);
-    try {
-      await logoutRequest();
-    } finally {
-      clearUser();
-      router.replace("/lobby");
-      router.refresh();
-      setIsLoggingOut(false);
-    }
   };
 
   return (
@@ -239,18 +223,6 @@ export function Header() {
               </span>
             </Link>
 
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              aria-label={isLoggingOut ? "로그아웃 중" : "로그아웃"}
-              className="flex size-9 items-center justify-center rounded-full text-cinemo-muted transition hover:bg-white/10 hover:text-cinemo-gold-light disabled:opacity-50 sm:h-auto sm:w-auto sm:rounded-none"
-            >
-              <LogOut className="size-4 sm:hidden" aria-hidden="true" />
-              <span className="hidden sm:inline">
-                {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
-              </span>
-            </button>
           </div>
         ) : (
           <Link
