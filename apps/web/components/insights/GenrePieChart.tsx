@@ -64,7 +64,7 @@ export function GenrePieChart({
     return (
       <div
         className={`flex items-center justify-center text-sm text-cinemo-muted ${
-          compact ? "h-40" : "h-56"
+          compact ? "h-40 lg:h-72" : "h-56"
         }`}
       >
         장르 데이터를 불러오는 중...
@@ -76,7 +76,7 @@ export function GenrePieChart({
     return (
       <div
         className={`flex items-center justify-center text-sm text-cinemo-muted ${
-          compact ? "h-40" : "h-56"
+          compact ? "h-40 lg:h-72" : "h-56"
         }`}
       >
         장르 데이터가 없습니다.
@@ -86,11 +86,13 @@ export function GenrePieChart({
   return (
     <div
       className={`grid w-full grid-cols-1 items-center ${
-        compact ? "gap-2" : "gap-3 md:grid-cols-[minmax(0,1fr)_11rem]"
+        compact
+          ? "gap-2 lg:grid-cols-[minmax(0,1fr)_10rem]"
+          : "gap-3 md:grid-cols-[minmax(0,1fr)_11rem]"
       }`}
     >
       <div
-        className={compact ? "h-40" : "h-56"}
+        className={compact ? "h-40 lg:h-72" : "h-56"}
         role="img"
         aria-label="기간별 장르 구성 비율"
       >
@@ -126,7 +128,7 @@ export function GenrePieChart({
       <ul
         className={
           compact
-            ? "grid grid-cols-2 gap-x-3 gap-y-1 text-xs"
+            ? "grid grid-cols-2 gap-x-3 gap-y-1 text-xs lg:block lg:space-y-2"
             : "space-y-2 text-xs"
         }
         aria-label="장르별 영화 수"
