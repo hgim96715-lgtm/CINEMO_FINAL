@@ -1,8 +1,6 @@
 import {
   useInfiniteQuery,
-  useMutation,
   useQuery,
-  useQueryClient,
 } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import {
@@ -17,6 +15,7 @@ import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Pressable,
   ScrollView,
   Share,
@@ -30,11 +29,13 @@ import { CINEMO_COLORS } from "@cinemo/shared";
 import { PostcardQuoteContent } from "@/components/postcard/PostcardQuoteContent";
 import { getRefreshToken } from "@/lib/api/auth";
 import type { PostcardComment } from "@/lib/api/postcard-comments";
-import { createPostcardComment } from "@/lib/api/postcard-comments";
-import { setPostcardHeart, sharePostcard } from "@/lib/api/postcards";
 import { postcardCommentsQueryOptions } from "@/lib/queries/postcard-comment.query";
+import { useCreatePostcardComment } from "@/lib/queries/postcard-comment.mutation";
 import { postcardDetailQueryOptions } from "@/lib/queries/postcard-detail.query";
-import { postcardFeedQueryOptions } from "@/lib/queries/postcard-feed.query";
+import {
+  useSetPostcardHeart,
+  useSharePostcard,
+} from "@/lib/queries/postcard.mutation";
 import { getImageUrl } from "@/lib/utils";
 
 const postcardTypeLabels = {
@@ -45,7 +46,6 @@ const postcardTypeLabels = {
 
 function formatDate(value: string) {
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) return "";
 
   return new Intl.DateTimeFormat("ko-KR", {
@@ -106,53 +106,16 @@ export default function PostcardDetailScreen() {
   const [isReacted, setIsReacted] = useState(false);
   const [reactionCount, setReactionCount] = useState(0);
   const [shareCount, setShareCount] = useState(0);
+  const [loginModalVisible, setLoginModalVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-  const queryClient = useQueryClient();
 
   const postcardQuery = useQuery(postcardDetailQueryOptions(postcardId ?? ""));
   const commentsQuery = useInfiniteQuery(
     postcardCommentsQueryOptions(postcardId ?? ""),
   );
-  const commentMutation = useMutation({
-    mutationFn: () =>
-      createPostcardComment(postcardId ?? "", { content: comment.trim() }),
-    onSuccess: async () => {
-      setComment("");
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: postcardCommentsQueryOptions(postcardId ?? "").queryKey,
-        }),
-        queryClient.invalidateQueries({
-          queryKey: postcardDetailQueryOptions(postcardId ?? "").queryKey,
-        }),
-        queryClient.invalidateQueries({
-          queryKey: postcardFeedQueryOptions().queryKey,
-        }),
-      ]);
-    },
-  });
-  const heartMutation = useMutation({
-    mutationFn: (previousReacted: boolean) =>
-      setPostcardHeart(postcardId ?? "", previousReacted),
-    onSuccess: async (data) => {
-      setIsReacted(data.reacted);
-      setReactionCount(data.reactionCount);
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: postcardDetailQueryOptions(postcardId ?? "").queryKey,
-        }),
-        queryClient.invalidateQueries({
-          queryKey: postcardFeedQueryOptions().queryKey,
-        }),
-      ]);
-    },
-  });
-  const shareMutation = useMutation({
-    mutationFn: (channel: string) => sharePostcard(postcardId ?? "", channel),
-    onSuccess: (data) => {
-      setShareCount(data.shareCount);
-    },
-  });
+  const commentMutation = useCreatePostcardComment();
+  const heartMutation = useSetPostcardHeart(postcardId ?? "");
+  const shareMutation = useSharePostcard(postcardId ?? "");
 
   useEffect(() => {
     getRefreshToken()
@@ -248,14 +211,25 @@ export default function PostcardDetailScreen() {
 
   const submitComment = () => {
     if (!comment.trim() || commentMutation.isPending || !hasSession) return;
-    commentMutation.mutate();
+
+    commentMutation.mutate(
+      {
+        postcardId: postcardId ?? "",
+        content: comment.trim(),
+      },
+      {
+        onSuccess: () => {
+          setComment("");
+        },
+      },
+    );
   };
 
   const toggleHeart = () => {
     if (heartMutation.isPending) return;
 
     if (!hasSession) {
-      router.push("/login");
+      setLoginModalVisible(true);
       return;
     }
 
@@ -284,7 +258,8 @@ export default function PostcardDetailScreen() {
       });
 
       if (result.action === Share.sharedAction) {
-        await shareMutation.mutateAsync("native");
+        const data = await shareMutation.mutateAsync("native");
+        setShareCount(data.shareCount);
       }
     } catch {
       // 사용자가 공유 창을 닫은 경우에는 오류를 표시하지 않음
@@ -298,6 +273,52 @@ export default function PostcardDetailScreen() {
         behavior="padding"
         keyboardVerticalOffset={8}
       >
+        <Modal
+          visible={loginModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setLoginModalVisible(false)}
+        >
+          <View className="flex-1 items-center justify-center bg-black/60 px-6">
+            <View
+              className="w-full max-w-sm rounded-3xl border p-6"
+              style={{
+                backgroundColor: "#102326",
+                borderColor: "rgba(212,181,106,0.25)",
+              }}
+            >
+              <Text className="text-center text-base font-semibold text-cinemo-gold-light">
+                로그인 후 이용 가능합니다.
+              </Text>
+
+              <Text className="mt-3 text-center leading-6 text-cinemo-muted">
+                로그인하시겠습니까?
+              </Text>
+
+              <View className="mt-6 flex-row justify-center gap-3">
+                <Pressable
+                  onPress={() => setLoginModalVisible(false)}
+                  className="rounded-xl border border-white/15 px-4 py-3"
+                >
+                  <Text className="text-sm text-cinemo-muted">취소</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => {
+                    setLoginModalVisible(false);
+                    router.push("/login");
+                  }}
+                  className="rounded-xl bg-cinemo-gold px-4 py-3"
+                >
+                  <Text className="text-sm font-semibold text-cinemo-bg">
+                    로그인 하러가기
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
         <ScrollView
           ref={scrollViewRef}
           className="flex-1"
@@ -487,8 +508,7 @@ export default function PostcardDetailScreen() {
                         {getCommentProfileImageUrl(item) ? (
                           <Image
                             source={{
-                              uri:
-                                getCommentProfileImageUrl(item) ?? undefined,
+                              uri: getCommentProfileImageUrl(item) ?? undefined,
                             }}
                             resizeMode="cover"
                             className="h-8 w-8"
