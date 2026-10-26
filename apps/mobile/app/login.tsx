@@ -5,9 +5,6 @@ import { useState } from "react";
 import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppleAuthenticationCredential } from "expo-apple-authentication";
-
-import { CinemoBackground } from "@/components/common/CinemoBackground";
-import { Header } from "@/components/common/Header";
 import { AppleLoginButton } from "@/components/auth/AppleLoginButton";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 import {
@@ -16,6 +13,7 @@ import {
   type MobileAppleLoginResponse,
 } from "@/lib/api/auth";
 import { NaverLoginButton } from "@/components/auth/NaverLoginButton";
+import { CinemoBackground } from "@/components/common/CinemoBackground";
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (__DEV__) {
@@ -109,17 +107,8 @@ export default function LoginScreen() {
       }}
     >
       <CinemoBackground />
-
-      {!isFromMyCinema && (
-        <Header
-          onSearchPress={() => {
-            router.push("/search");
-          }}
-        />
-      )}
-
       <View
-        className="flex-1 items-center justify-center px-4 py-16"
+        className="flex-1 items-center justify-center px-4"
         style={{
           flex: 1,
           width: "100%",

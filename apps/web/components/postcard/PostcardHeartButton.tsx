@@ -79,6 +79,7 @@ export function PostcardHeartButton({
       <AppModal
         open={loginModalOpen}
         onOpenChange={setLoginModalOpen}
+        showCloseButton={false}
         title="로그인 후 이용 가능합니다."
         description="로그인하시겠습니까?"
         footer={

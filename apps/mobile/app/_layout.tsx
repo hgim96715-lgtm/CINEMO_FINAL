@@ -44,11 +44,10 @@ export default function RootLayout() {
   const isPostcardDetailScreen =
     segments[0] === "postcards" && segments.includes("[id]");
   const isIntroScreen = segments[0] === undefined;
-  const showHeader = !isIntroScreen;
+  const isAuthScreen = segments[0] === "login" || segments[0] === "email-login";
+  const showHeader = !isIntroScreen || isAuthScreen;
   const showBottomTabBar =
-    ["lobby", "search", "postcards", "my-cinema"].includes(
-      segments[0] ?? "",
-    ) ||
+    ["lobby", "search", "postcards", "my-cinema"].includes(segments[0] ?? "") ||
     (segments[0] === "login" && from === "my-cinema") ||
     isMovieDetailScreen ||
     isPersonDetailScreen ||
