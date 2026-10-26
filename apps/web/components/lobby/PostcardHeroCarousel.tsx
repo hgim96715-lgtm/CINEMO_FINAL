@@ -106,45 +106,20 @@ export function PostcardHeroCarousel() {
 
   return (
     <section
-      className="relative isolate h-[28rem] overflow-hidden rounded-[2rem] border border-white/10 bg-white/6 text-cinemo-text shadow-[0_2rem_5rem_rgb(0_0_0_/24%)] backdrop-blur-xl sm:h-[clamp(28rem,44vw,34rem)]"
+      className="relative isolate mx-1 mt-5 min-h-77.5 overflow-hidden rounded-3xl border border-white/10 bg-white/6 text-cinemo-text shadow-[0_2rem_5rem_rgb(0_0_0_/24%)] backdrop-blur-xl sm:mx-0 sm:mt-0 sm:h-[clamp(28rem,44vw,34rem)] sm:rounded-[2rem]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocus={() => setIsPaused(true)}
       onBlur={() => setIsPaused(false)}
     >
       <div
-        className="absolute inset-0 opacity-40"
-        style={{
-          background: activePostcard.backgroundStyle ?? undefined,
-        }}
+        className="absolute inset-0 bg-[linear-gradient(120deg,rgb(8_25_24_/96%)_0%,rgb(8_25_24_/88%)_58%,rgb(8_25_24_/78%)_100%)]"
         aria-hidden
       />
 
-      <div
-        className="absolute inset-0 bg-[radial-gradient(circle_at_78%_35%,rgb(183_147_70_/18%),transparent_35%),linear-gradient(120deg,rgb(8_25_24_/96%)_0%,rgb(8_25_24_/82%)_58%,rgb(8_25_24_/58%)_100%)]"
-        aria-hidden
-      />
-
-      {activeImageUrl && (
-        <Image
-          src={activeImageUrl}
-          alt=""
-          fill
-          sizes="100vw"
-          className="z-0 object-cover opacity-40 sm:hidden"
-          aria-hidden="true"
-          priority
-        />
-      )}
-
-      <div
-        className="absolute inset-0 z-[1] bg-black/45 sm:hidden"
-        aria-hidden="true"
-      />
-
-      <div className="relative z-10 grid h-full min-h-0 grid-rows-1 gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(18rem,0.85fr)] sm:grid-rows-1 sm:gap-10 sm:p-10 lg:p-14">
-        <div className="order-2 flex min-h-0 min-w-0 flex-col justify-center overflow-hidden sm:order-1 sm:justify-between">
-          <div className="flex min-h-0 flex-none flex-col sm:flex-1">
+      <div className="relative z-10 flex h-full min-h-0 flex-col gap-4 p-5 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(18rem,0.85fr)] sm:grid-rows-1 sm:gap-10 sm:p-10 lg:p-14">
+        <div className="order-1 flex min-h-0 min-w-0 flex-1 flex-col justify-between overflow-hidden sm:order-1 sm:justify-between">
+          <div className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 overflow-hidden">
               <div className="flex items-center justify-between gap-3 sm:justify-start">
                 <p className="text-xs tracking-[0.08em] text-cinemo-muted">
@@ -162,31 +137,51 @@ export function PostcardHeroCarousel() {
                 </span>
               </div>
 
-              <p className="mt-5 text-sm font-medium text-cinemo-gold drop-shadow-[0_1px_5px_rgba(0,0,0,0.8)] sm:mt-5">
-                {activePostcard.movie?.title ?? "영화와 함께 남긴 기록"}
-              </p>
+              <div className="mt-5 flex min-h-0 items-end gap-4 sm:mt-5 sm:block">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-cinemo-gold drop-shadow-[0_1px_5px_rgba(0,0,0,0.8)]">
+                    {activePostcard.movie?.title ?? "영화와 함께 남긴 기록"}
+                  </p>
 
-              {activePostcard.type === "SCENE" && (
-                <PostcardSceneMeta metadata={activePostcard.metadata} compact />
-              )}
+                  {activePostcard.type === "SCENE" && (
+                    <PostcardSceneMeta
+                      metadata={activePostcard.metadata}
+                      compact
+                    />
+                  )}
 
-              {activePostcard.type === "QUOTE" ? (
-                <PostcardQuoteContent
-                  content={activePostcard.content}
-                  metadata={activePostcard.metadata}
-                  compact
-                  compactQuoteLines={3}
-                  compactTranslationLines={3}
-                  className="mt-3 h-[11.5rem] max-w-2xl overflow-hidden font-serif text-[clamp(1.3rem,6vw,1.9rem)] font-semibold leading-[1.2] text-white sm:h-60 sm:text-[clamp(1.7rem,3.5vw,2.8rem)]"
-                />
-              ) : (
-                <blockquote
-                  key={activePostcard.id}
-                  className="mt-3 h-[8.5rem] max-w-2xl line-clamp-3 overflow-hidden whitespace-pre-wrap font-serif text-[clamp(1.3rem,6vw,1.9rem)] font-semibold leading-[1.2] text-white sm:h-44 sm:text-[clamp(1.8rem,4vw,3.2rem)]"
-                >
-                  “{activePostcard.content}”
-                </blockquote>
-              )}
+                  {activePostcard.type === "QUOTE" ? (
+                    <PostcardQuoteContent
+                      content={activePostcard.content}
+                      metadata={activePostcard.metadata}
+                      compact
+                      compactQuoteLines={3}
+                      compactTranslationLines={2}
+                      className="mt-3 min-h-30 max-w-2xl overflow-hidden font-serif text-[clamp(1.25rem,5vw,1.35rem)] font-semibold leading-[1.2] text-white sm:h-60 sm:text-[clamp(1.7rem,3.5vw,2.8rem)]"
+                    />
+                  ) : (
+                    <blockquote
+                      key={activePostcard.id}
+                      className="mt-3 min-h-30 max-w-2xl line-clamp-3 overflow-hidden whitespace-pre-wrap font-serif text-[clamp(1.25rem,5vw,1.35rem)] font-semibold leading-[1.2] text-white sm:h-44 sm:text-[clamp(1.8rem,4vw,3.2rem)]"
+                    >
+                      “{activePostcard.content}”
+                    </blockquote>
+                  )}
+                </div>
+
+                {activeImageUrl && (
+                  <div className="relative h-33 w-22 shrink-0 overflow-hidden rounded-[14px] bg-cinemo-surface sm:hidden">
+                    <Image
+                      src={activeImageUrl}
+                      alt={activeImageAlt}
+                      fill
+                      sizes="88px"
+                      className="object-contain"
+                      priority
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             {hasMoreContent && (
@@ -201,10 +196,6 @@ export function PostcardHeroCarousel() {
 
           <div className="mt-4 flex shrink-0 items-end justify-between gap-4 sm:mt-6 sm:gap-6">
             <div>
-              {/*<p className="text-sm text-cinemo-muted">*/}
-              {/*  영화와 함께 남긴 한 장의 기록*/}
-              {/*</p>*/}
-
               <Link
                 href="/lobby/postcards"
                 className="mt-4 inline-flex items-center rounded-lg border  bg-cinemo-gold/10 px-3.5 py-2 text-xs font-medium text-cinemo-gold transition hover:border-cinemo-gold/70 hover:bg-cinemo-gold/15"
@@ -236,7 +227,7 @@ export function PostcardHeroCarousel() {
         <div className="relative order-1 hidden w-full items-center justify-center sm:order-2 sm:flex">
           {activeImageUrl ? (
             <div className="relative flex h-full w-full items-center justify-center">
-              <div className="relative aspect-[2/3] h-full max-h-full w-auto max-w-full rotate-1 overflow-hidden rounded-[1.75rem] transition-transform duration-500 hover:rotate-0">
+              <div className="relative aspect-2/3 h-full max-h-full w-auto max-w-full rotate-1 overflow-hidden rounded-[1.75rem] transition-transform duration-500 hover:rotate-0">
                 <Image
                   src={activeImageUrl}
                   alt={activeImageAlt}
