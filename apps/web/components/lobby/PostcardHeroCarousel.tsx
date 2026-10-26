@@ -145,7 +145,7 @@ export function PostcardHeroCarousel() {
                   CINEMO INSIGHT
                 </p>
                 <h2 className="mt-3 text-2xl font-semibold text-cinemo-text sm:text-3xl">
-                  이번 달 개봉이 많은 장르 TOP 5
+                  이번 달 개봉작 장르 TOP 5
                 </h2>
               </div>
             </div>

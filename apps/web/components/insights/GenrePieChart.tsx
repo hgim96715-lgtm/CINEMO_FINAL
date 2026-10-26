@@ -1,12 +1,12 @@
 "use client";
 
-import { ResponsivePie } from "@nivo/pie";
+import { ResponsiveBar } from "@nivo/bar";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { movieGenreAnalyticsQueryOptions } from "@/lib/queries/movie-genre-analytics.query";
 
-type GenrePieChartProps = {
+type GenreBarChartProps = {
   year: number;
   month: number;
   compact?: boolean;
@@ -24,7 +24,7 @@ export function GenrePieChart({
   year,
   month,
   compact = false,
-}: GenrePieChartProps) {
+}: GenreBarChartProps) {
   const { data, isPending, isError } = useQuery(
     movieGenreAnalyticsQueryOptions({
       year,
@@ -36,9 +36,8 @@ export function GenrePieChart({
     const sorted = [...(data ?? [])]
       .sort((a, b) => b.count - a.count)
       .map((item) => ({
-        id: item.genre,
-        label: item.genre,
-        value: item.count,
+        genre: item.genre,
+        count: item.count,
       }));
 
     if (sorted.length <= 5) {
@@ -74,69 +73,79 @@ export function GenrePieChart({
     );
   }
   return (
-    <div
-      className={`grid w-full grid-cols-1 items-center ${
-        compact
-          ? "gap-2 lg:grid-cols-[minmax(0,1fr)_10rem]"
-          : "gap-3 md:grid-cols-[minmax(0,1fr)_11rem]"
-      }`}
-    >
+    <div className="flex w-full min-w-0 flex-col gap-1 mb-2">
       <div
-        className={compact ? "h-40 lg:h-72" : "h-56"}
+        className={`w-full ${compact ? "h-48 lg:h-72" : "h-56"}`}
         role="img"
-        aria-label="기간별 장르 구성 비율"
+        aria-label="이번 달 개봉작 장르 TOP 5"
       >
-        <ResponsivePie
-          data={chartData}
-          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-          innerRadius={0.62}
-          padAngle={1.5}
-          cornerRadius={4}
-          activeOuterRadiusOffset={6}
-          colors={[...CHART_COLORS]}
-          borderWidth={1}
+        <ResponsiveBar
+          data={[...chartData].reverse()}
+          keys={["count"]}
+          indexBy="genre"
+          layout="horizontal"
+          margin={{ top: 8, right: 48, bottom: 8, left: 72 }}
+          padding={0.32}
+          valueScale={{ type: "linear" }}
+          indexScale={{ type: "band", round: true }}
+          colors={(bar) => CHART_COLORS[bar.index % CHART_COLORS.length]}
+          borderRadius={4}
           borderColor="rgba(255,255,255,0.2)"
-          enableArcLabels={false}
-          enableArcLinkLabels={false}
-          tooltip={({ datum }) => (
+          enableGridX
+          enableGridY={false}
+          enableLabel
+          label={(bar) => `${bar.value}개`}
+          labelPosition="end"
+          labelOffset={8}
+          labelSkipWidth={0}
+          labelSkipHeight={0}
+          labelTextColor="#f6f3ea"
+          axisTop={null}
+          axisRight={null}
+          axisBottom={null}
+          axisLeft={{
+            tickSize: 0,
+            tickPadding: 10,
+            tickRotation: 0,
+          }}
+          theme={{
+            axis: {
+              ticks: {
+                text: {
+                  fill: "#aeb9b8",
+                  fontSize: compact ? 11 : 12,
+                },
+              },
+            },
+            grid: {
+              line: {
+                stroke: "rgba(255,255,255,0.08)",
+              },
+            },
+            labels: {
+              text: {
+                fontSize: 11,
+                fontWeight: 600,
+              },
+            },
+          }}
+          tooltip={({ color, indexValue, value }) => (
             <div className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-cinemo-gold/40 bg-cinemo-bg px-4 py-2 text-sm font-medium text-cinemo-text shadow-xl">
               <span
                 aria-hidden="true"
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: datum.color }}
+                style={{ backgroundColor: color }}
               />
-              <span>{datum.label}</span>
-              <strong className="text-cinemo-gold-light">
-                {datum.value}편
-              </strong>
+              <span>{indexValue}</span>
+              <strong className="text-cinemo-gold-light">{value}개 작품</strong>
             </div>
           )}
           role="img"
         />
       </div>
-
-      <ul
-        className={
-          compact
-            ? "grid grid-cols-2 gap-x-3 gap-y-1 text-xs lg:block lg:space-y-2"
-            : "space-y-2 text-xs"
-        }
-        aria-label="장르별 영화 수"
-      >
-        {chartData.map((item, index) => (
-          <li key={item.id} className="flex items-center justify-between gap-2">
-            <span className="flex min-w-0 items-center gap-2 text-cinemo-muted">
-              <span
-                aria-hidden="true"
-                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: CHART_COLORS[index] }}
-              />
-              <span className="truncate">{item.label}</span>
-            </span>
-            <span className="shrink-0 text-cinemo-text">{item.value}편</span>
-          </li>
-        ))}
-      </ul>
+      <p className="text-right text-[0.65rem] text-cinemo-muted">
+        한 작품은 여러 장르에 포함될 수 있습니다.
+      </p>
     </div>
   );
 }
