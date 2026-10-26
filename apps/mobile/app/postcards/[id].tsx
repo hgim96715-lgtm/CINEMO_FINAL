@@ -239,8 +239,12 @@ export default function PostcardDetailScreen() {
 
   const postcard = postcardQuery.data;
   const imageUrl = getImageUrl(
-    postcard.media[0]?.url ?? postcard.movie?.posterUrl,
+    postcard.movie?.posterUrl ?? postcard.media[0]?.url,
   );
+  const sceneImageUrl =
+    postcard.type === "SCENE"
+      ? getImageUrl(postcard.media[0]?.url ?? null)
+      : null;
 
   const submitComment = () => {
     if (!comment.trim() || commentMutation.isPending || !hasSession) return;
@@ -332,7 +336,7 @@ export default function PostcardDetailScreen() {
                 {imageUrl && (
                   <Image
                     source={{ uri: imageUrl }}
-                    resizeMode="cover"
+                    resizeMode="contain"
                     className="h-24 w-16 rounded-xl"
                   />
                 )}
@@ -347,6 +351,15 @@ export default function PostcardDetailScreen() {
                   {formatDate(postcard.createdAt)}
                 </Text>
               </View>
+
+              {sceneImageUrl && (
+                <Image
+                  source={{ uri: sceneImageUrl }}
+                  resizeMode="contain"
+                  accessibilityLabel={`${postcard.movie?.title ?? "영화"} 장면 이미지`}
+                  className="mt-5 h-56 w-full rounded-2xl bg-cinemo-bg"
+                />
+              )}
 
               {postcard.type === "QUOTE" ? (
                 <View className="mt-5">

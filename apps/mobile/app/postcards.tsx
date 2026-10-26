@@ -71,22 +71,31 @@ export default function PostcardsScreen() {
           isPending ? (
             <View className="items-center py-14">
               <ActivityIndicator color="#D4B56A" />
-              <Text className="mt-3 text-cinemo-muted">공개 엽서를 불러오는 중...</Text>
+              <Text className="mt-3 text-cinemo-muted">
+                공개 엽서를 불러오는 중...
+              </Text>
             </View>
           ) : isError ? (
             <View className="items-center px-5 py-14">
-              <Text className="text-cinemo-muted">공개 엽서를 불러오지 못했습니다.</Text>
-              <Pressable onPress={() => refetch()} className="mt-4 rounded-xl bg-cinemo-gold px-4 py-3">
+              <Text className="text-cinemo-muted">
+                공개 엽서를 불러오지 못했습니다.
+              </Text>
+              <Pressable
+                onPress={() => refetch()}
+                className="mt-4 rounded-xl bg-cinemo-gold px-4 py-3"
+              >
                 <Text className="font-semibold text-cinemo-bg">다시 시도</Text>
               </Pressable>
             </View>
           ) : (
-            <Text className="px-5 py-14 text-center text-cinemo-muted">공개된 엽서가 없습니다.</Text>
+            <Text className="px-5 py-14 text-center text-cinemo-muted">
+              공개된 엽서가 없습니다.
+            </Text>
           )
         }
         renderItem={({ item: postcard }) => {
           const imageUrl = getImageUrl(
-            postcard.media[0]?.url ?? postcard.movie?.posterUrl,
+            postcard.movie?.posterUrl ?? postcard.media[0]?.url,
           );
 
           return (
@@ -95,29 +104,37 @@ export default function PostcardsScreen() {
               className="mx-5 mt-5 overflow-hidden rounded-3xl border border-white/15 p-4"
               style={{ backgroundColor: "rgba(255, 255, 255, 0.07)" }}
             >
-              <View className="flex-row gap-4">
+              <View className="items-start flex-row gap-4">
                 {imageUrl ? (
-                  <Image
-                    source={{ uri: imageUrl }}
-                    resizeMode="cover"
-                    className="h-32 w-24 rounded-2xl"
-                  />
+                  <View className="self-start overflow-hidden rounded-2xl border border-white/15 bg-cinemo-bg">
+                    <Image
+                      source={{ uri: imageUrl }}
+                      resizeMode="contain"
+                      style={{ width: 96, height: 144 }}
+                    />
+                  </View>
                 ) : (
-                  <View className="h-32 w-24 items-center justify-center rounded-2xl bg-cinemo-bg">
-                    <Text className="text-center text-xs text-cinemo-muted">포스터 없음</Text>
+                  <View className="h-36 w-24 items-center justify-center rounded-2xl border border-white/15 bg-cinemo-bg">
+                    <Text className="text-center text-xs text-cinemo-muted">
+                      포스터 없음
+                    </Text>
                   </View>
                 )}
 
                 <View className="min-w-0 flex-1">
                   <View className="flex-row items-center justify-between gap-2">
                     <Text className="text-xs text-cinemo-muted">
-                      {formatDate(postcard.createdAt)} · {postcard.author?.nickname ?? "익명"}
+                      {formatDate(postcard.createdAt)} ·{" "}
+                      {postcard.author?.nickname ?? "익명"}
                     </Text>
                     <Text className="rounded-full bg-cinemo-gold px-2 py-1 text-xs font-semibold text-cinemo-bg">
                       {postcardTypeLabels[postcard.type]}
                     </Text>
                   </View>
-                  <Text numberOfLines={1} className="mt-2 text-lg font-semibold text-cinemo-text">
+                  <Text
+                    numberOfLines={1}
+                    className="mt-2 text-lg font-semibold text-cinemo-text"
+                  >
                     {postcard.movie?.title ?? "영화 정보 없음"}
                   </Text>
                   {postcard.type === "QUOTE" ? (
@@ -139,8 +156,12 @@ export default function PostcardsScreen() {
                 </View>
               </View>
 
-              <View className="mt-4 flex-row items-center justify-end gap-4 border-t border-white/10 pt-3">
-                <View className="flex-row items-center gap-1">
+              <View className="mt-4 flex-row items-center justify-between border-t border-white/10 pt-3">
+                <Text className="text-xs text-cinemo-muted">
+                  영화의 순간을 기록
+                </Text>
+                <View className="flex-row items-center gap-4">
+                  <View className="flex-row items-center gap-1">
                   <Heart
                     size={14}
                     color="#AEB8B8"
@@ -149,18 +170,19 @@ export default function PostcardsScreen() {
                   <Text className="text-xs text-cinemo-muted">
                     {postcard.reactionCount}
                   </Text>
-                </View>
-                <View className="flex-row items-center gap-1">
-                  <MessageCircle size={14} color="#AEB8B8" />
-                  <Text className="text-xs text-cinemo-muted">
-                    {postcard.commentCount}
-                  </Text>
-                </View>
-                <View className="flex-row items-center gap-1">
-                  <Share2 size={14} color="#AEB8B8" />
-                  <Text className="text-xs text-cinemo-muted">
-                    {postcard.shareCount}
-                  </Text>
+                  </View>
+                  <View className="flex-row items-center gap-1">
+                    <MessageCircle size={14} color="#AEB8B8" />
+                    <Text className="text-xs text-cinemo-muted">
+                      {postcard.commentCount}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center gap-1">
+                    <Share2 size={14} color="#AEB8B8" />
+                    <Text className="text-xs text-cinemo-muted">
+                      {postcard.shareCount}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </Pressable>

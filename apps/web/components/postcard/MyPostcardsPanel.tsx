@@ -94,7 +94,7 @@ export function MyPostcardsPanel() {
             <div className="grid gap-4 sm:grid-cols-2">
               {postcards.map((postcard) => {
                 const imageUrl =
-                  postcard.media[0]?.url ?? postcard.movie?.posterUrl;
+                  postcard.movie?.posterUrl ?? postcard.media[0]?.url;
                 const imageAlt =
                   postcard.media[0]?.altText ??
                   `${postcard.movie?.title ?? "영화"} 포스터`;
@@ -111,18 +111,18 @@ export function MyPostcardsPanel() {
                       }
                     }}
                   >
-                    <div className="flex min-h-36 gap-4 p-3">
-                      <div className="relative h-32 w-24 shrink-0 overflow-hidden rounded-xl bg-[#172322]">
+                    <div className="flex min-h-36 items-start gap-4 p-3">
+                      <div className="self-start w-24 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-[#172322]">
                         {imageUrl ? (
                           <Image
                             src={imageUrl}
                             alt={imageAlt}
-                            fill
-                            sizes="96px"
-                            className="object-cover"
+                            width={96}
+                            height={144}
+                            className="block h-auto w-full object-contain"
                           />
                         ) : (
-                          <div className="flex h-full items-center justify-center px-2 text-center text-xs text-white/45">
+                          <div className="flex h-36 items-center justify-center px-2 text-center text-xs text-white/45">
                             포스터 없음
                           </div>
                         )}

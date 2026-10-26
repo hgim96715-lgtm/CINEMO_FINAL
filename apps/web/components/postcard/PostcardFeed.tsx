@@ -90,7 +90,7 @@ export function PostcardFeed() {
   return (
     <section className="mx-auto flex max-w-xl flex-col gap-6">
       {postcards.map((postcard) => {
-        const imageUrl = postcard.media[0]?.url ?? postcard.movie?.posterUrl;
+        const imageUrl = postcard.movie?.posterUrl ?? postcard.media[0]?.url;
         const imageAlt =
           postcard.media[0]?.altText ??
           `${postcard.movie?.title ?? "영화"} 포스터`;
@@ -102,54 +102,31 @@ export function PostcardFeed() {
             className="group block rounded-[2rem] outline-none"
           >
             <article className="overflow-hidden rounded-[1.5rem] border border-white/15 bg-white/[0.07] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.24)] backdrop-blur-xl transition duration-300 group-hover:-translate-y-1 group-hover:border-white/25 group-hover:bg-white/[0.1] group-hover:shadow-[0_24px_60px_rgba(0,0,0,0.32)] group-focus-visible:ring-2 group-focus-visible:ring-cinemo-gold sm:rounded-[1.75rem] sm:p-5">
-              <div className="flex flex-col gap-4 sm:flex-row">
-                <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden rounded-2xl bg-[#172322] min-[480px]:aspect-[16/7] sm:h-40 sm:aspect-auto sm:w-28">
+              <div className="flex flex-row items-start gap-4">
+                <div className="self-start w-24 shrink-0 overflow-hidden rounded-2xl border border-white/15 bg-cinemo-bg sm:w-28">
                   {imageUrl ? (
                     <Image
                       src={imageUrl}
                       alt={imageAlt}
-                      fill
-                      sizes="112px"
-                      className="object-cover transition duration-500 group-hover:scale-[1.04]"
+                      width={112}
+                      height={168}
+                      className="block h-auto w-full object-contain"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center px-2 text-center text-xs text-white/50">
                       포스터 없음
                     </div>
                   )}
-
-                  <div
-                    className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent sm:hidden"
-                    aria-hidden="true"
-                  />
-                  <div className="absolute inset-x-4 bottom-4 sm:hidden">
-                    <p className="text-xs tracking-[0.12em] text-white/75">
-                      {postcardTypeDescriptions[postcard.type]}
-                    </p>
-                    <h2 className="mt-1 truncate text-xl font-semibold text-white">
-                      {postcard.movie?.title ?? "영화 정보 없음"}
-                    </h2>
-                  </div>
                 </div>
 
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <div className="flex items-center justify-between gap-3 sm:hidden">
-                    <span className="text-[10px] font-medium tracking-[0.08em] text-white/55">
-                      {formatPostcardDate(postcard.createdAt)} ·{" "}
-                      {postcard.author?.nickname ?? "익명"}
-                    </span>
-                    <span className="rounded-full bg-cinemo-gold px-2.5 py-1 text-xs font-semibold text-cinemo-bg">
-                      {postcardTypeLabels[postcard.type]}
-                    </span>
-                  </div>
-
-                  <div className="hidden items-start justify-between gap-3 sm:flex">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-xs tracking-[0.08em] text-white/55">
+                      <p className="truncate text-[10px] font-medium tracking-[0.08em] text-white/55 sm:text-xs">
                         {formatPostcardDate(postcard.createdAt)} ·{" "}
                         {postcard.author?.nickname ?? "익명"}
                       </p>
-                      <h2 className="mt-1 truncate text-lg font-semibold text-white">
+                      <h2 className="mt-2 truncate text-lg font-semibold text-white">
                         {postcard.movie?.title ?? "영화 정보 없음"}
                       </h2>
                     </div>
@@ -195,7 +172,9 @@ export function PostcardFeed() {
                       fill={postcard.hasReacted ? "currentColor" : "none"}
                       aria-hidden="true"
                     />
-                    <span className="tabular-nums">{postcard.reactionCount}</span>
+                    <span className="tabular-nums">
+                      {postcard.reactionCount}
+                    </span>
                   </span>
                   <span
                     className="inline-flex items-center gap-1"
@@ -203,7 +182,9 @@ export function PostcardFeed() {
                     title="댓글"
                   >
                     <MessageCircle className="size-3.5" aria-hidden="true" />
-                    <span className="tabular-nums">{postcard.commentCount}</span>
+                    <span className="tabular-nums">
+                      {postcard.commentCount}
+                    </span>
                   </span>
                   <span
                     className="inline-flex items-center gap-1"

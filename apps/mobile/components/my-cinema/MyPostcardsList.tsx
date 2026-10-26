@@ -45,7 +45,7 @@ function formatDate(value: string) {
 }
 
 function getPostcardImage(postcard: Postcard) {
-  return getImageUrl(postcard.media[0]?.url ?? postcard.movie?.posterUrl ?? null);
+  return getImageUrl(postcard.movie?.posterUrl ?? postcard.media[0]?.url ?? null);
 }
 
 function PostcardContent({
@@ -355,24 +355,24 @@ export function MyPostcardsList() {
               <Pressable
                 key={postcard.id}
                 onPress={() => setSelectedPostcard(postcard)}
-                className="flex-row overflow-hidden rounded-2xl border p-3"
+                className="items-start flex-row overflow-hidden rounded-2xl border p-3"
                 style={{
                   borderColor: "rgba(255,255,255,0.1)",
                   backgroundColor: "rgba(255,255,255,0.05)",
                 }}
               >
                 <View
-                  className="overflow-hidden rounded-xl"
-                  style={{ width: 96, height: 128, backgroundColor: "#172322" }}
+                  className="self-start overflow-hidden rounded-xl border border-white/15"
+                  style={{ width: 96, backgroundColor: "#172322" }}
                 >
                   {imageUrl ? (
                     <Image
                       source={{ uri: imageUrl }}
-                      resizeMode="cover"
-                      style={{ width: 96, height: 128 }}
+                      resizeMode="contain"
+                      style={{ width: 96, height: 144 }}
                     />
                   ) : (
-                    <View className="flex-1 items-center justify-center px-2">
+                    <View className="h-36 items-center justify-center px-2">
                       <Text className="text-center text-xs text-cinemo-muted">
                         포스터 없음
                       </Text>

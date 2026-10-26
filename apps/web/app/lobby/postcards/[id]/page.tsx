@@ -92,7 +92,9 @@ export default function PostcardDetailPage() {
   const visibleCommentCount = commentsQuery.isSuccess
     ? comments.length
     : postcard.commentCount;
-  const imageUrl = postcard.media[0]?.url ?? postcard.movie?.posterUrl;
+  const imageUrl = postcard.movie?.posterUrl ?? postcard.media[0]?.url;
+  const sceneImageUrl =
+    postcard.type === "SCENE" ? postcard.media[0]?.url ?? null : null;
   const imageAlt =
     postcard.media[0]?.altText ?? `${postcard.movie?.title ?? "영화"} 포스터`;
   const typeLabel =
@@ -136,7 +138,7 @@ export default function PostcardDetailPage() {
                     alt={imageAlt}
                     fill
                     sizes="64px"
-                    className="object-cover"
+                    className="object-contain"
                     priority
                   />
                 </div>
@@ -152,6 +154,18 @@ export default function PostcardDetailPage() {
             {postcard.type === "SCENE" && (
               <div className="mt-5 sm:mt-6">
                 <PostcardSceneMeta metadata={postcard.metadata} />
+              </div>
+            )}
+
+            {sceneImageUrl && (
+              <div className="relative mt-5 aspect-video w-full overflow-hidden rounded-2xl bg-cinemo-bg sm:mt-6">
+                <Image
+                  src={sceneImageUrl}
+                  alt={`${postcard.movie?.title ?? "영화"} 장면 이미지`}
+                  fill
+                  sizes="(min-width: 640px) 720px, 100vw"
+                  className="object-contain"
+                />
               </div>
             )}
 
