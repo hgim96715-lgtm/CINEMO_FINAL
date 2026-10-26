@@ -1,6 +1,11 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import type { MovieResponse } from "@cinemo/api-contract";
 import { movieDetailQueryOptions } from "@/lib/queries/movie-detail.query";
+import {
+  enrichMovieFromKmdb,
+  enrichMovieFromTmdb,
+} from "@/lib/api/movies";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ActivityIndicator,
@@ -15,7 +20,7 @@ import {
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { getImageUrl } from "@/lib/utils";
 import { CalendarDays, Clock3, Star } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MovieTrailerDialog } from "@/components/lobby/MovieTrailerDialog";
 import { MovieTrailerButton } from "@/components/movies/MovieTrailerButton";
 import { MovieNotificationButton } from "@/components/movies/MovieNotificationButton";
@@ -44,6 +49,15 @@ function getPersonName(person: { name: string; nameEn: string | null }) {
   return person.name.trim() || person.nameEn?.trim() || "정보 없음";
 }
 
+function needsMovieEnrichment(movie: MovieResponse) {
+  const hasOverview = Boolean(movie.overview?.trim());
+  const hasDirector = movie.credits.some(
+    (credit) => credit.creditType.trim().toUpperCase() === "DIRECTOR",
+  );
+
+  return !hasOverview || !hasDirector;
+}
+
 export default function MovieDetailScreen() {
   const params = useLocalSearchParams<{ id: string; edit?: string }>();
   const movieId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -51,6 +65,40 @@ export default function MovieDetailScreen() {
     (Array.isArray(params.edit) ? params.edit[0] : params.edit) === "record";
   const movieQuery = useQuery(movieDetailQueryOptions(movieId ?? ""));
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
+  const enrichmentAttemptedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const movie = movieQuery.data;
+
+    if (
+      movieQuery.isPending ||
+      !movie ||
+      !movieId ||
+      enrichmentAttemptedRef.current === movieId ||
+      !needsMovieEnrichment(movie)
+    ) {
+      return;
+    }
+
+    const tmdbLink = movie.providerLinks.find(
+      (link) => link.sourceProvider.trim().toUpperCase() === "TMDB",
+    );
+    const tmdbMovieId = Number(tmdbLink?.externalId);
+    enrichmentAttemptedRef.current = movieId;
+
+    void (async () => {
+      try {
+        if (Number.isInteger(tmdbMovieId)) {
+          await enrichMovieFromTmdb(movieId, tmdbMovieId);
+        } else {
+          await enrichMovieFromKmdb(movieId);
+        }
+        await movieQuery.refetch();
+      } catch (error) {
+        console.warn("[모바일 영화 정보 보강 실패]", error);
+      }
+    })();
+  }, [movieId, movieQuery.data, movieQuery.isPending, movieQuery.refetch]);
 
   if (movieQuery.isPending) {
     return (

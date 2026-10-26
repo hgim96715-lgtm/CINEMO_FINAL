@@ -1,8 +1,8 @@
 import {
-  getMovieSearchKey,
   movieSearchQueryOptions,
   tmdbMovieDetailQueryOptions,
   tmdbMovieSearchQueryOptions,
+  normalizeSearchText,
 } from "@/lib/queries/movie-search.query";
 import { importMovieFromTmdb } from "@/lib/api/movies";
 import { useQueries, useQuery } from "@tanstack/react-query";
@@ -60,11 +60,22 @@ export default function SearchScreen() {
     : (popularQuery.data?.items.filter((item) => hasKorean(item.title)) ?? []);
 
   const localMovieTitles = new Set(
-    movies.map((movie) => getMovieSearchKey(movie.title, movie.releaseDate)),
+    movies.map((movie) => normalizeSearchText(movie.title)),
   );
   const tmdbMovies = (tmdbQuery.data?.results ?? []).filter(
-    (movie) =>
-      !localMovieTitles.has(getMovieSearchKey(movie.title, movie.release_date)),
+    (movie) => /[가-힣]/.test(movie.title),
+  ).filter(
+    (movie, index, results) => {
+      const normalizedTitle = normalizeSearchText(movie.title);
+
+      return (
+        !localMovieTitles.has(normalizedTitle) &&
+        results.findIndex(
+          (candidate) =>
+            normalizeSearchText(candidate.title) === normalizedTitle,
+        ) === index
+      );
+    },
   );
   const tmdbPosterQueries = useQueries({
     queries: tmdbMovies.map((movie) => tmdbMovieDetailQueryOptions(movie.id)),

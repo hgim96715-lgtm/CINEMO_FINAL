@@ -52,7 +52,18 @@ export function PostcardMoviePicker({
   );
 
   const movies = movieQuery.data?.items ?? [];
-  const tmdbMovies = tmdbQuery.data?.results ?? [];
+  const tmdbMovies = (tmdbQuery.data?.results ?? []).filter(
+    (movie, index, results) => {
+      const normalizedTitle = normalizeSearchText(movie.title);
+
+      return (
+        results.findIndex(
+          (candidate) =>
+            normalizeSearchText(candidate.title) === normalizedTitle,
+        ) === index
+      );
+    },
+  );
 
   const tmdbPosterByTitle = new Map(
     tmdbMovies

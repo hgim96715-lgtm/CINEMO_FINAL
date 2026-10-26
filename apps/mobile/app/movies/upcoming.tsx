@@ -1,11 +1,10 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { movieUpcomingQueryOptions } from "@/lib/queries/movie-upcoming.query";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   Text,
   useWindowDimensions,
@@ -13,11 +12,8 @@ import {
 } from "react-native";
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { CinemoBackground } from "@/components/common/CinemoBackground";
-import { Header } from "@/components/common/Header";
 import { MovieListHeader } from "@/components/movies/MovieListHeader";
-import { getImageUrl } from "@/lib/utils";
-import { router } from "expo-router";
-import { CalendarDays } from "lucide-react-native";
+import { MovieGridCard } from "@/components/movies/MovieGridCard";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const GRID_HORIZONTAL_PADDING = 32;
@@ -45,22 +41,19 @@ function getUpcomingMonthOptions() {
 function formatReleaseDate(releaseDate: string | null) {
   if (!releaseDate) return "개봉일 미정";
 
-  const targetDate = new Date(`${releaseDate}T00:00:00`);
-  const today = new Date();
-
-  const todayDate = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  );
+  const targetDate = new Date(`${releaseDate}T00:00:00Z`);
+  const todayString = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+  }).format(new Date());
+  const todayDate = new Date(`${todayString}T00:00:00Z`);
 
   const days = Math.round(
     (targetDate.getTime() - todayDate.getTime()) / DAY_IN_MS,
   );
   const dateLabel =
-    targetDate.getFullYear() === todayDate.getFullYear()
-      ? `${targetDate.getMonth() + 1}월 ${targetDate.getDate()}일`
-      : `${targetDate.getFullYear()}년 ${targetDate.getMonth() + 1}월 ${targetDate.getDate()}일`;
+    targetDate.getUTCFullYear() === todayDate.getUTCFullYear()
+      ? `${targetDate.getUTCMonth() + 1}월 ${targetDate.getUTCDate()}일`
+      : `${targetDate.getUTCFullYear()}년 ${targetDate.getUTCMonth() + 1}월 ${targetDate.getUTCDate()}일`;
 
   return `D-${days} · ${dateLabel}`;
 }
@@ -88,16 +81,29 @@ export default function UpcomingMoviesScreen() {
       limit: 100,
     }),
   );
-  const movies = [...(upcomingQuery.data?.items ?? [])].sort((a, b) =>
-    (a.releaseDate ?? "9999-12-31").localeCompare(
-      b.releaseDate ?? "9999-12-31",
+  const movies = useMemo(
+    () =>
+      [...(upcomingQuery.data?.items ?? [])].sort((a, b) =>
+        (a.releaseDate ?? "9999-12-31").localeCompare(
+          b.releaseDate ?? "9999-12-31",
+        ),
+      ),
+    [upcomingQuery.data?.items],
+  );
+  const renderMovie = useCallback(
+    ({ item: movie }: { item: (typeof movies)[number] }) => (
+      <MovieGridCard
+        movie={movie}
+        cardWidth={cardWidth}
+        releaseLabel={formatReleaseDate(movie.releaseDate)}
+        titleClassName="text-base font-semibold"
+      />
     ),
+    [cardWidth, movies],
   );
   return (
-    <SafeAreaView className="flex-1 bg-cinemo-bg">
+    <SafeAreaView edges={[]} className="flex-1 bg-cinemo-bg">
       <CinemoBackground />
-
-      <Header onSearchPress={() => router.push("/search")} />
 
       <MovieListHeader
         eyebrow="COMING SOON"
@@ -138,6 +144,11 @@ export default function UpcomingMoviesScreen() {
             paddingBottom: 120,
           }}
           showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          updateCellsBatchingPeriod={50}
+          windowSize={5}
           ListEmptyComponent={
             <View className="items-center py-20">
               <Text style={{ color: CINEMO_COLORS.textSecondary }}>
@@ -145,64 +156,7 @@ export default function UpcomingMoviesScreen() {
               </Text>
             </View>
           }
-          renderItem={({ item: movie }) => {
-            const posterUrl = getImageUrl(movie.posterUrl);
-
-            return (
-              <Pressable
-                style={{ width: cardWidth }}
-                onPress={() => router.push(`/movies/${movie.id}`)}
-              >
-                <View
-                  className="overflow-hidden rounded-2xl"
-                  style={{
-                    width: "100%",
-                    aspectRatio: 2 / 3,
-                    backgroundColor: CINEMO_COLORS.surface,
-                  }}
-                >
-                  {posterUrl ? (
-                    <Image
-                      source={{ uri: posterUrl }}
-                      resizeMode="cover"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                      }}
-                      accessibilityLabel={`${movie.title} 포스터`}
-                    />
-                  ) : (
-                    <View className="flex-1 items-center justify-center">
-                      <Text
-                        className="text-xs"
-                        style={{ color: CINEMO_COLORS.textSecondary }}
-                      >
-                        포스터 준비중
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <Text
-                  numberOfLines={1}
-                  className="mt-3 text-base font-semibold"
-                  style={{ color: CINEMO_COLORS.textPrimary }}
-                >
-                  {movie.title}
-                </Text>
-
-                <View className="mt-1 flex-row items-center gap-1">
-                  <CalendarDays size={13} color={CINEMO_COLORS.textSecondary} />
-                  <Text
-                    className="text-xs"
-                    style={{ color: CINEMO_COLORS.textSecondary }}
-                  >
-                    {formatReleaseDate(movie.releaseDate)}
-                  </Text>
-                </View>
-              </Pressable>
-            );
-          }}
+          renderItem={renderMovie}
         />
       )}
     </SafeAreaView>

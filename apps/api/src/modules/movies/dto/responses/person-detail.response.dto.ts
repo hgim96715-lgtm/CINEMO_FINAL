@@ -11,6 +11,14 @@ export class PersonDetailResponseDto {
   id!: string;
 
   @ApiProperty({
+    description: "연결된 TMDB 인물 식별자",
+    type: String,
+    nullable: true,
+    example: "24001",
+  })
+  tmdbPersonId!: string | null;
+
+  @ApiProperty({
     description: "인물의 한국어 이름",
     type: String,
     example: "알레한드로 곤살레스 이냐리투",

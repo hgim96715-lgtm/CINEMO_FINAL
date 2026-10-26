@@ -18,6 +18,7 @@ export type PersonCredit = {
 
 export type PersonDetail = {
   id: string;
+  tmdbPersonId: string | null;
   name: string;
   nameEn: string | null;
   profileUrl: string | null;
@@ -27,6 +28,17 @@ export type PersonDetail = {
   nationality: string | null;
   credits: PersonCredit[];
 };
+
+export async function enrichPersonFromTmdb(
+  personId: string,
+  tmdbPersonId: number,
+): Promise<PersonDetail> {
+  const { data } = await apiClient.post<PersonDetail>(
+    `/people/${personId}/enrich/tmdb/${tmdbPersonId}`,
+  );
+
+  return data;
+}
 
 export async function getPerson(
   personId: string,

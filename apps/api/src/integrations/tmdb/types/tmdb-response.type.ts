@@ -21,6 +21,21 @@ export interface TmdbMovieSearchResponse {
   total_results: number;
 }
 
+export interface TmdbPersonMovieCreditsResponse {
+  id: number;
+  cast: TmdbPersonMovieCredit[];
+  crew: TmdbPersonMovieCredit[];
+}
+
+export interface TmdbPersonMovieCredit extends TmdbMovieSummary {
+  genre_ids?: number[];
+  character?: string;
+  credit_id?: string;
+  department?: string;
+  job?: string;
+  order?: number;
+}
+
 export interface TmdbMovieListItem extends TmdbMovieSummary {
   genre_ids: number[];
 }

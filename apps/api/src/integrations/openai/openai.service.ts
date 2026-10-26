@@ -32,6 +32,7 @@ type SubtitleQuoteModelResult = {
   found: boolean;
   startCue: number | null;
   endCue: number | null;
+  memorabilityScore: number;
   translation: string | null;
   sourceLanguage: string | null;
   targetLanguage: "ko";
@@ -53,11 +54,19 @@ type SuggestSubtitleQuoteInput = {
   review?: string;
   language?: string;
   subtitles: OpenSubtitlesSubtitleCue[];
+  publicQuoteCandidates?: PublicQuoteCandidate[];
 };
 
-const MAX_SUBTITLE_CUES = 600;
+const MAX_SUBTITLE_CUES = 900;
 const MAX_QUOTE_CUES = 4;
 const MAX_QUOTE_CHARACTERS = 600;
+
+const SPEAKER_LABEL_PATTERN =
+  /^\s*[（(][^（）()\r\n]{1,24}[）)]\s*/u;
+const DIALOGUE_LABEL_PATTERN =
+  /^\s*[\p{L}\p{N}·ー-]{1,24}\s*[:：]\s*/u;
+const SHORT_REACTION_PATTERN =
+  /^\s*(?:え+|あ+|お+|うん|えっ|え!?|어+|아+|응|네|뭐야|뭐지)[!?！？。…~～]*\s*$/iu;
 
 @Injectable()
 export class OpenAiService {
@@ -171,6 +180,7 @@ export class OpenAiService {
     review,
     language,
     subtitles,
+    publicQuoteCandidates = [],
   }: SuggestSubtitleQuoteInput): Promise<SuggestQuoteResult> {
     if (subtitles.length === 0) {
       throw new BadGatewayException("확인할 자막 문장이 없습니다.");
@@ -190,15 +200,26 @@ export class OpenAiService {
     const result = await this.createStructuredOutput<SubtitleQuoteModelResult>({
       instructions:
         [
-          "사용자가 영화에서 기억할 만한 실제 문구를 찾고 있다.",
-          "아래 자막 목록에서 기억에 남는 하나의 연속된 대사 구간을 선택한다.",
+          "사용자가 영화의 명대사를 찾고 있다.",
+          "목표는 자막에서 아무 대사나 고르는 것이 아니라, 영화의 명장면이나 주제를 대표하고 영화 밖에서도 독립적으로 기억될 수 있는 문구를 고르는 것이다.",
+          "영화 제목에 대한 GPT의 일반적인 지식과 아래 공개 인용구 후보를 명대사 여부를 판단하는 참고 정보로 사용할 수 있다.",
+          "단, GPT의 기억이나 공개 후보를 그대로 원문으로 출력하지 않는다. 최종 원문은 반드시 아래 자막 목록의 연속된 자막 구간이어야 한다.",
+          "아래 자막 목록에서 명대사로 판단되는 하나의 연속된 대사 구간만 선택한다.",
           `startCue와 endCue로 최대 ${MAX_QUOTE_CUES}개의 인접한 자막 구간을 지정한다.`,
-          "하나의 완전한 생각·감정·교훈이 독립적으로 전달되는 구간을 선택한다.",
-          "단답형, 감탄사, 호칭, 인사, 단순한 질문, 저기요·응 같은 짧은 반응은 선택하지 않는다.",
-          "질문과 답변이 오가는 소개형 대화만 이어 붙인 구간도 선택하지 않는다.",
+          "다음 기준을 모두 충족하는 후보를 우선한다: (1) 한 장면의 핵심 감정·가치관·갈등·결심이 드러남, (2) 앞뒤 설명 없이도 의미가 통함, (3) 영화의 주제나 인물을 대표함, (4) 관객이 따로 기억하거나 인용할 만한 표현임.",
+          "특히 영화의 주제를 압축한 철학적 선언, 인물의 독백, 기도문·의식문, 삶·죽음·성장·이별·구원에 대한 문장, 작품 전체에서 반복되는 핵심 모티프를 우선한다.",
+          "일상적인 정보 전달, 줄거리 설명, 인물 소개, 상황 확인, 장면 진행을 위한 대화는 명대사로 보지 않는다.",
+          "단답형, 감탄사, 호칭, 단순한 질문, 저기요·응 같은 짧은 반응은 원칙적으로 제외한다.",
+          "화자 이름 표기, 괄호 속 화자 표기, 대본식 콜론 표기, 행동 지시나 장면 진행을 위한 명령이 포함된 구간은 제외한다.",
+          "여러 화자가 번갈아 말하는 짧은 대화 조각은 제외한다. 한 사람이 말하는 완결된 명대사 구간을 우선한다.",
+          "다만 짧은 문장이라도 영화 전체에서 반복되는 핵심 모티프이거나 결말·이별·재회처럼 장면의 의미를 대표하는 경우에는 주변 자막과 함께 판단해 선택할 수 있다.",
+          "질문과 답변이 오가는 소개형 대화, 자막에 흔한 인사말, 평범한 작별 인사만으로 이루어진 구간은 선택하지 않는다.",
           "앞뒤 자막을 보지 않으면 의미가 성립하지 않는 문장, 대명사만 남은 문장, 장면 설명에 가까운 문장은 제외한다.",
-          "클라이맥스, 명장면, 캐릭터의 철학·가치관·감정 변화가 드러나는 대사와 오래 기억될 만한 문구를 우선한다.",
-          "완결성과 임팩트가 모두 부족하면 길이를 억지로 늘리지 말고 found를 false로 반환한다.",
+          "명장면, 클라이맥스, 캐릭터의 철학·가치관·감정 변화·결정적 행동이 드러나는 대사를 가장 우선한다.",
+          "다른 인물에게 무엇을 하라고 지시하는 명령, 문을 열거나 닫는 등 장면의 행동을 진행하는 대사, 바로 앞 상황에 대한 반응은 명대사보다 장면 대사로 판단한다.",
+          "명대사로 볼 근거가 약한 평범한 자막밖에 없으면 길이를 억지로 늘리거나 창작하지 말고 found를 false로 반환한다.",
+          "memorabilityScore는 명대사로서의 완결성·주제 대표성·독립성·임팩트를 합산한 0~100 점수이다. 네 항목 중 하나라도 약하면 점수를 낮춘다.",
+          "memorabilityScore가 75 미만이면 found를 false로 반환한다.",
           "자막 목록에 없는 문장을 만들거나 자막 순서를 바꾸지 않는다.",
           "선택한 구간의 원문은 서버가 자막에서 직접 조합하므로 원문을 반환하지 않는다.",
           "한국어 번역은 원문의 의미와 문장 순서를 최대한 유지하는 직역으로 작성한다.",
@@ -212,6 +233,14 @@ export class OpenAiService {
         "번역 언어: 한국어(ko)",
         "자막 목록:",
         subtitleItems,
+        ...(publicQuoteCandidates.length > 0
+          ? [
+              "사람들이 공개한 인용구 후보(명대사 판단용 참고):",
+              publicQuoteCandidates
+                .map((candidate, index) => `${index + 1}. ${candidate.content}`)
+                .join("\n"),
+            ]
+          : []),
       ].join("\n"),
       schema: {
         type: "object",
@@ -220,6 +249,7 @@ export class OpenAiService {
           found: { type: "boolean" },
           startCue: { type: ["integer", "null"] },
           endCue: { type: ["integer", "null"] },
+          memorabilityScore: { type: "integer", minimum: 0, maximum: 100 },
           translation: { type: ["string", "null"] },
           sourceLanguage: { type: ["string", "null"] },
           targetLanguage: { type: "string", enum: ["ko"] },
@@ -229,6 +259,7 @@ export class OpenAiService {
           "found",
           "startCue",
           "endCue",
+          "memorabilityScore",
           "translation",
           "sourceLanguage",
           "targetLanguage",
@@ -249,9 +280,20 @@ export class OpenAiService {
       .map((subtitle) => subtitle.text.trim())
       .filter(Boolean)
       .join(" ");
+    const containsSpeakerLabel = selectedSubtitles.some(
+      (subtitle) =>
+        SPEAKER_LABEL_PATTERN.test(subtitle.text) ||
+        DIALOGUE_LABEL_PATTERN.test(subtitle.text),
+    );
+    const containsShortReaction = selectedSubtitles.some((subtitle) =>
+      SHORT_REACTION_PATTERN.test(subtitle.text),
+    );
 
     if (
       !result.found ||
+      result.memorabilityScore < 75 ||
+      containsSpeakerLabel ||
+      containsShortReaction ||
       !original ||
       original.length > MAX_QUOTE_CHARACTERS ||
       !result.translation ||
@@ -259,7 +301,7 @@ export class OpenAiService {
       selectedSubtitles.length === 0
     ) {
       throw new BadGatewayException(
-        "자막에서 확인 가능한 영화 문구를 찾지 못했습니다.",
+        "명대사로 판단할 수 있는 자막 문구를 찾지 못했습니다.",
       );
     }
 

@@ -64,9 +64,21 @@ function MoviesPageContent() {
   const dbMovieTitles = new Set(
     dbMovies.map((movie) => normalizeSearchText(movie.title)),
   );
-  const tmdbMovies = (tmdbQuery.data?.results ?? []).filter(
-    (movie) => !dbMovieTitles.has(normalizeSearchText(movie.title)),
-  );
+  const tmdbMovies = (tmdbQuery.data?.results ?? [])
+    .filter((movie) => /[가-힣]/.test(movie.title))
+    .filter(
+      (movie) => !dbMovieTitles.has(normalizeSearchText(movie.title)),
+    )
+    .filter((movie, index, results) => {
+    const normalizedTitle = normalizeSearchText(movie.title);
+
+    return (
+      results.findIndex(
+        (candidate) =>
+          normalizeSearchText(candidate.title) === normalizedTitle,
+      ) === index
+    );
+  });
 
   if (shouldFetchTmdb && tmdbQuery.isPending && dbMovies.length === 0) {
     return (

@@ -13,23 +13,21 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000;
 function formatReleaseDate(releaseDate: string | null) {
   if (!releaseDate) return "개봉일 미정";
 
-  const targetDate = new Date(`${releaseDate}T00:00:00`);
+  const targetDate = new Date(`${releaseDate}T00:00:00Z`);
+  const todayString = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+  }).format(new Date());
+  const todayDate = new Date(`${todayString}T00:00:00Z`);
 
-  const today = new Date();
-  const todayDate = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
+  const days = Math.round(
+    (targetDate.getTime() - todayDate.getTime()) / DAY_IN_MS,
   );
-
-  const days =
-    Math.round(targetDate.getTime() - todayDate.getTime()) / DAY_IN_MS;
-  const month = targetDate.getMonth() + 1;
-  const day = targetDate.getDate();
+  const month = targetDate.getUTCMonth() + 1;
+  const day = targetDate.getUTCDate();
   const dateLabel =
-    targetDate.getFullYear() === todayDate.getFullYear()
+    targetDate.getUTCFullYear() === todayDate.getUTCFullYear()
       ? `${month}월 ${day}일`
-      : `${targetDate.getFullYear()}년 ${month}월 ${day}일`;
+      : `${targetDate.getUTCFullYear()}년 ${month}월 ${day}일`;
 
   return `D-${days} · ${dateLabel}`;
 }

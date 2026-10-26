@@ -12,6 +12,7 @@ import type {
   TmdbMovieVideosResponse,
   TmdbMovieWatchProvidersResponse,
   TmdbPersonDetailResponse,
+  TmdbPersonMovieCreditsResponse,
   TmdbPersonSearchResponse,
 } from "./types/tmdb-response.type";
 
@@ -33,17 +34,91 @@ export class TmdbService {
     query: string,
     page = 1,
   ): Promise<TmdbMovieSearchResponse> {
-    const { data } = await firstValueFrom(
-      this.httpService.get<TmdbMovieSearchResponse>("/search/movie", {
-        params: {
-          query,
-          page,
-          language: "ko-KR",
-          include_adult: false,
-        },
-      }),
+    const params = {
+      query: query.trim(),
+      page,
+      language: "ko-KR",
+      include_adult: false,
+    };
+
+    const [{ data: movieSearch }, { data: personSearch }] = await Promise.all([
+      firstValueFrom(
+        this.httpService.get<TmdbMovieSearchResponse>("/search/movie", {
+          params,
+        }),
+      ),
+      firstValueFrom(
+        this.httpService.get<TmdbPersonSearchResponse>("/search/person", {
+          params,
+        }),
+      ),
+    ]);
+
+    const personIds = personSearch.results
+      .slice(0, 3)
+      .map((person) => person.id);
+
+    const personCreditResponses = await Promise.all(
+      personIds.map((personId) =>
+        firstValueFrom(
+          this.httpService.get<TmdbPersonMovieCreditsResponse>(
+            `/person/${personId}/movie_credits`,
+            {
+              params: { language: "ko-KR" },
+            },
+          ),
+        ),
+      ),
     );
-    return data;
+
+    const personMovies = personCreditResponses.flatMap(
+      ({ data }) => [...data.cast, ...data.crew],
+    );
+
+    const uniqueMovies = new Map<
+      number,
+      TmdbMovieSearchResponse["results"][number]
+    >();
+
+    for (const movie of [...movieSearch.results, ...personMovies]) {
+      if (movie.adult || !movie.title || !/[가-힣]/.test(movie.title)) {
+        continue;
+      }
+
+      if (!uniqueMovies.has(movie.id)) {
+        uniqueMovies.set(movie.id, {
+          adult: movie.adult,
+          backdrop_path: movie.backdrop_path,
+          id: movie.id,
+          original_language: movie.original_language,
+          original_title: movie.original_title,
+          overview: movie.overview,
+          popularity: movie.popularity,
+          poster_path: movie.poster_path,
+          release_date: movie.release_date,
+          title: movie.title,
+          video: movie.video,
+          vote_average: movie.vote_average,
+          vote_count: movie.vote_count,
+          genre_ids: movie.genre_ids ?? [],
+        });
+      }
+    }
+
+    const allResults = [...uniqueMovies.values()];
+    const pageSize = movieSearch.results.length || 20;
+    const startIndex = (page - 1) * pageSize;
+    const totalResults = Math.max(movieSearch.total_results, allResults.length);
+
+    return {
+      page,
+      results: allResults.slice(startIndex, startIndex + pageSize),
+      total_pages: Math.max(
+        movieSearch.total_pages,
+        Math.ceil(totalResults / pageSize),
+      ),
+      total_results: totalResults,
+    };
   }
 
   async getMovieDetail(tmdbMovieId: number): Promise<TmdbMovieDetailResponse> {
@@ -247,6 +322,23 @@ export class TmdbService {
     const { data } = await firstValueFrom(
       this.httpService.get<TmdbPersonDetailResponse>(
         `/person/${tmdbPersonId}`,
+        {
+          params: {
+            language: "ko-KR",
+          },
+        },
+      ),
+    );
+
+    return data;
+  }
+
+  async getPersonMovieCredits(
+    tmdbPersonId: number,
+  ): Promise<TmdbPersonMovieCreditsResponse> {
+    const { data } = await firstValueFrom(
+      this.httpService.get<TmdbPersonMovieCreditsResponse>(
+        `/person/${tmdbPersonId}/movie_credits`,
         {
           params: {
             language: "ko-KR",

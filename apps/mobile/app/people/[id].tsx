@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { CalendarDays, ChevronLeft, Film } from "lucide-react-native";
 import { useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -16,6 +17,7 @@ import { CINEMO_COLORS } from "@cinemo/shared";
 import { PersonBookmarkButton } from "@/components/people/PersonBookmarkButton";
 import { getImageUrl } from "@/lib/utils";
 import { personDetailQueryOptions } from "@/lib/queries/person-detail.query";
+import { enrichPersonFromTmdb } from "@/lib/api/people";
 
 function formatDate(date: string | null) {
   if (!date) {
@@ -42,6 +44,29 @@ export default function PersonDetailScreen() {
   const [showFullBiography, setShowFullBiography] = useState(false);
   const [showFullCredits, setShowFullCredits] = useState(false);
   const personQuery = useQuery(personDetailQueryOptions(personId ?? ""));
+  const enrichmentAttemptedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const person = personQuery.data;
+    const tmdbPersonId = Number(person?.tmdbPersonId);
+
+    if (
+      !person ||
+      !personId ||
+      !Number.isInteger(tmdbPersonId) ||
+      person.credits.length >= 10 ||
+      enrichmentAttemptedRef.current === personId
+    ) {
+      return;
+    }
+
+    enrichmentAttemptedRef.current = personId;
+    void enrichPersonFromTmdb(personId, tmdbPersonId)
+      .then(() => personQuery.refetch())
+      .catch(() => {
+        // TMDB 보완 실패 시에도 CINEMO DB에 저장된 필모그래피는 계속 표시함
+      });
+  }, [personId, personQuery.data, personQuery.refetch]);
 
   if (personQuery.isPending) {
     return (

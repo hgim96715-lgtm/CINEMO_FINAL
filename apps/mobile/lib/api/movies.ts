@@ -78,6 +78,29 @@ export async function importMovieFromTmdb(
   return data;
 }
 
+export async function enrichMovieFromTmdb(
+  movieId: string,
+  tmdbMovieId: number,
+): Promise<string> {
+  const { data } = await apiClient.post<string>(
+    `/movie-imports/${movieId}/enrich/tmdb/${tmdbMovieId}`,
+    undefined,
+    { timeout: 60_000 },
+  );
+
+  return data;
+}
+
+export async function enrichMovieFromKmdb(movieId: string): Promise<string> {
+  const { data } = await apiClient.post<string>(
+    `/movie-imports/${movieId}/enrich/kmdb`,
+    undefined,
+    { timeout: 60_000 },
+  );
+
+  return data;
+}
+
 export async function getMovieRankings(
   page = 1,
   limit = 10,

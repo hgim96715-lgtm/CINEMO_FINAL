@@ -17,13 +17,15 @@ export function toMovieSearchItemResponseDto(
     movie.titles.find(
       (item) =>
         item.titleType === "PRIMARY" &&
-        item.languageCode?.toLocaleLowerCase().startsWith("ko"),
+        item.languageCode?.toLocaleLowerCase().startsWith("ko") &&
+        /[가-힣]/.test(item.title),
     ) ??
-    movie.titles.find((item) =>
-      item.languageCode?.toLocaleLowerCase().startsWith("ko"),
+    movie.titles.find(
+      (item) =>
+        item.languageCode?.toLocaleLowerCase().startsWith("ko") &&
+        /[가-힣]/.test(item.title),
     ) ??
-    movie.titles.find((item) => item.titleType === "PRIMARY") ??
-    movie.titles[0];
+    movie.titles.find((item) => /[가-힣]/.test(item.title));
 
   const release =
     movie.releases.find((item) => item.isPrimary) ?? movie.releases[0];

@@ -93,10 +93,12 @@ export class SubdlService {
   async searchAndFetchSubtitle({
     movieTitle,
     tmdbId,
+    imdbId,
     language,
   }: {
     movieTitle: string;
     tmdbId: number | null;
+    imdbId: number | null;
     language: string | null;
   }): Promise<OpenSubtitlesSubtitleContent | null> {
     const preferredLanguage = normalizeSubtitleLanguage(language);
@@ -107,7 +109,11 @@ export class SubdlService {
       .join(",");
 
     const searchOptions: SubdlSearchOptions = {
-      ...(tmdbId ? { tmdb_id: tmdbId } : { film_name: movieTitle.trim() }),
+      ...(imdbId
+        ? { imdb_id: String(imdbId) }
+        : tmdbId
+          ? { tmdb_id: tmdbId }
+          : { film_name: movieTitle.trim() }),
       type: "movie",
       languages,
     };

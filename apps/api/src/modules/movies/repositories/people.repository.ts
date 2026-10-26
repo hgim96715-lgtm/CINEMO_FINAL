@@ -29,6 +29,12 @@ const personDetailArgs = Prisma.validator<Prisma.MoviePersonDefaultArgs>()({
         },
       },
     },
+    providerLinks: {
+      where: {
+        sourceProvider: "TMDB",
+      },
+      take: 1,
+    },
   },
 });
 

@@ -1,4 +1,4 @@
-import {MediaType, TitleType} from "@prisma/client";
+import {MediaType, SourceProvider, TitleType} from "@prisma/client";
 
 import type {PersonDetailResponseDto} from "../dto/responses/person-detail.response.dto";
 import type {PersonWithDetails} from "../repositories/people.repository";
@@ -8,6 +8,10 @@ export const toPersonDetailResponse = (
   person: PersonWithDetails,
 ): PersonDetailResponseDto => ({
   id: person.id,
+  tmdbPersonId:
+    person.providerLinks.find(
+      (link) => link.sourceProvider === SourceProvider.TMDB,
+    )?.externalId ?? null,
   name: person.name,
   nameEn: person.nameEn,
   profileUrl: person.profileUrl,
@@ -23,12 +27,21 @@ export const toPersonDetailResponse = (
     displayOrder: credit.displayOrder,
     movie: {
       id: credit.movie.id,
-      title:
-        credit.movie.titles.find(
-          (title) => title.titleType === TitleType.PRIMARY,
-        )?.title ??
-        credit.movie.titles[0]?.title ??
-        "",
+        title:
+          credit.movie.titles.find(
+            (title) =>
+              title.titleType === TitleType.PRIMARY &&
+              title.languageCode?.toLowerCase().startsWith("ko") &&
+              /[가-힣]/.test(title.title),
+          )?.title ??
+          credit.movie.titles.find(
+            (title) =>
+              title.languageCode?.toLowerCase().startsWith("ko") &&
+              /[가-힣]/.test(title.title),
+          )?.title ??
+          credit.movie.titles.find((title) => /[가-힣]/.test(title.title))
+            ?.title ??
+          "",
       releaseDate: credit.movie.releases[0]?.releaseDate ?? null,
       posterUrl:
         credit.movie.media.find((media) => media.mediaType === MediaType.POSTER)

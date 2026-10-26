@@ -28,6 +28,7 @@ import {
 } from "@/integrations/openai/openai.service";
 import { CreatePostcardQuoteSuggestionRequestDto } from "@/modules/postcards/dto/requests/create-postcard-quote-suggestion-request.dto";
 import { OpenSubtitlesService } from "@/integrations/opensubtitles/opensubtitles.service";
+import { TmdbService } from "@/integrations/tmdb/tmdb.service";
 import { MoviesService } from "@/modules/movies/movies.service";
 import type {
   OpenSubtitlesSubtitleContent,
@@ -68,7 +69,9 @@ const COUNTRY_LANGUAGE_MAP: Record<string, string> = {
 type SubtitleSearchContext = {
   language: string | null;
   tmdbId: number | null;
+  imdbId: number | null;
   originalTitle: string | null;
+  searchTitles: string[];
 };
 
 @Injectable()
@@ -81,6 +84,7 @@ export class PostcardService {
     private readonly openSubtitlesService: OpenSubtitlesService,
     private readonly subdlService: SubdlService,
     private readonly moviesService: MoviesService,
+    private readonly tmdbService: TmdbService,
   ) {}
 
   async suggestQuote(
@@ -95,11 +99,18 @@ export class PostcardService {
     );
 
     if (subtitleContent?.cues.length) {
+      const publicQuoteCandidates =
+        await this.postcardRepository.findPublicQuoteCandidates({
+          movieId: request.movieId,
+          movieTitle: request.movieTitle,
+        });
+
       return this.openAiService.suggestQuoteFromSubtitles({
         movieTitle: request.movieTitle,
         review: request.review,
         language: subtitleContext.language ?? request.language ?? undefined,
         subtitles: subtitleContent.cues,
+        publicQuoteCandidates,
       });
     }
 
@@ -139,6 +150,7 @@ export class PostcardService {
     return this.subdlService.searchAndFetchSubtitle({
       movieTitle: subtitleContext.originalTitle ?? request.movieTitle,
       tmdbId: subtitleContext.tmdbId,
+      imdbId: subtitleContext.imdbId,
       language: subtitleContext.language ?? request.language?.trim() ?? null,
     });
   }
@@ -153,11 +165,14 @@ export class PostcardService {
           subtitleContext.language ?? request.language?.trim() ?? null,
         );
       const searchParams = [
+        ...(subtitleContext.imdbId
+          ? [{ type: "movie" as const, imdb_id: subtitleContext.imdbId }]
+          : []),
         ...(subtitleContext.tmdbId
           ? [{ type: "movie" as const, tmdb_id: subtitleContext.tmdbId }]
           : []),
         ...[
-          subtitleContext.originalTitle,
+          ...subtitleContext.searchTitles,
           request.movieTitle.trim(),
         ]
           .filter((title): title is string => Boolean(title?.trim()))
@@ -231,7 +246,13 @@ export class PostcardService {
     movieId?: string,
   ): Promise<SubtitleSearchContext> {
     if (!movieId) {
-      return { language: null, tmdbId: null, originalTitle: null };
+      return {
+        language: null,
+        tmdbId: null,
+        imdbId: null,
+        originalTitle: null,
+        searchTitles: [],
+      };
     }
 
     try {
@@ -257,17 +278,52 @@ export class PostcardService {
           .find(Boolean) ?? null);
 
       const tmdbId = tmdbLink ? Number(tmdbLink.externalId) : NaN;
+      const validTmdbId = Number.isInteger(tmdbId) && tmdbId > 0 ? tmdbId : null;
+      let tmdbMovie: Awaited<ReturnType<TmdbService["getMovieDetail"]>> | null = null;
+
+      if (validTmdbId) {
+        try {
+          tmdbMovie = await this.tmdbService.getMovieDetail(validTmdbId);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          this.logger.warn(`TMDB 영화 외부 ID 조회 실패: ${message}`);
+        }
+      }
+
+      const imdbId = tmdbMovie?.imdb_id
+        ? Number(tmdbMovie.imdb_id.replace(/^tt/i, ""))
+        : NaN;
+      const searchTitles = [
+        originalTitle,
+        tmdbMovie?.original_title,
+        tmdbMovie?.title,
+      ]
+        .filter((title): title is string => Boolean(title?.trim()))
+        .filter(
+          (title, index, titles) =>
+            titles.findIndex(
+              (candidate) => candidate.toLowerCase() === title.toLowerCase(),
+            ) === index,
+        );
 
       return {
         language: normalizeSubtitleLanguage(language),
-        tmdbId: Number.isInteger(tmdbId) && tmdbId > 0 ? tmdbId : null,
+        tmdbId: validTmdbId,
+        imdbId: Number.isInteger(imdbId) && imdbId > 0 ? imdbId : null,
         originalTitle,
+        searchTitles,
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
 
       this.logger.warn(`TMDB 영화 ID 조회 실패: ${message}`);
-      return { language: null, tmdbId: null, originalTitle: null };
+      return {
+        language: null,
+        tmdbId: null,
+        imdbId: null,
+        originalTitle: null,
+        searchTitles: [],
+      };
     }
   }
 

@@ -200,6 +200,10 @@ export class MoviesRepository {
               '',
               'g'
             ) LIKE '%' || ${normalizedKeyword} || '%'
+            AND (
+              lower(coalesce("languageCode", '')) LIKE 'ko%'
+              OR "title" ~ '[가-힣]'
+            )
           `)
         : [];
 
@@ -210,6 +214,15 @@ export class MoviesRepository {
     const where: Prisma.MovieWhereInput = {
       AND: [
         publicMovieWhere,
+        {
+          titles: {
+            some: {
+              languageCode: {
+                startsWith: "ko",
+              },
+            },
+          },
+        },
         {
           OR: [
             {
@@ -1092,6 +1105,15 @@ export class MoviesRepository {
       gte: filter.startDate,
       ...(filter.endDate ? { lt: filter.endDate } : {}),
     };
+    const upcomingReleaseWhere: Prisma.MovieReleaseWhereInput = {
+      releaseDate,
+      status: {
+        in: [ReleaseStatus.ANNOUNCED, ReleaseStatus.SCHEDULED],
+      },
+      // 상세 페이지와 동일하게 한국 개봉일을 우선하고,
+      // 한국 개봉일이 없을 때만 기본 개봉일을 fallback으로 사용함.
+      OR: [{ countryCode: "KR" }, { countryCode: null, isPrimary: true }],
+    };
 
     const where: Prisma.MovieWhereInput = {
       AND: [
@@ -1111,10 +1133,7 @@ export class MoviesRepository {
       ],
       releases: {
         some: {
-          releaseDate,
-          status: {
-            in: [ReleaseStatus.ANNOUNCED, ReleaseStatus.SCHEDULED],
-          },
+          ...upcomingReleaseWhere,
         },
       },
     };
@@ -1151,14 +1170,36 @@ export class MoviesRepository {
             AND release."releaseDate" >= ${filter.startDate}
             ${endDateCondition}
             AND release.status IN ('ANNOUNCED', 'SCHEDULED')
+            AND (
+              release."countryCode" = 'KR'
+              OR (
+                release."countryCode" IS NULL
+                AND release."isPrimary" = true
+              )
+            )
         )
       ORDER BY (
-        SELECT MIN(release."releaseDate")
-        FROM movie_releases AS release
-        WHERE release."movieId" = movie.id
-          AND release."releaseDate" >= ${filter.startDate}
-          ${endDateCondition}
-          AND release.status IN ('ANNOUNCED', 'SCHEDULED')
+        COALESCE(
+          (
+            SELECT MIN(release."releaseDate")
+            FROM movie_releases AS release
+            WHERE release."movieId" = movie.id
+              AND release."releaseDate" >= ${filter.startDate}
+              ${endDateCondition}
+              AND release.status IN ('ANNOUNCED', 'SCHEDULED')
+              AND release."countryCode" = 'KR'
+          ),
+          (
+            SELECT MIN(release."releaseDate")
+            FROM movie_releases AS release
+            WHERE release."movieId" = movie.id
+              AND release."releaseDate" >= ${filter.startDate}
+              ${endDateCondition}
+              AND release.status IN ('ANNOUNCED', 'SCHEDULED')
+              AND release."countryCode" IS NULL
+              AND release."isPrimary" = true
+          )
+        )
       ) ASC, movie.id ASC
       OFFSET ${(page - 1) * limit}
       LIMIT ${limit}
@@ -1172,23 +1213,32 @@ export class MoviesRepository {
         include: {
           ...movieSearchInclude.include,
           releases: {
-            where: {
-              releaseDate,
-              status: {
-                in: [ReleaseStatus.ANNOUNCED, ReleaseStatus.SCHEDULED],
-              },
-            },
-            orderBy: {
-              releaseDate: "asc",
-            },
-            take: 1,
+            where: upcomingReleaseWhere,
+            orderBy: [{ releaseDate: "asc" }],
           },
         },
       }),
       this.prisma.movie.count({ where }),
     ]);
 
-    const moviesById = new Map(movies.map((movie) => [movie.id, movie]));
+    const moviesById = new Map(
+      movies.map((movie) => {
+        const release =
+          movie.releases.find((item) => item.countryCode === "KR") ??
+          movie.releases.find(
+            (item) => item.countryCode === null && item.isPrimary,
+          ) ??
+          movie.releases[0];
+
+        return [
+          movie.id,
+          {
+            ...movie,
+            releases: release ? [release] : [],
+          },
+        ];
+      }),
+    );
     const orderedMovies = movieIds.flatMap(({ id }) => {
       const movie = moviesById.get(id);
       return movie ? [movie] : [];
