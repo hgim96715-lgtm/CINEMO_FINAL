@@ -14,12 +14,12 @@ import {
 } from "react-native";
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { getImageUrl } from "@/lib/utils";
-import { Header } from "@/components/common/Header";
 import { CalendarDays, Clock3, Star } from "lucide-react-native";
 import { useState } from "react";
 import { MovieTrailerDialog } from "@/components/lobby/MovieTrailerDialog";
 import { MovieTrailerButton } from "@/components/movies/MovieTrailerButton";
 import { MovieNotificationButton } from "@/components/movies/MovieNotificationButton";
+import { MovieRecordActions } from "@/components/movies/MovieRecordActions";
 
 function formatReleaseDate(date: string | null) {
   if (!date) return "개봉일 미정";
@@ -45,8 +45,10 @@ function getPersonName(person: { name: string; nameEn: string | null }) {
 }
 
 export default function MovieDetailScreen() {
-  const params = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; edit?: string }>();
   const movieId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const shouldEditRecord =
+    (Array.isArray(params.edit) ? params.edit[0] : params.edit) === "record";
   const movieQuery = useQuery(movieDetailQueryOptions(movieId ?? ""));
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
 
@@ -153,9 +155,7 @@ export default function MovieDetailScreen() {
   const movieTitle = primaryTitle.title ?? "영화";
 
   return (
-    <SafeAreaView className="flex-1 bg-cinemo-bg">
-      <Header onSearchPress={() => router.push("/search")} />
-
+    <SafeAreaView edges={[]} className="flex-1 bg-cinemo-bg">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 80 }}
@@ -259,6 +259,11 @@ export default function MovieDetailScreen() {
               isReleased={primaryRelease?.status === "RELEASED"}
             />
           </View>
+
+          <MovieRecordActions
+            movieId={movieId ?? ""}
+            openEdit={shouldEditRecord}
+          />
 
           <View className="flex-row flex-wrap gap-4">
             <View className="flex-row items-center gap-1">

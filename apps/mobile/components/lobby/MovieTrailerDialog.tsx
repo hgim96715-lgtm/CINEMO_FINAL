@@ -67,7 +67,6 @@ export function MovieTrailerDialog({
         </DialogClose>
 
         <View
-          className="border-b border-[#C6A15B]/20"
           style={{
             paddingHorizontal: 20,
             paddingTop: insets.top + 20,
@@ -86,7 +85,7 @@ export function MovieTrailerDialog({
         <View className="flex-1 justify-center bg-black">
           <View
             className="w-full overflow-hidden"
-            style={{ height: videoHeight }}
+            style={{ height: videoHeight, borderWidth: 0 }}
           >
             <WebView
               source={{
@@ -101,6 +100,7 @@ export function MovieTrailerDialog({
               allowsInlineMediaPlayback
               allowsFullscreenVideo
               mediaPlaybackRequiresUserAction={false}
+              style={{ borderWidth: 0, backgroundColor: "#000000" }}
             />
           </View>
         </View>

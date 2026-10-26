@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowLeft, CalendarDays, Film } from "lucide-react-native";
+import { CalendarDays, ChevronLeft, Film } from "lucide-react-native";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CINEMO_COLORS } from "@cinemo/shared";
-import { Header } from "@/components/common/Header";
+import { PersonBookmarkButton } from "@/components/people/PersonBookmarkButton";
 import { getImageUrl } from "@/lib/utils";
 import { personDetailQueryOptions } from "@/lib/queries/person-detail.query";
 
@@ -80,9 +80,7 @@ export default function PersonDetailScreen() {
   const profileUrl = getImageUrl(person.profileUrl);
 
   return (
-    <SafeAreaView className="flex-1 bg-cinemo-bg">
-      <Header onSearchPress={() => router.push("/search")} />
-
+    <SafeAreaView edges={[]} className="flex-1 bg-cinemo-bg">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 80 }}
@@ -94,7 +92,7 @@ export default function PersonDetailScreen() {
             onPress={() => router.back()}
             className="mb-5 flex-row items-center gap-1 self-start"
           >
-            <ArrowLeft size={20} color={CINEMO_COLORS.textSecondary} />
+            <ChevronLeft size={20} color={CINEMO_COLORS.textSecondary} />
             <Text className="text-sm text-cinemo-muted">뒤로 가기</Text>
           </Pressable>
 
@@ -131,9 +129,12 @@ export default function PersonDetailScreen() {
               </View>
 
               <View className="min-w-0 flex-1 justify-center">
-                <Text className="text-2xl font-bold text-cinemo-text">
-                  {person.name || "이름 없음"}
-                </Text>
+                <View className="flex-row items-center gap-2">
+                  <Text className="min-w-0 flex-1 text-2xl font-bold text-cinemo-text">
+                    {person.name || "이름 없음"}
+                  </Text>
+                  <PersonBookmarkButton personId={person.id} />
+                </View>
 
                 {person.nameEn && (
                   <Text className="mt-2 text-sm text-cinemo-muted">

@@ -9,12 +9,25 @@ import { getRefreshToken, type MobileLoginResponse } from "@/lib/api/auth";
 
 type HeaderProps = {
   onSearchPress?: () => void;
+  showSearch?: boolean;
+  showAccount?: boolean;
 };
 
-export function Header({ onSearchPress }: HeaderProps) {
+const CINEMO_LOGO = require("../../assets/icon.png");
+
+export function Header({
+  onSearchPress,
+  showSearch = true,
+  showAccount = true,
+}: HeaderProps) {
   const [user, setUser] = useState<MobileLoginResponse["user"] | null>(null);
 
   useEffect(() => {
+    if (!showAccount) {
+      setUser(null);
+      return;
+    }
+
     let mounted = true;
 
     const loadUser = async () => {
@@ -44,7 +57,7 @@ export function Header({ onSearchPress }: HeaderProps) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [showAccount]);
 
   return (
     <View className="flex-row items-center justify-between px-5 py-4">
@@ -53,89 +66,93 @@ export function Header({ onSearchPress }: HeaderProps) {
         onPress={() => router.replace("/lobby")}
       >
         <Image
-          source={require("../../assets/icon.png")}
+          source={CINEMO_LOGO}
           resizeMode="contain"
+          fadeDuration={0}
           style={{ width: 36, height: 36 }}
-          className="h-9 w-9"
         />
       </Pressable>
 
       <View className="flex-row items-center gap-3">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="영화 검색"
-          className="h-11 w-11 items-center justify-center rounded-full"
-          onPress={onSearchPress}
-        >
-          <Ionicons
-            name="search-outline"
-            size={26}
-            color={CINEMO_COLORS.accentLight}
-            style={{ fontSize: 26 }}
-          />
-        </Pressable>
-
-        {user ? (
+        {showSearch && (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${user.nickname} 프로필`}
-            className="flex-row items-center gap-2 rounded-full px-1 py-1"
-            onPress={() => router.push("/my-cinema")}
+            accessibilityLabel="영화 검색"
+            className="h-11 w-11 items-center justify-center rounded-full"
+            onPress={onSearchPress}
           >
-            <View
-              style={{
-                width: 36,
-                height: 36,
-                overflow: "hidden",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: 18,
-                borderWidth: 1,
-                borderColor: `${CINEMO_COLORS.accentLight}80`,
-                backgroundColor: "rgba(255,255,255,0.08)",
-              }}
-            >
-              {user.profileImageUrl ? (
-                <Image
-                  source={{ uri: user.profileImageUrl }}
-                  accessibilityLabel="프로필 이미지"
-                  resizeMode="cover"
-                  style={{ width: 36, height: 36 }}
-                />
-              ) : (
-                <Ionicons
-                  name="person-outline"
-                  size={19}
-                  color={CINEMO_COLORS.textSecondary}
-                />
-              )}
-            </View>
+            <Ionicons
+              name="search-outline"
+              size={26}
+              color={CINEMO_COLORS.accentLight}
+              style={{ fontSize: 26 }}
+            />
+          </Pressable>
+        )}
 
-            <Text
-              numberOfLines={1}
-              style={{
-                maxWidth: 90,
-                color: CINEMO_COLORS.textSecondary,
-                fontSize: 14,
-              }}
+        {showAccount && (
+          user ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${user.nickname} 프로필`}
+              className="flex-row items-center gap-2 rounded-full px-1 py-1"
+              onPress={() => router.push("/my-cinema")}
             >
-              {user.nickname}
-            </Text>
-          </Pressable>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="로그인"
-            className="rounded-full px-3 py-2"
-            onPress={() => router.push("/login")}
-          >
-            <Text
-              className="text-sm text-cinemo-muted"
-              style={{ color: CINEMO_COLORS.textSecondary }}
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  overflow: "hidden",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 18,
+                  borderWidth: 1,
+                  borderColor: `${CINEMO_COLORS.accentLight}80`,
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                }}
+              >
+                {user.profileImageUrl ? (
+                  <Image
+                    source={{ uri: user.profileImageUrl }}
+                    accessibilityLabel="프로필 이미지"
+                    resizeMode="cover"
+                    style={{ width: 36, height: 36 }}
+                  />
+                ) : (
+                  <Ionicons
+                    name="person-outline"
+                    size={19}
+                    color={CINEMO_COLORS.textSecondary}
+                  />
+                )}
+              </View>
+
+              <Text
+                numberOfLines={1}
+                style={{
+                  maxWidth: 90,
+                  color: CINEMO_COLORS.textSecondary,
+                  fontSize: 14,
+                }}
+              >
+                {user.nickname}
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="로그인"
+              className="rounded-full px-3 py-2"
+              onPress={() => router.push("/login")}
             >
-              로그인
-            </Text>
-          </Pressable>
+              <Text
+                className="text-sm text-cinemo-muted"
+                style={{ color: CINEMO_COLORS.textSecondary }}
+              >
+                로그인
+              </Text>
+            </Pressable>
+          )
         )}
       </View>
     </View>

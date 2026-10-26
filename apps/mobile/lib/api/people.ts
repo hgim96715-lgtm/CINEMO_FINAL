@@ -38,3 +38,64 @@ export async function getPerson(
 
   return response.data;
 }
+
+export type PersonBookmarkResponse = {
+  personId: string;
+  bookmarked: boolean;
+};
+
+export async function getPersonBookmark(
+  personId: string,
+  signal?: AbortSignal,
+): Promise<PersonBookmarkResponse> {
+  const response = await apiClient.get<PersonBookmarkResponse>(
+    `/people/${personId}/bookmark`,
+    { signal },
+  );
+
+  return response.data;
+}
+
+export async function addPersonBookmark(
+  personId: string,
+): Promise<PersonBookmarkResponse> {
+  const response = await apiClient.post<PersonBookmarkResponse>(
+    `/people/${personId}/bookmark`,
+  );
+
+  return response.data;
+}
+
+export async function removePersonBookmark(
+  personId: string,
+): Promise<PersonBookmarkResponse> {
+  const response = await apiClient.delete<PersonBookmarkResponse>(
+    `/people/${personId}/bookmark`,
+  );
+
+  return response.data;
+}
+
+export type PersonRole = "DIRECTOR" | "ACTOR";
+
+export type BookmarkedPerson = {
+  id: string;
+  createdAt: string;
+  person: {
+    id: string;
+    name: string;
+    nameEn: string | null;
+    profileUrl: string | null;
+    roles: PersonRole[];
+  };
+};
+
+export async function getBookmarkedPeople(
+  signal?: AbortSignal,
+): Promise<BookmarkedPerson[]> {
+  const response = await apiClient.get<BookmarkedPerson[]>("/people/bookmarks", {
+    signal,
+  });
+
+  return response.data;
+}

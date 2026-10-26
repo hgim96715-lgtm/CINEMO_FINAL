@@ -1,4 +1,8 @@
-import type { MovieResponse, MovieSearchResponse } from "@cinemo/api-contract";
+import type {
+  MovieResponse,
+  MovieSearchResponse,
+  SearchTmdbMoviesResponse,
+} from "@cinemo/api-contract";
 import { apiClient } from "./apiClient";
 
 export async function getMovie(
@@ -30,6 +34,46 @@ export async function searchMovies(
     },
     signal,
   });
+
+  return data;
+}
+
+export async function searchTmdbMovies(
+  query: string,
+  page = 1,
+  signal?: AbortSignal,
+): Promise<SearchTmdbMoviesResponse> {
+  const { data } = await apiClient.get<SearchTmdbMoviesResponse>(
+    "/tmdb/movies/search",
+    {
+      params: { query, page },
+      signal,
+    },
+  );
+
+  return data;
+}
+
+export async function getTmdbMovieDetail(
+  tmdbMovieId: number,
+  signal?: AbortSignal,
+): Promise<{ poster_path: string | null }> {
+  const { data } = await apiClient.get<{ poster_path: string | null }>(
+    `/tmdb/movies/${tmdbMovieId}`,
+    { signal },
+  );
+
+  return data;
+}
+
+export async function importMovieFromTmdb(
+  tmdbMovieId: number,
+): Promise<string> {
+  const { data } = await apiClient.post<string>(
+    `/movie-imports/tmdb/${tmdbMovieId}`,
+    undefined,
+    { timeout: 60_000 },
+  );
 
   return data;
 }

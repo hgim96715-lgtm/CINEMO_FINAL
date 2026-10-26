@@ -147,6 +147,15 @@ export async function updatePostcard(
   );
   return data;
 }
+
+export async function deletePostcard(
+  postcardId: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  await apiClient.delete(`/postcards/${encodeURIComponent(postcardId)}`, {
+    signal,
+  });
+}
 export type SharePostcardInput = {
   channel?: string | null;
 };

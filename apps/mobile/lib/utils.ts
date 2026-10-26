@@ -8,3 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 export function getImageUrl(url: string | null | undefined) {
   return url?.replace(/^http:\/\//i, "https://") ?? null;
 }
+
+export function getTmdbPosterPath(value: unknown) {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}

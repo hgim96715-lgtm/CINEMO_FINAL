@@ -12,6 +12,7 @@ export type {
 
 export type {
   CreatePostcardCommentRequestDto as CreatePostcardCommentRequest,
+  CreatePostcardRequestDto as CreatePostcardRequest,
   PostcardFeedResponseDto as PostcardFeedResponse,
   PostcardCommentResponseDto as PostcardCommentResponse,
   PostcardMediaDto as PostcardMedia,

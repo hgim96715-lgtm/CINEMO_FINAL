@@ -1,6 +1,6 @@
 import { CINEMO_COLORS } from "@cinemo/shared";
 import axios from "axios";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -69,6 +69,8 @@ function moveAfterSocialLogin(result: MobileAppleLoginResponse) {
 
 export default function LoginScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const isFromMyCinema = from === "my-cinema";
 
   const handleAppleLogin = async (
     credential: AppleAuthenticationCredential,
@@ -99,6 +101,7 @@ export default function LoginScreen() {
   };
   return (
     <SafeAreaView
+      edges={isFromMyCinema ? [] : undefined}
       className="flex-1 bg-cinemo-bg"
       style={{
         flex: 1,
@@ -107,11 +110,13 @@ export default function LoginScreen() {
     >
       <CinemoBackground />
 
-      <Header
-        onSearchPress={() => {
-          router.push("/search");
-        }}
-      />
+      {!isFromMyCinema && (
+        <Header
+          onSearchPress={() => {
+            router.push("/search");
+          }}
+        />
+      )}
 
       <View
         className="flex-1 items-center justify-center px-4 py-16"
