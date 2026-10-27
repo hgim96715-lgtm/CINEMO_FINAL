@@ -8,6 +8,7 @@ import Image from "next/image";
 import { PostcardSceneMeta } from "@/components/postcard/PostcardSceneMeta";
 import { PostcardQuoteContent } from "@/components/postcard/PostcardQuoteContent";
 import { GenrePieChart } from "@/components/insights/GenrePieChart";
+import { PopularMovieBarChart } from "@/components/insights/PopularMovieBarChart";
 import { ArrowUpRight } from "lucide-react";
 
 const AUTO_PLAY_INTERVAL = 6_000;
@@ -49,10 +50,14 @@ export function PostcardHeroCarousel() {
   );
 
   const postcards = data?.pages.flatMap((page) => page.items) ?? [];
-  const carouselItemCount = postcards.length > 0 ? postcards.length + 1 : 0;
-  const analyticsSlideIndex = postcards.length;
-  const isAnalyticsSlide =
-    carouselItemCount > 0 && activeIndex === analyticsSlideIndex;
+  const carouselItemCount = postcards.length > 0 ? postcards.length + 2 : 0;
+  const genreAnalyticsSlideIndex = postcards.length;
+  const popularMoviesSlideIndex = postcards.length + 1;
+  const isGenreAnalyticsSlide =
+    carouselItemCount > 0 && activeIndex === genreAnalyticsSlideIndex;
+  const isPopularMoviesSlide =
+    carouselItemCount > 0 && activeIndex === popularMoviesSlideIndex;
+  const isAnalyticsSlide = isGenreAnalyticsSlide || isPopularMoviesSlide;
   const { year, month } = getKoreaYearMonth();
 
   const activePostcard = postcards[activeIndex] ?? postcards[0];
@@ -145,13 +150,19 @@ export function PostcardHeroCarousel() {
                   CINEMO INSIGHT
                 </p>
                 <h2 className="mt-3 text-2xl font-semibold text-cinemo-text sm:text-3xl">
-                  이번 달 개봉작 장르 TOP 5
+                  {isGenreAnalyticsSlide
+                    ? "이번 달 개봉작 장르 TOP 5"
+                    : "인기 영화 TOP 5"}
                 </h2>
               </div>
             </div>
 
             <div className="flex min-h-0 flex-1 items-center">
-              <GenrePieChart compact year={year} month={month} />
+              {isGenreAnalyticsSlide ? (
+                <GenrePieChart compact year={year} month={month} />
+              ) : (
+                <PopularMovieBarChart />
+              )}
             </div>
 
             <div className="flex shrink-0 justify-end gap-2">
@@ -172,10 +183,23 @@ export function PostcardHeroCarousel() {
               <button
                 type="button"
                 aria-label="장르 분석 보기"
-                aria-current={isAnalyticsSlide}
-                onClick={() => setActiveIndex(analyticsSlideIndex)}
+                aria-current={isGenreAnalyticsSlide}
+                onClick={() => setActiveIndex(genreAnalyticsSlideIndex)}
                 className={`h-2 rounded-full transition-all ${
-                  isAnalyticsSlide ? "w-8 bg-cinemo-gold" : "w-2 bg-white/40"
+                  isGenreAnalyticsSlide
+                    ? "w-8 bg-cinemo-gold"
+                    : "w-2 bg-white/40"
+                }`}
+              />
+              <button
+                type="button"
+                aria-label="인기 영화 분석 보기"
+                aria-current={isPopularMoviesSlide}
+                onClick={() => setActiveIndex(popularMoviesSlideIndex)}
+                className={`h-2 rounded-full transition-all ${
+                  isPopularMoviesSlide
+                    ? "w-8 bg-cinemo-gold"
+                    : "w-2 bg-white/40"
                 }`}
               />
             </div>
@@ -291,10 +315,23 @@ export function PostcardHeroCarousel() {
               <button
                 type="button"
                 aria-label="장르 분석 보기"
-                aria-current={isAnalyticsSlide}
-                onClick={() => setActiveIndex(analyticsSlideIndex)}
+                aria-current={isGenreAnalyticsSlide}
+                onClick={() => setActiveIndex(genreAnalyticsSlideIndex)}
                 className={`h-2 rounded-full transition-all ${
-                  isAnalyticsSlide ? "w-8 bg-cinemo-gold" : "w-2 bg-white/40"
+                  isGenreAnalyticsSlide
+                    ? "w-8 bg-cinemo-gold"
+                    : "w-2 bg-white/40"
+                }`}
+              />
+              <button
+                type="button"
+                aria-label="인기 영화 분석 보기"
+                aria-current={isPopularMoviesSlide}
+                onClick={() => setActiveIndex(popularMoviesSlideIndex)}
+                className={`h-2 rounded-full transition-all ${
+                  isPopularMoviesSlide
+                    ? "w-8 bg-cinemo-gold"
+                    : "w-2 bg-white/40"
                 }`}
               />
             </div>
