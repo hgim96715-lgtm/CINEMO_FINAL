@@ -193,7 +193,7 @@ export function Header() {
                 !query.trim() && "md:hidden",
               )}
             >
-              <MovieSearchSuggestions query={query} />
+              <MovieSearchSuggestions query={query} enabled={isSearchOpen} />
             </div>
           </form>
         </div>

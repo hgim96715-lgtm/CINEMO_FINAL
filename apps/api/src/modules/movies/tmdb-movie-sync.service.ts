@@ -36,4 +36,15 @@ export class TmdbMovieSyncService {
 
     return this.repository.syncMovie(movieId, input);
   }
+
+  async syncKoreanReleaseDates(
+    movieId: string,
+    releaseDates: string[],
+  ): Promise<string> {
+    const dates = releaseDates
+      .map((value) => new Date(`${value}T00:00:00.000Z`))
+      .filter((date) => !Number.isNaN(date.getTime()));
+
+    return this.repository.syncKoreanReleaseDates(movieId, dates);
+  }
 }

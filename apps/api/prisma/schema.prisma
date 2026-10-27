@@ -773,6 +773,7 @@ model Venue {
   phone    String? @db.Text
   placeUrl String? @map("place_url") @db.Text
 
+  isActive  Boolean  @default(true) @map("is_active")
   checkedAt DateTime @default(now()) @map("checked_at") @db.Timestamptz(3)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
@@ -781,6 +782,7 @@ model Venue {
 
   @@unique([provider, externalId])
   @@index([type])
+  @@index([type, isActive, region1Code, region2Code, region3Code])
   @@index([region1Code, region2Code, region3Code])
   @@index([name])
   @@index([brandName])

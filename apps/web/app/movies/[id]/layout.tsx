@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { CINEMO_BRAND } from "@cinemo/shared";
 
 import { getCachedMovie } from "@/lib/api/server-movies";
+import { getPreferredMovieTitle } from "@/lib/movies/title";
 
 type MovieLayoutProps = {
   children: ReactNode;
@@ -18,9 +19,9 @@ export async function generateMetadata({
   const { id } = await params;
   const movie = await getCachedMovie(id);
 
-  const primaryTitle =
-    movie?.titles.find((item) => item.titleType === "PRIMARY") ??
-    movie?.titles[0];
+  const primaryTitle = movie
+    ? getPreferredMovieTitle(movie.titles)
+    : undefined;
 
   const title = primaryTitle?.title ?? "영화 상세";
   const poster = movie?.media.find(

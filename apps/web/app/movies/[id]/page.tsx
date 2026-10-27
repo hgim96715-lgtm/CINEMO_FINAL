@@ -7,6 +7,7 @@ import {getCachedMovie} from "@/lib/api/server-movies";
 import Link from "next/link";
 import {MovieWatchOptions} from "@/components/movies/MovieWatchOptions";
 import {MovieSyncRefresh} from "@/components/movies/MovieSyncRefresh";
+import {getPreferredMovieTitle} from "@/lib/movies/title";
 
 type MoviePageProps = {
   params: Promise<{
@@ -32,9 +33,7 @@ export default async function MoviePage({
   if (!movie) {
     notFound();
   }
-  const primaryTitle =
-    movie.titles.find((item) => item.titleType === "PRIMARY") ??
-    movie.titles[0];
+  const primaryTitle = getPreferredMovieTitle(movie.titles);
 
   const originalTitle = movie.titles.find(
     (item) => item.titleType === "ORIGINAL",

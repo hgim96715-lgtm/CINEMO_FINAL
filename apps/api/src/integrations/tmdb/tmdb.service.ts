@@ -189,22 +189,35 @@ export class TmdbService {
       );
 
       const verifiedBatch = await Promise.all(
-        batch.map(async (movie) => {
-          const releaseDates = await this.getMovieReleaseDates(movie.id);
-          const koreanReleases = releaseDates.results.find(
-            (country) => country.iso_3166_1 === "KR",
-          );
+        batch.map(
+          async (
+            movie,
+          ): Promise<TmdbMovieListResponse["results"][number] | null> => {
+            const releaseDates = await this.getMovieReleaseDates(movie.id);
+            const koreanReleases = releaseDates.results.find(
+              (country) => country.iso_3166_1 === "KR",
+            );
 
-          const hasUpcomingKoreanTheatricalRelease =
-            koreanReleases?.release_dates.some(
-              (release) =>
-                [2, 3].includes(release.type) &&
-                release.release_date.slice(0, 10) >= startDate &&
-                release.release_date.slice(0, 10) <= endDate,
-            ) ?? false;
+            const koreanReleaseDates =
+              koreanReleases?.release_dates
+                .filter(
+                  (release) =>
+                    [2, 3].includes(release.type) &&
+                    release.release_date.slice(0, 10) >= startDate &&
+                    release.release_date.slice(0, 10) <= endDate,
+                )
+                .map((release) => release.release_date.slice(0, 10))
+                .filter(
+                  (date, dateIndex, dates) =>
+                    dates.indexOf(date) === dateIndex,
+                )
+                .sort() ?? [];
 
-          return hasUpcomingKoreanTheatricalRelease ? movie : null;
-        }),
+            return koreanReleaseDates.length > 0
+              ? {...movie, koreanReleaseDates}
+              : null;
+          },
+        ),
       );
 
       verifiedResults.push(

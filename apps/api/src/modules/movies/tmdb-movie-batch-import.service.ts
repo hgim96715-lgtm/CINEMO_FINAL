@@ -9,6 +9,7 @@ import { toCreateMovieFromTmdbInput } from "./mappers/tmdb-movie-import.mapper";
 import { MoviesRepository } from "./repositories/movies.repository";
 import { MovieMatcherRepository } from "./repositories/movie-matcher.repository";
 import { TmdbMovieSyncService } from "./tmdb-movie-sync.service";
+import { KmdbMovieEnrichmentService } from "./kmdb-movie-enrichment.service";
 
 @Injectable()
 export class TmdbMovieBatchImportService {
@@ -19,6 +20,7 @@ export class TmdbMovieBatchImportService {
     private readonly moviesRepository: MoviesRepository,
     private readonly movieMatcherRepository: MovieMatcherRepository,
     private readonly tmdbMovieSyncService: TmdbMovieSyncService,
+    private readonly kmdbMovieEnrichmentService: KmdbMovieEnrichmentService,
   ) {}
 
   private async getOrCreateTmdbMovie(
@@ -120,6 +122,21 @@ export class TmdbMovieBatchImportService {
           );
 
           await this.tmdbMovieSyncService.syncMovieFromTmdb(movieId, movie.id);
+
+          await this.tmdbMovieSyncService.syncKoreanReleaseDates(
+            movieId,
+            movie.koreanReleaseDates ?? [],
+          );
+
+          try {
+            await this.kmdbMovieEnrichmentService.enrichMovieByMovieId(movieId);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+
+            this.logger.warn(
+              `TMDB 개봉 예정 영화 KMDb 보완 실패: ${movie.id} - ${message}`,
+            );
+          }
 
           movieIds.add(movieId);
         }

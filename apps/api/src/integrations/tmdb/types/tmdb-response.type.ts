@@ -38,6 +38,8 @@ export interface TmdbPersonMovieCredit extends TmdbMovieSummary {
 
 export interface TmdbMovieListItem extends TmdbMovieSummary {
   genre_ids: number[];
+  /** TMDB release_dates에서 확인한 한국 극장 개봉일 */
+  koreanReleaseDates?: string[];
 }
 
 export interface TmdbMovieDateRange {

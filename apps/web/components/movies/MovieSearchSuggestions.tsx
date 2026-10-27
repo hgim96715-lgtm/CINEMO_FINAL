@@ -24,9 +24,13 @@ const getMovieSearchKey = (
 
 type MovieSearchSuggestionsProps = {
   query: string;
+  enabled?: boolean;
 };
 
-export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
+export function MovieSearchSuggestions({
+  query,
+  enabled = true,
+}: MovieSearchSuggestionsProps) {
   const router = useRouter();
   const closeSearch = useSearchStore((state) => state.closeSearch);
   const keyword = query.trim();
@@ -52,7 +56,7 @@ export function MovieSearchSuggestions({ query }: MovieSearchSuggestionsProps) {
     popularMoviesQueryOptions({
       page: 1,
       limit: 20,
-      enabled: keyword.length === 0,
+      enabled: enabled && keyword.length === 0,
     }),
   );
 

@@ -15,10 +15,13 @@ export class MovieUpcomingSyncService {
   async run(){
     const run=await this.movieSyncService.start(MovieSyncJobType.UPCOMINT_RELEASES);
     try{
-      const [kobisMovieIds,tmdbMovieIds]=await Promise.all([
-          this.kobisMovieBatchImportService.importUpcomingMovies(),
-          this.tmdbMovieBatchImportService.importUpcomingMovies(10)
-      ]);
+      // 두 수집기를 동시에 실행하면 같은 영화의 provider link 생성이 경쟁하여
+      // KOBIS와 TMDB가 서로 다른 Movie 레코드를 만들 수 있음.
+      // KOBIS를 먼저 저장한 뒤 TMDB가 기존 링크를 보강하도록 순차 실행함.
+      const kobisMovieIds =
+        await this.kobisMovieBatchImportService.importUpcomingMovies();
+      const tmdbMovieIds =
+        await this.tmdbMovieBatchImportService.importUpcomingMovies(10);
       const movieIds=[...new Set([...kobisMovieIds,...tmdbMovieIds])];
       await this.movieSyncService.complete(run.id);
       return {

@@ -21,6 +21,14 @@ html {
   scrollbar-gutter: stable;
 }
 
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 body::before {
   position: fixed;
   inset: -12%;

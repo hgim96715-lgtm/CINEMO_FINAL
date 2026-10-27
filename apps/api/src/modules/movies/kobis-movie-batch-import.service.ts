@@ -107,7 +107,6 @@ export class KobisMovieBatchImportService {
         const normalizedReleaseDate = releaseDate?.replaceAll("-", "");
 
         if (
-          movie.productionStatus?.trim() !== "개봉예정" ||
           !normalizedReleaseDate ||
           normalizedReleaseDate < startDate ||
           normalizedReleaseDate > endDate
@@ -666,6 +665,18 @@ export class KobisMovieBatchImportService {
 
     try {
       response = await this.tmdbService.searchMovies(title, 1);
+
+      // KOBIS와 TMDB의 한글 제목이 "최후의 결투"/"최후의 전투"처럼
+      // 번역어만 다를 수 있음. 콜론 앞의 작품명으로 한 번 더 조회해
+      // 같은 TMDB 작품을 찾을 기회를 보장함.
+      const baseTitle = title.split(/[:：]/u)[0]?.trim();
+      if (
+        baseTitle &&
+        baseTitle !== title.trim() &&
+        response.results.length === 0
+      ) {
+        response = await this.tmdbService.searchMovies(baseTitle, 1);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
 

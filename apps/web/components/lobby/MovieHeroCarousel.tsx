@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { getTrailerEmbedUrl } from "@/lib/media/trailer";
+import { getPreferredMovieTitle } from "@/lib/movies/title";
 
 export function MovieHeroCarousel() {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -65,9 +66,7 @@ export function MovieHeroCarousel() {
   if (!currentMovie) return null;
 
   const title =
-    detail?.titles.find((item) => item.titleType === "PRIMARY")?.title ??
-    detail?.titles[0]?.title ??
-    currentMovie.title;
+    getPreferredMovieTitle(detail?.titles ?? [])?.title ?? currentMovie.title;
 
   const releaseDate =
     detail?.releases.find((release) => release.isPrimary)?.releaseDate ??

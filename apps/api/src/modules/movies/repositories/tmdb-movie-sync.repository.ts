@@ -374,4 +374,112 @@ export class TmdbMovieSyncRepository {
       },
     );
   }
+
+  syncKoreanReleaseDates(
+    movieId: string,
+    releaseDates: Date[],
+  ): Promise<string> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        await tx.movie.findUniqueOrThrow({
+          where: {id: movieId},
+        });
+
+        const uniqueDates = [
+          ...new Map(
+            releaseDates.map((date) => [
+              date.toISOString().slice(0, 10),
+              date,
+            ]),
+          ).values(),
+        ].sort((a, b) => a.getTime() - b.getTime());
+
+        if (uniqueDates.length === 0) {
+          return movieId;
+        }
+
+        const initialRelease = await tx.movieRelease.findFirst({
+          where: {
+            movieId,
+            releaseType: ReleaseType.INITIAL,
+            OR: [{countryCode: "KR"}, {countryCode: null}],
+          },
+          orderBy: {releaseDate: "asc"},
+        });
+
+        const initialReleaseDate =
+          initialRelease?.releaseDate ?? uniqueDates[0];
+
+        for (const releaseDate of uniqueDates) {
+          const existingRelease = await tx.movieRelease.findFirst({
+            where: {
+              movieId,
+              releaseDate,
+              OR: [{countryCode: "KR"}, {countryCode: null}],
+            },
+          });
+
+          const releaseType =
+            initialReleaseDate.getTime() !== releaseDate.getTime()
+              ? ReleaseType.RERELEASE
+              : (existingRelease?.releaseType ?? ReleaseType.INITIAL);
+          const status =
+            releaseDate.getTime() > Date.now()
+              ? ReleaseStatus.SCHEDULED
+              : ReleaseStatus.RELEASED;
+
+          if (existingRelease) {
+            await tx.movieRelease.update({
+              where: {id: existingRelease.id},
+              data: {
+                countryCode: "KR",
+                releaseType,
+                status,
+              },
+            });
+            continue;
+          }
+
+          await tx.movieRelease.create({
+            data: {
+              movieId,
+              releaseDate,
+              releaseType,
+              status,
+              countryCode: "KR",
+              isPrimary: false,
+            },
+          });
+        }
+
+        const latestKoreanRelease = await tx.movieRelease.findFirst({
+          where: {
+            movieId,
+            countryCode: "KR",
+            releaseDate: {not: null},
+          },
+          orderBy: {releaseDate: "desc"},
+          select: {id: true},
+        });
+
+        await tx.movieRelease.updateMany({
+          where: {movieId},
+          data: {isPrimary: false},
+        });
+
+        if (latestKoreanRelease) {
+          await tx.movieRelease.update({
+            where: {id: latestKoreanRelease.id},
+            data: {isPrimary: true},
+          });
+        }
+
+        return movieId;
+      },
+      {
+        maxWait: 10_000,
+        timeout: 30_000,
+      },
+    );
+  }
 }

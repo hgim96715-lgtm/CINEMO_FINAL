@@ -101,6 +101,12 @@ export class MoviesController {
   }
 
   @Public()
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
   @Get("popular")
   @ApiOperation({
     summary: "DB에 저장된 인기 영화 조회",
