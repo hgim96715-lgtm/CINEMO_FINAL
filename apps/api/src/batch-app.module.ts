@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { resolve } from "node:path";
 
 import { batchEnvValidationSchema } from "@/config/batch-env.validation";
 import { databaseConfig } from "@/config/database.config";
@@ -10,15 +11,13 @@ import { MoviesModule } from "@/modules/movies/movies.module";
 import { PrismaModule } from "@/prisma/prisma.module";
 import { mailConfig } from "@/config/mail.config";
 import { appConfig } from "@/config/app.config";
-import { MapModule } from "@/modules/map/map.module";
-import { mapConfig } from "@/config/map.config";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      ignoreEnvFile: true,
+      envFilePath: [resolve(__dirname, "../.env"), ".env"],
       load: [
         databaseConfig,
         kobisConfig,
@@ -26,7 +25,6 @@ import { mapConfig } from "@/config/map.config";
         kmdbConfig,
         mailConfig,
         appConfig,
-        mapConfig,
       ],
       validationSchema: batchEnvValidationSchema,
       validationOptions: {
@@ -37,7 +35,6 @@ import { mapConfig } from "@/config/map.config";
     }),
     PrismaModule,
     MoviesModule,
-    MapModule,
   ],
 })
 export class BatchAppModule {}
