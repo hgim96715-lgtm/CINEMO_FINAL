@@ -15,6 +15,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json apps/api/package.json
 COPY packages/api-contract/package.json packages/api-contract/package.json
 COPY packages/shared/package.json packages/shared/package.json
+COPY patches patches
 
 
 # Nest CLI와 TypeScript는 API build 단계의 devDependency이므로 반드시 설치
