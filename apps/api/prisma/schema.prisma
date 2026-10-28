@@ -812,6 +812,7 @@ model UserMovieNotification {
   releaseId        String?               @db.Uuid
   notificationType MovieNotificationType
   enabled          Boolean               @default(true)
+  dayBeforeNotifiedAt DateTime?          @db.Timestamptz(3) @map("day_before_notified_at")
   notifiedAt       DateTime?             @db.Timestamptz(3)
   createdAt        DateTime              @default(now()) @db.Timestamptz(3)
   updatedAt        DateTime              @updatedAt @db.Timestamptz(3)

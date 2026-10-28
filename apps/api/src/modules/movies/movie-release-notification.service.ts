@@ -6,6 +6,29 @@ import { PushTokenService } from "@/modules/notifications/push-token.service";
 
 import { UserMovieNotificationRepository } from "./repositories/user-movie-notification.repository";
 
+type ReleaseNotificationTiming = "day-before" | "day-of";
+
+const getSeoulDateKey = (date: Date) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  return [
+    parts.find((part) => part.type === "year")?.value,
+    parts.find((part) => part.type === "month")?.value,
+    parts.find((part) => part.type === "day")?.value,
+  ].join("-");
+};
+
+const addDays = (dateKey: string, days: number) => {
+  const date = new Date(`${dateKey}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+
 @Injectable()
 export class MovieReleaseNotificationService {
   private readonly logger = new Logger(MovieReleaseNotificationService.name);
@@ -20,17 +43,27 @@ export class MovieReleaseNotificationService {
   async sendDueReleaseNotifications(now = new Date()) {
     const notifications =
       await this.notificationRepository.findDueReleaseNotifications(now);
+    const today = getSeoulDateKey(now);
+    const tomorrow = addDays(today, 1);
 
     let sendCount = 0;
     let failedCount = 0;
+    let skippedCount = 0;
 
     for (const notification of notifications) {
       const releaseDate = notification.release?.releaseDate;
       const movieId = notification.movie.id;
       const movieTitle = notification.movie.titles[0]?.title ?? "영화";
       const email = notification.user.email;
+      const releaseDateKey = releaseDate?.toISOString().slice(0, 10);
+      const timing: ReleaseNotificationTiming | null =
+        releaseDateKey === today
+          ? "day-of"
+          : releaseDateKey === tomorrow
+            ? "day-before"
+            : null;
 
-      if (!releaseDate) {
+      if (!releaseDate || !timing) {
         continue;
       }
 
@@ -41,30 +74,48 @@ export class MovieReleaseNotificationService {
             movieId,
             movieTitle,
             releaseDate,
+            timing,
           });
         }
 
         const pushTokens = await this.pushTokenService.findTokensByUserId(
           notification.user.id,
         );
+        let hasPushDelivery = false;
 
         if (pushTokens.length > 0) {
-          await this.expoPushService.send(
+          const tickets = await this.expoPushService.send(
             pushTokens.map(({ token }) => ({
               to: token,
-              title: "개봉 알림",
-              body: `${movieTitle}이(가) 개봉했습니다.`,
+              title: timing === "day-before" ? "내일 개봉 알림" : "오늘 개봉 알림",
+              body:
+                timing === "day-before"
+                  ? `${movieTitle}이(가) 내일 개봉합니다.`
+                  : `${movieTitle}이(가) 오늘 개봉했습니다.`,
               sound: "default",
               data: {
                 movieId,
                 route: `/movies/${movieId}`,
                 releaseDate: releaseDate.toISOString(),
+                timing,
               },
             })),
           );
+          hasPushDelivery = tickets.some((ticket) => ticket.status === "ok");
         }
 
-        await this.notificationRepository.marksNotified(notification.id);
+        if (!email && !hasPushDelivery) {
+          skippedCount += 1;
+          this.logger.warn(
+            `개봉 알림 전달 수단 없음: ${notification.id}`,
+          );
+          continue;
+        }
+
+        await this.notificationRepository.marksNotified(
+          notification.id,
+          timing,
+        );
         sendCount += 1;
       } catch (error) {
         failedCount += 1;
@@ -85,6 +136,7 @@ export class MovieReleaseNotificationService {
       totalCount: notifications.length,
       sendCount,
       failedCount,
+      skippedCount,
     };
   }
 }

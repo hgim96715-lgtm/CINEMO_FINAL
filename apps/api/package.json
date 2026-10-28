@@ -5,6 +5,7 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "cinema:import": "pnpm build && node dist/scripts/cinema-venue-import.js",
+    "movie:release-notifications": "pnpm build && node dist/scripts/movie-release-notification-sync.js",
     "movie:merge": "pnpm build && node dist/scripts/merge-movie-records.js",
     "backfill:directors": "pnpm build && node dist/scripts/backfill-duplicate-directors.js",
     "typecheck": "../../node_modules/typescript/bin/tsc --noEmit",

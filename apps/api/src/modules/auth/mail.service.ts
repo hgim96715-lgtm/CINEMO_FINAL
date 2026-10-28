@@ -19,6 +19,7 @@ type MovieReleasNotificationEmailInput={
   movieId:string;
   movieTitle:string;
   releaseDate:Date;
+  timing:"day-before" | "day-of";
 }
 
 @Injectable()
@@ -199,15 +200,19 @@ export class MailService {
 
   async sendMovieReleaseNotificationEmail(input:MovieReleasNotificationEmailInput){
     const movieUrl=new URL(`/movies/${input.movieId}`,this.frontendUrl);
-    const releaseDateLabel=this.koreanDateTimeFormatter.format(input.releaseDate);
+    const releaseDateLabel = new Intl.DateTimeFormat("ko-KR", {
+      dateStyle: "medium",
+      timeZone: "Asia/Seoul",
+    }).format(input.releaseDate);
+    const timingLabel = input.timing === "day-before" ? "내일 개봉" : "오늘 개봉";
     const { error } = await this.resend.emails.send({
       from: this.from,
       to: [input.to],
-      subject: `개봉 예정 영화 알림: ${input.movieTitle}`,
+      subject: `${timingLabel} 알림: ${input.movieTitle}`,
       text: [
         "CINEMO 개봉 예정 영화 알림",
         "",
-        `${input.movieTitle}이(가) ${releaseDateLabel} 개봉 예정입니다.`,
+        `${input.movieTitle}이(가) ${releaseDateLabel} ${timingLabel}합니다.`,
         "",
         `영화 상세 보기: ${movieUrl.toString()}`,
       ].join("\n"),
@@ -221,12 +226,12 @@ export class MailService {
             </div>
 
             <h1 style="color:#fffaf0;">
-              개봉 예정 영화 알림
+              ${timingLabel} 알림
             </h1>
 
             <p style="color:#b6c3c0; font-size:16px; line-height:1.8;">
               <strong>${input.movieTitle}</strong>이(가)
-              <strong>${releaseDateLabel}</strong> 개봉 예정입니다.
+              <strong>${releaseDateLabel}</strong> ${timingLabel}합니다.
             </p>
 
             <a

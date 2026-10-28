@@ -3,6 +3,30 @@ import { MovieNotificationType, ReleaseStatus } from "@prisma/client";
 
 import { PrismaService } from "@/prisma/prisma.service";
 
+const getSeoulDateKey = (date: Date) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  return `${year}-${month}-${day}`;
+};
+
+const addDays = (dateKey: string, days: number) => {
+  const date = new Date(`${dateKey}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+
+const toUtcDate = (dateKey: string) =>
+  new Date(`${dateKey}T00:00:00.000Z`);
+
 @Injectable()
 export class UserMovieNotificationRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -85,29 +109,54 @@ export class UserMovieNotificationRepository {
   }
 
   findDueReleaseNotifications(now = new Date()) {
+    const today = getSeoulDateKey(now);
+    const tomorrow = addDays(today, 1);
+    const dayAfterTomorrow = addDays(today, 2);
+    const releaseStatuses = [
+      ReleaseStatus.ANNOUNCED,
+      ReleaseStatus.SCHEDULED,
+      ReleaseStatus.RELEASED,
+    ];
+
     return this.prisma.userMovieNotification.findMany({
       where: {
         notificationType: MovieNotificationType.RELEASE,
         enabled: true,
-        notifiedAt: null,
-        user: {
-          email: {
-            not: null,
-          },
-        },
-        release: {
-          is: {
-            releaseDate: {
-              lte: now,
+        OR: [
+          {
+            dayBeforeNotifiedAt: null,
+            release: {
+              is: {
+                releaseDate: {
+                  gte: toUtcDate(tomorrow),
+                  lt: toUtcDate(dayAfterTomorrow),
+                },
+                status: {
+                  in: releaseStatuses,
+                },
+              },
             },
-            status: {
-              in: [ReleaseStatus.SCHEDULED, ReleaseStatus.SCHEDULED],
+          },
+          {
+            notifiedAt: null,
+            release: {
+              is: {
+                releaseDate: {
+                  gte: toUtcDate(today),
+                  lt: toUtcDate(tomorrow),
+                },
+                status: {
+                  in: releaseStatuses,
+                },
+              },
             },
           },
-        },
+        ],
       },
       select: {
         id: true,
+        dayBeforeNotifiedAt: true,
+        notifiedAt: true,
         user: {
           select: {
             id: true,
@@ -139,13 +188,18 @@ export class UserMovieNotificationRepository {
       },
     });
   }
-  async marksNotified(notificationId: string) {
+  async marksNotified(
+    notificationId: string,
+    timing: "day-before" | "day-of",
+  ) {
     return this.prisma.userMovieNotification.update({
       where: {
         id: notificationId,
       },
       data: {
-        notifiedAt: new Date(),
+        ...(timing === "day-before"
+          ? { dayBeforeNotifiedAt: new Date() }
+          : { notifiedAt: new Date() }),
       },
     });
   }
