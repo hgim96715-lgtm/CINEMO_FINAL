@@ -55,7 +55,9 @@ export class MovieReleaseNotificationService {
       const movieId = notification.movie.id;
       const movieTitle = notification.movie.titles[0]?.title ?? "영화";
       const email = notification.user.email;
-      const releaseDateKey = releaseDate?.toISOString().slice(0, 10);
+      const releaseDateKey = releaseDate
+        ? getSeoulDateKey(releaseDate)
+        : undefined;
       const timing: ReleaseNotificationTiming | null =
         releaseDateKey === today
           ? "day-of"

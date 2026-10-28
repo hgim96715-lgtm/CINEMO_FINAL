@@ -24,8 +24,10 @@ const addDays = (dateKey: string, days: number) => {
   return date.toISOString().slice(0, 10);
 };
 
-const toUtcDate = (dateKey: string) =>
-  new Date(`${dateKey}T00:00:00.000Z`);
+// releaseDate는 한국 개봉일의 자정(Asia/Seoul)을 UTC instant로 저장함.
+// 날짜 문자열에 Z를 붙이면 UTC 자정으로 해석되어 하루 범위가 어긋남.
+const toSeoulMidnight = (dateKey: string) =>
+  new Date(`${dateKey}T00:00:00.000+09:00`);
 
 @Injectable()
 export class UserMovieNotificationRepository {
@@ -128,8 +130,8 @@ export class UserMovieNotificationRepository {
             release: {
               is: {
                 releaseDate: {
-                  gte: toUtcDate(tomorrow),
-                  lt: toUtcDate(dayAfterTomorrow),
+                  gte: toSeoulMidnight(tomorrow),
+                  lt: toSeoulMidnight(dayAfterTomorrow),
                 },
                 status: {
                   in: releaseStatuses,
@@ -142,8 +144,8 @@ export class UserMovieNotificationRepository {
             release: {
               is: {
                 releaseDate: {
-                  gte: toUtcDate(today),
-                  lt: toUtcDate(tomorrow),
+                  gte: toSeoulMidnight(today),
+                  lt: toSeoulMidnight(tomorrow),
                 },
                 status: {
                   in: releaseStatuses,

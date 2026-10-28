@@ -13,7 +13,7 @@ export function toMovieSearchItemResponseDto(
   rank: number | null = null,
   ranking?: MovieRankingData,
 ): MovieSearchItemResponseDto {
-  const title =
+  const koreanTitle =
     movie.titles.find(
       (item) =>
         item.titleType === "PRIMARY" &&
@@ -26,6 +26,16 @@ export function toMovieSearchItemResponseDto(
         /[가-힣]/.test(item.title),
     ) ??
     movie.titles.find((item) => /[가-힣]/.test(item.title));
+
+  const originalTitle = movie.titles.find(
+    (item) => item.titleType === "ORIGINAL",
+  );
+  const hasKoreanRelease = movie.releases.some(
+    (release) => release.countryCode === "KR",
+  );
+  const title = hasKoreanRelease
+    ? koreanTitle ?? originalTitle
+    : originalTitle ?? koreanTitle;
 
   const release =
     movie.releases.find((item) => item.isPrimary) ?? movie.releases[0];

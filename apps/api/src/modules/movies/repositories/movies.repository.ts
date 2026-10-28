@@ -1273,7 +1273,25 @@ export class MoviesRepository {
     const releasedReleaseWhere: Prisma.MovieReleaseWhereInput = {
       releaseDate,
       status: ReleaseStatus.RELEASED,
-      OR: [{ countryCode: "KR" }, { countryCode: null, isPrimary: true }],
+    };
+
+    const releasedMovieWhere: Prisma.MovieWhereInput = {
+      OR: [
+        {
+          releases: {
+            some: {
+              ...releasedReleaseWhere,
+              countryCode: "KR",
+            },
+          },
+        },
+        {
+          AND: [
+            { releases: { some: releasedReleaseWhere } },
+            { watchOptions: { some: { regionCode: "KR" } } },
+          ],
+        },
+      ],
     };
 
     const where: Prisma.MovieWhereInput = {
@@ -1291,11 +1309,7 @@ export class MoviesRepository {
           },
         },
       ],
-      releases: {
-        some: {
-          ...releasedReleaseWhere,
-        },
-      },
+      ...releasedMovieWhere,
     };
 
     // 개봉일이 빠른 순서가 아니라 최근 개봉작부터 보여주기 위해
@@ -1322,9 +1336,11 @@ export class MoviesRepository {
               AND release.status = 'RELEASED'
               AND (
                 release."countryCode" = 'KR'
-                OR (
-                  release."countryCode" IS NULL
-                  AND release."isPrimary" = true
+                OR EXISTS (
+                  SELECT 1
+                  FROM movie_watch_options AS option
+                  WHERE option."movieId" = movie.id
+                    AND option."regionCode" = 'KR'
                 )
               )
           )
@@ -1337,9 +1353,11 @@ export class MoviesRepository {
             AND release.status = 'RELEASED'
             AND (
               release."countryCode" = 'KR'
-              OR (
-                release."countryCode" IS NULL
-                AND release."isPrimary" = true
+              OR EXISTS (
+                SELECT 1
+                FROM movie_watch_options AS option
+                WHERE option."movieId" = movie.id
+                  AND option."regionCode" = 'KR'
               )
             )
           ) DESC, movie.id ASC
