@@ -1,6 +1,7 @@
 {
   "name": "cinemo-final",
   "private": true,
+  "packageManager": "pnpm@11.1.0",
   "scripts": {
     "dev:api": "pnpm --filter @cinemo/api dev",
     "dev:web": "pnpm --filter @cinemo/web dev",
