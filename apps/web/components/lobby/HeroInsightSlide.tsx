@@ -1,8 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { MapPin } from "lucide-react";
-
 import { CinemaRegionPieChart } from "@/components/insights/CinemaRegionPieChart";
 import { GenrePieChart } from "@/components/insights/GenrePieChart";
 import { PopularMovieBarChart } from "@/components/insights/PopularMovieBarChart";
@@ -66,16 +63,6 @@ export function HeroInsightSlide({
           <PopularMovieBarChart />
         )}
       </div>
-
-      {kind === "cinema" && (
-        <Link
-          href="/lobby/cinemas"
-          className="mt-2 inline-flex shrink-0 items-center self-start rounded-lg border border-cinemo-gold/40 bg-cinemo-gold/10 px-3.5 py-2 text-xs font-medium text-cinemo-gold transition hover:border-cinemo-gold/70 hover:bg-cinemo-gold/15"
-        >
-          지도 보기
-          <MapPin aria-hidden="true" className="ml-1 size-3.5" />
-        </Link>
-      )}
 
       <HeroCarouselIndicators
         postcardIds={postcardIds}

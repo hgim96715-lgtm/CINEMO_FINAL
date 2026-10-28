@@ -2400,15 +2400,15 @@ DEPENDENCIES:
   - "ExpoCrypto (from `../../../node_modules/.pnpm/expo-crypto@57.0.4_expo@57.0.26/node_modules/expo-crypto/ios`)"
   - "ExpoDevice (from `../../../node_modules/.pnpm/expo-device@57.0.2_expo@57.0.26/node_modules/expo-device/ios`)"
   - "ExpoDomWebView (from `../../../node_modules/.pnpm/@expo+dom-webview@57.0.1_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-c_625ad572851e160ad943c29084f20296/node_modules/@expo/dom-webview/ios`)"
-  - "ExpoFileSystem (from `../../../node_modules/.pnpm/expo-file-system@57.0.7_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-co_fd53b88c2e5cf057672fab09ea8c47af/node_modules/expo-file-system/ios/ExpoFileSystem.podspec`)"
-  - "ExpoFont (from `../../../node_modules/.pnpm/expo-font@57.0.4_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-color@8.1_a5c0f439129ce5f2e77507ec0f2cd4e6/node_modules/expo-font/ios/ExpoFont.podspec`)"
+  - "ExpoFileSystem (from `../../../node_modules/.pnpm/expo-file-system@57.0.7_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-co_fd53b88c2e5cf057672fab09ea8c47af/node_modules/expo-file-system/ios`)"
+  - "ExpoFont (from `../../../node_modules/.pnpm/expo-font@57.0.4_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-color@8.1_a5c0f439129ce5f2e77507ec0f2cd4e6/node_modules/expo-font/ios`)"
   - "ExpoGlassEffect (from `../../../node_modules/.pnpm/expo-glass-effect@57.0.4_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-c_d405d699ac35df95a6077014e4b4d34d/node_modules/expo-glass-effect/ios`)"
   - "ExpoKeepAwake (from `../../../node_modules/.pnpm/expo-keep-awake@57.0.2_expo@57.0.26_react@19.2.3/node_modules/expo-keep-awake/ios`)"
   - "ExpoLinking (from `../../../node_modules/.pnpm/expo-linking@57.0.11_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-color_84b507ec72da5890d091ef9f08deba86/node_modules/expo-linking/ios`)"
   - "ExpoLogBox (from `../../../node_modules/.pnpm/@expo+log-box@57.0.4_@expo+dom-webview@57.0.1_expo@57.0.26_react-native@0.86.3_@babel+c_ed2ae49d80f73905ca57689061803890/node_modules/@expo/log-box`)"
-  - "ExpoModulesCore (from `../../../node_modules/.pnpm/expo-modules-core@57.0.20_react-native-worklets@0.10.1_@babel+core@7.29.7_supports-colo_fed07983b816b21de11d0fe34028e61e/node_modules/expo-modules-core/ExpoModulesCore.podspec`)"
+  - "ExpoModulesCore (from `../../../node_modules/.pnpm/expo-modules-core@57.0.20_react-native-worklets@0.10.1_@babel+core@7.29.7_supports-colo_fed07983b816b21de11d0fe34028e61e/node_modules/expo-modules-core`)"
   - "ExpoModulesJSI (from `../../../node_modules/.pnpm/expo-modules-jsi@57.1.1_react-native@0.86.3_@babel+core@7.29.7_supports-color@8.1.1__@r_7f7bf77856fc9ea43ed498d021e2c796/node_modules/expo-modules-jsi/apple`)"
-  - "ExpoModulesWorklets (from `../../../node_modules/.pnpm/expo-modules-core@57.0.20_react-native-worklets@0.10.1_@babel+core@7.29.7_supports-colo_fed07983b816b21de11d0fe34028e61e/node_modules/expo-modules-core/ExpoModulesWorklets.podspec`)"
+  - "ExpoModulesWorklets (from `../../../node_modules/.pnpm/expo-modules-core@57.0.20_react-native-worklets@0.10.1_@babel+core@7.29.7_supports-colo_fed07983b816b21de11d0fe34028e61e/node_modules/expo-modules-core`)"
   - "ExpoModulesWorkletsAdapter (from `../../../node_modules/.pnpm/expo-modules-core@57.0.20_react-native-worklets@0.10.1_@babel+core@7.29.7_supports-colo_fed07983b816b21de11d0fe34028e61e/node_modules/expo-modules-core`)"
   - "ExpoNotifications (from `../../../node_modules/.pnpm/expo-notifications@57.0.23_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports_5a745ff575b85efce05a86cc176171a6/node_modules/expo-notifications/ios`)"
   - "ExpoRouter (from `../../../node_modules/.pnpm/expo-router@57.0.24_0c0034eeeae97a85ed8511254013892d/node_modules/expo-router/ios`)"
@@ -2535,9 +2535,9 @@ EXTERNAL SOURCES:
   ExpoDomWebView:
     :path: "../../../node_modules/.pnpm/@expo+dom-webview@57.0.1_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-c_625ad572851e160ad943c29084f20296/node_modules/@expo/dom-webview/ios"
   ExpoFileSystem:
-    :podspec: "../../../node_modules/.pnpm/expo-file-system@57.0.7_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-co_fd53b88c2e5cf057672fab09ea8c47af/node_modules/expo-file-system/ios/ExpoFileSystem.podspec"
+    :path: "../../../node_modules/.pnpm/expo-file-system@57.0.7_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-co_fd53b88c2e5cf057672fab09ea8c47af/node_modules/expo-file-system/ios"
   ExpoFont:
-    :podspec: "../../../node_modules/.pnpm/expo-font@57.0.4_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-color@8.1_a5c0f439129ce5f2e77507ec0f2cd4e6/node_modules/expo-font/ios/ExpoFont.podspec"
+    :path: "../../../node_modules/.pnpm/expo-font@57.0.4_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-color@8.1_a5c0f439129ce5f2e77507ec0f2cd4e6/node_modules/expo-font/ios"
   ExpoGlassEffect:
     :path: "../../../node_modules/.pnpm/expo-glass-effect@57.0.4_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_supports-c_d405d699ac35df95a6077014e4b4d34d/node_modules/expo-glass-effect/ios"
   ExpoKeepAwake:
@@ -2547,11 +2547,11 @@ EXTERNAL SOURCES:
   ExpoLogBox:
     :path: "../../../node_modules/.pnpm/@expo+log-box@57.0.4_@expo+dom-webview@57.0.1_expo@57.0.26_react-native@0.86.3_@babel+c_ed2ae49d80f73905ca57689061803890/node_modules/@expo/log-box"
   ExpoModulesCore:
-    :podspec: "../../../node_modules/.pnpm/expo-modules-core@57.0.20_react-native-worklets@0.10.1_@babel+core@7.29.7_supports-colo_fed07983b816b21de11d0fe34028e61e/node_modules/expo-modules-core/ExpoModulesCore.podspec"
+    :path: "../../../node_modules/.pnpm/expo-modules-core@57.0.20_react-native-worklets@0.10.1_@babel+core@7.29.7_supports-colo_fed07983b816b21de11d0fe34028e61e/node_modules/expo-modules-core"
   ExpoModulesJSI:
     :path: "../../../node_modules/.pnpm/expo-modules-jsi@57.1.1_react-native@0.86.3_@babel+core@7.29.7_supports-color@8.1.1__@r_7f7bf77856fc9ea43ed498d021e2c796/node_modules/expo-modules-jsi/apple"
   ExpoModulesWorklets:
-    :podspec: "../../../node_modules/.pnpm/expo-modules-core@57.0.20_react-native-worklets@0.10.1_@babel+core@7.29.7_supports-colo_fed07983b816b21de11d0fe34028e61e/node_modules/expo-modules-core/ExpoModulesWorklets.podspec"
+    :path: "../../../node_modules/.pnpm/expo-modules-core@57.0.20_react-native-worklets@0.10.1_@babel+core@7.29.7_supports-colo_fed07983b816b21de11d0fe34028e61e/node_modules/expo-modules-core"
   ExpoModulesWorkletsAdapter:
     :path: "../../../node_modules/.pnpm/expo-modules-core@57.0.20_react-native-worklets@0.10.1_@babel+core@7.29.7_supports-colo_fed07983b816b21de11d0fe34028e61e/node_modules/expo-modules-core"
   ExpoNotifications:
@@ -2756,7 +2756,7 @@ SPEC CHECKSUMS:
   ExpoKeepAwake: 72af0b3be3615e59bc819d26061ff4e06b155ee0
   ExpoLinking: 52819633a2225a0c2a3cd3de64056b021bb55202
   ExpoLogBox: 80957303325cd4439137765c90a87d7f22aaf2ff
-  ExpoModulesCore: 98e8f69670fd30de1e946bb87144955123605641
+  ExpoModulesCore: c94975c83c43a8e6f95dda76c7537a4f24eeffff
   ExpoModulesJSI: 383849017851b1ebacbd78cfaa32b18b6152585e
   ExpoModulesWorklets: 40d29262efc034e4357f2713e6037a41a27218d6
   ExpoModulesWorkletsAdapter: df5e0c17edd54ad4a83637bc668784661074044c

@@ -14,9 +14,7 @@
       "backgroundColor": "#101014"
     },
     "ios": {
-      "associatedDomains": [
-        "applinks:www.cinemo.site"
-      ],
+      "associatedDomains": ["applinks:www.cinemo.site"],
       "usesAppleSignIn": true,
       "supportsTablet": true,
       "deploymentTarget": "16.4",
@@ -32,10 +30,7 @@
         {
           "action": "VIEW",
           "autoVerify": true,
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ],
+          "category": ["BROWSABLE", "DEFAULT"],
           "data": {
             "scheme": "https",
             "host": "www.cinemo.site",
@@ -61,7 +56,8 @@
         {
           "ios": {
             "deploymentTarget": "16.4",
-            "enableSceneSupport": true
+            "enableSceneSupport": true,
+            "usePrecompiledModules": false
           }
         }
       ],

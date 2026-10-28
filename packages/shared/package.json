@@ -3,6 +3,10 @@
   "private": true,
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./maps/korea-provinces.json": "./assets/maps/korea-provinces.json"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit"
   }

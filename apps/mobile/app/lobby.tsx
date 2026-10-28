@@ -4,6 +4,7 @@ import { PostcardHeroCarousel } from "@/components/lobby/PostcardHeroCarousel";
 import { UpcomingMovies } from "@/components/lobby/UpcomingMovies";
 import { ReleasedMovies } from "@/components/lobby/ReleasedMovies";
 import { ScrollView } from "react-native";
+import { CinemaMapButton } from "@/components/lobby/CinemaMapButton";
 
 export default function LobbyScreen() {
   return (
@@ -14,6 +15,7 @@ export default function LobbyScreen() {
         contentContainerStyle={{ paddingBottom: 40 }}
       >
         <PostcardHeroCarousel />
+        <CinemaMapButton />
         <MovieRanking />
         <UpcomingMovies />
         <ReleasedMovies />

@@ -85,8 +85,14 @@ export function CinemaVenueList({
     );
   }
 
+  const isScrollable = venues.length > 3;
+
   return (
-    <ul className="grid gap-3 sm:grid-cols-2">
+    <ul
+      className={`grid gap-3 sm:grid-cols-2 ${
+        isScrollable ? "max-h-[36rem] overflow-y-auto pr-2" : ""
+      }`}
+    >
       {venues.map((cinema) => (
         <li key={cinema.id}>
           <article className="rounded-xl border border-white/10 bg-white/5 p-4 transition hover:border-cinemo-gold/40 hover:bg-white/8">
@@ -132,8 +138,9 @@ export function CinemaVenueList({
                   )}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-lg border border-cinemo-gold/40 bg-cinemo-gold/10 px-3 py-2 text-xs font-medium text-cinemo-gold transition hover:border-cinemo-gold hover:bg-cinemo-gold/20"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-cinemo-gold/40 bg-cinemo-gold/10 px-3 py-2 text-xs font-medium text-cinemo-gold transition hover:border-cinemo-gold hover:bg-cinemo-gold/20"
                 >
+                  <MapPin size={14} strokeWidth={2} aria-hidden="true" />
                   길찾기
                 </a>
               )}

@@ -1,0 +1,57 @@
+diff --git a/build/src/start/doctor/apple/SimulatorAppPrerequisite.js b/build/src/start/doctor/apple/SimulatorAppPrerequisite.js
+index 6d9de9f08cc0fda6b828ecdf996785b331a3880c..6195951dd38382775d60f286bf46842fcde91ae0 100644
+--- a/build/src/start/doctor/apple/SimulatorAppPrerequisite.js
++++ b/build/src/start/doctor/apple/SimulatorAppPrerequisite.js
+@@ -37,6 +37,11 @@ function _interop_require_default(obj) {
+     };
+ }
+ const debug = require('debug')('expo:doctor:apple:simulatorApp');
++const SUPPORTED_APP_IDS = new Set([
++    'com.apple.dt.Devices',
++    'com.apple.iphonesimulator',
++    'com.apple.CoreSimulator.SimulatorTrampoline'
++]);
+ // NOTE(cedric): Xcode 27 Beta moved the `<xcode>/Contents/Developer/Applications` to `<xcode>/Contents/Applications`
+ const XCODE_DEVICE_HUB_PATH = '../Applications/DeviceHub.app/Contents/Info.plist';
+ const XCODE_SIMULATOR_PATH = './Applications/Simulator.app/Contents/Info.plist';
+@@ -46,9 +51,9 @@ class SimulatorAppPrerequisite extends _Prerequisite.Prerequisite {
+         // Xcode 27 replaces Simulator with DeviceHub
+         // See: https://developer.apple.com/documentation/xcode/device-hub
+         // TODO(cedric): once Xcode 27 stable is released, resolve DeviceHub first
+-        let appId = await (0, _osascript().safeIdOfAppAsync)('Simulator').then((appId)=>{
+-            return appId || (0, _osascript().safeIdOfAppAsync)('DeviceHub');
+-        });
++        // LaunchServices can incorrectly resolve "Simulator" to Xcode on Xcode 27.
++        // Ignore unsupported bundle IDs and continue with the DeviceHub/Xcode paths.
++        let appId = await getSupportedAppIdAsync();
+         if (!appId) {
+             const xcodePath = await getXcodeSelectPath();
+             debug('Xcode select path: %s', xcodePath);
+@@ -61,7 +66,7 @@ class SimulatorAppPrerequisite extends _Prerequisite.Prerequisite {
+         if (!appId) {
+             throw new _Prerequisite.PrerequisiteCommandError('SIMULATOR_APP', "Can't determine id of Device Hub or Simulator app; the Device Hub or Simulator is most likely not installed on this machine. Run `sudo xcode-select -s /Applications/Xcode.app`");
+         }
+-        if (appId !== 'com.apple.dt.Devices' && appId !== 'com.apple.iphonesimulator' && appId !== 'com.apple.CoreSimulator.SimulatorTrampoline') {
++        if (!SUPPORTED_APP_IDS.has(appId)) {
+             throw new _Prerequisite.PrerequisiteCommandError('SIMULATOR_APP', `Device Hub or Simulator is installed but is identified as '${appId}'; don't know what that is.`);
+         }
+         debug('Xcode simulator app id: %s', appId);
+@@ -77,6 +82,18 @@ class SimulatorAppPrerequisite extends _Prerequisite.Prerequisite {
+         }
+     }
+ }
++async function getSupportedAppIdAsync() {
++    for (const appName of [
++        'Simulator',
++        'DeviceHub'
++    ]) {
++        const appId = await (0, _osascript().safeIdOfAppAsync)(appName);
++        if (appId && SUPPORTED_APP_IDS.has(appId)) {
++            return appId;
++        }
++    }
++    return null;
++}
+ async function getXcodeSelectPath() {
+     try {
+         const result = await (0, _spawnasync().default)('xcode-select', [

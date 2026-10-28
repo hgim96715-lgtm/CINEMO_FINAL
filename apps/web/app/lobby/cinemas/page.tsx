@@ -10,7 +10,7 @@ import {
   CINEMA_REGION_LABELS,
   INTEGRATED_GWANGJU_JEONNAM_CODE,
   normalizeCinemaRegionCode,
-} from "@/components/lobby/CinemaRegionMap";
+} from "@cinemo/shared";
 import { CinemaRegion2Select } from "@/components/map/CinemaRegion2Select";
 import { CinemaRegionSelect } from "@/components/map/CinemaRegionSelect";
 import { CinemaKakaoMap } from "@/components/map/CinemaKakaoMap";
@@ -41,9 +41,15 @@ export default function CinemaVenuesPage() {
       venue.region1Name,
     );
 
-    return isIntegratedGwangjuJeonnam
+    const matchesRegion1 = isIntegratedGwangjuJeonnam
       ? ["29", "46"].includes(normalizedRegionCode ?? "")
       : normalizedRegionCode === region1Code;
+
+    if (!matchesRegion1) {
+      return false;
+    }
+
+    return region2Code ? venue.region2Code === region2Code : true;
   });
 
   const brandCounts = useMemo(() => {
@@ -58,16 +64,13 @@ export default function CinemaVenuesPage() {
   }, [selectedVenues]);
 
   const mapVenues = selectedVenues.filter((venue) => {
-    const matchesRegion2 = region2Code
-      ? venue.region2Code === region2Code
-      : true;
     const matchesBrand = brandName
       ? brandName === "기타"
         ? !venue.brandName?.trim()
         : venue.brandName === brandName
       : true;
 
-    return matchesRegion2 && matchesBrand;
+    return matchesBrand;
   });
 
   const handleRegion1Change = (nextRegion1Code?: string) => {
@@ -94,6 +97,16 @@ export default function CinemaVenuesPage() {
       : CINEMA_REGION_LABELS[region1Code] ??
         "선택 지역"
     : "전국";
+
+  const selectedRegion2Name = region2Code
+    ? (selectedVenuesQuery.data ?? []).find(
+        (venue) => venue.region2Code === region2Code,
+      )?.region2Name
+    : undefined;
+
+  const selectedAreaName = selectedRegion2Name
+    ? `${selectedRegionName} ${selectedRegion2Name}`
+    : selectedRegionName;
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-5 py-12">
@@ -136,10 +149,10 @@ export default function CinemaVenuesPage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-sm tracking-[0.2em] text-cinemo-gold">
-                {selectedRegionName}
+                {selectedAreaName}
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-cinemo-text">
-                {selectedRegionName} 영화관 {selectedVenues.length}곳
+                {selectedAreaName} 영화관 {selectedVenues.length}곳
               </h2>
             </div>
 
@@ -191,7 +204,7 @@ export default function CinemaVenuesPage() {
               KAKAO MAP
             </p>
             <h2 className="mt-2 text-xl font-semibold text-cinemo-text">
-              {selectedRegionName} 영화관 위치
+              {selectedAreaName} 영화관 위치
             </h2>
           </div>
           <div className="h-[min(60vh,520px)] min-h-[340px] overflow-hidden rounded-2xl">
