@@ -6,14 +6,16 @@ import { useEffect, useState } from "react";
 
 import {
   normalizeSearchText,
-  movieSearchQueryOptions,
   popularMoviesQueryOptions,
   tmdbMovieSearchQueryOptions,
+  unifiedSearchQueryOptions,
 } from "@/lib/queries/movie-search.query";
 import { importMovieFromTmdb } from "@/lib/api/movies";
 import { useSearchStore } from "@/stores/search.store";
 import { ApiErrorState } from "../common/ApiErrorState";
 import { MovieSuggestionItem } from "./MovieSuggestionItem";
+import { GenreSearchList } from "../search/GenreSearchList";
+import { PersonSearchList } from "../search/PersonSearchList";
 
 const hasKoreanTitle = (value: string) => /[가-힣]/.test(value);
 
@@ -61,14 +63,14 @@ export function MovieSearchSuggestions({
   );
 
   const searchQuery = useQuery(
-    movieSearchQueryOptions({
+    unifiedSearchQueryOptions({
       query: debouncedKeyword,
       page: 1,
       limit: 5,
     }),
   );
   const shouldFetchTmdb =
-    searchQuery.isSuccess && searchQuery.data.items.length < 5;
+    searchQuery.isSuccess && searchQuery.data.movies.length < 5;
   const tmdbQuery = useQuery(
     tmdbMovieSearchQueryOptions({
       query: debouncedKeyword,
@@ -140,7 +142,9 @@ export function MovieSearchSuggestions({
     );
   }
 
-  const dbMovies = searchQuery.data?.items ?? [];
+  const dbMovies = searchQuery.data?.movies ?? [];
+  const people = searchQuery.data?.people ?? [];
+  const genres = searchQuery.data?.genres ?? [];
 
   const dbMovieKeys = new Set(
     dbMovies.map((movie) =>
@@ -149,6 +153,7 @@ export function MovieSearchSuggestions({
   );
   const tmdbMovies = (tmdbQuery.data?.results ?? [])
     .filter((movie) => hasKoreanTitle(movie.title))
+    .filter((movie) => Boolean(movie.poster_path))
     .filter(
       (movie) =>
         !dbMovieKeys.has(
@@ -180,7 +185,12 @@ export function MovieSearchSuggestions({
     );
   }
 
-  if (dbMovies.length === 0 && tmdbMovies.length === 0) {
+  if (
+    dbMovies.length === 0 &&
+    tmdbMovies.length === 0 &&
+    people.length === 0 &&
+    genres.length === 0
+  ) {
     return (
       <p className="px-2 py-3 text-sm text-white/50">검색 결과가 없습니다.</p>
     );
@@ -197,15 +207,42 @@ export function MovieSearchSuggestions({
       )}
 
       {dbMovies.length > 0 && (
-        <ul className="grid gap-2 md:gap-3">
-          {dbMovies.map((movie) => (
-            <MovieSuggestionItem
-              key={movie.id}
-              movie={movie}
-              onSelect={closeSearch}
-            />
-          ))}
-        </ul>
+        <section>
+          <h2 className="mb-2 px-2 text-xs tracking-[0.2em] text-cinemo-gold">
+            영화
+          </h2>
+          <ul className="grid gap-2 md:gap-3">
+            {dbMovies.map((movie) => (
+              <MovieSuggestionItem
+                key={movie.id}
+                movie={movie}
+                onSelect={closeSearch}
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {people.length > 0 && (
+        <section>
+          <h2 className="mb-2 px-2 text-xs tracking-[0.2em] text-cinemo-gold">
+            인물
+          </h2>
+          <PersonSearchList
+            people={people}
+            compact
+            onSelect={closeSearch}
+          />
+        </section>
+      )}
+
+      {genres.length > 0 && (
+        <section>
+          <h2 className="mb-2 px-2 text-xs tracking-[0.2em] text-cinemo-gold">
+            장르
+          </h2>
+          <GenreSearchList genres={genres} compact onSelect={closeSearch} />
+        </section>
       )}
 
       {tmdbMovies.length > 0 && (

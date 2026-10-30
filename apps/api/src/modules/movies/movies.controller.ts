@@ -39,6 +39,7 @@ import { GetMovieCalendarRequestDto } from "@/modules/movies/dto/requests/get-mo
 import { MovieGenreCountResponseDto } from "@/modules/movies/dto/responses/movie-genre-count.response.dto";
 import { GetMovieGenreAnalyticsRequestDto } from "@/modules/movies/dto/requests/get-movie-genre-analytics.request.dto";
 import { toMovieGenreDateRange } from "./mappers/movie-genre-analytics.mapper";
+import { UnifiedSearchResponseDto } from "./dto/responses/unified-search.response.dto";
 
 @ApiTags("Movies")
 @Controller("movies")
@@ -48,6 +49,30 @@ export class MoviesController {
     private readonly userMovieRecordService: UserMovieRecordService,
     private readonly userMovieNotificationService: UserMovieNotificationService,
   ) {}
+
+  @Public()
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
+  @Get("search/unified")
+  @ApiOperation({
+    summary: "CINEMO 통합 검색",
+    description: "영화·인물·장르 검색 결과를 한 번에 반환",
+  })
+  @ApiOkResponse({
+    type: UnifiedSearchResponseDto,
+    description: "영화·인물·장르 통합 검색 결과",
+  })
+  unifiedSearch(@Query() params: SearchMoviesRequestDto) {
+    return this.moviesService.unifiedSearch(
+      params.query,
+      params.page,
+      params.limit,
+    );
+  }
 
   @ApiConflictResponse({
     description:

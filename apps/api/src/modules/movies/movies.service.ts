@@ -17,6 +17,8 @@ import {
 import { GetReleasedMoviesRequestDto } from "./dto/requests/get-released-movies.request.dto";
 import { GetMovieModerationRequestDto } from "./dto/requests/get-movie-moderation.request.dto";
 import { MovieVisibility } from "@prisma/client";
+import { PeopleRepository } from "./repositories/people.repository";
+import { UnifiedSearchResponseDto } from "./dto/responses/unified-search.response.dto";
 
 type UpcomingDateRange = {
   startDate: Date;
@@ -131,7 +133,36 @@ const getReleasedDateRange = (
 
 @Injectable()
 export class MoviesService {
-  constructor(private readonly movieRepository: MoviesRepository) {}
+  constructor(
+    private readonly movieRepository: MoviesRepository,
+    private readonly peopleRepository: PeopleRepository,
+  ) {}
+
+  async unifiedSearch(
+    query: string,
+    page: number,
+    limit: number,
+  ): Promise<UnifiedSearchResponseDto> {
+    const [movieResult, people, genres] = await Promise.all([
+      this.movieRepository.search(query, page, limit),
+      this.peopleRepository.search(query, Math.min(limit, 5)),
+      this.movieRepository.searchGenres(query, Math.min(limit, 5)),
+    ]);
+
+    return {
+      movies: movieResult.movies.map((movie) =>
+        toMovieSearchItemResponseDto(movie, null),
+      ),
+      people: people.map((person) => ({
+        id: person.id,
+        name: person.name,
+        nameEn: person.nameEn,
+        profileUrl: person.profileUrl,
+        roles: [...new Set(person.credits.map((credit) => credit.creditType))],
+      })),
+      genres,
+    };
+  }
 
   async getDuplicateMovieCandidates() {
     const movies = await this.movieRepository.findMoviesForDuplicateAudit();

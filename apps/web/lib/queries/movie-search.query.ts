@@ -6,6 +6,7 @@ import {
   getUpcomingMovies,
   ReleasedMoviesParams,
   searchMovies,
+  searchUnified,
   SearchMoviesParams,
   searchTmdbMovies,
   UpcomingMoviesParams,
@@ -21,6 +22,19 @@ export const movieSearchQueryOptions = ({
     queryKey: ["movies", "search", query, page, limit],
     queryFn: ({ signal }) => searchMovies({ query, page, limit }, signal),
     enabled: enabled && query.trim().length > 0,
+  });
+
+export const unifiedSearchQueryOptions = ({
+  query,
+  page = 1,
+  limit = 10,
+  enabled = true,
+}: SearchMoviesParams & { enabled?: boolean }) =>
+  queryOptions({
+    queryKey: ["search", "unified", query, page, limit],
+    queryFn: ({ signal }) => searchUnified({ query, page, limit }, signal),
+    enabled: enabled && query.trim().length > 0,
+    staleTime: 60_000,
   });
 
 type PopularMoviesQueryOptions = {

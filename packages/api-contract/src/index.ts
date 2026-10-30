@@ -21,3 +21,22 @@ export type {
   PostcardStyleDto as PostcardStyle,
   UpdatePostcardRequestDto as UpdatePostcardRequest,
 } from "./generated/types.gen";
+
+export type UnifiedSearchPerson = {
+  id: string;
+  name: string;
+  nameEn: string | null;
+  profileUrl: string | null;
+  roles: Array<"DIRECTOR" | "ACTOR">;
+};
+
+export type UnifiedSearchGenre = {
+  name: string;
+  count: number;
+};
+
+export type UnifiedSearchResponse = {
+  movies: import("./generated/types.gen").MovieSearchItemResponseDto[];
+  people: UnifiedSearchPerson[];
+  genres: UnifiedSearchGenre[];
+};

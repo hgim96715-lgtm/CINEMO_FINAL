@@ -2,6 +2,7 @@ import type {
   MovieResponse,
   MovieSearchResponse,
   SearchTmdbMoviesResponse,
+  UnifiedSearchResponse,
   UserMovieRecordResponse,
 } from "@cinemo/api-contract";
 import { apiClient } from "./apiClient";
@@ -36,6 +37,25 @@ export async function searchMovies(
     },
     signal,
   });
+
+  return data;
+}
+
+export async function searchUnified(
+  params: SearchMoviesParams,
+  signal?: AbortSignal,
+): Promise<UnifiedSearchResponse> {
+  const { data } = await apiClient.get<UnifiedSearchResponse>(
+    "/movies/search/unified",
+    {
+      params: {
+        query: params.query,
+        page: params.page ?? 1,
+        limit: params.limit ?? 10,
+      },
+      signal,
+    },
+  );
 
   return data;
 }

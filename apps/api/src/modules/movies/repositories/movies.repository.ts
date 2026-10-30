@@ -309,6 +309,44 @@ export class MoviesRepository {
     };
   }
 
+  async searchGenres(
+    query: string,
+    limit: number,
+  ): Promise<Array<{ name: string; count: number }>> {
+    const keyword = query.trim();
+
+    if (!keyword) {
+      return [];
+    }
+
+    const genres = await this.prisma.movieGenre.groupBy({
+      by: ["name"],
+      where: {
+        name: {
+          contains: keyword,
+          mode: "insensitive",
+        },
+        movie: {
+          visibility: MovieVisibility.PUBLIC,
+        },
+      },
+      _count: {
+        movieId: true,
+      },
+      orderBy: {
+        _count: {
+          movieId: "desc",
+        },
+      },
+      take: limit,
+    });
+
+    return genres.map((genre) => ({
+      name: genre.name,
+      count: genre._count.movieId,
+    }));
+  }
+
   // Web SEO용 sitemap 생성을 위해 영화 ID와 수정 시각만 조회
   findSitemapMovies(): Prisma.PrismaPromise<MovieSitemapItem[]> {
     return this.prisma.movie.findMany({

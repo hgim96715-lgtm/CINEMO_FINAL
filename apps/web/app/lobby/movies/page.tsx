@@ -4,11 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 import {
   normalizeSearchText,
-  movieSearchQueryOptions,
   tmdbMovieSearchQueryOptions,
+  unifiedSearchQueryOptions,
 } from "@/lib/queries/movie-search.query";
 import { MovieSearchList } from "@/components/movies/MovieSearchList";
 import { TmdbMovieSearchList } from "@/components/movies/TmdbMovieSearchList";
+import { PersonSearchList } from "@/components/search/PersonSearchList";
+import { GenreSearchList } from "@/components/search/GenreSearchList";
 import { ApiErrorState } from "@/components/common/ApiErrorState";
 import { useSearchParams } from "next/navigation";
 
@@ -17,14 +19,14 @@ function MoviesPageContent() {
   const query = searchParams.get("query") ?? "";
 
   const dbQuery = useQuery(
-    movieSearchQueryOptions({
+    unifiedSearchQueryOptions({
       query,
       page: 1,
       limit: 10,
     }),
   );
   const shouldFetchTmdb =
-    dbQuery.isSuccess && dbQuery.data.items.length < 10;
+    dbQuery.isSuccess && dbQuery.data.movies.length < 10;
   const tmdbQuery = useQuery(
     tmdbMovieSearchQueryOptions({
       query,
@@ -60,12 +62,15 @@ function MoviesPageContent() {
     );
   }
 
-  const dbMovies = dbQuery.data?.items ?? [];
+  const dbMovies = dbQuery.data?.movies ?? [];
+  const people = dbQuery.data?.people ?? [];
+  const genres = dbQuery.data?.genres ?? [];
   const dbMovieTitles = new Set(
     dbMovies.map((movie) => normalizeSearchText(movie.title)),
   );
   const tmdbMovies = (tmdbQuery.data?.results ?? [])
     .filter((movie) => /[가-힣]/.test(movie.title))
+    .filter((movie) => Boolean(movie.poster_path))
     .filter(
       (movie) => !dbMovieTitles.has(normalizeSearchText(movie.title)),
     )
@@ -99,7 +104,12 @@ function MoviesPageContent() {
     );
   }
 
-  if (dbMovies.length === 0 && tmdbMovies.length === 0) {
+  if (
+    dbMovies.length === 0 &&
+    tmdbMovies.length === 0 &&
+    people.length === 0 &&
+    genres.length === 0
+  ) {
     return (
       <main className="min-h-[calc(100vh-5.5rem)] px-6 py-16">
         <div className="mx-auto max-w-6xl">
@@ -126,7 +136,32 @@ function MoviesPageContent() {
             &quot;{query}&quot; 검색 결과
           </h1>
         </div>
-        {dbMovies.length > 0 && <MovieSearchList movies={dbMovies} />}
+        {people.length > 0 && (
+          <section className="mb-12">
+            <h2 className="mb-5 text-xl font-semibold text-cinemo-text">
+              인물
+            </h2>
+            <PersonSearchList people={people} />
+          </section>
+        )}
+
+        {genres.length > 0 && (
+          <section className="mb-12">
+            <h2 className="mb-5 text-xl font-semibold text-cinemo-text">
+              장르
+            </h2>
+            <GenreSearchList genres={genres} />
+          </section>
+        )}
+
+        {dbMovies.length > 0 && (
+          <section>
+            <h2 className="mb-5 text-xl font-semibold text-cinemo-text">
+              영화
+            </h2>
+            <MovieSearchList movies={dbMovies} />
+          </section>
+        )}
 
         {tmdbMovies.length > 0 && (
           <div className={dbMovies.length > 0 ? "mt-14" : undefined}>
