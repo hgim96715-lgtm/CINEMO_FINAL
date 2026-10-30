@@ -73,11 +73,16 @@ export default function PersonDetailPage() {
       ? `${biography.slice(0, 240)}...`
       : biography;
 
-  const visibleCredits = showFullCredits
-    ? person.credits
-    : person.credits.slice(0, 3);
+  const usableCredits = person.credits.filter(
+    (credit) =>
+      credit.movie.title.trim() &&
+      credit.movie.releaseDate &&
+      credit.movie.posterUrl,
+  );
 
-  console.log(person);
+  const visibleCredits = showFullCredits
+    ? usableCredits
+    : usableCredits.slice(0, 3);
 
   const birthDate = person.birthDate ? person.birthDate.slice(0, 10) : null;
 
@@ -164,7 +169,7 @@ export default function PersonDetailPage() {
         <section className="mt-10">
           <h2 className="text-2xl font-bold">필모그래피</h2>
 
-          {person.credits.length === 0 ? (
+          {usableCredits.length === 0 ? (
             <p className="mt-6 text-white/45">필모그래피 정보가 없습니다.</p>
           ) : (
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -206,7 +211,7 @@ export default function PersonDetailPage() {
                   </div>
                 </Link>
               ))}
-              {person.credits.length > 3 && (
+              {usableCredits.length > 3 && (
                 <button
                   type="button"
                   onClick={() => setShowFullCredits((previous) => !previous)}

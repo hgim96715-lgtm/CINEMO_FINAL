@@ -10,13 +10,15 @@ async function bootstrap() {
   const app = await NestFactory.createApplicationContext(BatchAppModule);
   
   try {
+    const pageCount = Number(process.argv[2] ?? 10);
     const tmdbMovieBatchImportService = app.get(
         TmdbMovieBatchImportService,
     );
     
-    // 10페이지 = 최대 약 200개
     const movieIds =
-        await tmdbMovieBatchImportService.importPopularMovies(10);
+        await tmdbMovieBatchImportService.importPopularMovies(
+          Number.isInteger(pageCount) && pageCount > 0 ? pageCount : 10,
+        );
     
     logger.log(`인기 영화 동기화 완료: ${movieIds.length}개`);
   } finally {

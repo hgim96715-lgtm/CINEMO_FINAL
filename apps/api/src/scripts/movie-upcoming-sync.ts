@@ -11,8 +11,11 @@ async function bootstrap() {
 
   try {
     const movieUpcomingSyncService = app.get(MovieUpcomingSyncService);
+    const pageCount = Number(process.argv[2] ?? 10);
 
-    await movieUpcomingSyncService.run();
+    await movieUpcomingSyncService.run(
+      Number.isInteger(pageCount) && pageCount > 0 ? pageCount : 10,
+    );
   } finally {
     await app.close();
   }

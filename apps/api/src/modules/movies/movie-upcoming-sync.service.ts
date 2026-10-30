@@ -12,7 +12,7 @@ export class MovieUpcomingSyncService {
       private readonly tmdbMovieBatchImportService: TmdbMovieBatchImportService,
   ) {}
   
-  async run(){
+  async run(pageCount = 10){
     const run=await this.movieSyncService.start(MovieSyncJobType.UPCOMINT_RELEASES);
     try{
       // 두 수집기를 동시에 실행하면 같은 영화의 provider link 생성이 경쟁하여
@@ -21,7 +21,7 @@ export class MovieUpcomingSyncService {
       const kobisMovieIds =
         await this.kobisMovieBatchImportService.importUpcomingMovies();
       const tmdbMovieIds =
-        await this.tmdbMovieBatchImportService.importUpcomingMovies(10);
+        await this.tmdbMovieBatchImportService.importUpcomingMovies(pageCount);
       const movieIds=[...new Set([...kobisMovieIds,...tmdbMovieIds])];
       await this.movieSyncService.complete(run.id);
       return {
