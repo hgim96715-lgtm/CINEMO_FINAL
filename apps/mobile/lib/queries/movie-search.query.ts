@@ -1,10 +1,19 @@
 import { queryOptions } from "@tanstack/react-query";
 import {
   searchMovies,
+  searchUnified,
   getTmdbMovieDetail,
   searchTmdbMovies,
   type SearchMoviesParams,
 } from "@/lib/api/movies";
+
+export const unifiedSearchQueryOptions = (params: SearchMoviesParams) =>
+  queryOptions({
+    queryKey: ["search", "unified", params],
+    queryFn: ({ signal }) => searchUnified(params, signal),
+    enabled: params.query.trim().length > 0,
+    staleTime: 60_000,
+  });
 
 export const movieSearchQueryOptions = (params: SearchMoviesParams) =>
   queryOptions({

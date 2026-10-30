@@ -1,11 +1,16 @@
 import {
-  movieSearchQueryOptions,
-  tmdbMovieDetailQueryOptions,
+  unifiedSearchQueryOptions,
   tmdbMovieSearchQueryOptions,
   normalizeSearchText,
 } from "@/lib/queries/movie-search.query";
+import type {
+  MovieSearchItemResponse,
+  SearchTmdbMoviesResponse,
+  UnifiedSearchGenre,
+  UnifiedSearchPerson,
+} from "@cinemo/api-contract";
 import { importMovieFromTmdb } from "@/lib/api/movies";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Search, X } from "lucide-react-native";
@@ -22,7 +27,20 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { popularMoviesQueryOptions } from "@/lib/queries/movie-popular.query";
 import { CinemoBackground } from "@/components/common/CinemoBackground";
-import { getImageUrl, getTmdbPosterPath } from "@/lib/utils";
+import { getImageUrl } from "@/lib/utils";
+
+type TmdbMovie = SearchTmdbMoviesResponse["results"][number];
+
+type SearchListItem =
+  | { kind: "section"; id: string; title: string }
+  | { kind: "person"; id: string; person: UnifiedSearchPerson }
+  | { kind: "genre"; id: string; genre: UnifiedSearchGenre }
+  | { kind: "local"; id: string; movie: MovieSearchItemResponse }
+  | {
+      kind: "tmdb";
+      id: number;
+      movie: TmdbMovie;
+    };
 
 export default function SearchScreen() {
   const [keyword, setKeyword] = useState("");
@@ -30,7 +48,7 @@ export default function SearchScreen() {
   const [importingTmdbId, setImportingTmdbId] = useState<number | null>(null);
 
   const searchQuery = useQuery(
-    movieSearchQueryOptions({
+    unifiedSearchQueryOptions({
       query: submittedKeyword,
       page: 1,
       limit: 10,
@@ -41,7 +59,10 @@ export default function SearchScreen() {
     tmdbMovieSearchQueryOptions({
       query: submittedKeyword,
       page: 1,
-      enabled: submittedKeyword.trim().length > 0,
+      enabled:
+        searchQuery.isSuccess &&
+        submittedKeyword.trim().length > 0 &&
+        searchQuery.data.movies.length < 10,
     }),
   );
 
@@ -56,14 +77,16 @@ export default function SearchScreen() {
   const hasKorean = (value: string) => /[가-힣0-9]/.test(value);
 
   const movies = submittedKeyword
-    ? (searchQuery.data?.items ?? [])
+    ? (searchQuery.data?.movies ?? [])
     : (popularQuery.data?.items.filter((item) => hasKorean(item.title)) ?? []);
+  const people = submittedKeyword ? (searchQuery.data?.people ?? []) : [];
+  const genres = submittedKeyword ? (searchQuery.data?.genres ?? []) : [];
 
   const localMovieTitles = new Set(
     movies.map((movie) => normalizeSearchText(movie.title)),
   );
   const tmdbMovies = (tmdbQuery.data?.results ?? []).filter(
-    (movie) => /[가-힣]/.test(movie.title),
+    (movie) => /[가-힣]/.test(movie.title) && Boolean(movie.poster_path),
   ).filter(
     (movie, index, results) => {
       const normalizedTitle = normalizeSearchText(movie.title);
@@ -77,21 +100,43 @@ export default function SearchScreen() {
       );
     },
   );
-  const tmdbPosterQueries = useQueries({
-    queries: tmdbMovies.map((movie) => tmdbMovieDetailQueryOptions(movie.id)),
-  });
-  const tmdbPosterById = new Map(
-    tmdbMovies.map((movie, index) => [
-      movie.id,
-      getTmdbPosterPath(movie.poster_path) ??
-        getTmdbPosterPath(tmdbPosterQueries[index]?.data?.poster_path),
-    ]),
-  );
-
-  const listItems = [
-    ...movies.map((movie) => ({ kind: "local" as const, movie })),
-    ...tmdbMovies.map((movie) => ({ kind: "tmdb" as const, movie })),
-  ];
+  const listItems: SearchListItem[] = submittedKeyword
+    ? [
+        ...(people.length > 0
+          ? [{ kind: "section" as const, id: "people-section", title: "인물" }]
+          : []),
+        ...people.map((person) => ({
+          kind: "person" as const,
+          id: person.id,
+          person,
+        })),
+        ...(genres.length > 0
+          ? [{ kind: "section" as const, id: "genres-section", title: "장르" }]
+          : []),
+        ...genres.map((genre) => ({
+          kind: "genre" as const,
+          id: genre.name,
+          genre,
+        })),
+        ...(movies.length > 0 || tmdbMovies.length > 0
+          ? [{ kind: "section" as const, id: "movies-section", title: "영화" }]
+          : []),
+        ...movies.map((movie) => ({
+          kind: "local" as const,
+          id: movie.id,
+          movie,
+        })),
+        ...tmdbMovies.map((movie) => ({
+          kind: "tmdb" as const,
+          id: movie.id,
+          movie,
+        })),
+      ]
+    : movies.map((movie) => ({
+        kind: "local" as const,
+        id: movie.id,
+        movie,
+      }));
 
   const selectTmdbMovie = async (tmdbMovieId: number) => {
     if (importingTmdbId !== null) return;
@@ -130,7 +175,7 @@ export default function SearchScreen() {
               }
             }}
             onSubmitEditing={submitSearch}
-            placeholder="영화 제목 검색"
+            placeholder="영화·인물·장르 검색"
             placeholderTextColor="#8fb8b3"
             returnKeyType="search"
             className="h-12 w-full rounded-xl border border-cinemo-border bg-cinemo-surface px-4 pr-12 text-cinemo-text"
@@ -160,7 +205,7 @@ export default function SearchScreen() {
 
       <FlatList
         data={listItems}
-        keyExtractor={(item) => `${item.kind}-${item.movie.id}`}
+        keyExtractor={(item) => `${item.kind}-${item.id}`}
         contentContainerClassName="gap-4 px-5 "
         contentContainerStyle={{
           paddingBottom: 120,
@@ -174,24 +219,38 @@ export default function SearchScreen() {
         }
 
         ListEmptyComponent={
-          submittedKeyword && !searchQuery.isPending && !tmdbQuery.isPending ? (
+          submittedKeyword &&
+          !searchQuery.isPending &&
+          !tmdbQuery.isPending &&
+          !searchQuery.isFetching &&
+          !tmdbQuery.isFetching ? (
             <View className="items-center py-8">
               {searchQuery.isError ? (
                 <>
-                  <Text>검색 결과를 불러오지 못했습니다.</Text>
-                  <Pressable onPress={() => searchQuery.refetch()}>
-                    <Text className="mt-3">다시 시도</Text>
+                  <Text className="text-cinemo-text">
+                    검색 결과를 불러오지 못했습니다.
+                  </Text>
+                  <Pressable
+                    onPress={() => searchQuery.refetch()}
+                    className="mt-3 rounded-xl border border-cinemo-gold/40 px-4 py-2"
+                  >
+                    <Text className="text-cinemo-gold">다시 시도</Text>
                   </Pressable>
                 </>
               ) : tmdbQuery.isError ? (
                 <>
-                  <Text>외부 영화 검색을 불러오지 못했습니다.</Text>
-                  <Pressable onPress={() => tmdbQuery.refetch()}>
-                    <Text className="mt-3">다시 시도</Text>
+                  <Text className="text-cinemo-text">
+                    영화 검색 결과를 불러오지 못했습니다.
+                  </Text>
+                  <Pressable
+                    onPress={() => tmdbQuery.refetch()}
+                    className="mt-3 rounded-xl border border-cinemo-gold/40 px-4 py-2"
+                  >
+                    <Text className="text-cinemo-gold">다시 시도</Text>
                   </Pressable>
                 </>
               ) : (
-                <Text>검색 결과가 없습니다.</Text>
+                <Text className="text-cinemo-muted">검색 결과가 없습니다.</Text>
               )}
             </View>
           ) : null
@@ -205,11 +264,73 @@ export default function SearchScreen() {
           ) : null
         }
         renderItem={({ item }) => {
+          if (item.kind === "section") {
+            return (
+              <Text className="pb-1 pt-3 text-lg font-semibold text-cinemo-text">
+                {item.title}
+              </Text>
+            );
+          }
+
+          if (item.kind === "person") {
+            const profileUrl = getImageUrl(item.person.profileUrl);
+
+            return (
+              <Pressable
+                className="flex-row items-center gap-4 rounded-2xl border border-cinemo-border bg-cinemo-surface px-4 py-3"
+                onPress={() => router.push(`/people/${item.person.id}`)}
+              >
+                {profileUrl ? (
+                  <Image
+                    source={{ uri: profileUrl }}
+                    resizeMode="cover"
+                    className="h-14 w-14 rounded-full"
+                    accessibilityLabel={`${item.person.name} 프로필`}
+                  />
+                ) : (
+                  <View className="h-14 w-14 items-center justify-center rounded-full bg-cinemo-bg">
+                    <Text className="text-xs text-cinemo-muted">인물</Text>
+                  </View>
+                )}
+
+                <View className="min-w-0 flex-1">
+                  <Text className="text-base font-semibold text-cinemo-text">
+                    {item.person.name}
+                  </Text>
+                  {item.person.nameEn ? (
+                    <Text className="mt-1 text-sm text-cinemo-muted">
+                      {item.person.nameEn}
+                    </Text>
+                  ) : null}
+                </View>
+              </Pressable>
+            );
+          }
+
+          if (item.kind === "genre") {
+            return (
+              <Pressable
+                className="flex-row items-center justify-between rounded-2xl border border-cinemo-border bg-cinemo-surface px-4 py-4"
+                onPress={() => {
+                  setKeyword(item.genre.name);
+                  setSubmittedKeyword(item.genre.name);
+                }}
+              >
+                <Text className="text-base font-semibold text-cinemo-text">
+                  {item.genre.name}
+                </Text>
+                <Text className="text-sm text-cinemo-gold">
+                  영화 {item.genre.count}편
+                </Text>
+              </Pressable>
+            );
+          }
+
           const posterUrl =
             item.kind === "local"
               ? getImageUrl(item.movie.posterUrl)
-              : tmdbPosterById.get(item.movie.id)
-                ? `https://image.tmdb.org/t/p/w185${tmdbPosterById.get(item.movie.id)}`
+              : item.movie.poster_path
+                ? `https://image.tmdb.org/t/p/w185${item.movie.poster_path}`
                 : null;
 
           return (
