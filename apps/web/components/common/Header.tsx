@@ -11,12 +11,15 @@ import Image from "next/image";
 import Link from "next/link";
 import cinemoLogo from "@/app/icon.png";
 import {useCallback, useEffect, useRef, useState} from "react";
+import {useQueryClient} from "@tanstack/react-query";
 import {MovieSearchSuggestions} from "../movies/MovieSearchSuggestions";
 import {cn} from "@/lib/utils";
 import {useAuthStore} from "@/stores/auth.store";
+import {postcardFeedQueryOptions} from "@/lib/queries/postcard-feed.query";
 
 export function Header() {
   const user = useAuthStore((state) => state.user);
+  const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
   const isLobby = pathname === "/lobby";
@@ -82,6 +85,11 @@ export function Header() {
     router.push(`/lobby/movies?query=${encodeURIComponent(query)}`);
   };
 
+  const handleHomeClick = () => {
+    resetSearchForm();
+    void queryClient.prefetchInfiniteQuery(postcardFeedQueryOptions());
+  };
+
   return (
     <header
       className={cn(
@@ -100,7 +108,7 @@ export function Header() {
       >
         <Link
           href="/lobby"
-          onClick={resetSearchForm}
+          onClick={handleHomeClick}
           aria-label={CINEMO_BRAND.name}
           className="flex shrink-0 items-center"
         >

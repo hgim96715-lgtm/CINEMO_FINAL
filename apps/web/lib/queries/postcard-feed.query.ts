@@ -2,18 +2,21 @@ import { infiniteQueryOptions } from "@tanstack/react-query";
 
 import { getMyPostcards, getPostcardFeed } from "@/lib/api/postcards";
 
+const HERO_POSTCARD_PAGE_SIZE = 2;
 const POSTCARD_PAGE_SIZE = 20;
 
 export const postcardFeedQueryOptions = () =>
   infiniteQueryOptions({
     queryKey: ["postcards", "feed"],
     initialPageParam: undefined as string | undefined,
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
 
     queryFn: ({ pageParam, signal }) =>
       getPostcardFeed(
         {
           cursor: pageParam,
-          pageSize: POSTCARD_PAGE_SIZE,
+          pageSize: HERO_POSTCARD_PAGE_SIZE,
         },
         signal,
       ),

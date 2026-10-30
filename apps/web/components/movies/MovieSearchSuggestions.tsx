@@ -105,6 +105,7 @@ export function MovieSearchSuggestions({
         <ApiErrorState
           message="인기 영화를 불러오지 못했습니다."
           onRetry={() => popularQuery.refetch()}
+          compact
         />
       );
     }
@@ -138,6 +139,7 @@ export function MovieSearchSuggestions({
       <ApiErrorState
         message="검색 결과를 불러오지 못했습니다."
         onRetry={() => searchQuery.refetch()}
+        compact
       />
     );
   }
@@ -181,6 +183,7 @@ export function MovieSearchSuggestions({
       <ApiErrorState
         message="영화 검색 결과를 불러오지 못했습니다."
         onRetry={() => tmdbQuery.refetch()}
+        compact
       />
     );
   }
