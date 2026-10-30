@@ -85,7 +85,6 @@ export function TmdbMovieSearchList({ movies }: TmdbMovieSearchListProps) {
                     {movie.release_date.replaceAll("-", ".")}
                   </time>
                 )}
-                <span>TMDB</span>
               </div>
             </button>
           </li>

@@ -84,7 +84,7 @@ function MoviesPageContent() {
     return (
       <main className="min-h-[calc(100vh-5.5rem)] px-6 py-16">
         <div className="mx-auto max-w-6xl text-cinemo-muted">
-          TMDB에서 영화를 찾는 중...
+          추가 영화를 찾는 중...
         </div>
       </main>
     );
