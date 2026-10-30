@@ -47,3 +47,13 @@ export async function requireUser(): Promise<AuthUser> {
 
   return user;
 }
+
+export async function requireAdmin(): Promise<AuthUser> {
+  const user = await requireUser();
+
+  if (!user.isAdmin) {
+    redirect("/lobby");
+  }
+
+  return user;
+}

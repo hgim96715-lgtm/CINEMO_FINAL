@@ -240,6 +240,28 @@ enum PushTokenPlatform {
   ANDROID // Android 기기에서 발급된 Expo Push Token
 }
 
+enum UserActivityType {
+  LOGIN
+  LOGOUT
+  MOVIE_RECORD_UPSERT
+  MOVIE_RECORD_DELETE
+  MOVIE_NOTIFICATION_SUBSCRIBE
+  MOVIE_NOTIFICATION_UNSUBSCRIBE
+  CINEMA_VISIT_CREATE
+  CINEMA_VISIT_DELETE
+  POSTCARD_CREATE
+  POSTCARD_UPDATE
+  POSTCARD_PUBLISH
+  POSTCARD_DELETE
+  POSTCARD_COMMENT_CREATE
+  POSTCARD_REACTION_ADD
+  POSTCARD_REACTION_REMOVE
+  POSTCARD_BOOKMARK_ADD
+  POSTCARD_BOOKMARK_REMOVE
+  PERSON_BOOKMARK_ADD
+  PERSON_BOOKMARK_REMOVE
+}
+
 model Postcard {
   id                 String               @id @default(uuid(7)) @db.Uuid
   userId             String               @db.Uuid
@@ -589,10 +611,27 @@ model User {
   postcardNotificationActors PostcardNotification[]    @relation("PostcardNotificationActor")
   mobileRefreshTokens        MobileRefreshToken[]
   pushTokens                 PushToken[]                 // 사용자의 기기별 푸시 토큰
+  activityLogs               UserActivityLog[]
 
   @@index([nickname])
   @@index([status])
   @@map("users")
+}
+
+model UserActivityLog {
+  id         String           @id @default(uuid(7)) @db.Uuid // 활동 로그 식별자
+  userId     String           @db.Uuid // 활동을 수행한 사용자
+  type       UserActivityType // 수행한 활동 종류
+  targetType String?          @map("target_type") @db.VarChar(50) // 활동 대상 종류
+  targetId   String?          @map("target_id") @db.Uuid // 활동 대상 식별자
+  metadata   Json? // 화면에 표시할 부가 정보
+  createdAt  DateTime         @default(now()) @db.Timestamptz(3) // 활동 발생 시각
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+  @@map("user_activity_logs")
 }
 
 model PushToken {

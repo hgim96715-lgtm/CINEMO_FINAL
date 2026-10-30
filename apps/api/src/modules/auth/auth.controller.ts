@@ -579,6 +579,34 @@ export class AuthController {
   }
 
   @Public()
+  @Post("admin/login")
+  @ApiOperation({
+    summary: "관리자 로그인",
+    description: "isAdmin 권한이 있는 이메일 계정만 로그인 가능",
+  })
+  @ApiOkResponse({ description: "관리자 로그인 성공" })
+  @ApiUnauthorizedResponse({ description: "관리자 계정이 아니거나 로그인 실패" })
+  async adminLogin(
+    @Body() input: LoginRequestDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.authService.login(input, true);
+
+    response.cookie(SESSION_COOKIE_NAME, result.sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+      path: "/",
+    });
+
+    return {
+      user: result.user,
+      sessionExpiresAt: result.sessionExpiresAt,
+    };
+  }
+
+  @Public()
   @Post("logout")
   @ApiOperation({
     summary: "로그아웃",

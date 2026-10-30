@@ -13,6 +13,8 @@ import { MailService } from "./mail.service";
 import { normalizeNickname, validateNickname } from "./nickname.policy";
 import { MobileOauthSignupRequestDto } from "@/modules/auth/dto/requests/mobile-oauth-signup.request.dto";
 import { AuthRepository } from "./auth.repository";
+import { ActivityService } from "@/modules/activity/activity.service";
+import { UserActivityType } from "@prisma/client";
 
 const CURRENT_TERMS_VERSION = "1.0.0";
 const EMAIL_VERIFICATION_EXPIRES_IN_MS = 30 * 60 * 1000;
@@ -59,6 +61,7 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly passwordHasher: PasswordHasherService,
     private readonly mailService: MailService,
+    private readonly activityService: ActivityService,
   ) {}
 
   async register(input: RegisterRequestDto) {
@@ -100,7 +103,7 @@ export class AuthService {
     };
   }
 
-  async login(input: LoginRequestDto) {
+  async login(input: LoginRequestDto, adminOnly = false) {
     const email = normalizeEmail(input.email);
 
     const user = await this.authRepository.findUserWithPassword(email);
@@ -127,6 +130,10 @@ export class AuthService {
       );
     }
 
+    if (adminOnly && !user.isAdmin) {
+      throw new UnauthorizedException("관리자 계정만 로그인할 수 있습니다.");
+    }
+
     const sessionToken = randomBytes(32).toString("base64url");
 
     const tokenHash = createHash("sha256").update(sessionToken).digest("hex");
@@ -140,6 +147,7 @@ export class AuthService {
     });
 
     await this.authRepository.updateLastLogin(user.id);
+    this.recordLogin(user.id, "EMAIL");
 
     return {
       user: {
@@ -148,6 +156,7 @@ export class AuthService {
         nickname: user.nickname,
         status: user.status,
         profileVisibility: user.profileVisibility,
+        isAdmin: user.isAdmin,
         profileImageUrl: user.profileImageUrl,
       },
       sessionToken,
@@ -162,7 +171,16 @@ export class AuthService {
 
     const tokenHash = createHash("sha256").update(sessionToken).digest("hex");
 
+    const session = await this.authRepository.findSessionWithUser(tokenHash);
+
     await this.authRepository.revokeSession(tokenHash);
+
+    if (session) {
+      void this.activityService.record({
+        userId: session.user.id,
+        type: UserActivityType.LOGOUT,
+      });
+    }
   }
 
   async logoutMobile(input: MobileLogoutInput) {
@@ -277,6 +295,9 @@ export class AuthService {
       expiresAt,
     });
 
+    await this.authRepository.updateLastLogin(user.id);
+    this.recordLogin(user.id, "APPLE");
+
     return {
       user: {
         id: user.id,
@@ -284,6 +305,7 @@ export class AuthService {
         nickname: user.nickname,
         status: user.status,
         profileVisibility: user.profileVisibility,
+        isAdmin: user.isAdmin,
         profileImageUrl: user.profileImageUrl,
       },
       sessionToken,
@@ -320,6 +342,7 @@ export class AuthService {
       expiresAt: sessionExpiresAt,
     });
     await this.authRepository.updateLastLogin(user.id);
+    this.recordLogin(user.id, "NAVER");
     return {
       user: {
         id: user.id,
@@ -327,6 +350,7 @@ export class AuthService {
         nickname: user.nickname,
         status: user.status,
         profileVisibility: user.profileVisibility,
+        isAdmin: user.isAdmin,
         profileImageUrl: user.profileImageUrl,
       },
       sessionToken,
@@ -367,6 +391,7 @@ export class AuthService {
       expiresAt: sessionExpiresAt,
     });
     await this.authRepository.updateLastLogin(user.id);
+    this.recordLogin(user.id, "GOOGLE");
 
     return {
       user: {
@@ -375,6 +400,7 @@ export class AuthService {
         nickname: user.nickname,
         status: user.status,
         profileVisibility: user.profileVisibility,
+        isAdmin: user.isAdmin,
         profileImageUrl: user.profileImageUrl,
       },
       sessionToken,
@@ -415,6 +441,7 @@ export class AuthService {
     });
 
     await this.authRepository.updateLastLogin(user.id);
+    this.recordLogin(user.id, "APPLE_MOBILE");
 
     return {
       user: {
@@ -423,6 +450,7 @@ export class AuthService {
         nickname: user.nickname,
         status: user.status,
         profileVisibility: user.profileVisibility,
+        isAdmin: user.isAdmin,
         profileImageUrl: user.profileImageUrl,
       },
       ...tokens,
@@ -462,6 +490,7 @@ export class AuthService {
     });
 
     await this.authRepository.updateLastLogin(user.id);
+    this.recordLogin(user.id, "GOOGLE_MOBILE");
 
     return {
       user: {
@@ -470,6 +499,7 @@ export class AuthService {
         nickname: user.nickname,
         status: user.status,
         profileVisibility: user.profileVisibility,
+        isAdmin: user.isAdmin,
         profileImageUrl: user.profileImageUrl,
       },
       ...tokens,
@@ -509,6 +539,7 @@ export class AuthService {
     });
 
     await this.authRepository.updateLastLogin(user.id);
+    this.recordLogin(user.id, "NAVER_MOBILE");
 
     return {
       user: {
@@ -517,6 +548,7 @@ export class AuthService {
         nickname: user.nickname,
         status: user.status,
         profileVisibility: user.profileVisibility,
+        isAdmin: user.isAdmin,
         profileImageUrl: user.profileImageUrl,
       },
       ...tokens,
@@ -626,6 +658,7 @@ export class AuthService {
     });
 
     await this.authRepository.updateLastLogin(user.id);
+    this.recordLogin(user.id, "EMAIL_MOBILE");
     return {
       user: {
         id: user.id,
@@ -633,6 +666,7 @@ export class AuthService {
         nickname: user.nickname,
         status: user.status,
         profileVisibility: user.profileVisibility,
+        isAdmin: user.isAdmin,
         profileImageUrl: user.profileImageUrl,
       },
       ...tokens,
@@ -701,6 +735,14 @@ export class AuthService {
       accessTokenExpiresAt,
       refreshTokenExpiresAt,
     };
+  }
+
+  private recordLogin(userId: string, provider: string) {
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.LOGIN,
+      metadata: { provider },
+    });
   }
 
   private async resolveOAuthUser(input: {

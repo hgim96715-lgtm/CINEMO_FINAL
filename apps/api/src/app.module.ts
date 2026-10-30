@@ -28,6 +28,8 @@ import { openSubtitlesConfig } from "@/config/opensubtitles.config";
 import { subdlConfig } from "@/config/subdl.config";
 import { OpenAiModule } from "@/integrations/openai/openai.module";
 import { NotificationsModule } from "@/modules/notifications/notifications.module";
+import { AdminModule } from "@/modules/admin/admin.module";
+import { ActivityModule } from "@/modules/activity/activity.module";
 
 @Module({
   imports: [
@@ -73,6 +75,8 @@ import { NotificationsModule } from "@/modules/notifications/notifications.modul
     PostcardsModule,
     OpenAiModule,
     NotificationsModule,
+    AdminModule,
+    ActivityModule,
   ],
   providers: [
     {

@@ -10,8 +10,10 @@ import { AppleAuthService } from "./apple-auth.service";
 import { AuthRepository } from "./auth.repository";
 import { GoogleAuthService } from "./google-auth.service";
 import { NaverAuthService } from "@/modules/auth/naver-auth.service";
+import { ActivityModule } from "@/modules/activity/activity.module";
 
 @Module({
+  imports: [ActivityModule],
   controllers: [AuthController],
   providers: [
     AuthService,

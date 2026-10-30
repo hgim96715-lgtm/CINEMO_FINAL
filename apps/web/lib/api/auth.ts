@@ -5,6 +5,7 @@ export type AuthUser = {
   email: string | null;
   nickname: string;
   status: "ACTIVE" | "SUSPENDED" | "DELETED";
+  isAdmin: boolean;
   profileImageUrl: string | null;
 };
 
@@ -77,6 +78,14 @@ export async function getMe(): Promise<AuthUser | null> {
 
 export async function login(input: LoginInput): Promise<LoginResponse> {
   const { data } = await apiClient.post<LoginResponse>("/auth/login", input);
+  return data;
+}
+
+export async function adminLogin(input: LoginInput): Promise<LoginResponse> {
+  const { data } = await apiClient.post<LoginResponse>(
+    "/auth/admin/login",
+    input,
+  );
   return data;
 }
 

@@ -6,5 +6,6 @@ export type SessionUser = {
   nickname: string;
   status: UserStatus;
   profileVisibility: UserVisibility;
+  isAdmin: boolean;
   profileImageUrl: string | null;
 };

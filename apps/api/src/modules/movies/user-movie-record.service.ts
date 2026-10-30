@@ -5,11 +5,14 @@ import {MovieNotFoundException} from "@/common/exceptions/movie-not-found.except
 import {UserMovieRecordRepository} from "./repositories/user-movie-record.repository";
 import {UpdateMovieRecordRequestDto} from "../auth/dto/requests/update-movie-record.request.dto";
 import {toUserMovieCalendarResponse} from "@/modules/movies/mappers/user-movie-calendar.mapper";
+import {ActivityService} from "@/modules/activity/activity.service";
+import {UserActivityType} from "@prisma/client";
 
 @Injectable()
 export class UserMovieRecordService {
   constructor(
     private readonly userMovieRecordRepository: UserMovieRecordRepository,
+    private readonly activityService: ActivityService,
   ) {}
 
   async upsert(
@@ -66,6 +69,17 @@ export class UserMovieRecordService {
             : null,
       },
     );
+
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.MOVIE_RECORD_UPSERT,
+      targetType: "movie",
+      targetId: movieId,
+      metadata: {
+        isFavorite: input.isFavorite ?? null,
+        isWatched: input.isWatched ?? null,
+      },
+    });
 
     return {
       ...record,
@@ -130,6 +144,12 @@ export class UserMovieRecordService {
       throw new MovieNotFoundException(movieId);
     }
     await this.userMovieRecordRepository.deletdByUserAndMovie(userId, movieId);
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.MOVIE_RECORD_DELETE,
+      targetType: "movie",
+      targetId: movieId,
+    });
     return{
       movieId
     }

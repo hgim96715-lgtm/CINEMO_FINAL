@@ -21,6 +21,7 @@ const authUserSelect = {
   nickname: true,
   status: true,
   profileVisibility: true,
+  isAdmin: true,
   profileImageUrl: true,
 } as const;
 

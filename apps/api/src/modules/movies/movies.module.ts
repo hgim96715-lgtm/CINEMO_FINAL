@@ -38,9 +38,16 @@ import { MoviePersonEnrichmentRepository } from "./repositories/movie-person-enr
 import { MovieReleaseNotificationService } from "@/modules/movies/movie-release-notification.service";
 import { MailService } from "@/modules/auth/mail.service";
 import { NotificationsModule } from "@/modules/notifications/notifications.module";
+import { ActivityModule } from "@/modules/activity/activity.module";
 
 @Module({
-  imports: [KobisModule, TmdbModule, KmdbModule, NotificationsModule],
+  imports: [
+    KobisModule,
+    TmdbModule,
+    KmdbModule,
+    NotificationsModule,
+    ActivityModule,
+  ],
   controllers: [
     MoviesController,
     MovieImportController,

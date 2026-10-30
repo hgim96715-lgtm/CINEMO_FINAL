@@ -8,6 +8,7 @@ import {MoviesModule} from "@/modules/movies/movies.module";
 import {PostcardsController} from "./postcards.controller";
 import {PostcardRepository} from "./repositories/postcard.repository";
 import {PostcardService} from "./services/postcard.service";
+import {ActivityModule} from "@/modules/activity/activity.module";
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import {PostcardService} from "./services/postcard.service";
     SubdlModule,
     TmdbModule,
     MoviesModule,
+    ActivityModule,
   ],
   controllers: [PostcardsController],
   providers: [

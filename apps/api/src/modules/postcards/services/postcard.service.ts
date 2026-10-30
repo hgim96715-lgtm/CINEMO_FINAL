@@ -5,7 +5,11 @@ import {
   Logger,
   NotFoundException,
 } from "@nestjs/common";
-import { PostcardSource, PostcardVisibility } from "@prisma/client";
+import {
+  PostcardSource,
+  PostcardVisibility,
+  UserActivityType,
+} from "@prisma/client";
 import type { Postcard as DomainPostcard } from "../domain/postcard.types";
 import type {
   CursorPage,
@@ -35,6 +39,7 @@ import type {
   OpenSubtitlesSubtitleSearchItem,
 } from "@/integrations/opensubtitles/opensubtitles.types";
 import { SubdlService } from "@/integrations/subdl/subdl.service";
+import { ActivityService } from "@/modules/activity/activity.service";
 import {
   isSameSubtitleLanguage,
   normalizeSubtitleLanguage,
@@ -85,6 +90,7 @@ export class PostcardService {
     private readonly subdlService: SubdlService,
     private readonly moviesService: MoviesService,
     private readonly tmdbService: TmdbService,
+    private readonly activityService: ActivityService,
   ) {}
 
   async suggestQuote(
@@ -405,6 +411,13 @@ export class PostcardService {
       throw new NotFoundException("수정할 엽서를 찾을 수 없습니다.");
     }
 
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.POSTCARD_UPDATE,
+      targetType: "postcard",
+      targetId: postcardId,
+    });
+
     return postcard;
   }
 
@@ -417,6 +430,13 @@ export class PostcardService {
     if (!postcard) {
       throw new NotFoundException("발행할 엽서를 찾을 수 없습니다.");
     }
+
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.POSTCARD_PUBLISH,
+      targetType: "postcard",
+      targetId: postcardId,
+    });
 
     return postcard;
   }
@@ -439,12 +459,19 @@ export class PostcardService {
     if (!deleted) {
       throw new NotFoundException("삭제할 엽서를 찾을 수 없습니다.");
     }
+
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.POSTCARD_DELETE,
+      targetType: "postcard",
+      targetId: postcardId,
+    });
   }
   async create(
     userId: string,
     request: CreatePostcardRequestDto,
   ): Promise<DomainPostcard> {
-    return this.postcardRepository.create({
+    const postcard = await this.postcardRepository.create({
       userId,
       movieId: request.movieId,
       type: request.type,
@@ -467,6 +494,16 @@ export class PostcardService {
       backgroundImageKey: request.backgroundImageKey ?? null,
       visibility: request.visibility ?? PostcardVisibility.PRIVATE,
     });
+
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.POSTCARD_CREATE,
+      targetType: "postcard",
+      targetId: postcard.id,
+      metadata: { movieId: request.movieId },
+    });
+
+    return postcard;
   }
 
   async createComment(
@@ -554,6 +591,14 @@ export class PostcardService {
       throw new NotFoundException("반응을 추가할 엽서를 찾을 수 없습니다.");
     }
 
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.POSTCARD_REACTION_ADD,
+      targetType: "postcard",
+      targetId: postcardId,
+      metadata: { emoji: request.emoji },
+    });
+
     return result;
   }
 
@@ -568,6 +613,14 @@ export class PostcardService {
       throw new NotFoundException("반응을 삭제할 엽서를 찾을 수 없습니다.");
     }
 
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.POSTCARD_REACTION_REMOVE,
+      targetType: "postcard",
+      targetId: postcardId,
+      metadata: { emoji },
+    });
+
     return result;
   }
 
@@ -577,10 +630,23 @@ export class PostcardService {
     if (!added) {
       throw new NotFoundException("북마크할 엽서를 찾을 수 없습니다.");
     }
+
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.POSTCARD_BOOKMARK_ADD,
+      targetType: "postcard",
+      targetId: postcardId,
+    });
   }
 
   async removeBookmark(userId: string, postcardId: string): Promise<void> {
     await this.postcardRepository.removeBookmark(postcardId, userId);
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.POSTCARD_BOOKMARK_REMOVE,
+      targetType: "postcard",
+      targetId: postcardId,
+    });
   }
 
   async report(

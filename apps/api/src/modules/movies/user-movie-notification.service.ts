@@ -3,11 +3,14 @@ import {BadRequestException, Injectable} from "@nestjs/common";
 import {MovieNotFoundException} from "@/common/exceptions/movie-not-found.exception";
 
 import {UserMovieNotificationRepository} from "./repositories/user-movie-notification.repository";
+import {ActivityService} from "@/modules/activity/activity.service";
+import {UserActivityType} from "@prisma/client";
 
 @Injectable()
 export class UserMovieNotificationService {
   constructor(
     private readonly notificationRepository: UserMovieNotificationRepository,
+    private readonly activityService: ActivityService,
   ) {}
 
   async subscribe(userId: string, movieId: string) {
@@ -26,7 +29,18 @@ export class UserMovieNotificationService {
       );
     }
 
-    return this.notificationRepository.enable(userId, movieId, release.id);
+    const result = await this.notificationRepository.enable(
+      userId,
+      movieId,
+      release.id,
+    );
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.MOVIE_NOTIFICATION_SUBSCRIBE,
+      targetType: "movie",
+      targetId: movieId,
+    });
+    return result;
   }
 
   async unsubscribe(userId: string, movieId: string) {
@@ -39,7 +53,14 @@ export class UserMovieNotificationService {
       throw new BadRequestException("신청한 알림이 없습니다.");
     }
 
-    return this.notificationRepository.disable(userId, movieId);
+    const result = await this.notificationRepository.disable(userId, movieId);
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.MOVIE_NOTIFICATION_UNSUBSCRIBE,
+      targetType: "movie",
+      targetId: movieId,
+    });
+    return result;
   }
 
   async findStatus(userId: string, movieId: string) {
