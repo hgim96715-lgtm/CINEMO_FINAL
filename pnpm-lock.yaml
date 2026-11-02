@@ -9,6 +9,7 @@ overrides:
 
 patchedDependencies:
   '@expo/cli@57.0.27': fcb6f759086ae91b1467efcc50e4bd61a429eeb9bc7848a06570b17105a6654b
+  expo-modules-jsi@57.1.1: ec7ff9b1712a61b59c936608b0b5d6eae7f63217287397b48fd0106ddc910c8a
 
 importers:
 

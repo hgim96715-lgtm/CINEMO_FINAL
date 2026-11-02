@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { PortalHost } from "@rn-primitives/portal";
 import { CINEMO_COLORS } from "@cinemo/shared";
-import { Stack, useGlobalSearchParams, useSegments } from "expo-router";
+import { router, Stack, useGlobalSearchParams, useSegments } from "expo-router";
 import { View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import "../global.css";
@@ -84,6 +84,28 @@ export default function RootLayout() {
     }
     void registertoken();
   }, [isAuthReady, hasActiveSession]);
+
+  useEffect(() => {
+    if (!isAuthReady || !isAuthScreen) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function redirectAuthenticatedUser() {
+      const session = await restoreMobileSession();
+
+      if (!isCancelled && session) {
+        router.replace(from === "my-cinema" ? "/my-cinema" : "/lobby");
+      }
+    }
+
+    void redirectAuthenticatedUser();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [from, isAuthReady, isAuthScreen]);
 
   return (
     <QueryProvider>

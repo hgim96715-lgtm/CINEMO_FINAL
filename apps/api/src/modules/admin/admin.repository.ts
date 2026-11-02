@@ -14,6 +14,7 @@ export class AdminRepository {
     const [users, totalUsers, activeUsers, recentLogins, activeSessions] =
       await Promise.all([
         this.prisma.user.findMany({
+          where: { isAdmin: false },
           orderBy: [{ lastLoginAt: "desc" }, { createdAt: "desc" }],
           select: {
             id: true,
@@ -49,15 +50,18 @@ export class AdminRepository {
             },
           },
         }),
-        this.prisma.user.count(),
-        this.prisma.user.count({ where: { status: UserStatus.ACTIVE } }),
+        this.prisma.user.count({ where: { isAdmin: false } }),
         this.prisma.user.count({
-          where: { lastLoginAt: { gte: recentLoginSince } },
+          where: { isAdmin: false, status: UserStatus.ACTIVE },
+        }),
+        this.prisma.user.count({
+          where: { isAdmin: false, lastLoginAt: { gte: recentLoginSince } },
         }),
         this.prisma.authSession.count({
           where: {
             revokedAt: null,
             expiresAt: { gt: now },
+            user: { isAdmin: false },
           },
         }),
       ]);

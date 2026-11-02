@@ -36,7 +36,7 @@ export function ReleasedMovies() {
     <View className="mt-6">
       <SectionHeader
         eyebrow="RELEASED THIS YEAR"
-        title="올해 개봉한 영화"
+        title="올해 개봉·공개한 영화"
         morePath="/movies/released"
       />
 

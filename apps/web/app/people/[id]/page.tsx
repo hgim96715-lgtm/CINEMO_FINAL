@@ -1,48 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
 import {
-  enrichPersonFromTmdb,
   type PersonDetail,
 } from "@/lib/api/people";
 import { personDetailQueryOptions } from "@/lib/queries/person-detail.query";
-import { ArrowLeft } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { PersonBookmarkButton } from "@/components/people/PersonBookmarkButton";
 
 export default function PersonDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
 
   const personQuery = useQuery(personDetailQueryOptions(id));
 
   const [showFullBiography, setShowFullBiography] = useState(false);
   const [showFullCredits, setShowFullCredits] = useState(false);
-  const enrichmentAttemptedRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    const person = personQuery.data;
-    const tmdbPersonId = Number(person?.tmdbPersonId);
-
-    if (
-      !person ||
-      !Number.isInteger(tmdbPersonId) ||
-      person.credits.length >= 10 ||
-      enrichmentAttemptedRef.current === id
-    ) {
-      return;
-    }
-
-    enrichmentAttemptedRef.current = id;
-    void enrichPersonFromTmdb(id, tmdbPersonId)
-      .then(() => personQuery.refetch())
-      .catch(() => {
-        // TMDB 보완 실패 시에도 CINEMO DB에 저장된 필모그래피는 계속 표시함
-      });
-  }, [id, personQuery.data, personQuery.refetch]);
 
   if (personQuery.isPending) {
     return (

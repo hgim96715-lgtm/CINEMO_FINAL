@@ -11,6 +11,7 @@ import {
   ReleaseType,
   SourceProvider,
   TitleType,
+  WatchProvider,
 } from "@prisma/client";
 
 import { PrismaService } from "@/prisma/prisma.service";
@@ -89,6 +90,12 @@ const movieSearchInclude = Prisma.validator<Prisma.MovieDefaultArgs>()({
         status: MediaStatus.ACTIVE,
       },
       orderBy: [{ isPrimary: "desc" }, { verifiedAt: "desc" }],
+    },
+    watchOptions: {
+      where: {
+        regionCode: "KR",
+      },
+      orderBy: [{ watchProvider: "asc" }, { availabilityType: "asc" }],
     },
     movieGenres: {
       orderBy: {
@@ -1131,6 +1138,44 @@ export class MoviesRepository {
       }),
       totalCount,
     };
+  }
+
+  async findMoviesByWatchProvider(
+    watchProvider: WatchProvider,
+    page: number,
+    limit: number,
+  ): Promise<{
+    movies: MovieSearchWithDetails[];
+    totalCount: number;
+  }> {
+    const now = new Date();
+    const where: Prisma.MovieWhereInput = {
+      AND: [
+        publicMovieWhere,
+        {
+          watchOptions: {
+            some: {
+              watchProvider,
+              regionCode: "KR",
+              OR: [{ expiresAt: null }, { expiresAt: { gte: now } }],
+            },
+          },
+        },
+      ],
+    };
+
+    const [movies, totalCount] = await Promise.all([
+      this.prisma.movie.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { updatedAt: "desc" },
+        ...movieSearchInclude,
+      }),
+      this.prisma.movie.count({ where }),
+    ]);
+
+    return { movies, totalCount };
   }
 
   async findUpcomingMovies(

@@ -6,6 +6,7 @@ import { Fragment, useState } from "react";
 
 import { adminUsersQueryOptions } from "@/lib/queries/admin-users.query";
 import { adminUserActivityQueryOptions } from "@/lib/queries/admin-user-activity.query";
+import { AdminNavigation } from "@/components/admin/AdminNavigation";
 
 const dateTimeFormatter = new Intl.DateTimeFormat("ko-KR", {
   dateStyle: "medium",
@@ -60,6 +61,7 @@ export function AdminUsersTable() {
 
   return (
     <main className="mx-auto min-h-[calc(100vh-11rem)] max-w-6xl px-6 py-12 sm:py-16">
+      <AdminNavigation />
       <header className="mb-8">
         <p className="text-sm font-semibold tracking-[0.32em] text-cinemo-gold">ADMIN</p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">

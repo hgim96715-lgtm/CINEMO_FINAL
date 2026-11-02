@@ -126,6 +126,23 @@ export async function getMovieRankings(
   return data;
 }
 
+export async function getMoviesByWatchProvider(
+  provider: ViewingPlatform,
+  page = 1,
+  limit = 10,
+  signal?: AbortSignal,
+): Promise<MovieSearchResponse> {
+  const { data } = await apiClient.get<MovieSearchResponse>(
+    `/movies/platform/${provider}`,
+    {
+      params: { page, limit },
+      signal,
+    },
+  );
+
+  return data;
+}
+
 export type UpdateMovieRecordInput = {
   isFavorite?: boolean;
   isWatched?: boolean;

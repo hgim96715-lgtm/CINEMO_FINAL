@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { MovieWatchOptionResponseDto } from "./movie-watch-option.response.dto";
 
 export class MovieSearchItemResponseDto {
   @ApiProperty({
@@ -79,4 +80,10 @@ export class MovieSearchItemResponseDto {
     example: false,
   })
   isAdultOnly!: boolean;
+
+  @ApiProperty({
+    description: "시청 가능한 플랫폼 목록",
+    type: [MovieWatchOptionResponseDto],
+  })
+  watchOptions!: MovieWatchOptionResponseDto[];
 }

@@ -72,7 +72,7 @@ export function ReleasedMovieCarousel() {
             id="released-movies-title"
             className="text-2xl font-semibold text-foreground sm:text-3xl"
           >
-            올해 개봉한 영화
+            올해 개봉·공개한 영화
           </h2>
         </div>
 

@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseEnumPipe,
   Patch,
   Post,
   Query,
@@ -17,6 +18,7 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
+import { WatchProvider } from "@prisma/client";
 
 import { MovieResponseDto } from "./dto/responses/movie.response.dto";
 import { MoviesService } from "./movies.service";
@@ -145,6 +147,12 @@ export class MoviesController {
   }
 
   @Public()
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
   @Get("rankings")
   @ApiOperation({
     summary: "KOBIS 영화 순위 조회",
@@ -155,6 +163,32 @@ export class MoviesController {
   })
   getMovieRankings(@Query() params: GetPopularMoviesRequestDto) {
     return this.moviesService.getMovieRankings(params.page, params.limit);
+  }
+
+  @Public()
+  @Throttle({
+    default: {
+      limit: 60,
+      ttl: 60_000,
+    },
+  })
+  @Get("platform/:provider")
+  @ApiOperation({
+    summary: "플랫폼별 영화 조회",
+    description: "한국에서 시청 가능한 플랫폼별 영화를 조회",
+  })
+  @ApiOkResponse({
+    type: MovieSearchResponseDto,
+  })
+  getMoviesByWatchProvider(
+    @Param("provider", new ParseEnumPipe(WatchProvider)) provider: WatchProvider,
+    @Query() params: GetPopularMoviesRequestDto,
+  ) {
+    return this.moviesService.getMoviesByWatchProvider(
+      provider,
+      params.page,
+      params.limit,
+    );
   }
 
   @Public()
@@ -186,7 +220,8 @@ export class MoviesController {
   @Get("released")
   @ApiOperation({
     summary: "올해 개봉 영화 조회",
-    description: "올해 개봉한 영화를 조회하며 yearMonth로 월별 필터링 가능",
+    description:
+      "올해 한국에서 개봉했거나 국내 플랫폼에서 공개된 영화를 조회하며 yearMonth로 월별 필터링 가능",
   })
   @ApiOkResponse({
     type: MovieSearchResponseDto,

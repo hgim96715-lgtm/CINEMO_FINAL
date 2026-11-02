@@ -20,3 +20,4 @@ allowBuilds:
 
 patchedDependencies:
   '@expo/cli@57.0.27': patches/@expo__cli@57.0.27.patch
+  expo-modules-jsi@57.1.1: patches/expo-modules-jsi@57.1.1.patch

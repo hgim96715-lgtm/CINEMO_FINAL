@@ -28,6 +28,7 @@ import { openSubtitlesConfig } from "@/config/opensubtitles.config";
 import { subdlConfig } from "@/config/subdl.config";
 import { OpenAiModule } from "@/integrations/openai/openai.module";
 import { NotificationsModule } from "@/modules/notifications/notifications.module";
+import { CinemaPassportModule } from "@/modules/cinema-passport/cinema-passport.module";
 import { AdminModule } from "@/modules/admin/admin.module";
 import { ActivityModule } from "@/modules/activity/activity.module";
 
@@ -75,6 +76,7 @@ import { ActivityModule } from "@/modules/activity/activity.module";
     PostcardsModule,
     OpenAiModule,
     NotificationsModule,
+    CinemaPassportModule,
     AdminModule,
     ActivityModule,
   ],

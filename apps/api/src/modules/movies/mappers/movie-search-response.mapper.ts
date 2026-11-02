@@ -73,5 +73,15 @@ export function toMovieSearchItemResponseDto(
     rankChange: ranking?.rankChange ?? null,
     audienceCount: ranking?.audienceCount ?? null,
     totalAudienceCount: ranking?.totalAudienceCount ?? null,
+    watchOptions: movie.watchOptions.map((option) => ({
+      watchProvider: option.watchProvider,
+      availabilityType: option.availabilityType,
+      regionCode: option.regionCode,
+      tmdbProviderId: option.tmdbProviderId,
+      logoPath: option.logoPath,
+      url: option.url,
+      expiresAt: option.expiresAt?.toISOString() ?? null,
+      lastVerifiedAt: option.lastVerifiedAt?.toISOString() ?? null,
+    })),
   };
 }

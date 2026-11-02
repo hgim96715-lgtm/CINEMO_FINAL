@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import {
   getMovieRankings,
+  getMoviesByWatchProvider,
   getPopularMovies,
   getReleasedMovies,
   getUpcomingMovies,
@@ -10,6 +11,7 @@ import {
   SearchMoviesParams,
   searchTmdbMovies,
   UpcomingMoviesParams,
+  ViewingPlatform,
 } from "../api/movies";
 
 export const movieSearchQueryOptions = ({
@@ -95,6 +97,25 @@ export const movieRankingQueryOptions = ({
   queryOptions({
     queryKey: ["movies", "rankings", page, limit],
     queryFn: ({ signal }) => getMovieRankings(page, limit, signal),
+    enabled,
+    staleTime: 5 * 60_000,
+  });
+
+export const watchProviderMoviesQueryOptions = ({
+  provider,
+  page = 1,
+  limit = 10,
+  enabled = true,
+}: {
+  provider: ViewingPlatform;
+  page?: number;
+  limit?: number;
+  enabled?: boolean;
+}) =>
+  queryOptions({
+    queryKey: ["movies", "platform", provider, page, limit],
+    queryFn: ({ signal }) =>
+      getMoviesByWatchProvider(provider, page, limit, signal),
     enabled,
     staleTime: 5 * 60_000,
   });

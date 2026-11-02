@@ -7,23 +7,9 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { postcardFeedQueryOptions } from "@/lib/queries/postcard-feed.query";
 
-import { HeroInsightSlide, type HeroInsightKind } from "./HeroInsightSlide";
 import { HeroPostcardSlide } from "./HeroPostcardSlide";
 
 const AUTO_PLAY_INTERVAL = 6_000;
-
-function getKoreaYearMonth() {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "numeric",
-  }).formatToParts(new Date());
-
-  return {
-    year: Number(parts.find((part) => part.type === "year")?.value),
-    month: Number(parts.find((part) => part.type === "month")?.value),
-  };
-}
 
 export function HeroCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -35,21 +21,8 @@ export function HeroCarousel() {
   const postcards =
     data?.pages.flatMap((page) => page.items).slice(0, 2) ?? [];
   const postcardIds = postcards.map((postcard) => postcard.id);
-  const cinemaRegionSlideIndex = postcards.length;
-  const genreAnalyticsSlideIndex = postcards.length + 1;
-  const popularMoviesSlideIndex = postcards.length + 2;
-  const carouselItemCount = postcards.length + 3;
+  const carouselItemCount = postcards.length;
   const activePostcard = postcards[activeIndex] ?? postcards[0];
-  const activeInsightKind: HeroInsightKind | null =
-    activeIndex === cinemaRegionSlideIndex
-      ? "cinema"
-      : activeIndex === genreAnalyticsSlideIndex
-        ? "genre"
-        : activeIndex === popularMoviesSlideIndex
-          ? "popular"
-          : null;
-  const isSpecialSlide = activeInsightKind !== null;
-  const { year, month } = getKoreaYearMonth();
 
   const activeImageUrl =
     activePostcard?.movie?.posterUrl ?? activePostcard?.media[0]?.url;
@@ -94,7 +67,7 @@ export function HeroCarousel() {
     );
   }
 
-  if (isError || (!activePostcard && !isSpecialSlide)) {
+  if (isError || !activePostcard) {
     return (
       <section className="flex min-h-[clamp(22rem,42vw,28rem)] items-center rounded-[2rem] bg-cinemo-surface px-8 py-12 sm:px-14">
         <div className="max-w-xl">
@@ -132,37 +105,18 @@ export function HeroCarousel() {
       />
 
       <div className="relative z-10 flex h-full min-h-0 flex-col gap-4 p-5 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(18rem,0.85fr)] sm:grid-rows-1 sm:gap-10 sm:p-10 lg:p-14">
-        {isSpecialSlide ? (
-          <HeroInsightSlide
-            kind={activeInsightKind}
-            year={year}
-            month={month}
-            postcardIds={postcardIds}
-            activeIndex={activeIndex}
-            cinemaRegionSlideIndex={cinemaRegionSlideIndex}
-            genreAnalyticsSlideIndex={genreAnalyticsSlideIndex}
-            popularMoviesSlideIndex={popularMoviesSlideIndex}
-            onSelectSlide={setActiveIndex}
-          />
-        ) : (
-          <HeroPostcardSlide
-            postcard={activePostcard}
-            activeIndex={activeIndex}
-            postcardIds={postcardIds}
-            cinemaRegionSlideIndex={cinemaRegionSlideIndex}
-            genreAnalyticsSlideIndex={genreAnalyticsSlideIndex}
-            popularMoviesSlideIndex={popularMoviesSlideIndex}
-            activeImageUrl={activeImageUrl}
-            activeImageAlt={activeImageAlt}
-            hasMoreContent={hasMoreContent}
-            onSelectSlide={setActiveIndex}
-          />
-        )}
+        <HeroPostcardSlide
+          postcard={activePostcard}
+          activeIndex={activeIndex}
+          postcardIds={postcardIds}
+          activeImageUrl={activeImageUrl}
+          activeImageAlt={activeImageAlt}
+          hasMoreContent={hasMoreContent}
+          onSelectSlide={setActiveIndex}
+        />
 
         <div
-          className={`relative order-1 hidden w-full items-center justify-center sm:order-2 sm:flex ${
-            isSpecialSlide ? "!hidden" : ""
-          }`}
+          className="relative order-1 hidden w-full items-center justify-center sm:order-2 sm:flex"
         >
           {activeImageUrl ? (
             <div className="relative flex h-full w-full items-center justify-center">

@@ -15,12 +15,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BookmarkedPeopleList } from "@/components/my-cinema/BookmarkedPeopleList";
-import { MovieCalendarView } from "@/components/my-cinema/MovieCalendarView";
+import { CinemaVisitSection } from "@/components/my-cinema/CinemaVisitSection";
+import { MyCinemaTabBar } from "@/components/my-cinema/MyCinemaTabBar";
+import { MyMoviesSection } from "@/components/my-cinema/MyMoviesSection";
+import { MyNotificationsSection } from "@/components/my-cinema/MyNotificationsSection";
 import { MyPostcardsList } from "@/components/my-cinema/MyPostcardsList";
 import { MovieRecordCalendar } from "@/components/movies/MovieRecordCalendar";
 import { MovieViewingDetailsModal } from "@/components/movies/MovieViewingDetailsModal";
 import { logoutMobile } from "@/lib/api/auth";
-import type { MyMovie, MyMovieNotification } from "@/lib/api/my-cinema";
+import type { MyMovie } from "@/lib/api/my-cinema";
 import type {
   UpdateMovieRecordInput,
   ViewingPlaceType,
@@ -38,8 +41,9 @@ import {
 } from "@/lib/queries/movie-record.mutation";
 import { getImageUrl } from "@/lib/utils";
 
-type Tab = "movies" | "people" | "notifications" | "postcards";
-type MovieFilter = "watched" | "saved" | "calendar";
+import type { MyCinemaTabKey } from "@/components/my-cinema/MyCinemaTabBar";
+
+type Tab = MyCinemaTabKey;
 
 const viewingPlatformLabels: Record<string, string> = {
   NETFLIX: "Netflix",
@@ -61,89 +65,6 @@ const panelStyle = {
   borderColor: "rgba(255,255,255,0.1)",
   backgroundColor: "rgba(255,255,255,0.035)",
 };
-
-function formatReleaseDate(releaseDate: string | null) {
-  if (!releaseDate) {
-    return "개봉일 미정";
-  }
-
-  return `개봉일 ${releaseDate.slice(0, 10).replaceAll("-", ".")}`;
-}
-
-function formatMovieDate(date: string | null) {
-  return date?.slice(0, 10).replaceAll("-", ".") ?? "-";
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <View className="items-center rounded-2xl border p-8" style={panelStyle}>
-      <Ionicons
-        name="film-outline"
-        size={30}
-        color={CINEMO_COLORS.textSecondary}
-      />
-      <Text className="mt-3 text-center text-sm text-cinemo-muted">
-        {message}
-      </Text>
-    </View>
-  );
-}
-
-function MovieCard({
-  movie,
-  onPress,
-}: {
-  movie: MyMovie;
-  onPress: () => void;
-}) {
-  const posterUrl = getImageUrl(movie.posterUrl);
-
-  return (
-    <Pressable
-      onPress={onPress}
-      className="flex-row rounded-2xl border p-3"
-      style={panelStyle}
-    >
-      <View
-        className="overflow-hidden rounded-xl"
-        style={{ width: 72, height: 108, backgroundColor: "#243235" }}
-      >
-        {posterUrl ? (
-          <Image
-            source={{ uri: posterUrl }}
-            resizeMode="cover"
-            style={{ width: 72, height: 108 }}
-          />
-        ) : (
-          <View className="flex-1 items-center justify-center px-2">
-            <Text className="text-center text-[10px] text-cinemo-muted">
-              포스터 없음
-            </Text>
-          </View>
-        )}
-      </View>
-
-      <View className="min-w-0 flex-1 justify-center gap-2 pl-3">
-        <View className="flex-row gap-2">
-          <Text className="text-xs text-cinemo-gold">제목</Text>
-          <Text
-            numberOfLines={2}
-            className="min-w-0 flex-1 text-sm font-semibold text-cinemo-text"
-          >
-            {movie.title}
-          </Text>
-        </View>
-
-        <View className="flex-row gap-2">
-          <Text className="text-xs text-cinemo-gold">날짜</Text>
-          <Text className="text-xs text-cinemo-muted">
-            {formatMovieDate(movie.watchedAt ?? movie.releaseDate)}
-          </Text>
-        </View>
-      </View>
-    </Pressable>
-  );
-}
 
 function MovieRecordModal({
   movie,
@@ -315,7 +236,7 @@ function MovieRecordEditModal({
       ? viewingPlatform === "OTHER"
         ? viewingPlatformCustom.trim() || "기타 플랫폼"
         : viewingPlatform
-          ? viewingPlatformLabels[viewingPlatform] ?? viewingPlatform
+          ? (viewingPlatformLabels[viewingPlatform] ?? viewingPlatform)
           : "플랫폼 미선택"
       : viewingPlaceType === "VENUE"
         ? venueName || "극장"
@@ -599,99 +520,8 @@ function MovieRecordEditModal({
   );
 }
 
-function NotificationCard({
-  notification,
-  isLoading,
-  onUnsubscribe,
-}: {
-  notification: MyMovieNotification;
-  isLoading: boolean;
-  onUnsubscribe: () => void;
-}) {
-  const title = notification.movie.titles[0]?.title ?? "제목 없음";
-  const posterUrl = getImageUrl(notification.movie.media[0]?.url ?? null);
-  const releaseDate = notification.release?.releaseDate ?? null;
-
-  return (
-    <View className="rounded-2xl border p-3" style={panelStyle}>
-      <View className="flex-row items-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${title} 상세 보기`}
-          onPress={() => router.push(`/movies/${notification.movieId}`)}
-          className="min-w-0 flex-1 flex-row items-center"
-        >
-          <View
-            className="overflow-hidden rounded-xl"
-            style={{ width: 56, height: 84, backgroundColor: "#243235" }}
-          >
-            {posterUrl ? (
-              <Image
-                source={{ uri: posterUrl }}
-                resizeMode="cover"
-                style={{ width: 56, height: 84 }}
-              />
-            ) : (
-              <View className="flex-1 items-center justify-center px-1">
-                <Text className="text-center text-[10px] text-cinemo-muted">
-                  포스터 없음
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <View className="min-w-0 flex-1 pl-3">
-            <Text
-              numberOfLines={2}
-              className="text-base font-semibold text-cinemo-text"
-            >
-              {title}
-            </Text>
-            <Text className="mt-2 text-xs text-cinemo-gold-light">
-              개봉 알림 신청 중
-            </Text>
-            <Text className="mt-1 text-xs text-cinemo-muted">
-              {formatReleaseDate(releaseDate)}
-            </Text>
-          </View>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${title} 개봉 알림 해제`}
-          disabled={isLoading}
-          onPress={onUnsubscribe}
-          className="ml-2 flex-row items-center gap-1 rounded-lg border px-2.5 py-2"
-          style={{
-            borderColor: "rgba(255,255,255,0.12)",
-            backgroundColor: "rgba(255,255,255,0.05)",
-            opacity: isLoading ? 0.5 : 1,
-          }}
-        >
-          {isLoading ? (
-            <ActivityIndicator
-              size="small"
-              color={CINEMO_COLORS.textSecondary}
-            />
-          ) : (
-            <Ionicons
-              name="notifications-off-outline"
-              size={14}
-              color={CINEMO_COLORS.textSecondary}
-            />
-          )}
-          <Text className="text-[11px] font-semibold text-cinemo-muted">
-            {isLoading ? "해제 중..." : "알림 해제"}
-          </Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
 export default function MyCinemaScreen() {
   const [activeTab, setActiveTab] = useState<Tab>("movies");
-  const [movieFilter, setMovieFilter] = useState<MovieFilter>("watched");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isResultModalVisible, setIsResultModalVisible] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<MyMovie | null>(null);
@@ -714,14 +544,6 @@ export default function MyCinemaScreen() {
       notifications: notifications.length,
     }),
     [movies, notifications],
-  );
-
-  const visibleMovies = useMemo(
-    () =>
-      movieFilter === "saved"
-        ? movies.filter((movie) => movie.isFavorite)
-        : movies.filter((movie) => movie.isWatched),
-    [movieFilter, movies],
   );
 
   const handleLogout = async () => {
@@ -849,147 +671,34 @@ export default function MyCinemaScreen() {
             ))}
           </View>
 
-          <View
-            className="mt-6 flex-row rounded-2xl border p-1"
-            style={panelStyle}
-          >
-            {[
-              ["movies", "내 영화"],
-              ["people", "저장한 인물"],
-              ["notifications", "알림"],
-              ["postcards", "내 엽서"],
-            ].map(([key, label]) => {
-              const isActive = activeTab === key;
-
-              return (
-                <Pressable
-                  key={key}
-                  onPress={() => setActiveTab(key as Tab)}
-                  className="min-w-0 flex-1 items-center justify-center rounded-xl px-1 py-3"
-                  style={{
-                    backgroundColor: isActive
-                      ? "rgba(255,255,255,0.1)"
-                      : "transparent",
-                  }}
-                >
-                  <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.85}
-                    className="text-center text-xs font-semibold"
-                    style={{
-                      color: isActive
-                        ? CINEMO_COLORS.accentLight
-                        : CINEMO_COLORS.textSecondary,
-                    }}
-                  >
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <MyCinemaTabBar
+            activeTab={activeTab}
+            onChange={(tab) => setActiveTab(tab)}
+          />
 
           {activeTab === "movies" && (
-            <View className="mt-5">
-              <View className="mb-4 flex-row items-center justify-between">
-                <Text className="text-lg font-bold text-cinemo-text">
-                  내 영화
-                </Text>
-
-                <View className="flex-row rounded-xl bg-white/5 p-1">
-                  {[
-                    ["watched", "관람"],
-                    ["saved", "저장"],
-                    ["calendar", "달력"],
-                  ].map(([key, label]) => {
-                    const isActive = movieFilter === key;
-
-                    return (
-                      <Pressable
-                        key={key}
-                        onPress={() => setMovieFilter(key as MovieFilter)}
-                        className="rounded-lg px-3 py-2"
-                        style={{
-                          backgroundColor: isActive
-                            ? "rgba(212,181,106,0.18)"
-                            : "transparent",
-                        }}
-                      >
-                        <Text
-                          className="text-xs font-semibold"
-                          style={{
-                            color: isActive
-                              ? CINEMO_COLORS.accentLight
-                              : CINEMO_COLORS.textSecondary,
-                          }}
-                        >
-                          {label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {movieFilter === "calendar" ? (
-                <MovieCalendarView />
-              ) : moviesQuery.isPending ? (
-                <ActivityIndicator color={CINEMO_COLORS.accentLight} />
-              ) : visibleMovies.length === 0 ? (
-                <EmptyState
-                  message={
-                    movieFilter === "watched"
-                      ? "아직 관람 기록이 없음"
-                      : "저장한 영화가 없음"
-                  }
-                />
-              ) : (
-                <View className="gap-3">
-                  {visibleMovies.map((movie) => (
-                    <MovieCard
-                      key={movie.movieId}
-                      movie={movie}
-                      onPress={() => setSelectedMovie(movie)}
-                    />
-                  ))}
-                </View>
-              )}
-            </View>
+            <MyMoviesSection
+              movies={movies}
+              onSelectMovie={setSelectedMovie}
+            />
           )}
 
           {activeTab === "notifications" && (
-            <View className="mt-5">
-              <Text className="mb-4 text-lg font-bold text-cinemo-text">
-                개봉 알림
-              </Text>
-
-              {notificationsQuery.isPending ? (
-                <ActivityIndicator color={CINEMO_COLORS.accentLight} />
-              ) : notifications.length === 0 ? (
-                <EmptyState message="신청한 개봉 알림이 없음" />
-              ) : (
-                <View className="gap-3">
-                  {notifications.map((notification) => (
-                    <NotificationCard
-                      key={notification.id}
-                      notification={notification}
-                      isLoading={
-                        unsubscribeMutation.isPending &&
-                        unsubscribeMutation.variables === notification.movieId
-                      }
-                      onUnsubscribe={() => {
-                        unsubscribeMutation.mutate(notification.movieId, {
-                          onSuccess: () => {
-                            setIsResultModalVisible(true);
-                          },
-                        });
-                      }}
-                    />
-                  ))}
-                </View>
-              )}
-            </View>
+            <MyNotificationsSection
+              notifications={notifications}
+              isLoadingMovieId={
+                unsubscribeMutation.isPending
+                  ? unsubscribeMutation.variables
+                  : undefined
+              }
+              onUnsubscribe={(movieId) => {
+                unsubscribeMutation.mutate(movieId, {
+                  onSuccess: () => {
+                    setIsResultModalVisible(true);
+                  },
+                });
+              }}
+            />
           )}
 
           {activeTab === "people" && (
@@ -1003,6 +712,8 @@ export default function MyCinemaScreen() {
               <MyPostcardsList />
             </View>
           )}
+
+          {activeTab === "visits" && <CinemaVisitSection />}
 
           <Pressable
             onPress={handleLogout}

@@ -14,9 +14,6 @@ type HeroPostcardSlideProps = {
   postcard: Postcard;
   activeIndex: number;
   postcardIds: string[];
-  cinemaRegionSlideIndex: number;
-  genreAnalyticsSlideIndex: number;
-  popularMoviesSlideIndex: number;
   activeImageUrl?: string | null;
   activeImageAlt: string;
   hasMoreContent: boolean;
@@ -43,9 +40,6 @@ export function HeroPostcardSlide({
   postcard,
   activeIndex,
   postcardIds,
-  cinemaRegionSlideIndex,
-  genreAnalyticsSlideIndex,
-  popularMoviesSlideIndex,
   activeImageUrl,
   activeImageAlt,
   hasMoreContent,
@@ -135,9 +129,6 @@ export function HeroPostcardSlide({
         <HeroCarouselIndicators
           postcardIds={postcardIds}
           activeIndex={activeIndex}
-          cinemaRegionSlideIndex={cinemaRegionSlideIndex}
-          genreAnalyticsSlideIndex={genreAnalyticsSlideIndex}
-          popularMoviesSlideIndex={popularMoviesSlideIndex}
           onSelect={onSelectSlide}
         />
       </div>

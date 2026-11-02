@@ -93,7 +93,7 @@ export default function ReleasedMoviesScreen() {
 
       <MovieListHeader
         eyebrow="THIS YEAR"
-        title="올해 개봉한 영화"
+        title="올해 개봉·공개한 영화"
         filter={filter}
         options={filterOptions}
         onFilterChange={setFilter}
@@ -106,7 +106,7 @@ export default function ReleasedMoviesScreen() {
       ) : releasedQuery.isError ? (
         <View className="flex-1 items-center justify-center px-5">
           <Text style={{ color: CINEMO_COLORS.textPrimary }}>
-            올해 개봉한 영화를 불러오지 못했습니다.
+            올해 개봉·공개한 영화를 불러오지 못했습니다.
           </Text>
 
           <Pressable

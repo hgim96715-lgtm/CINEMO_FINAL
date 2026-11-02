@@ -66,7 +66,7 @@ export default function ReleasedMoviesPage() {
         <p className="mb-2 text-xs tracking-[0.24em] text-primary">THIS YEAR</p>
 
         <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">
-          올해 개봉한 영화
+          올해 개봉·공개한 영화
         </h1>
 
       </div>
@@ -102,11 +102,11 @@ export default function ReleasedMoviesPage() {
 
       {releasedQuery.isPending ? (
         <p className="py-20 text-center text-muted-foreground">
-          개봉한 영화를 불러오는 중...
+          개봉·공개한 영화를 불러오는 중...
         </p>
       ) : releasedQuery.isError ? (
         <p className="py-20 text-center text-cinemo-red">
-          개봉한 영화를 불러오지 못했습니다.
+          개봉·공개한 영화를 불러오지 못했습니다.
         </p>
       ) : movies.length === 0 ? (
         <p className="py-20 text-center text-muted-foreground">

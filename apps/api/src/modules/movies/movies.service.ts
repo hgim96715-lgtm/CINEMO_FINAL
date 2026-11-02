@@ -16,7 +16,7 @@ import {
 } from "./dto/requests/get-upcoming-movies.request.dto";
 import { GetReleasedMoviesRequestDto } from "./dto/requests/get-released-movies.request.dto";
 import { GetMovieModerationRequestDto } from "./dto/requests/get-movie-moderation.request.dto";
-import { MovieVisibility } from "@prisma/client";
+import { MovieVisibility, WatchProvider } from "@prisma/client";
 import { PeopleRepository } from "./repositories/people.repository";
 import { UnifiedSearchResponseDto } from "./dto/responses/unified-search.response.dto";
 
@@ -250,6 +250,26 @@ export class MoviesService {
       page,
       limit,
     );
+
+    return {
+      items: movies.map((movie) => toMovieSearchItemResponseDto(movie)),
+      totalCount,
+      page,
+      limit,
+    };
+  }
+
+  async getMoviesByWatchProvider(
+    watchProvider: WatchProvider,
+    page: number,
+    limit: number,
+  ): Promise<MovieSearchResponseDto> {
+    const { movies, totalCount } =
+      await this.movieRepository.findMoviesByWatchProvider(
+        watchProvider,
+        page,
+        limit,
+      );
 
     return {
       items: movies.map((movie) => toMovieSearchItemResponseDto(movie)),

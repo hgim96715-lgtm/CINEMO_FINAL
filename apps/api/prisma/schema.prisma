@@ -236,8 +236,22 @@ enum PostcardMediaType {
 }
 
 enum PushTokenPlatform {
-  IOS     // iOS 기기에서 발급된 Expo Push Token
+  IOS // iOS 기기에서 발급된 Expo Push Token
   ANDROID // Android 기기에서 발급된 Expo Push Token
+}
+
+enum CinemaVisitVerificationType {
+  MANUAL
+  LOCATION
+  RECEIPT
+  RESERVATION
+}
+
+enum CinemaVisitVerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
 }
 
 enum UserActivityType {
@@ -260,6 +274,77 @@ enum UserActivityType {
   POSTCARD_BOOKMARK_REMOVE
   PERSON_BOOKMARK_ADD
   PERSON_BOOKMARK_REMOVE
+}
+
+enum CurationStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Curation {
+  id          String         @id @default(uuid(7)) @db.Uuid
+  slug        String         @unique @db.VarChar(100)
+  eyebrow     String         @default("CINEMO CURATION") @db.VarChar(100)
+  title       String         @db.VarChar(200)
+  description String?        @db.Text
+  status      CurationStatus @default(DRAFT)
+  startsAt    DateTime?      @map("starts_at") @db.Timestamptz(3)
+  endsAt      DateTime?      @map("ends_at") @db.Timestamptz(3)
+  sortOrder   Int            @default(0) @map("sort_order")
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  movies CurationMovie[]
+
+  @@index([status, startsAt, endsAt])
+  @@index([status, sortOrder])
+  @@map("curations")
+}
+
+model CurationMovie {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  curationId String   @map("curation_id") @db.Uuid
+  movieId    String   @map("movie_id") @db.Uuid
+  reason     String?  @db.Text
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  curation Curation @relation(fields: [curationId], references: [id], onDelete: Cascade)
+  movie    Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@unique([curationId, movieId])
+  @@index([curationId, sortOrder])
+  @@index([movieId])
+  @@map("curation_movies")
+}
+
+model CinemaVisit {
+  id                 String                        @id @default(uuid(7)) @db.Uuid
+  userId             String                        @db.Uuid
+  venueId            String                        @db.Uuid
+  movieRecordId      String?                       @db.Uuid
+  visitedAt          DateTime                      @default(now()) @db.Timestamptz(3)
+  verificationType   CinemaVisitVerificationType   @default(MANUAL)
+  verificationStatus CinemaVisitVerificationStatus @default(UNVERIFIED)
+  verifiedAt         DateTime?                     @db.Timestamptz(3)
+  note               String?                       @db.Text
+  evidenceMetadata   Json?
+  idempotencyKey     String                        @db.VarChar(100)
+  deletedAt          DateTime?                     @db.Timestamptz(3)
+  createdAt          DateTime                      @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime                      @updatedAt @db.Timestamptz(3)
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue       Venue            @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  movieRecord UserMovieRecord? @relation(fields: [movieRecordId], references: [id], onDelete: SetNull)
+
+  @@index([userId, visitedAt])
+  @@index([userId, venueId, visitedAt])
+  @@index([venueId, visitedAt])
+  @@index([userId, verificationStatus])
+  @@unique([userId, idempotencyKey])
+  @@map("cinema_visits")
 }
 
 model Postcard {
@@ -610,7 +695,8 @@ model User {
   postcardNotifications      PostcardNotification[]    @relation("PostcardNotificationRecipient")
   postcardNotificationActors PostcardNotification[]    @relation("PostcardNotificationActor")
   mobileRefreshTokens        MobileRefreshToken[]
-  pushTokens                 PushToken[]                 // 사용자의 기기별 푸시 토큰
+  pushTokens                 PushToken[] // 사용자의 기기별 푸시 토큰
+  cinemaVisits               CinemaVisit[]
   activityLogs               UserActivityLog[]
 
   @@index([nickname])
@@ -636,9 +722,9 @@ model UserActivityLog {
 
 model PushToken {
   id         String            @id @default(uuid(7)) @db.Uuid // 푸시 토큰 레코드 식별자
-  userId     String            @db.Uuid                    // 토큰을 발급받은 사용자
-  token      String            @unique @db.Text             // Expo Push Token 원문
-  platform   PushTokenPlatform                              // 토큰이 발급된 모바일 플랫폼
+  userId     String            @db.Uuid // 토큰을 발급받은 사용자
+  token      String            @unique @db.Text // Expo Push Token 원문
+  platform   PushTokenPlatform // 토큰이 발급된 모바일 플랫폼
   lastUsedAt DateTime          @default(now()) @map("last_used_at") @db.Timestamptz(3) // 마지막 등록·갱신 시각
   createdAt  DateTime          @default(now()) @map("created_at") @db.Timestamptz(3) // 생성 시각
   updatedAt  DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3) // 수정 시각
@@ -646,7 +732,7 @@ model PushToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade) // 사용자 삭제 시 토큰도 삭제
 
   @@index([userId, platform]) // 사용자·플랫폼별 조회 최적화
-  @@map("push_tokens")       // PostgreSQL 테이블명
+  @@map("push_tokens") // PostgreSQL 테이블명
 }
 
 model UserIdentity {
@@ -773,9 +859,10 @@ model UserMovieRecord {
   createdAt             DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt             DateTime          @updatedAt @db.Timestamptz(3)
 
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  movie Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
-  venue Venue? @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie        Movie         @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  venue        Venue?        @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  cinemaVisits CinemaVisit[]
 
   @@unique([userId, movieId])
   @@index([userId, isFavorite])
@@ -818,6 +905,7 @@ model Venue {
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   userMovieRecords UserMovieRecord[]
+  cinemaVisits     CinemaVisit[]
 
   @@unique([provider, externalId])
   @@index([type])
@@ -845,16 +933,16 @@ model UserPersonBookmark {
 }
 
 model UserMovieNotification {
-  id               String                @id @default(uuid(7)) @db.Uuid
-  userId           String                @db.Uuid
-  movieId          String                @db.Uuid
-  releaseId        String?               @db.Uuid
-  notificationType MovieNotificationType
-  enabled          Boolean               @default(true)
-  dayBeforeNotifiedAt DateTime?          @db.Timestamptz(3) @map("day_before_notified_at")
-  notifiedAt       DateTime?             @db.Timestamptz(3)
-  createdAt        DateTime              @default(now()) @db.Timestamptz(3)
-  updatedAt        DateTime              @updatedAt @db.Timestamptz(3)
+  id                  String                @id @default(uuid(7)) @db.Uuid
+  userId              String                @db.Uuid
+  movieId             String                @db.Uuid
+  releaseId           String?               @db.Uuid
+  notificationType    MovieNotificationType
+  enabled             Boolean               @default(true)
+  dayBeforeNotifiedAt DateTime?             @db.Timestamptz(3) @map("day_before_notified_at")
+  notifiedAt          DateTime?             @db.Timestamptz(3)
+  createdAt           DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime              @updatedAt @db.Timestamptz(3)
 
   user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   movie   Movie         @relation(fields: [movieId], references: [id], onDelete: Cascade)
@@ -895,6 +983,7 @@ model Movie {
   postcards              Postcard[]
   postcardGenerations    PostcardGeneration[]
   postcardDailyUsages    PostcardDailyUsage[]
+  curationMovies         CurationMovie[]
 
   @@index([visibility])
   @@map("movies")

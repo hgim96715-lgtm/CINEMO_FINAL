@@ -49,6 +49,10 @@ export type MovieSearchItemResponseDto = {
      * 청소년관람불가 영화 여부
      */
     isAdultOnly: boolean;
+    /**
+     * 시청 가능한 플랫폼 목록
+     */
+    watchOptions: Array<MovieWatchOptionResponseDto>;
 };
 
 export type MovieSearchResponseDto = {
