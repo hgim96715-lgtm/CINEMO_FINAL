@@ -13,7 +13,10 @@ import {
 } from "@/lib/queries/movie-search.query";
 import { activeCurationsQueryOptions } from "@/lib/queries/curation.query";
 import type { Curation, CurationMovie } from "@/lib/api/curations";
-import { getActiveCommemorativeCuration } from "@/lib/commemorative-curations";
+import {
+  getActiveCommemorativeCuration,
+  getCommemorativeMovieReason,
+} from "@/lib/commemorative-curations";
 import {
   TMDB_IMAGE_BASE_URL,
   usePlatformMovies,
@@ -154,6 +157,14 @@ export function CurationHero() {
   const isUpcoming = currentKind === "upcoming";
   const isCommemorative = currentKind === "commemorative";
   const isLongTitle = featuredMovie.title.length > 16;
+  const featuredCurationMovie = configuredCuration?.movies.find(
+    (movie) => movie.id === featuredMovie.id,
+  );
+  const commemorativeMovieReason = isCommemorative
+    ? featuredCurationMovie?.reason ||
+      getCommemorativeMovieReason(fallbackCuration, featuredMovie.title) ||
+      commemorativeCuration?.description
+    : null;
   const featuredPlatformProviders =
     platformMoviesWithProviders.find(
       ({ movie }) => movie.id === featuredMovie.id,
@@ -254,6 +265,12 @@ export function CurationHero() {
                 : "플랫폼에서 볼 수 있는 영화"}
             </p>
 
+            {isCommemorative && commemorativeCuration?.title && (
+              <p className="mb-5 max-w-2xl text-[clamp(1.35rem,2.7vw,2.5rem)] font-serif leading-tight tracking-[-0.03em] text-cinemo-text/90">
+                {commemorativeCuration.title}
+              </p>
+            )}
+
             <h1
               id="cinemo-curation-title"
               className={`font-semibold text-cinemo-text break-keep text-balance ${
@@ -272,8 +289,8 @@ export function CurationHero() {
                   {featuredMovie.releaseDate ?? "개봉일 미정"} 개봉 예정
                 </span>
               ) : isCommemorative ? (
-                <span className="max-w-md text-sm leading-7 text-cinemo-muted">
-                  {commemorativeCuration?.description}
+                <span className="max-w-xl text-sm leading-7 text-cinemo-muted sm:text-base">
+                  {commemorativeMovieReason}
                 </span>
               ) : (
                 <span className="rounded-full border border-cinemo-gold/35 bg-cinemo-gold/10 px-3 py-1.5 text-cinemo-gold">
