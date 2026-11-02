@@ -129,12 +129,19 @@ export function CurationHero() {
       : currentKind === "upcoming"
         ? upcomingMovies
         : platformMovies;
+  const movieIds = movies.map((movie) => movie.id).join("|");
 
   useEffect(() => {
     if (movies.length > 0) {
-      setSelectedMovie(pickRandomMovie(movies));
+      setSelectedMovie((currentMovie) => {
+        if (currentMovie && movies.some((movie) => movie.id === currentMovie.id)) {
+          return currentMovie;
+        }
+
+        return pickRandomMovie(movies);
+      });
     }
-  }, [movies]);
+  }, [movieIds]);
 
   const featuredMovie = selectedMovie ?? movies[0];
 
