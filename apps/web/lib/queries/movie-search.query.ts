@@ -54,14 +54,14 @@ type TmdbMovieSearchQueryOptions = {
 export const normalizeSearchText = (value: string) =>
   value.toLocaleLowerCase().replace(/\s+/g, "");
 
-export const hasMovieTitleMatch = (
+export const hasExactMovieTitleMatch = (
   movies: Array<{ title: string }>,
   query: string,
 ) => {
   const normalizedQuery = normalizeSearchText(query);
 
   return movies.some((movie) =>
-    normalizeSearchText(movie.title).includes(normalizedQuery),
+    normalizeSearchText(movie.title) === normalizedQuery,
   );
 };
 

@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 import {
+  hasExactMovieTitleMatch,
   normalizeSearchText,
   tmdbMovieSearchQueryOptions,
   unifiedSearchQueryOptions,
@@ -26,7 +27,8 @@ function MoviesPageContent() {
     }),
   );
   const shouldFetchTmdb =
-    dbQuery.isSuccess && dbQuery.data.movies.length < 10;
+    dbQuery.isSuccess &&
+    !hasExactMovieTitleMatch(dbQuery.data.movies, query);
   const tmdbQuery = useQuery(
     tmdbMovieSearchQueryOptions({
       query,

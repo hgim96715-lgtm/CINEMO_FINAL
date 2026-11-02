@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import {
+  hasExactMovieTitleMatch,
   normalizeSearchText,
   popularMoviesQueryOptions,
   tmdbMovieSearchQueryOptions,
@@ -70,7 +71,8 @@ export function MovieSearchSuggestions({
     }),
   );
   const shouldFetchTmdb =
-    searchQuery.isSuccess && searchQuery.data.movies.length < 5;
+    searchQuery.isSuccess &&
+    !hasExactMovieTitleMatch(searchQuery.data.movies, debouncedKeyword);
   const tmdbQuery = useQuery(
     tmdbMovieSearchQueryOptions({
       query: debouncedKeyword,
