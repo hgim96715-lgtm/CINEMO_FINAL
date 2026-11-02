@@ -54,6 +54,11 @@ type TmdbMovieSearchQueryOptions = {
 export const normalizeSearchText = (value: string) =>
   value.toLocaleLowerCase().replace(/\s+/g, "");
 
+export const getMovieSearchKey = (
+  title: string,
+  releaseDate: string | null | undefined,
+) => `${normalizeSearchText(title)}:${releaseDate?.slice(0, 4) ?? ""}`;
+
 export const isSearchableTmdbTitle = (value: string, query = value) =>
   /[가-힣]/.test(value) ||
   /^\d+$/.test(value.trim()) ||

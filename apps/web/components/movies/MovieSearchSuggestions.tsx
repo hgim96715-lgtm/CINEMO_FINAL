@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import {
-  hasExactMovieTitleMatch,
+  getMovieSearchKey,
   isSearchableTmdbTitle,
-  normalizeSearchText,
   preferExactTmdbTitleMatches,
   popularMoviesQueryOptions,
   tmdbMovieSearchQueryOptions,
@@ -21,11 +20,6 @@ import { GenreSearchList } from "../search/GenreSearchList";
 import { PersonSearchList } from "../search/PersonSearchList";
 
 const hasKoreanTitle = (value: string) => /[가-힣]/.test(value);
-
-const getMovieSearchKey = (
-  title: string,
-  releaseDate: string | null | undefined,
-) => `${normalizeSearchText(title)}:${releaseDate?.slice(0, 4) ?? ""}`;
 
 type MovieSearchSuggestionsProps = {
   query: string;
@@ -74,7 +68,7 @@ export function MovieSearchSuggestions({
   );
   const shouldFetchTmdb =
     searchQuery.isSuccess &&
-    !hasExactMovieTitleMatch(searchQuery.data.movies, debouncedKeyword);
+    searchQuery.data.movies.length < 5;
   const tmdbQuery = useQuery(
     tmdbMovieSearchQueryOptions({
       query: debouncedKeyword,
