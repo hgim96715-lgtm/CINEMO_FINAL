@@ -13,6 +13,7 @@
     "movie:merge": "pnpm build && node dist/scripts/merge-movie-records.js",
     "backfill:directors": "pnpm build && node dist/scripts/backfill-duplicate-directors.js",
     "admin:create": "pnpm build && node dist/scripts/create-admin.js",
+    "curation:seed": "pnpm build && node dist/scripts/seed-curations.js",
     "typecheck": "../../node_modules/typescript/bin/tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",

@@ -3,6 +3,7 @@ import Link from "next/link";
 const links = [
   { href: "/admin/users", label: "회원·접속 현황" },
   { href: "/admin/movies", label: "영화 검색" },
+  { href: "/admin/curations", label: "큐레이션 관리" },
 ];
 
 export function AdminNavigation() {

@@ -11,6 +11,8 @@ import {
   movieSearchQueryOptions,
   upcomingMoviesQueryOptions,
 } from "@/lib/queries/movie-search.query";
+import { activeCurationsQueryOptions } from "@/lib/queries/curation.query";
+import type { Curation, CurationMovie } from "@/lib/api/curations";
 import { getActiveCommemorativeCuration } from "@/lib/commemorative-curations";
 import {
   TMDB_IMAGE_BASE_URL,
@@ -28,6 +30,23 @@ const pickRandomMovie = (movies: MovieSearchItemResponse[]) => {
   return movies[Math.floor(Math.random() * movies.length)];
 };
 
+function toHeroMovie(movie: CurationMovie): MovieSearchItemResponse {
+  return {
+    id: movie.id,
+    title: movie.title,
+    releaseDate: movie.releaseDate,
+    posterUrl: movie.posterUrl,
+    genres: [],
+    rank: null,
+    rankChange: null,
+    audienceCount: null,
+    totalAudienceCount: null,
+    hasTrailer: false,
+    isAdultOnly: false,
+    watchOptions: [],
+  };
+}
+
 export function CurationHero() {
   const [activeKind, setActiveKind] =
     useState<CurationKind>("commemorative");
@@ -35,6 +54,7 @@ export function CurationHero() {
     MovieSearchItemResponse | undefined
   >();
 
+  const activeCurationsQuery = useQuery(activeCurationsQueryOptions());
   const upcomingQuery = useQuery(
     upcomingMoviesQueryOptions({ page: 1, limit: 20 }),
   );
@@ -42,9 +62,13 @@ export function CurationHero() {
     movies: platformMoviesWithProviders,
     isPending: platformMoviesPending,
   } = usePlatformMovies(20);
-  const commemorativeCuration = getActiveCommemorativeCuration();
+  const configuredCuration: Curation | undefined =
+    activeCurationsQuery.data?.[0];
+  const fallbackCuration = getActiveCommemorativeCuration();
+  const commemorativeCuration = configuredCuration ?? fallbackCuration;
   const commemorativeQueries = useQueries({
-    queries: (commemorativeCuration?.movieTitles ?? []).map((title) =>
+    queries: (configuredCuration ? [] : fallbackCuration?.movieTitles ?? []).map(
+      (title) =>
       movieSearchQueryOptions({
         query: title,
         page: 1,
@@ -62,6 +86,12 @@ export function CurationHero() {
     [platformMoviesWithProviders],
   );
   const commemorativeMovies = useMemo(() => {
+    if (configuredCuration) {
+      return configuredCuration.movies
+        .filter((movie) => Boolean(movie.title && movie.posterUrl))
+        .map(toHeroMovie);
+    }
+
     const movies = commemorativeQueries.flatMap(
       (query) => query.data?.items ?? [],
     );
@@ -74,7 +104,7 @@ export function CurationHero() {
     }
 
     return Array.from(movieMap.values());
-  }, [commemorativeQueries]);
+  }, [configuredCuration, commemorativeQueries]);
 
   const hasCommemorativeMovies = commemorativeMovies.length > 0;
   const hasUpcomingMovies = upcomingMovies.length > 0;

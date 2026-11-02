@@ -1,4 +1,14 @@
-import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  UseGuards,
+} from "@nestjs/common";
 import {
   ApiCookieAuth,
   ApiOkResponse,
@@ -8,6 +18,9 @@ import {
 
 import { AdminGuard } from "./admin.guard";
 import { AdminService } from "./admin.service";
+import { CreateCurationRequestDto } from "./dto/requests/create-curation.request.dto";
+import { UpdateCurationRequestDto } from "./dto/requests/update-curation.request.dto";
+import { CurationResponseDto } from "./dto/responses/curation.response.dto";
 
 @ApiTags("Admin")
 @ApiCookieAuth("cinemo_session")
@@ -28,5 +41,35 @@ export class AdminController {
   @ApiOkResponse({ description: "최근 회원 활동 이력" })
   findUserActivity(@Param("userId", ParseUUIDPipe) userId: string) {
     return this.adminService.findUserActivity(userId);
+  }
+
+  @Get("curations")
+  @ApiOperation({ summary: "관리자용 큐레이션 목록 조회" })
+  @ApiOkResponse({ type: CurationResponseDto, isArray: true })
+  findCurations() {
+    return this.adminService.findCurations();
+  }
+
+  @Post("curations")
+  @ApiOperation({ summary: "관리자용 큐레이션 생성" })
+  @ApiOkResponse({ type: CurationResponseDto })
+  createCuration(@Body() input: CreateCurationRequestDto) {
+    return this.adminService.createCuration(input);
+  }
+
+  @Patch("curations/:curationId")
+  @ApiOperation({ summary: "관리자용 큐레이션 수정" })
+  @ApiOkResponse({ type: CurationResponseDto })
+  updateCuration(
+    @Param("curationId", ParseUUIDPipe) curationId: string,
+    @Body() input: UpdateCurationRequestDto,
+  ) {
+    return this.adminService.updateCuration(curationId, input);
+  }
+
+  @Delete("curations/:curationId")
+  @ApiOperation({ summary: "관리자용 큐레이션 삭제" })
+  deleteCuration(@Param("curationId", ParseUUIDPipe) curationId: string) {
+    return this.adminService.deleteCuration(curationId);
   }
 }
