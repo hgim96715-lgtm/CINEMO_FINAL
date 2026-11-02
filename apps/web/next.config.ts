@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@cinemo/shared", "@cinemo/api-contract"],
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
