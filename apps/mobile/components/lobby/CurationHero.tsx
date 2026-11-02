@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, View } from "react-native";
 
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { activeCurationsQueryOptions } from "@/lib/queries/curation.query";
@@ -12,11 +12,7 @@ export function CurationHero() {
   const movie = curation?.movies[0];
 
   if (curationsQuery.isPending) {
-    return (
-      <View className="mx-5 mt-5 h-80 items-center justify-center rounded-3xl border border-cinemo-gold/25 bg-cinemo-surface">
-        <ActivityIndicator color={CINEMO_COLORS.accent} />
-      </View>
-    );
+    return <View className="mx-5 mt-5 h-80" />;
   }
 
   if (curationsQuery.isError || !curation || !movie) {
@@ -26,7 +22,7 @@ export function CurationHero() {
   const posterUrl = getImageUrl(movie.posterUrl);
 
   return (
-    <View className="mx-5 mt-5 overflow-hidden rounded-3xl border border-cinemo-gold/25 bg-cinemo-surface px-5 py-6">
+    <View className="mx-5 mt-5 overflow-hidden rounded-3xl bg-cinemo-surface px-5 py-6">
       <Text className="text-xs font-semibold tracking-[3px] text-cinemo-gold">
         CINEMO CURATION
       </Text>

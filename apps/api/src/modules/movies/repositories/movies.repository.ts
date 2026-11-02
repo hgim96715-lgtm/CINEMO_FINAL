@@ -218,6 +218,7 @@ export class MoviesRepository {
     const keyword = query.trim();
     const normalizedKeyword = keyword
       .toLocaleLowerCase()
+      .normalize("NFKC")
       .replace(/[\s\p{P}\p{S}]+/gu, "");
 
     const normalizedTitleMovies =
@@ -242,19 +243,20 @@ export class MoviesRepository {
       ({ movieId }) => movieId,
     );
 
+    const koreanTitleWhere: Prisma.MovieWhereInput = {
+      titles: {
+        some: {
+          languageCode: {
+            startsWith: "ko",
+          },
+        },
+      },
+    };
+
     const where: Prisma.MovieWhereInput = {
       AND: [
         publicMovieWhere,
         koreanAvailabilityWhere,
-        {
-          titles: {
-            some: {
-              languageCode: {
-                startsWith: "ko",
-              },
-            },
-          },
-        },
         {
           OR: [
             {
@@ -263,54 +265,69 @@ export class MoviesRepository {
               },
             },
             {
-              titles: {
-                some: {
-                  titleType: {
-                    in: [
-                      TitleType.PRIMARY,
-                      TitleType.ALIAS,
-                      TitleType.ORIGINAL,
-                      TitleType.RERELEASE,
-                    ],
-                  },
-                  title: {
-                    contains: keyword,
-                    mode: "insensitive",
+              AND: [
+                koreanTitleWhere,
+                {
+                  titles: {
+                    some: {
+                      titleType: {
+                        in: [
+                          TitleType.PRIMARY,
+                          TitleType.ALIAS,
+                          TitleType.ORIGINAL,
+                          TitleType.RERELEASE,
+                        ],
+                      },
+                      title: {
+                        contains: keyword,
+                        mode: "insensitive",
+                      },
+                    },
                   },
                 },
-              },
+              ],
             },
             {
-              movieGenres: {
-                some: {
-                  name: {
-                    contains: keyword,
-                    mode: "insensitive",
+              AND: [
+                koreanTitleWhere,
+                {
+                  movieGenres: {
+                    some: {
+                      name: {
+                        contains: keyword,
+                        mode: "insensitive",
+                      },
+                    },
                   },
                 },
-              },
+              ],
             },
             {
-              movieCredits: {
-                some: {
-                  person: {
-                    OR: [
-                      {
-                        name: {
-                          contains: keyword,
-                          mode: "insensitive",
-                        },
+              AND: [
+                koreanTitleWhere,
+                {
+                  movieCredits: {
+                    some: {
+                      person: {
+                        OR: [
+                          {
+                            name: {
+                              contains: keyword,
+                              mode: "insensitive",
+                            },
+                          },
+                          {
+                            nameEn: {
+                              contains: keyword,
+                              mode: "insensitive",
+                            },
+                          },
+                        ],
                       },
-                      {
-                        nameEn: {
-                          contains: keyword,
-                          mode: "insensitive",
-                        },
-                      },
-                    ],
+                    },
                   },
                 },
-              },
+              ],
             },
           ],
         },

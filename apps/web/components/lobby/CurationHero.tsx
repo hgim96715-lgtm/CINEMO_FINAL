@@ -169,7 +169,10 @@ export function CurationHero({
 
   if ((upcomingQuery.isPending && platformMoviesPending) || !featuredMovie) {
     return (
-      <section className="min-h-[clamp(30rem,52vw,42rem)] rounded-[2rem] bg-cinemo-surface/70" />
+      <section
+        aria-busy="true"
+        className="min-h-[clamp(30rem,42vw,36rem)] bg-transparent"
+      />
     );
   }
 
@@ -208,7 +211,7 @@ export function CurationHero({
   return (
     <section
       aria-labelledby="cinemo-curation-title"
-      className={`relative isolate min-h-[clamp(30rem,52vw,42rem)] overflow-hidden bg-[#081918] text-cinemo-text ${
+      className={`relative isolate min-h-[clamp(30rem,42vw,36rem)] overflow-hidden bg-[#081918] text-cinemo-text ${
         embedded
           ? ""
           : "rounded-[2rem] border border-cinemo-gold/25 shadow-[0_2rem_5rem_rgb(0_0_0_/28%),inset_0_1px_0_rgb(255_255_255_/10%)]"
@@ -216,7 +219,7 @@ export function CurationHero({
     >
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_76%_30%,rgb(199_161_75_/12%),transparent_30%),linear-gradient(135deg,rgb(5_20_19_/100%),rgb(8_25_24_/96%))]" />
 
-      <div className="relative z-10 flex min-h-[clamp(30rem,52vw,42rem)] flex-col p-5 sm:p-8 lg:p-12">
+      <div className="relative z-10 flex min-h-[clamp(30rem,42vw,36rem)] flex-col p-5 sm:p-8 lg:p-12">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <p className="text-xs font-medium tracking-[0.32em] text-cinemo-gold sm:text-sm">
             CINEMO CURATION
@@ -281,7 +284,7 @@ export function CurationHero({
           </div>
         </header>
 
-        <div className="grid flex-1 items-center gap-8 pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:gap-12 lg:pt-5">
+        <div className="grid flex-1 items-center gap-8 pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,20rem)] lg:gap-16 lg:pt-3">
           <div className="max-w-2xl">
             {isCommemorative && commemorativeCuration?.eyebrow && (
               <p className="mb-4 text-sm font-medium text-cinemo-gold">
@@ -300,7 +303,7 @@ export function CurationHero({
               className={`font-semibold text-cinemo-text break-keep text-balance ${
                 isLongTitle
                   ? "max-w-[18ch] font-sans text-[clamp(2rem,4.2vw,4.25rem)] leading-[1.08] tracking-[-0.045em]"
-                  : "max-w-[13ch] font-serif text-[clamp(2.5rem,6vw,5.75rem)] leading-[0.98] tracking-[-0.04em]"
+                  : "max-w-[13ch] font-serif text-[clamp(2.5rem,5vw,5rem)] leading-[0.98] tracking-[-0.04em]"
               }`}
             >
               {featuredMovie.title}
@@ -321,9 +324,28 @@ export function CurationHero({
               </div>
             ) : null}
 
+            {!isCommemorative && (
+              <div className="mt-8 hidden flex-wrap gap-3 lg:flex">
+                <Link
+                  href={`/movies/${featuredMovie.id}`}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-cinemo-gold px-5 py-3.5 text-sm font-semibold text-cinemo-dark shadow-[0_0_2rem_rgb(199_161_75_/22%)] transition hover:bg-cinemo-gold-light"
+                >
+                  영화 자세히 보기
+                  <ArrowUpRight className="size-4" />
+                </Link>
+
+                <Link
+                  href={isUpcoming ? "/lobby/movies/upcoming" : "/lobby/movies/platform"}
+                  className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-5 py-3.5 text-sm font-medium text-cinemo-text backdrop-blur-sm transition hover:border-cinemo-gold/60 hover:bg-white/10"
+                >
+                  {isUpcoming ? "전체 개봉 예정작" : "플랫폼 영화 전체 보기"}
+                </Link>
+              </div>
+            )}
+
           </div>
 
-          <div className="mx-auto w-full max-w-[11rem] sm:max-w-[16rem] lg:max-w-[22rem]">
+          <div className="mx-auto w-full max-w-[11rem] sm:max-w-[16rem] lg:max-w-[20rem]">
             <Link
               href={`/movies/${featuredMovie.id}`}
               className="group relative block overflow-hidden rounded-[1.35rem] bg-black/40 shadow-[0_2rem_4rem_rgb(0_0_0_/44%)]"
@@ -363,7 +385,7 @@ export function CurationHero({
             </Link>
 
             {!isCommemorative && (
-              <div className="mt-4 flex flex-col gap-3">
+              <div className="mt-4 flex flex-col gap-3 lg:hidden">
                 <Link
                   href={`/movies/${featuredMovie.id}`}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cinemo-gold px-5 py-3.5 text-sm font-semibold text-cinemo-dark shadow-[0_0_2rem_rgb(199_161_75_/22%)] transition hover:bg-cinemo-gold-light"

@@ -20,7 +20,7 @@ export function LobbyHeroTabs() {
   return (
     <section
       aria-label="CINEMO 로비 Hero"
-      className="overflow-hidden rounded-[2rem] border border-cinemo-gold/25 bg-[#081918] shadow-[0_2rem_5rem_rgb(0_0_0_/28%)]"
+      className="overflow-hidden rounded-[2rem] bg-[#081918] shadow-[0_2rem_5rem_rgb(0_0_0_/28%)]"
     >
       <div className="flex gap-6 overflow-x-auto border-b border-white/10 px-5 pt-5 scrollbar-none sm:px-10 sm:pt-7 [&::-webkit-scrollbar]:hidden">
         {tabs.map((tab) => (
