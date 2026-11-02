@@ -20,7 +20,11 @@ const curationInclude = Prisma.validator<Prisma.CurationDefaultArgs>()({
             },
             releases: {
               orderBy: [{ isPrimary: "desc" }, { releaseDate: "desc" }],
-              take: 1,
+            },
+            watchOptions: {
+              where: {
+                regionCode: "KR",
+              },
             },
             media: {
               where: {
@@ -83,8 +87,8 @@ export class CurationRepository {
     });
   }
 
-  findActive(now = new Date()): Promise<CurationWithMovies[]> {
-    return this.prisma.curation.findMany({
+  async findActive(now = new Date()): Promise<CurationWithMovies[]> {
+    const curations = await this.prisma.curation.findMany({
       where: {
         status: CurationStatus.PUBLISHED,
         OR: [{ startsAt: null }, { startsAt: { lte: now } }],
@@ -93,6 +97,17 @@ export class CurationRepository {
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
       ...curationInclude,
     });
+
+    return curations
+      .map((curation) => ({
+        ...curation,
+        movies: curation.movies.filter(
+          (item) =>
+            item.movie.releases.some((release) => release.countryCode === "KR") ||
+            item.movie.watchOptions.length > 0,
+        ),
+      }))
+      .filter((curation) => curation.movies.length > 0);
   }
 
   create(input: CreateCurationInput): Promise<CurationWithMovies> {

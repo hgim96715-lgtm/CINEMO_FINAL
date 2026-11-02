@@ -153,6 +153,7 @@ export function CurationHero() {
 
   const isUpcoming = currentKind === "upcoming";
   const isCommemorative = currentKind === "commemorative";
+  const isLongTitle = featuredMovie.title.length > 16;
   const featuredPlatformProviders =
     platformMoviesWithProviders.find(
       ({ movie }) => movie.id === featuredMovie.id,
@@ -255,7 +256,11 @@ export function CurationHero() {
 
             <h1
               id="cinemo-curation-title"
-              className="max-w-[11ch] font-serif text-[clamp(2.5rem,6vw,5.75rem)] font-semibold leading-[0.98] tracking-[-0.04em] text-cinemo-text"
+              className={`font-semibold text-cinemo-text break-keep text-balance ${
+                isLongTitle
+                  ? "max-w-[18ch] font-sans text-[clamp(2rem,4.2vw,4.25rem)] leading-[1.08] tracking-[-0.045em]"
+                  : "max-w-[13ch] font-serif text-[clamp(2.5rem,6vw,5.75rem)] leading-[0.98] tracking-[-0.04em]"
+              }`}
             >
               {featuredMovie.title}
             </h1>

@@ -40,7 +40,9 @@ export function toCurationResponseDto(
     movies: curation.movies.map((item) => {
       const title = selectMovieTitle(item.movie.titles);
       const poster = item.movie.media[0];
-      const release = item.movie.releases[0];
+      const release =
+        item.movie.releases.find((item) => item.countryCode === "KR") ??
+        item.movie.releases[0];
 
       return {
         id: item.movie.id,

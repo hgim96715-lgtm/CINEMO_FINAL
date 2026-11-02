@@ -21,6 +21,25 @@ const publicMovieWhere: Prisma.MovieWhereInput = {
   visibility: MovieVisibility.PUBLIC,
 };
 
+const koreanAvailabilityWhere: Prisma.MovieWhereInput = {
+  OR: [
+    {
+      releases: {
+        some: {
+          countryCode: "KR",
+        },
+      },
+    },
+    {
+      watchOptions: {
+        some: {
+          regionCode: "KR",
+        },
+      },
+    },
+  ],
+};
+
 const movieInclude = Prisma.validator<Prisma.MovieDefaultArgs>()({
   include: {
     titles: {
@@ -183,6 +202,7 @@ export class MoviesRepository {
       where: {
         id: movieId,
         ...publicMovieWhere,
+        ...koreanAvailabilityWhere,
       },
       ...movieInclude,
     });
@@ -226,6 +246,7 @@ export class MoviesRepository {
     const where: Prisma.MovieWhereInput = {
       AND: [
         publicMovieWhere,
+        koreanAvailabilityWhere,
         {
           titles: {
             some: {
@@ -334,7 +355,10 @@ export class MoviesRepository {
           mode: "insensitive",
         },
         movie: {
-          visibility: MovieVisibility.PUBLIC,
+          AND: [
+            { visibility: MovieVisibility.PUBLIC },
+            koreanAvailabilityWhere,
+          ],
         },
       },
       _count: {
@@ -357,7 +381,9 @@ export class MoviesRepository {
   // Web SEO용 sitemap 생성을 위해 영화 ID와 수정 시각만 조회
   findSitemapMovies(): Prisma.PrismaPromise<MovieSitemapItem[]> {
     return this.prisma.movie.findMany({
-      where: publicMovieWhere,
+      where: {
+        AND: [publicMovieWhere, koreanAvailabilityWhere],
+      },
       select: {
         id: true,
         updatedAt: true,
@@ -1119,6 +1145,7 @@ export class MoviesRepository {
       where: {
         AND: [
           publicMovieWhere,
+          koreanAvailabilityWhere,
           {
             id: {
               in: movieIds,
@@ -1198,14 +1225,13 @@ export class MoviesRepository {
       status: {
         in: [ReleaseStatus.ANNOUNCED, ReleaseStatus.SCHEDULED],
       },
-      // 상세 페이지와 동일하게 한국 개봉일을 우선하고,
-      // 한국 개봉일이 없을 때만 기본 개봉일을 fallback으로 사용함.
-      OR: [{ countryCode: "KR" }, { countryCode: null, isPrimary: true }],
+      countryCode: "KR",
     };
 
     const where: Prisma.MovieWhereInput = {
       AND: [
         publicMovieWhere,
+        koreanAvailabilityWhere,
         {
           OR: [{ runtime: null }, { runtime: { gt: 30 } }],
         },
@@ -1258,36 +1284,16 @@ export class MoviesRepository {
             AND release."releaseDate" >= ${filter.startDate}
             ${endDateCondition}
             AND release.status IN ('ANNOUNCED', 'SCHEDULED')
-            AND (
-              release."countryCode" = 'KR'
-              OR (
-                release."countryCode" IS NULL
-                AND release."isPrimary" = true
-              )
-            )
+            AND release."countryCode" = 'KR'
         )
       ORDER BY (
-        COALESCE(
-          (
-            SELECT MIN(release."releaseDate")
-            FROM movie_releases AS release
-            WHERE release."movieId" = movie.id
-              AND release."releaseDate" >= ${filter.startDate}
-              ${endDateCondition}
-              AND release.status IN ('ANNOUNCED', 'SCHEDULED')
-              AND release."countryCode" = 'KR'
-          ),
-          (
-            SELECT MIN(release."releaseDate")
-            FROM movie_releases AS release
-            WHERE release."movieId" = movie.id
-              AND release."releaseDate" >= ${filter.startDate}
-              ${endDateCondition}
-              AND release.status IN ('ANNOUNCED', 'SCHEDULED')
-              AND release."countryCode" IS NULL
-              AND release."isPrimary" = true
-          )
-        )
+        SELECT MIN(release."releaseDate")
+        FROM movie_releases AS release
+        WHERE release."movieId" = movie.id
+          AND release."releaseDate" >= ${filter.startDate}
+          ${endDateCondition}
+          AND release.status IN ('ANNOUNCED', 'SCHEDULED')
+          AND release."countryCode" = 'KR'
       ) ASC, movie.id ASC
       OFFSET ${(page - 1) * limit}
       LIMIT ${limit}
@@ -1540,6 +1546,7 @@ export class MoviesRepository {
       where: {
         AND: [
           publicMovieWhere,
+          koreanAvailabilityWhere,
           { id: { in: rankings.map((ranking) => ranking.movieId) } },
         ],
       },
@@ -1615,13 +1622,7 @@ export class MoviesRepository {
           AND release."releaseDate" >= ${startDate}
           AND release."releaseDate" < ${endDate}
           AND release.status = 'RELEASED'
-          AND (
-            release."countryCode" = 'KR'
-            OR (
-              release."countryCode" IS NULL
-              AND release."isPrimary" = true
-            )
-          )
+          AND release."countryCode" = 'KR'
       )
     GROUP BY genre.name
     ORDER BY "count" DESC, genre.name ASC
