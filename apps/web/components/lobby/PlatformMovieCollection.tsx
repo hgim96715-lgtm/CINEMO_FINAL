@@ -53,7 +53,11 @@ function getMovieProviders(movie: MovieSearchItemResponse): PlatformProvider[] {
   return Array.from(providers.values());
 }
 
-export function usePlatformMovies(limit = 20) {
+export function usePlatformMovies(
+  limit = 20,
+  options: { limitTotal?: boolean } = {},
+) {
+  const { limitTotal = true } = options;
   const providerQueries = useQueries({
     queries: PLATFORM_PROVIDERS.map(({ provider }) =>
       watchProviderMoviesQueryOptions({
@@ -96,8 +100,38 @@ export function usePlatformMovies(limit = 20) {
       });
     });
 
-    return Array.from(movieMap.values()).slice(0, limit);
-  }, [limit, providerQueries]);
+    const movies = Array.from(movieMap.values());
+
+    if (!limitTotal) {
+      return movies;
+    }
+
+    const providerBuckets = PLATFORM_PROVIDERS.map(({ provider }) =>
+      movies.filter((movie) =>
+        movie.providers.some((item) => item.provider === provider),
+      ),
+    );
+    const selectedMovies = new Map<string, PlatformMovie>();
+
+    for (let bucketIndex = 0; selectedMovies.size < limit; bucketIndex += 1) {
+      let addedMovie = false;
+
+      for (const bucket of providerBuckets) {
+        const movie = bucket[bucketIndex];
+
+        if (!movie || selectedMovies.has(movie.movie.id)) continue;
+
+        selectedMovies.set(movie.movie.id, movie);
+        addedMovie = true;
+
+        if (selectedMovies.size >= limit) break;
+      }
+
+      if (!addedMovie) break;
+    }
+
+    return Array.from(selectedMovies.values());
+  }, [limit, limitTotal, providerQueries]);
 
   return {
     movies,

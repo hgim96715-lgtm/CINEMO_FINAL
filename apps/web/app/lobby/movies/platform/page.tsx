@@ -15,7 +15,9 @@ import type { ViewingPlatform } from "@/lib/api/movies";
 export default function PlatformMoviesPage() {
   const [selectedProvider, setSelectedProvider] =
     useState<ViewingPlatform | "ALL">("ALL");
-  const { movies, isPending, isError } = usePlatformMovies(100);
+  const { movies, isPending, isError } = usePlatformMovies(100, {
+    limitTotal: false,
+  });
   const filteredMovies =
     selectedProvider === "ALL"
       ? movies
