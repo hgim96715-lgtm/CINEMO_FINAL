@@ -34,23 +34,47 @@ export class TmdbService {
     query: string,
     page = 1,
   ): Promise<TmdbMovieSearchResponse> {
-    const params = {
-      query: query.trim(),
-      page,
-      language: "ko-KR",
-      include_adult: false,
-    };
-
-    const { data } = await firstValueFrom(
-      this.httpService.get<TmdbMovieSearchResponse>("/search/movie", {
-        params,
-      }),
+    const normalizedQuery = query.trim();
+    const isLatinOrNumericQuery = /^[A-Za-z0-9\s:.'!?-]+$/.test(
+      normalizedQuery,
     );
 
+    const search = async (language: "ko-KR" | "en-US") => {
+      const { data } = await firstValueFrom(
+        this.httpService.get<TmdbMovieSearchResponse>("/search/movie", {
+          params: {
+            query: normalizedQuery,
+            page,
+            language,
+            include_adult: false,
+          },
+        }),
+      );
+
+      return data;
+    };
+
+    const koreanData = await search("ko-KR");
+    const koreanResults = koreanData.results.filter(
+      (movie) =>
+        !movie.adult &&
+        Boolean(movie.title) &&
+        (/[가-힣]/.test(movie.title) || /^\d+$/.test(movie.title.trim())),
+    );
+
+    if (koreanResults.length > 0 || !isLatinOrNumericQuery) {
+      return {
+        ...koreanData,
+        results: koreanResults,
+      };
+    }
+
+    const englishData = await search("en-US");
+
     return {
-      ...data,
-      results: data.results.filter(
-        (movie) => !movie.adult && Boolean(movie.title) && /[가-힣]/.test(movie.title),
+      ...englishData,
+      results: englishData.results.filter(
+        (movie) => !movie.adult && Boolean(movie.title),
       ),
     };
   }

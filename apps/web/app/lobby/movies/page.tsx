@@ -4,7 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 import {
   hasExactMovieTitleMatch,
+  isSearchableTmdbTitle,
   normalizeSearchText,
+  preferExactTmdbTitleMatches,
   tmdbMovieSearchQueryOptions,
   unifiedSearchQueryOptions,
 } from "@/lib/queries/movie-search.query";
@@ -70,22 +72,15 @@ function MoviesPageContent() {
   const dbMovieTitles = new Set(
     dbMovies.map((movie) => normalizeSearchText(movie.title)),
   );
-  const tmdbMovies = (tmdbQuery.data?.results ?? [])
-    .filter((movie) => /[가-힣]/.test(movie.title))
+  const tmdbMovies = preferExactTmdbTitleMatches(
+    (tmdbQuery.data?.results ?? [])
+    .filter((movie) => isSearchableTmdbTitle(movie.title, query))
     .filter((movie) => Boolean(movie.poster_path))
     .filter(
       (movie) => !dbMovieTitles.has(normalizeSearchText(movie.title)),
-    )
-    .filter((movie, index, results) => {
-    const normalizedTitle = normalizeSearchText(movie.title);
-
-    return (
-      results.findIndex(
-        (candidate) =>
-          normalizeSearchText(candidate.title) === normalizedTitle,
-      ) === index
-    );
-  });
+    ),
+    query,
+  );
 
   if (shouldFetchTmdb && tmdbQuery.isPending && dbMovies.length === 0) {
     return (

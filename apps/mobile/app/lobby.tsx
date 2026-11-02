@@ -2,6 +2,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MovieRanking } from "@/components/lobby/MovieRanking";
 import { LobbyHeroTabs } from "@/components/lobby/LobbyHeroTabs";
 import { ReleasedMovies } from "@/components/lobby/ReleasedMovies";
+import { UpcomingMovies } from "@/components/lobby/UpcomingMovies";
+import { PlatformMovies } from "@/components/lobby/PlatformMovies";
 import { ScrollView } from "react-native";
 import { CinemaMapButton } from "@/components/lobby/CinemaMapButton";
 import { CommemorativeMovies } from "@/components/lobby/CommemorativeMovies";
@@ -18,7 +20,9 @@ export default function LobbyScreen() {
         <CinemaMapButton />
         <CommemorativeMovies />
         <MovieRanking />
+        <UpcomingMovies />
         <ReleasedMovies />
+        <PlatformMovies />
       </ScrollView>
     </SafeAreaView>
   );

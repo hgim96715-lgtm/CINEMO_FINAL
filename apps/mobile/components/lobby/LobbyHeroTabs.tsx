@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { CINEMO_COLORS } from "@cinemo/shared";
-import { CurationHero } from "./CurationHero";
-import { PlatformMovies } from "./PlatformMovies";
+import {
+  MobileCurationHero,
+  type MobileHeroKind,
+} from "./MobileCurationHero";
 import { PostcardHeroCarousel } from "./PostcardHeroCarousel";
-import { UpcomingMovies } from "./UpcomingMovies";
 
-type HeroTab = "commemorative" | "upcoming" | "platform" | "postcard";
+type HeroTab = MobileHeroKind | "postcard";
 
 const tabs: Array<{ value: HeroTab; label: string }> = [
   { value: "commemorative", label: "기념일" },
@@ -58,9 +59,7 @@ export function LobbyHeroTabs() {
         })}
       </ScrollView>
 
-      {activeTab === "commemorative" && <CurationHero />}
-      {activeTab === "upcoming" && <UpcomingMovies />}
-      {activeTab === "platform" && <PlatformMovies />}
+      {activeTab !== "postcard" && <MobileCurationHero kind={activeTab} />}
       {activeTab === "postcard" && <PostcardHeroCarousel />}
     </View>
   );

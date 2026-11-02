@@ -54,6 +54,23 @@ type TmdbMovieSearchQueryOptions = {
 export const normalizeSearchText = (value: string) =>
   value.toLocaleLowerCase().replace(/\s+/g, "");
 
+export const isSearchableTmdbTitle = (value: string, query = value) =>
+  /[가-힣]/.test(value) ||
+  /^\d+$/.test(value.trim()) ||
+  /^[A-Za-z0-9\s:.'!?-]+$/.test(query.trim());
+
+export const preferExactTmdbTitleMatches = <T extends { title: string }>(
+  movies: T[],
+  query: string,
+) => {
+  const normalizedQuery = normalizeSearchText(query);
+  const exactMatches = movies.filter(
+    (movie) => normalizeSearchText(movie.title) === normalizedQuery,
+  );
+
+  return exactMatches.length > 0 ? exactMatches : movies;
+};
+
 export const hasExactMovieTitleMatch = (
   movies: Array<{ title: string }>,
   query: string,

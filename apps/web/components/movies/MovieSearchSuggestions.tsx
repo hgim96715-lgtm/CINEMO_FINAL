@@ -6,7 +6,9 @@ import { useEffect, useState } from "react";
 
 import {
   hasExactMovieTitleMatch,
+  isSearchableTmdbTitle,
   normalizeSearchText,
+  preferExactTmdbTitleMatches,
   popularMoviesQueryOptions,
   tmdbMovieSearchQueryOptions,
   unifiedSearchQueryOptions,
@@ -155,26 +157,18 @@ export function MovieSearchSuggestions({
       getMovieSearchKey(movie.title, movie.releaseDate),
     ),
   );
-  const tmdbMovies = (tmdbQuery.data?.results ?? [])
-    .filter((movie) => hasKoreanTitle(movie.title))
+  const tmdbMovies = preferExactTmdbTitleMatches(
+    (tmdbQuery.data?.results ?? [])
+    .filter((movie) => isSearchableTmdbTitle(movie.title, debouncedKeyword))
     .filter((movie) => Boolean(movie.poster_path))
     .filter(
       (movie) =>
         !dbMovieKeys.has(
           getMovieSearchKey(movie.title, movie.release_date),
         ),
-    )
-    .filter((movie, index, results) => {
-      const normalizedTitle = normalizeSearchText(movie.title);
-
-      return (
-        results.findIndex(
-          (candidate) =>
-            normalizeSearchText(candidate.title) === normalizedTitle,
-        ) === index
-      );
-    })
-    .slice(0, 5);
+    ),
+    debouncedKeyword,
+  ).slice(0, 5);
 
   if (shouldFetchTmdb && tmdbQuery.isPending && dbMovies.length === 0) {
     return <p className="px-2 py-3 text-sm text-white/50">영화를 찾는 중...</p>;

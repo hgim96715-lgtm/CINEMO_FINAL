@@ -1,7 +1,10 @@
 import {
+  hasExactMovieTitleMatch,
+  isSearchableTmdbTitle,
   unifiedSearchQueryOptions,
   tmdbMovieSearchQueryOptions,
   normalizeSearchText,
+  preferExactTmdbTitleMatches,
 } from "@/lib/queries/movie-search.query";
 import type {
   MovieSearchItemResponse,
@@ -62,7 +65,7 @@ export default function SearchScreen() {
       enabled:
         searchQuery.isSuccess &&
         submittedKeyword.trim().length > 0 &&
-        searchQuery.data.movies.length < 10,
+        !hasExactMovieTitleMatch(searchQuery.data.movies, submittedKeyword),
     }),
   );
 
@@ -85,20 +88,17 @@ export default function SearchScreen() {
   const localMovieTitles = new Set(
     movies.map((movie) => normalizeSearchText(movie.title)),
   );
-  const tmdbMovies = (tmdbQuery.data?.results ?? []).filter(
-    (movie) => /[가-힣]/.test(movie.title) && Boolean(movie.poster_path),
-  ).filter(
-    (movie, index, results) => {
-      const normalizedTitle = normalizeSearchText(movie.title);
-
-      return (
-        !localMovieTitles.has(normalizedTitle) &&
-        results.findIndex(
-          (candidate) =>
-            normalizeSearchText(candidate.title) === normalizedTitle,
-        ) === index
-      );
-    },
+  const tmdbMovies = preferExactTmdbTitleMatches(
+    (tmdbQuery.data?.results ?? [])
+      .filter(
+        (movie) =>
+          isSearchableTmdbTitle(movie.title, submittedKeyword) &&
+          Boolean(movie.poster_path),
+      )
+      .filter(
+        (movie) => !localMovieTitles.has(normalizeSearchText(movie.title)),
+      ),
+    submittedKeyword,
   );
   const listItems: SearchListItem[] = submittedKeyword
     ? [

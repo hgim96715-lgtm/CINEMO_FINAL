@@ -18,9 +18,20 @@ export const MOBILE_PLATFORM_PROVIDERS: Array<{
   { provider: "PRIME_VIDEO", label: "Prime Video" },
 ];
 
-export const moviePlatformQueryOptions = (provider: ViewingPlatform) =>
-  queryOptions({
-    queryKey: ["movies", "platform", provider, 1, 8],
-    queryFn: ({ signal }) => getMoviesByWatchProvider(provider, 1, 8, signal),
+export const moviePlatformQueryOptions = (
+  provider: ViewingPlatform,
+  options: {
+    page?: number;
+    limit?: number;
+    enabled?: boolean;
+  } = {},
+) => {
+  const { page = 1, limit = 20, enabled = true } = options;
+
+  return queryOptions({
+    queryKey: ["movies", "platform", provider, page, limit],
+    queryFn: ({ signal }) => getMoviesByWatchProvider(provider, page, limit, signal),
+    enabled,
     staleTime: 5 * 60_000,
   });
+};

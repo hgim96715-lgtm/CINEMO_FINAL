@@ -13,13 +13,18 @@ import { SectionHeader } from "@/components/lobby/SectionHeader";
 
 type PlatformMovie = {
   movie: MovieSearchItemResponse;
-  providers: string[];
+  providers: Array<{
+    label: string;
+    logoPath: string | null;
+  }>;
 };
+
+const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w185";
 
 export function PlatformMovies() {
   const providerQueries = useQueries({
     queries: MOBILE_PLATFORM_PROVIDERS.map(({ provider }) =>
-      moviePlatformQueryOptions(provider),
+      moviePlatformQueryOptions(provider, { limit: 20 }),
     ),
   });
 
@@ -29,22 +34,34 @@ export function PlatformMovies() {
     query.data?.items.forEach((movie) => {
       if (!movie.title || !movie.posterUrl) return;
 
-      const provider = MOBILE_PLATFORM_PROVIDERS.find(({ provider: value }) =>
-        movie.watchOptions.some((option) => option.watchProvider === value),
-      );
-      if (!provider) return;
+      const providers = MOBILE_PLATFORM_PROVIDERS.filter(({ provider }) =>
+        movie.watchOptions.some((option) => option.watchProvider === provider),
+      ).map(({ provider, label }) => ({
+        label,
+        logoPath:
+          movie.watchOptions.find(
+            (option) => option.watchProvider === provider,
+          )?.logoPath ?? null,
+      }));
+      if (providers.length === 0) return;
 
       const current = movies.get(movie.id);
       if (current) {
-        if (!current.providers.includes(provider.label)) {
-          current.providers.push(provider.label);
+        for (const provider of providers) {
+          if (
+            !current.providers.some(
+              (currentProvider) => currentProvider.label === provider.label,
+            )
+          ) {
+            current.providers.push(provider);
+          }
         }
         return;
       }
 
       movies.set(movie.id, {
         movie,
-        providers: [provider.label],
+        providers,
       });
     });
   });
@@ -56,7 +73,11 @@ export function PlatformMovies() {
 
   return (
     <View className="mt-8">
-      <SectionHeader eyebrow="WATCH ANYWHERE" title="플랫폼에서 볼 수 있는 영화" />
+      <SectionHeader
+        eyebrow="WATCH ANYWHERE"
+        title="플랫폼에서 볼 수 있는 영화"
+        morePath="/movies/platform"
+      />
 
       <ScrollView
         horizontal
@@ -89,10 +110,34 @@ export function PlatformMovies() {
                     accessibilityLabel={`${movie.title} 포스터`}
                   />
                 ) : null}
-                <View className="absolute inset-x-0 bottom-0 bg-black/75 px-2 py-2">
-                  <Text numberOfLines={1} className="text-[10px] text-white">
-                    {providers.join(" · ")}
-                  </Text>
+                <View className="absolute inset-x-0 top-2 flex-row flex-wrap gap-1.5 px-2">
+                  {providers.map((provider) =>
+                    provider.logoPath ? (
+                      <Image
+                        key={provider.label}
+                        source={{
+                          uri: `${TMDB_IMAGE_BASE_URL}${provider.logoPath}`,
+                        }}
+                        resizeMode="contain"
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 8,
+                          backgroundColor: "rgba(0,0,0,0.62)",
+                        }}
+                        accessibilityLabel={`${provider.label} 로고`}
+                      />
+                    ) : (
+                      <View
+                        key={provider.label}
+                        className="rounded-lg bg-black/70 px-1.5 py-1"
+                      >
+                        <Text className="text-[8px] font-bold text-white">
+                          {provider.label}
+                        </Text>
+                      </View>
+                    ),
+                  )}
                 </View>
               </View>
               <Text

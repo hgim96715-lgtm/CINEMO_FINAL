@@ -9,7 +9,8 @@ type SectionHeaderProps = {
   morePath?:
     | "/movies/upcoming"
     | "/movies/released"
-    | "/movies/commemorative";
+    | "/movies/commemorative"
+    | "/movies/platform";
 };
 
 export function SectionHeader({

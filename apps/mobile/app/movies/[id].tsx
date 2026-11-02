@@ -65,11 +65,11 @@ export default function MovieDetailScreen() {
     (Array.isArray(params.edit) ? params.edit[0] : params.edit) === "record";
   const movieQuery = useQuery(movieDetailQueryOptions(movieId ?? ""));
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
+  const [isEnriching, setIsEnriching] = useState(false);
   const enrichmentAttemptedRef = useRef<string | null>(null);
+  const movie = movieQuery.data;
 
   useEffect(() => {
-    const movie = movieQuery.data;
-
     if (
       movieQuery.isPending ||
       !movie ||
@@ -85,6 +85,7 @@ export default function MovieDetailScreen() {
     );
     const tmdbMovieId = Number(tmdbLink?.externalId);
     enrichmentAttemptedRef.current = movieId;
+    setIsEnriching(true);
 
     void (async () => {
       try {
@@ -96,18 +97,38 @@ export default function MovieDetailScreen() {
         await movieQuery.refetch();
       } catch (error) {
         console.warn("[모바일 영화 정보 보강 실패]", error);
+      } finally {
+        setIsEnriching(false);
       }
     })();
-  }, [movieId, movieQuery.data, movieQuery.isPending, movieQuery.refetch]);
+  }, [movie, movieId, movieQuery.isPending, movieQuery.refetch]);
 
-  if (movieQuery.isPending) {
+  const waitingForEnrichment = Boolean(
+    movie &&
+      movieId &&
+      needsMovieEnrichment(movie) &&
+      enrichmentAttemptedRef.current !== movieId,
+  );
+
+  if (movieQuery.isPending || isEnriching || waitingForEnrichment) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-cinemo-bg">
-        <ActivityIndicator color={CINEMO_COLORS.accentLight} />
+      <SafeAreaView className="flex-1 bg-cinemo-bg">
+        <View className="absolute inset-0 bg-black/35" />
+        <View className="flex-1 items-center justify-center px-8">
+          <View className="w-full rounded-3xl border border-cinemo-gold/25 bg-[#0b211f]/95 px-6 py-7">
+            <ActivityIndicator color={CINEMO_COLORS.accent} />
+            <Text className="mt-4 text-center text-xl font-bold text-cinemo-gold">
+              영화 정보를 불러오는 중...
+            </Text>
+            <Text className="mt-3 text-center text-base leading-6 text-cinemo-text/80">
+              잠시만 기다리면 상세 정보가 표시됩니다.
+            </Text>
+          </View>
+        </View>
       </SafeAreaView>
     );
   }
-  if (movieQuery.isError || !movieQuery.data) {
+  if (movieQuery.isError || !movie) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-cinemo-bg px-5">
         <Text style={{ color: CINEMO_COLORS.textPrimary }}>
@@ -123,8 +144,6 @@ export default function MovieDetailScreen() {
       </SafeAreaView>
     );
   }
-  const movie = movieQuery.data;
-
   const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w185";
 
   const providerSearchUrls: Record<string, string> = {
