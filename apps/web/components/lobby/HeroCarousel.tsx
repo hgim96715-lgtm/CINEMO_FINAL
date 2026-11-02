@@ -11,7 +11,7 @@ import { HeroPostcardSlide } from "./HeroPostcardSlide";
 
 const AUTO_PLAY_INTERVAL = 6_000;
 
-export function HeroCarousel() {
+export function HeroCarousel({ embedded = false }: { embedded?: boolean }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const { data, isPending, isError } = useInfiniteQuery(
@@ -63,13 +63,21 @@ export function HeroCarousel() {
 
   if (isPending) {
     return (
-      <section className="min-h-[clamp(22rem,42vw,28rem)] rounded-[2rem] bg-cinemo-surface/70" />
+      <section
+        className={`min-h-[clamp(22rem,42vw,28rem)] bg-cinemo-surface/70 ${
+          embedded ? "" : "rounded-[2rem]"
+        }`}
+      />
     );
   }
 
   if (isError || !activePostcard) {
     return (
-      <section className="flex min-h-[clamp(22rem,42vw,28rem)] items-center rounded-[2rem] bg-cinemo-surface px-8 py-12 sm:px-14">
+      <section
+        className={`flex min-h-[clamp(22rem,42vw,28rem)] items-center bg-cinemo-surface px-8 py-12 sm:px-14 ${
+          embedded ? "" : "rounded-[2rem]"
+        }`}
+      >
         <div className="max-w-xl">
           <p className="text-xs tracking-[0.28em] text-primary">
             CINEMO POSTCARD
@@ -93,7 +101,11 @@ export function HeroCarousel() {
 
   return (
     <section
-      className="relative isolate mx-1 mt-5 min-h-77.5 overflow-hidden rounded-3xl border border-white/10 bg-white/6 text-cinemo-text shadow-[0_2rem_5rem_rgb(0_0_0_/24%)] backdrop-blur-xl sm:mx-0 sm:mt-0 sm:h-[clamp(28rem,44vw,34rem)] sm:rounded-[2rem]"
+      className={`relative isolate min-h-77.5 overflow-hidden bg-white/6 text-cinemo-text backdrop-blur-xl sm:h-[clamp(28rem,44vw,34rem)] ${
+        embedded
+          ? ""
+          : "mx-1 mt-5 rounded-3xl border border-white/10 shadow-[0_2rem_5rem_rgb(0_0_0_/24%)] sm:mx-0 sm:mt-0 sm:rounded-[2rem]"
+      }`}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocus={() => setIsPaused(true)}
@@ -120,13 +132,13 @@ export function HeroCarousel() {
         >
           {activeImageUrl ? (
             <div className="relative flex h-full w-full items-center justify-center">
-              <div className="relative aspect-2/3 h-full max-h-full w-auto max-w-full rotate-1 overflow-hidden rounded-[1.75rem] transition-transform duration-500 hover:rotate-0">
+              <div className="relative aspect-2/3 h-full max-h-full w-auto max-w-full rotate-1 overflow-hidden rounded-[1.75rem] shadow-2xl transition-transform duration-500 hover:rotate-0">
                 <Image
                   src={activeImageUrl}
                   alt={activeImageAlt}
                   fill
                   sizes="(max-width: 1024px) 44vw, 520px"
-                  className="object-contain drop-shadow-2xl"
+                  className="object-cover drop-shadow-2xl"
                   priority
                 />
               </div>

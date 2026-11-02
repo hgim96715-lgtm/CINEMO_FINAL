@@ -6,6 +6,18 @@ import type {
 } from "@cinemo/api-contract";
 import { apiClient } from "./apiClient";
 
+export type ViewingPlatform =
+  | "NETFLIX"
+  | "WATCHA"
+  | "TVING"
+  | "DISNEY_PLUS"
+  | "WAVVE"
+  | "APPLE_TV"
+  | "PRIME_VIDEO"
+  | "COUPANG_PLAY"
+  | "TV"
+  | "OTHER";
+
 export async function getMovie(
   movieId: string,
   signal?: AbortSignal,
@@ -152,6 +164,23 @@ export async function getPopularMovies(
     },
     signal,
   });
+
+  return data;
+}
+
+export async function getMoviesByWatchProvider(
+  provider: ViewingPlatform,
+  page = 1,
+  limit = 10,
+  signal?: AbortSignal,
+): Promise<MovieSearchResponse> {
+  const { data } = await apiClient.get<MovieSearchResponse>(
+    `/movies/platform/${provider}`,
+    {
+      params: { page, limit },
+      signal,
+    },
+  );
 
   return data;
 }

@@ -24,7 +24,7 @@ import {
   usePlatformMovies,
 } from "./PlatformMovieCollection";
 
-type CurationKind = "commemorative" | "upcoming" | "platform";
+export type CurationKind = "commemorative" | "upcoming" | "platform";
 
 const getValidMovies = (movies: MovieSearchItemResponse[] | undefined) =>
   (movies ?? []).filter((movie) => Boolean(movie.title && movie.posterUrl));
@@ -52,9 +52,20 @@ function toHeroMovie(movie: CurationMovie): MovieSearchItemResponse {
   };
 }
 
-export function CurationHero() {
-  const [activeKind, setActiveKind] =
+type CurationHeroProps = {
+  activeKind?: CurationKind;
+  showKindTabs?: boolean;
+  embedded?: boolean;
+};
+
+export function CurationHero({
+  activeKind: controlledKind,
+  showKindTabs = true,
+  embedded = false,
+}: CurationHeroProps = {}) {
+  const [uncontrolledKind, setUncontrolledKind] =
     useState<CurationKind>("commemorative");
+  const activeKind = controlledKind ?? uncontrolledKind;
   const [selectedMovie, setSelectedMovie] = useState<
     MovieSearchItemResponse | undefined
   >();
@@ -184,7 +195,7 @@ export function CurationHero() {
   };
 
   const changeKind = (kind: CurationKind) => {
-    setActiveKind(kind);
+    setUncontrolledKind(kind);
     const nextMovies =
       kind === "commemorative"
         ? commemorativeMovies
@@ -197,7 +208,11 @@ export function CurationHero() {
   return (
     <section
       aria-labelledby="cinemo-curation-title"
-      className="relative isolate min-h-[clamp(30rem,52vw,42rem)] overflow-hidden rounded-[2rem] border border-cinemo-gold/25 bg-[#081918] text-cinemo-text shadow-[0_2rem_5rem_rgb(0_0_0_/28%),inset_0_1px_0_rgb(255_255_255_/10%)]"
+      className={`relative isolate min-h-[clamp(30rem,52vw,42rem)] overflow-hidden bg-[#081918] text-cinemo-text ${
+        embedded
+          ? ""
+          : "rounded-[2rem] border border-cinemo-gold/25 shadow-[0_2rem_5rem_rgb(0_0_0_/28%),inset_0_1px_0_rgb(255_255_255_/10%)]"
+      }`}
     >
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_76%_30%,rgb(199_161_75_/12%),transparent_30%),linear-gradient(135deg,rgb(5_20_19_/100%),rgb(8_25_24_/96%))]" />
 
@@ -208,7 +223,8 @@ export function CurationHero() {
           </p>
 
           <div className="flex items-center gap-2">
-            <div className="flex rounded-full border border-white/15 bg-black/25 p-1 backdrop-blur-md">
+            {showKindTabs && (
+              <div className="flex rounded-full border border-white/15 bg-black/25 p-1 backdrop-blur-md">
               {hasCommemorativeMovies && commemorativeCuration && (
                 <button
                   type="button"
@@ -251,7 +267,8 @@ export function CurationHero() {
                   플랫폼
                 </button>
               )}
-            </div>
+              </div>
+            )}
 
             <button
               type="button"
@@ -291,54 +308,27 @@ export function CurationHero() {
               {featuredMovie.title}
             </h1>
 
-            <div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
-              {isUpcoming ? (
+            {isUpcoming ? (
+              <div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
                 <span className="inline-flex items-center gap-2 text-cinemo-gold">
                   <CalendarDays className="size-4" />
                   {featuredMovie.releaseDate ?? "개봉일 미정"} 개봉 예정
                 </span>
-              ) : isCommemorative ? (
+              </div>
+            ) : isCommemorative ? (
+              <div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
                 <span className="max-w-xl text-sm leading-7 text-cinemo-muted sm:text-base">
                   {commemorativeMovieReason}
                 </span>
-              ) : (
-                <span className="rounded-full border border-cinemo-gold/35 bg-cinemo-gold/10 px-3 py-1.5 text-cinemo-gold">
-                  플랫폼 감상 가능
-                </span>
-              )}
-            </div>
+              </div>
+            ) : null}
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href={`/movies/${featuredMovie.id}`}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cinemo-gold px-5 py-3.5 text-sm font-semibold text-cinemo-dark shadow-[0_0_2rem_rgb(199_161_75_/22%)] transition hover:bg-cinemo-gold-light sm:w-auto"
-              >
-                영화 자세히 보기
-                <ArrowUpRight className="size-4" />
-              </Link>
-
-              {isUpcoming ? (
-                <Link
-                  href="/lobby/movies/upcoming"
-                  className="inline-flex w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-5 py-3.5 text-sm font-medium text-cinemo-text backdrop-blur-sm transition hover:border-cinemo-gold/60 hover:bg-white/10 sm:w-auto"
-                >
-                  전체 개봉 예정작
-                </Link>
-              ) : isCommemorative ? null : (
-                <Link
-                  href="/lobby/movies/platform"
-                  className="inline-flex w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-5 py-3.5 text-sm font-medium text-cinemo-text backdrop-blur-sm transition hover:border-cinemo-gold/60 hover:bg-white/10 sm:w-auto"
-                >
-                  플랫폼 영화 전체 보기
-                </Link>
-              )}
-            </div>
           </div>
 
           <div className="mx-auto w-full max-w-[11rem] sm:max-w-[16rem] lg:max-w-[22rem]">
             <Link
               href={`/movies/${featuredMovie.id}`}
-              className="group relative block overflow-hidden rounded-[1.35rem] border border-white/25 bg-black/40 shadow-[0_2rem_4rem_rgb(0_0_0_/44%)]"
+              className="group relative block overflow-hidden rounded-[1.35rem] bg-black/40 shadow-[0_2rem_4rem_rgb(0_0_0_/44%)]"
             >
               <Image
                 src={featuredMovie.posterUrl!}
@@ -346,7 +336,7 @@ export function CurationHero() {
                 width={680}
                 height={1020}
                 sizes="(min-width: 1024px) 320px, 56vw"
-                className="block aspect-[2/3] w-full object-contain bg-black transition duration-700 group-hover:scale-[1.03]"
+                className="block aspect-[2/3] w-full object-cover bg-black transition duration-700 group-hover:scale-[1.03]"
                 priority
               />
               {!isUpcoming && featuredPlatformProviders.length > 0 && (
@@ -372,12 +362,26 @@ export function CurationHero() {
                   )}
                 </div>
               )}
-              <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/85 via-black/20 to-transparent px-4 pb-4 pt-14">
-                <p className="truncate text-sm font-semibold text-white">
-                  {featuredMovie.title}
-                </p>
-              </div>
             </Link>
+
+            {!isCommemorative && (
+              <div className="mt-4 flex flex-col gap-3">
+                <Link
+                  href={`/movies/${featuredMovie.id}`}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cinemo-gold px-5 py-3.5 text-sm font-semibold text-cinemo-dark shadow-[0_0_2rem_rgb(199_161_75_/22%)] transition hover:bg-cinemo-gold-light"
+                >
+                  영화 자세히 보기
+                  <ArrowUpRight className="size-4" />
+                </Link>
+
+                <Link
+                  href={isUpcoming ? "/lobby/movies/upcoming" : "/lobby/movies/platform"}
+                  className="inline-flex w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-5 py-3.5 text-sm font-medium text-cinemo-text backdrop-blur-sm transition hover:border-cinemo-gold/60 hover:bg-white/10"
+                >
+                  {isUpcoming ? "전체 개봉 예정작" : "플랫폼 영화 전체 보기"}
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

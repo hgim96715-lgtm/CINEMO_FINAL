@@ -1,26 +1,47 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import { Search } from "lucide-react";
 import { FormEvent, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import type { MovieSearchItemResponse } from "@cinemo/api-contract";
+import { Search } from "lucide-react";
 
 import { AdminNavigation } from "@/components/admin/AdminNavigation";
-import { movieSearchQueryOptions } from "@/lib/queries/movie-search.query";
+import {
+  updateAdminMovieVisibility,
+  type AdminMovie,
+  type AdminMovieVisibility,
+} from "@/lib/api/admin-movies";
+import { adminMoviesQueryOptions } from "@/lib/queries/admin-movies.query";
+
+const VISIBILITY_OPTIONS: Array<{
+  value: AdminMovieVisibility;
+  label: string;
+}> = [
+  { value: "PUBLIC", label: "공개" },
+  { value: "REVIEW", label: "검토" },
+  { value: "HIDDEN", label: "숨김" },
+];
 
 export function AdminMovieSearch() {
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
+  const [visibility, setVisibility] =
+    useState<AdminMovieVisibility>("PUBLIC");
+  const queryClient = useQueryClient();
 
   const moviesQuery = useQuery(
-    movieSearchQueryOptions({
+    adminMoviesQueryOptions({
       query: submittedQuery,
-      page: 1,
-      limit: 20,
-      enabled: submittedQuery.trim().length > 0,
+      visibility,
     }),
   );
+
+  const visibilityMutation = useMutation({
+    mutationFn: updateAdminMovieVisibility,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "movies"] });
+    },
+  });
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -39,24 +60,38 @@ export function AdminMovieSearch() {
           영화 검색
         </h1>
         <p className="mt-3 text-sm text-cinemo-muted">
-          큐레이션에 추가할 영화를 제목으로 검색하고 UUID를 확인
+          외국어 제목과 UUID까지 검색하고 영화 공개 상태를 관리
         </p>
       </header>
 
-      <form onSubmit={handleSubmit} className="flex max-w-3xl gap-3">
-        <label className="relative block min-w-0 flex-1">
-          <span className="sr-only">영화 제목</span>
+      <form onSubmit={handleSubmit} className="flex max-w-4xl flex-wrap gap-3">
+        <label className="relative block min-w-[16rem] flex-1">
+          <span className="sr-only">영화 제목 또는 UUID</span>
           <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-cinemo-muted" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="영화 제목을 입력하세요"
+            placeholder="영화 제목 또는 UUID를 입력하세요"
             className="h-12 w-full rounded-xl border border-white/10 bg-[#101f21] pl-12 pr-4 text-sm text-cinemo-text outline-none transition placeholder:text-cinemo-muted focus:border-cinemo-gold/60"
           />
         </label>
+        <select
+          value={visibility}
+          onChange={(event) =>
+            setVisibility(event.target.value as AdminMovieVisibility)
+          }
+          className="h-12 rounded-xl border border-white/10 bg-[#101f21] px-4 text-sm text-cinemo-text outline-none focus:border-cinemo-gold/60"
+          aria-label="공개 상태"
+        >
+          {VISIBILITY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
         <button
           type="submit"
-          className="rounded-xl bg-cinemo-gold px-5 text-sm font-semibold text-cinemo-dark transition hover:bg-cinemo-gold-light"
+          className="h-12 rounded-xl bg-cinemo-gold px-5 text-sm font-semibold text-cinemo-dark transition hover:bg-cinemo-gold-light"
         >
           검색
         </button>
@@ -90,7 +125,21 @@ export function AdminMovieSearch() {
           ) : (
             <div className="space-y-3">
               {moviesQuery.data.items.map((movie) => (
-                <AdminMovieSearchItem key={movie.id} movie={movie} />
+                <AdminMovieSearchItem
+                  key={movie.id}
+                  movie={movie}
+                  isUpdating={visibilityMutation.isPending}
+                  onVisibilityChange={(nextVisibility) =>
+                    visibilityMutation.mutate({
+                      movieId: movie.id,
+                      visibility: nextVisibility,
+                      moderationReason:
+                        nextVisibility === "HIDDEN"
+                          ? "관리자 검토: 한국어 제목 없음"
+                          : null,
+                    })
+                  }
+                />
               ))}
             </div>
           )}
@@ -102,15 +151,19 @@ export function AdminMovieSearch() {
 
 function AdminMovieSearchItem({
   movie,
+  isUpdating,
+  onVisibilityChange,
 }: {
-  movie: MovieSearchItemResponse;
+  movie: AdminMovie;
+  isUpdating: boolean;
+  onVisibilityChange: (visibility: AdminMovieVisibility) => void;
 }) {
   const handleCopy = async () => {
     await navigator.clipboard.writeText(movie.id);
   };
 
   return (
-    <article className="flex gap-4 rounded-2xl border border-white/10 bg-[#101f21] p-4 sm:items-center">
+    <article className="flex flex-wrap gap-4 rounded-2xl border border-white/10 bg-[#101f21] p-4 sm:items-center">
       <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-white/5 sm:size-24">
         {movie.posterUrl ? (
           <Image
@@ -128,25 +181,41 @@ function AdminMovieSearchItem({
       </div>
 
       <div className="min-w-0 flex-1">
-        <h3 className="truncate font-semibold text-cinemo-text">
-          {movie.title}
+        <h3 className="break-words font-semibold text-cinemo-text">
+          {movie.title || "제목 없음"}
         </h3>
         <p className="mt-1 text-xs text-cinemo-muted">
-          {movie.releaseDate ?? "개봉일 미정"}
-          {movie.genres.length > 0 && ` · ${movie.genres.slice(0, 3).join(" · ")}`}
+          {movie.releaseDate ?? "개봉일 미정"} · {movie.visibility}
         </p>
         <p className="mt-3 break-all font-mono text-xs text-cinemo-gold-light">
           {movie.id}
         </p>
       </div>
 
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="shrink-0 rounded-lg border border-cinemo-gold/25 px-3 py-2 text-xs text-cinemo-gold-light transition hover:bg-cinemo-gold/10"
-      >
-        UUID 복사
-      </button>
+      <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="rounded-lg border border-cinemo-gold/25 px-3 py-2 text-xs text-cinemo-gold-light transition hover:bg-cinemo-gold/10"
+        >
+          UUID 복사
+        </button>
+        <select
+          value={movie.visibility}
+          disabled={isUpdating}
+          onChange={(event) =>
+            onVisibilityChange(event.target.value as AdminMovieVisibility)
+          }
+          className="rounded-lg border border-white/10 bg-[#0a191a] px-3 py-2 text-xs text-cinemo-text outline-none focus:border-cinemo-gold/60 disabled:opacity-50"
+          aria-label={`${movie.title} 공개 상태`}
+        >
+          {VISIBILITY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
     </article>
   );
 }

@@ -99,7 +99,7 @@ export function HeroPostcardSlide({
                   alt={activeImageAlt}
                   fill
                   sizes="88px"
-                  className="object-contain"
+                  className="object-cover"
                   priority
                 />
               </div>

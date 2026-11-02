@@ -573,8 +573,29 @@ export class MoviesRepository {
     visibility: MovieVisibility,
     page: number,
     limit: number,
+    query?: string,
   ) {
-    const where: Prisma.MovieWhereInput = { visibility };
+    const trimmedQuery = query?.trim();
+    const where: Prisma.MovieWhereInput = {
+      visibility,
+      ...(trimmedQuery
+        ? {
+            OR: [
+              { id: trimmedQuery },
+              {
+                titles: {
+                  some: {
+                    title: {
+                      contains: trimmedQuery,
+                      mode: "insensitive",
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
     const [movies, totalCount] = await Promise.all([
       this.prisma.movie.findMany({
         where,

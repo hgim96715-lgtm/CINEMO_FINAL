@@ -346,6 +346,7 @@ export class MoviesService {
       params.visibility,
       params.page,
       params.limit,
+      params.query,
     );
 
     return {
