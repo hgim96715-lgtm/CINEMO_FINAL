@@ -33,7 +33,9 @@ export type PlatformMovie = {
   providers: PlatformProvider[];
 };
 
-function getMovieProviders(movie: MovieSearchItemResponse): PlatformProvider[] {
+export function getMovieProviders(
+  movie: Pick<MovieSearchItemResponse, "watchOptions">,
+): PlatformProvider[] {
   const providers = new Map<ViewingPlatform, PlatformProvider>();
 
   for (const option of movie.watchOptions) {

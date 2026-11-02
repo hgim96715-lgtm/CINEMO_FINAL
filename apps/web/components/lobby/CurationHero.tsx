@@ -11,6 +11,7 @@ import {
   movieSearchQueryOptions,
   upcomingMoviesQueryOptions,
 } from "@/lib/queries/movie-search.query";
+import { movieDetailQueryOptions } from "@/lib/queries/movie-detail.query";
 import { activeCurationsQueryOptions } from "@/lib/queries/curation.query";
 import type { Curation, CurationMovie } from "@/lib/api/curations";
 import {
@@ -19,6 +20,7 @@ import {
 } from "@/lib/commemorative-curations";
 import {
   TMDB_IMAGE_BASE_URL,
+  getMovieProviders,
   usePlatformMovies,
 } from "./PlatformMovieCollection";
 
@@ -147,6 +149,12 @@ export function CurationHero() {
   }, [movieIds]);
 
   const featuredMovie = selectedMovie ?? movies[0];
+  const isUpcoming = currentKind === "upcoming";
+  const isCommemorative = currentKind === "commemorative";
+  const featuredMovieDetailQuery = useQuery({
+    ...movieDetailQueryOptions(featuredMovie?.id ?? ""),
+    enabled: isCommemorative && Boolean(featuredMovie?.id),
+  });
 
   if ((upcomingQuery.isPending && platformMoviesPending) || !featuredMovie) {
     return (
@@ -154,8 +162,6 @@ export function CurationHero() {
     );
   }
 
-  const isUpcoming = currentKind === "upcoming";
-  const isCommemorative = currentKind === "commemorative";
   const isLongTitle = featuredMovie.title.length > 16;
   const featuredCurationMovie = configuredCuration?.movies.find(
     (movie) => movie.id === featuredMovie.id,
@@ -165,10 +171,13 @@ export function CurationHero() {
       getCommemorativeMovieReason(fallbackCuration, featuredMovie.title) ||
       commemorativeCuration?.description
     : null;
+  const platformMovieProviders = platformMoviesWithProviders.find(
+    ({ movie }) => movie.id === featuredMovie.id,
+  )?.providers;
   const featuredPlatformProviders =
-    platformMoviesWithProviders.find(
-      ({ movie }) => movie.id === featuredMovie.id,
-    )?.providers ?? [];
+    platformMovieProviders?.length
+      ? platformMovieProviders
+      : getMovieProviders(featuredMovieDetailQuery.data ?? { watchOptions: [] });
 
   const reshuffle = () => {
     setSelectedMovie(pickRandomMovie(movies));
