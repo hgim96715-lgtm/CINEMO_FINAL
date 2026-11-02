@@ -4,6 +4,7 @@ import { LobbyHeroTabs } from "@/components/lobby/LobbyHeroTabs";
 import { ReleasedMovies } from "@/components/lobby/ReleasedMovies";
 import { ScrollView } from "react-native";
 import { CinemaMapButton } from "@/components/lobby/CinemaMapButton";
+import { CommemorativeMovies } from "@/components/lobby/CommemorativeMovies";
 
 export default function LobbyScreen() {
   return (
@@ -15,6 +16,7 @@ export default function LobbyScreen() {
       >
         <LobbyHeroTabs />
         <CinemaMapButton />
+        <CommemorativeMovies />
         <MovieRanking />
         <ReleasedMovies />
       </ScrollView>

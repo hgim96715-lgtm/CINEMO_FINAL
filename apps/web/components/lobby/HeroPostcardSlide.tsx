@@ -8,7 +8,6 @@ import type { Postcard } from "@/lib/api/postcards";
 import { PostcardQuoteContent } from "@/components/postcard/PostcardQuoteContent";
 import { PostcardSceneMeta } from "@/components/postcard/PostcardSceneMeta";
 
-import { HeroCarouselIndicators } from "./HeroCarouselIndicators";
 
 type HeroPostcardSlideProps = {
   postcard: Postcard;
@@ -117,7 +116,7 @@ export function HeroPostcardSlide({
         )}
       </div>
 
-      <div className="mt-4 flex shrink-0 items-end justify-between gap-4 sm:mt-6 sm:gap-6">
+      <div className="mt-4 flex shrink-0 items-end justify-start gap-4 sm:mt-6 sm:gap-6">
         <Link
           href="/lobby/postcards"
           className="mt-4 inline-flex items-center rounded-lg border bg-cinemo-gold/10 px-3.5 py-2 text-xs font-medium text-cinemo-gold transition hover:border-cinemo-gold/70 hover:bg-cinemo-gold/15"
@@ -126,11 +125,6 @@ export function HeroPostcardSlide({
           <ArrowUpRight aria-hidden="true" className="size-3.5" />
         </Link>
 
-        <HeroCarouselIndicators
-          postcardIds={postcardIds}
-          activeIndex={activeIndex}
-          onSelect={onSelectSlide}
-        />
       </div>
     </div>
   );

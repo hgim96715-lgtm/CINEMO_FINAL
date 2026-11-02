@@ -29,6 +29,11 @@ const addDays = (dateKey: string, days: number) => {
 const toSeoulMidnight = (dateKey: string) =>
   new Date(`${dateKey}T00:00:00.000+09:00`);
 
+export const isActiveReleaseDate = (
+  releaseDate: Date | null | undefined,
+  now = new Date(),
+) => Boolean(releaseDate && releaseDate >= toSeoulMidnight(getSeoulDateKey(now)));
+
 @Injectable()
 export class UserMovieNotificationRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -212,6 +217,13 @@ export class UserMovieNotificationRepository {
         userId,
         notificationType: MovieNotificationType.RELEASE,
         enabled: true,
+        release: {
+          is: {
+            releaseDate: {
+              gte: toSeoulMidnight(getSeoulDateKey(new Date())),
+            },
+          },
+        },
       },
       orderBy: {
         release: {

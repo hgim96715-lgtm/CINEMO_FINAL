@@ -175,7 +175,7 @@ export function PostcardHeroCarousel() {
             </Pressable>
           )}
 
-          <View className="flex-row items-end justify-between gap-4">
+          <View>
             <View>
               {/*<Text className="text-sm text-cinemo-muted">*/}
               {/*  영화와 함께 남긴 한 장의 기록*/}
@@ -194,17 +194,6 @@ export function PostcardHeroCarousel() {
               </Pressable>
             </View>
 
-            <View className="flex-row items-center gap-2">
-              {visiblePostcards.map((postcard, index) => (
-                <Pressable
-                  key={postcard.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${index + 1}번째 엽서 보기`}
-                  onPress={() => setActiveIndex(index)}
-                  className={`h-2 rounded-full ${index === activeIndex ? "w-7 bg-cinemo-gold" : "w-2 bg-white/40"}`}
-                />
-              ))}
-            </View>
           </View>
         </View>
       </View>

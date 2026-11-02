@@ -283,13 +283,11 @@ export function CurationHero({
 
         <div className="grid flex-1 items-center gap-8 pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:gap-12 lg:pt-5">
           <div className="max-w-2xl">
-            <p className="mb-4 text-sm font-medium text-cinemo-gold">
-              {isCommemorative
-                ? commemorativeCuration?.eyebrow
-                : isUpcoming
-                ? "이번 주 극장에서 만날 영화"
-                : "플랫폼에서 볼 수 있는 영화"}
-            </p>
+            {isCommemorative && commemorativeCuration?.eyebrow && (
+              <p className="mb-4 text-sm font-medium text-cinemo-gold">
+                {commemorativeCuration.eyebrow}
+              </p>
+            )}
 
             {isCommemorative && commemorativeCuration?.title && (
               <p className="mb-5 max-w-2xl text-[clamp(1.35rem,2.7vw,2.5rem)] font-serif leading-tight tracking-[-0.03em] text-cinemo-text/90">

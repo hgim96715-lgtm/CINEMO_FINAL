@@ -202,7 +202,6 @@ export class MoviesRepository {
       where: {
         id: movieId,
         ...publicMovieWhere,
-        ...koreanAvailabilityWhere,
       },
       ...movieInclude,
     });

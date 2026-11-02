@@ -6,7 +6,10 @@ import { Pressable, Text, View } from "react-native";
 type SectionHeaderProps = {
   eyebrow: string;
   title: string;
-  morePath?: "/movies/upcoming" | "/movies/released";
+  morePath?:
+    | "/movies/upcoming"
+    | "/movies/released"
+    | "/movies/commemorative";
 };
 
 export function SectionHeader({

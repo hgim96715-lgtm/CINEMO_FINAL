@@ -2,7 +2,10 @@ import {BadRequestException, Injectable} from "@nestjs/common";
 
 import {MovieNotFoundException} from "@/common/exceptions/movie-not-found.exception";
 
-import {UserMovieNotificationRepository} from "./repositories/user-movie-notification.repository";
+import {
+  isActiveReleaseDate,
+  UserMovieNotificationRepository,
+} from "./repositories/user-movie-notification.repository";
 import {ActivityService} from "@/modules/activity/activity.service";
 import {UserActivityType} from "@prisma/client";
 
@@ -71,7 +74,10 @@ export class UserMovieNotificationService {
 
     return {
       movieId,
-      enabled: notification?.enabled ?? false,
+      enabled: Boolean(
+        notification?.enabled &&
+          isActiveReleaseDate(notification.release?.releaseDate),
+      ),
       releaseDate: notification?.release?.releaseDate ?? null,
     };
   }
