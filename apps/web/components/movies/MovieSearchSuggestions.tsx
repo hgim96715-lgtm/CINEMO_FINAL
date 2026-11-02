@@ -16,7 +16,6 @@ import { importMovieFromTmdb } from "@/lib/api/movies";
 import { useSearchStore } from "@/stores/search.store";
 import { ApiErrorState } from "../common/ApiErrorState";
 import { MovieSuggestionItem } from "./MovieSuggestionItem";
-import { GenreSearchList } from "../search/GenreSearchList";
 import { PersonSearchList } from "../search/PersonSearchList";
 
 const hasKoreanTitle = (value: string) => /[가-힣]/.test(value);
@@ -144,7 +143,6 @@ export function MovieSearchSuggestions({
 
   const dbMovies = searchQuery.data?.movies ?? [];
   const people = searchQuery.data?.people ?? [];
-  const genres = searchQuery.data?.genres ?? [];
 
   const dbMovieKeys = new Set(
     dbMovies.map((movie) =>
@@ -181,8 +179,7 @@ export function MovieSearchSuggestions({
   if (
     dbMovies.length === 0 &&
     tmdbMovies.length === 0 &&
-    people.length === 0 &&
-    genres.length === 0
+    people.length === 0
   ) {
     return (
       <p className="px-2 py-3 text-sm text-white/50">검색 결과가 없습니다.</p>
@@ -226,15 +223,6 @@ export function MovieSearchSuggestions({
             compact
             onSelect={closeSearch}
           />
-        </section>
-      )}
-
-      {genres.length > 0 && (
-        <section>
-          <h2 className="mb-2 px-2 text-xs tracking-[0.2em] text-cinemo-gold">
-            장르
-          </h2>
-          <GenreSearchList genres={genres} compact onSelect={closeSearch} />
         </section>
       )}
 

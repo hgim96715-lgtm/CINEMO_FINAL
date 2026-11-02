@@ -12,7 +12,6 @@ import {
 import { MovieSearchList } from "@/components/movies/MovieSearchList";
 import { TmdbMovieSearchList } from "@/components/movies/TmdbMovieSearchList";
 import { PersonSearchList } from "@/components/search/PersonSearchList";
-import { GenreSearchList } from "@/components/search/GenreSearchList";
 import { ApiErrorState } from "@/components/common/ApiErrorState";
 import { useSearchParams } from "next/navigation";
 
@@ -67,7 +66,6 @@ function MoviesPageContent() {
 
   const dbMovies = dbQuery.data?.movies ?? [];
   const people = dbQuery.data?.people ?? [];
-  const genres = dbQuery.data?.genres ?? [];
   const dbMovieKeys = new Set(
     dbMovies.map((movie) =>
       getMovieSearchKey(movie.title, movie.releaseDate),
@@ -108,8 +106,7 @@ function MoviesPageContent() {
   if (
     dbMovies.length === 0 &&
     tmdbMovies.length === 0 &&
-    people.length === 0 &&
-    genres.length === 0
+    people.length === 0
   ) {
     return (
       <main className="min-h-[calc(100vh-5.5rem)] px-6 py-16">
@@ -143,15 +140,6 @@ function MoviesPageContent() {
               인물
             </h2>
             <PersonSearchList people={people} />
-          </section>
-        )}
-
-        {genres.length > 0 && (
-          <section className="mb-12">
-            <h2 className="mb-5 text-xl font-semibold text-cinemo-text">
-              장르
-            </h2>
-            <GenreSearchList genres={genres} />
           </section>
         )}
 

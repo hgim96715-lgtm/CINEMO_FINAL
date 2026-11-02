@@ -1,15 +1,13 @@
 import {
-  hasExactMovieTitleMatch,
+  getMovieSearchKey,
   isSearchableTmdbTitle,
   unifiedSearchQueryOptions,
   tmdbMovieSearchQueryOptions,
-  normalizeSearchText,
   preferExactTmdbTitleMatches,
 } from "@/lib/queries/movie-search.query";
 import type {
   MovieSearchItemResponse,
   SearchTmdbMoviesResponse,
-  UnifiedSearchGenre,
   UnifiedSearchPerson,
 } from "@cinemo/api-contract";
 import { importMovieFromTmdb } from "@/lib/api/movies";
@@ -37,7 +35,6 @@ type TmdbMovie = SearchTmdbMoviesResponse["results"][number];
 type SearchListItem =
   | { kind: "section"; id: string; title: string }
   | { kind: "person"; id: string; person: UnifiedSearchPerson }
-  | { kind: "genre"; id: string; genre: UnifiedSearchGenre }
   | { kind: "local"; id: string; movie: MovieSearchItemResponse }
   | {
       kind: "tmdb";
@@ -64,8 +61,7 @@ export default function SearchScreen() {
       page: 1,
       enabled:
         searchQuery.isSuccess &&
-        submittedKeyword.trim().length > 0 &&
-        !hasExactMovieTitleMatch(searchQuery.data.movies, submittedKeyword),
+        searchQuery.data.movies.length < 10,
     }),
   );
 
@@ -83,10 +79,9 @@ export default function SearchScreen() {
     ? (searchQuery.data?.movies ?? [])
     : (popularQuery.data?.items.filter((item) => hasKorean(item.title)) ?? []);
   const people = submittedKeyword ? (searchQuery.data?.people ?? []) : [];
-  const genres = submittedKeyword ? (searchQuery.data?.genres ?? []) : [];
 
-  const localMovieTitles = new Set(
-    movies.map((movie) => normalizeSearchText(movie.title)),
+  const localMovieKeys = new Set(
+    movies.map((movie) => getMovieSearchKey(movie.title, movie.releaseDate)),
   );
   const tmdbMovies = preferExactTmdbTitleMatches(
     (tmdbQuery.data?.results ?? [])
@@ -96,7 +91,10 @@ export default function SearchScreen() {
           Boolean(movie.poster_path),
       )
       .filter(
-        (movie) => !localMovieTitles.has(normalizeSearchText(movie.title)),
+        (movie) =>
+          !localMovieKeys.has(
+            getMovieSearchKey(movie.title, movie.release_date),
+          ),
       ),
     submittedKeyword,
   );
@@ -109,14 +107,6 @@ export default function SearchScreen() {
           kind: "person" as const,
           id: person.id,
           person,
-        })),
-        ...(genres.length > 0
-          ? [{ kind: "section" as const, id: "genres-section", title: "장르" }]
-          : []),
-        ...genres.map((genre) => ({
-          kind: "genre" as const,
-          id: genre.name,
-          genre,
         })),
         ...(movies.length > 0 || tmdbMovies.length > 0
           ? [{ kind: "section" as const, id: "movies-section", title: "영화" }]
@@ -303,25 +293,6 @@ export default function SearchScreen() {
                     </Text>
                   ) : null}
                 </View>
-              </Pressable>
-            );
-          }
-
-          if (item.kind === "genre") {
-            return (
-              <Pressable
-                className="flex-row items-center justify-between rounded-2xl border border-cinemo-border bg-cinemo-surface px-4 py-4"
-                onPress={() => {
-                  setKeyword(item.genre.name);
-                  setSubmittedKeyword(item.genre.name);
-                }}
-              >
-                <Text className="text-base font-semibold text-cinemo-text">
-                  {item.genre.name}
-                </Text>
-                <Text className="text-sm text-cinemo-gold">
-                  영화 {item.genre.count}편
-                </Text>
               </Pressable>
             );
           }
