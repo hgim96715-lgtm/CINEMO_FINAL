@@ -150,7 +150,7 @@ export function MovieRecordActions({ movieId, openEdit = false }: Props) {
       return;
     }
 
-    openWatchedCalendar(false);
+    updateRecord.mutate({ isWatched: true });
   };
 
   const selectWatchedDate = (date: string) => {

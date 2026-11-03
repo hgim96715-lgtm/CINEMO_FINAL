@@ -136,12 +136,7 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
       return;
     }
 
-    const initialDate = record?.watchedAt?.slice(0, 10) ?? getLocalDateValue();
-
-    setWatchedDate(initialDate);
-    setCalendarMonth(parseDateValue(initialDate));
-    setDateEditOnly(false);
-    setWatchedDateOpen(true);
+    updateRecord.mutate({ isWatched: true });
   };
 
   const selectWatchedDate = (date: string) => {

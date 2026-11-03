@@ -46,6 +46,8 @@ export class UserMovieRecordService {
       {
         isFavorite: input.isFavorite,
 
+        isWatched: input.isWatched,
+
         watchedAt:
           input.isWatched === undefined
             ? input.watchedAt === undefined
@@ -56,7 +58,7 @@ export class UserMovieRecordService {
             : input.isWatched
               ? input.watchedAt
                 ? new Date(`${input.watchedAt}T00:00:00.000Z`)
-                : new Date()
+                : undefined
               : null,
 
         rating: input.rating,
@@ -84,7 +86,7 @@ export class UserMovieRecordService {
     return {
       ...record,
       rating: record.rating?.toString() ?? null,
-      isWatched: record.watchedAt !== null,
+      isWatched: record.isWatched,
       venueId: record.venueId,
       viewingPlaceType: record.viewingPlaceType,
       viewingPlatform: record.viewingPlatform,
@@ -111,7 +113,7 @@ export class UserMovieRecordService {
       viewingPlatform: record?.viewingPlatform ?? null,
       viewingPlatformCustom: record?.viewingPlatformCustom ?? null,
       isFavorite: record?.isFavorite ?? false,
-      isWatched: Boolean(record?.watchedAt),
+      isWatched: record?.isWatched ?? false,
       watchedAt: record?.watchedAt ?? null,
       rating: record?.rating?.toString() ?? null,
       venue: record?.venue ?? null,
@@ -132,7 +134,7 @@ export class UserMovieRecordService {
       posterUrl: record.movie.media[0]?.url ?? null,
       releaseDate: record.movie.releases[0]?.releaseDate ?? null,
       isFavorite: record.isFavorite,
-      isWatched: Boolean(record.watchedAt),
+      isWatched: record.isWatched,
       watchedAt: record.watchedAt,
       rating: record.rating?.toString() ?? null,
     }));

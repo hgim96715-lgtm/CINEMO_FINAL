@@ -140,7 +140,7 @@ function MovieCard({
         <View className="flex-row gap-2">
           <Text className="text-xs text-cinemo-gold">날짜</Text>
           <Text className="text-xs text-cinemo-muted">
-            {formatMovieDate(movie.watchedAt ?? movie.releaseDate)}
+            {movie.watchedAt ? formatMovieDate(movie.watchedAt) : "관람일 미상"}
           </Text>
         </View>
       </View>

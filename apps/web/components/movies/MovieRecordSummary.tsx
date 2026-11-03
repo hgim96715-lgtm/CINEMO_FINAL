@@ -60,14 +60,14 @@ export function MovieRecordSummary({
           <CalendarDays className="size-4 text-cinemo-gold" />
           관람일
         </span>
-        {hasWatchedDate ? (
+        {record?.isWatched ? (
           <button
             type="button"
             onClick={onEditWatchedDate}
             className="font-medium text-cinemo-gold-light"
             title="관람일 수정"
           >
-            {watchedDateLabel}
+            {hasWatchedDate ? watchedDateLabel : "날짜 추가"}
           </button>
         ) : (
           <span className="text-cinemo-muted">{watchedDateLabel}</span>

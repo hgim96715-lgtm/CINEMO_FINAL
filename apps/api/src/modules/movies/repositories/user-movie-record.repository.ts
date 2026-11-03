@@ -5,6 +5,7 @@ import {PrismaService} from "@/prisma/prisma.service";
 
 type UpsertUserMovieRecordInput = {
   isFavorite?: boolean;
+  isWatched?: boolean;
   watchedAt?: Date | null;
   rating?: string | null;
   venueId?: string | null;
@@ -33,6 +34,10 @@ export class UserMovieRecordRepository {
 
     if (input.isFavorite !== undefined) {
       updateData.isFavorite = input.isFavorite;
+    }
+
+    if (input.isWatched !== undefined) {
+      updateData.isWatched = input.isWatched;
     }
 
     if (input.watchedAt !== undefined) {
@@ -78,6 +83,7 @@ export class UserMovieRecordRepository {
         venueId: input.venueId ?? null,
         viewingPlaceType: input.viewingPlaceType ?? null,
         isFavorite: input.isFavorite ?? false,
+        isWatched: input.isWatched ?? false,
         watchedAt: input.watchedAt ?? null,
         rating: input.rating ?? null,
         viewingPlatform: input.viewingPlatform ?? null,
@@ -105,7 +111,7 @@ export class UserMovieRecordRepository {
         userId,
         OR: [
           { isFavorite: true },
-          { watchedAt: { not: null } },
+          { isWatched: true },
           { rating: { not: null } },
         ],
       },
@@ -115,6 +121,7 @@ export class UserMovieRecordRepository {
       select: {
         id: true,
         isFavorite: true,
+        isWatched: true,
         watchedAt: true,
         rating: true,
         venueId: true,
@@ -215,6 +222,7 @@ export class UserMovieRecordRepository {
     return this.prisma.userMovieRecord.findMany({
       where:{
         userId,
+        isWatched: true,
         watchedAt:{
           gte:startDate,
           lt:endDate,

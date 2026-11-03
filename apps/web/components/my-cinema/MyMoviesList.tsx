@@ -518,9 +518,9 @@ export function MyMoviesList() {
                     <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-2">
                       <dt className="text-cinemo-gold">날짜</dt>
                       <dd className="min-w-0 text-cinemo-muted">
-                        {(movie.watchedAt ?? movie.releaseDate)
-                          ?.slice(0, 10)
-                          .replaceAll("-", ".") ?? "-"}
+                        {movie.watchedAt
+                          ? movie.watchedAt.slice(0, 10).replaceAll("-", ".")
+                          : "관람일 미상"}
                       </dd>
                     </div>
 

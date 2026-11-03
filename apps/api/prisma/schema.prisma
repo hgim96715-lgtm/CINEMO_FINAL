@@ -854,6 +854,7 @@ model UserMovieRecord {
   viewingPlatform       ViewingPlatform?
   viewingPlatformCustom String?           @map("viewing_platform_custom") @db.VarChar(100)
   isFavorite            Boolean           @default(false)
+  isWatched             Boolean           @default(false) @map("is_watched")
   watchedAt             DateTime?         @db.Timestamptz(3)
   rating                Decimal?          @db.Decimal(2, 1)
   createdAt             DateTime          @default(now()) @db.Timestamptz(3)
@@ -866,6 +867,7 @@ model UserMovieRecord {
 
   @@unique([userId, movieId])
   @@index([userId, isFavorite])
+  @@index([userId, isWatched])
   @@index([userId, watchedAt])
   @@index([userId, venueId])
   @@map("user_movie_records")
