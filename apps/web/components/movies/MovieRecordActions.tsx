@@ -33,6 +33,7 @@ const viewingPlatformOptions: { value: ViewingPlatform; label: string }[] = [
   { value: "WAVVE", label: "웨이브" },
   { value: "APPLE_TV", label: "Apple TV" },
   { value: "PRIME_VIDEO", label: "Prime Video" },
+  { value: "COUPANG_PLAY", label: "쿠팡플레이" },
   { value: "TV", label: "TV" },
   { value: "OTHER", label: "기타" },
 ];

@@ -19,10 +19,14 @@ import {
   getCommemorativeMovieReason,
 } from "@/lib/commemorative-curations";
 import {
-  TMDB_IMAGE_BASE_URL,
+  PlatformLogoBadge,
   getMovieProviders,
   usePlatformMovies,
 } from "./PlatformMovieCollection";
+import {
+  TMDB_IMAGE_BASE_URL,
+  getPlatformLogoSrc,
+} from "@/lib/platform-logo";
 
 export type CurationKind = "commemorative" | "upcoming" | "platform";
 
@@ -348,7 +352,7 @@ export function CurationHero({
           <div className="mx-auto w-full max-w-[11rem] sm:max-w-[16rem] lg:max-w-[20rem]">
             <Link
               href={`/movies/${featuredMovie.id}`}
-              className="group relative block overflow-hidden rounded-[1.35rem] bg-black/40 shadow-[0_2rem_4rem_rgb(0_0_0_/44%)]"
+              className="group relative block overflow-hidden rounded-[1.35rem] border border-cinemo-gold/35 bg-black/40 shadow-[0_2rem_4rem_rgb(0_0_0_/44%)]"
             >
               <Image
                 src={featuredMovie.posterUrl!}
@@ -356,33 +360,23 @@ export function CurationHero({
                 width={680}
                 height={1020}
                 sizes="(min-width: 1024px) 320px, 56vw"
-                className="block aspect-[2/3] w-full object-cover bg-black transition duration-700 group-hover:scale-[1.03]"
+                className="block aspect-[2/3] w-full object-cover bg-black"
                 priority
               />
-              {!isUpcoming && featuredPlatformProviders.length > 0 && (
-                <div className="absolute inset-x-3 top-3 flex flex-wrap gap-1.5">
-                  {featuredPlatformProviders.map((provider) =>
-                    provider.logoPath ? (
-                      <Image
-                        key={provider.provider}
-                        src={`${TMDB_IMAGE_BASE_URL}${provider.logoPath}`}
-                        alt={provider.label}
-                        width={40}
-                        height={40}
-                        className="size-8 rounded-lg object-contain shadow-lg"
-                      />
-                    ) : (
-                      <span
-                        key={provider.provider}
-                        className="rounded-lg bg-black/70 px-2 py-1 text-[10px] font-semibold text-white"
-                      >
-                        {provider.label}
-                      </span>
-                    ),
-                  )}
-                </div>
-              )}
             </Link>
+
+            {!isUpcoming && featuredPlatformProviders.length > 0 && (
+              <div className="mt-2 flex w-fit max-w-full flex-wrap gap-1.5 rounded-lg border border-white/10 bg-black/25 px-1.5 py-1 backdrop-blur-sm">
+                {featuredPlatformProviders.map((provider) =>
+                  getPlatformLogoSrc(provider.provider, provider.logoPath) ? (
+                    <PlatformLogoBadge
+                      key={provider.provider}
+                      provider={provider}
+                    />
+                  ) : null,
+                )}
+              </div>
+            )}
 
             {!isCommemorative && (
               <div className="mt-4 flex flex-col gap-3 lg:hidden">

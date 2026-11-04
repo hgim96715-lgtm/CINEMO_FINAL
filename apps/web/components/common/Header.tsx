@@ -17,6 +17,59 @@ import {cn} from "@/lib/utils";
 import {useAuthStore} from "@/stores/auth.store";
 import {postcardFeedQueryOptions} from "@/lib/queries/postcard-feed.query";
 
+const navigationItems = [
+  { href: "/lobby", label: "홈" },
+  { href: "/lobby/lists", label: "리스트" },
+  { href: "/my-universe", label: "내 우주" },
+  { href: "/lobby/postcards", label: "엽서" },
+] as const;
+
+function GlobalNavigation({ mobile = false }: { mobile?: boolean }) {
+  const pathname = usePathname();
+  const resetSearchForm = useSearchStore((state) => state.closeSearch);
+
+  const isNavigationActive = (href: string) => {
+    if (href === "/lobby") {
+      return pathname === href;
+    }
+
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
+  return (
+    <nav
+      aria-label="주요 메뉴"
+      className={cn(
+        "items-center gap-1",
+        mobile
+          ? "flex min-w-max flex-nowrap"
+          : "hidden shrink-0 lg:flex",
+      )}
+    >
+      {navigationItems.map((item) => {
+        const isActive = isNavigationActive(item.href);
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={resetSearchForm}
+            aria-current={isActive ? "page" : undefined}
+            className={cn(
+              "shrink-0 whitespace-nowrap border-b-2 border-transparent px-2 py-3 text-sm transition-colors",
+              isActive
+                ? "border-cinemo-gold text-cinemo-gold-light"
+                : "text-cinemo-muted hover:border-white/25 hover:text-cinemo-text",
+            )}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function Header() {
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
@@ -93,9 +146,9 @@ export function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full bg-transparent transition-[background-color,box-shadow,backdrop-filter] duration-200",
+        "sticky top-0 z-50 isolate w-full bg-cinemo-bg-deep/95 backdrop-blur-lg transition-[box-shadow] duration-200",
         isScrolled &&
-          "bg-cinemo-bg-deep/82 shadow-[0_0.5rem_1.5rem_rgb(0_0_0_/20%)] backdrop-blur-lg",
+          "shadow-[0_0.5rem_1.5rem_rgb(0_0_0_/28%)]",
       )}
     >
       <div
@@ -121,6 +174,8 @@ export function Header() {
             className="h-10 w-10 object-contain sm:h-11 sm:w-11"
           />
         </Link>
+
+        <GlobalNavigation />
 
         <div
           ref={searchRef}
@@ -240,6 +295,12 @@ export function Header() {
             로그인
           </Link>
         )}
+      </div>
+
+      <div className="border-y border-white/10 bg-cinemo-bg-deep/75 px-4 backdrop-blur-lg lg:hidden">
+        <div className="mx-auto max-w-6xl overflow-x-auto scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <GlobalNavigation mobile />
+        </div>
       </div>
     </header>
   );

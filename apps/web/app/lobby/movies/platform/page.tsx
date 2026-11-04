@@ -7,10 +7,11 @@ import { useState } from "react";
 
 import {
   PLATFORM_PROVIDERS,
-  TMDB_IMAGE_BASE_URL,
+  PlatformLogoBadge,
   usePlatformMovies,
 } from "@/components/lobby/PlatformMovieCollection";
 import type { ViewingPlatform } from "@/lib/api/movies";
+import { getPlatformLogoSrc } from "@/lib/platform-logo";
 
 export default function PlatformMoviesPage() {
   const [selectedProvider, setSelectedProvider] =
@@ -93,44 +94,31 @@ export default function PlatformMoviesPage() {
               href={`/movies/${movie.id}`}
               className="group block"
             >
-              <div className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card">
+              <div className="relative aspect-[2/3] overflow-hidden rounded-2xl border border-cinemo-gold/35 bg-card">
                 <Image
                   src={movie.posterUrl!}
                   alt={`${movie.title} 포스터`}
                   fill
                   sizes="(min-width: 1024px) 180px, (min-width: 640px) 22vw, 45vw"
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="object-cover"
                 />
 
-                <div className="absolute inset-x-2 top-2 flex flex-wrap gap-1.5">
-                  {providers.map((provider) =>
-                    provider.logoPath ? (
-                      <Image
-                        key={provider.provider}
-                        src={`${TMDB_IMAGE_BASE_URL}${provider.logoPath}`}
-                        alt={provider.label}
-                        width={40}
-                        height={40}
-                        className="size-8 rounded-lg object-contain shadow-lg"
-                      />
-                    ) : (
-                      <span
-                        key={provider.provider}
-                        className="rounded-lg bg-black/70 px-2 py-1 text-[10px] font-semibold text-white"
-                      >
-                        {provider.label}
-                      </span>
-                    ),
-                  )}
-                </div>
+              </div>
+
+              <div className="mt-2 flex w-fit max-w-full flex-wrap gap-1.5 rounded-lg border border-white/10 bg-black/25 px-1.5 py-1 backdrop-blur-sm">
+                {providers.map((provider) =>
+                  getPlatformLogoSrc(provider.provider, provider.logoPath) ? (
+                    <PlatformLogoBadge
+                      key={provider.provider}
+                      provider={provider}
+                    />
+                  ) : null,
+                )}
               </div>
 
               <h2 className="mt-3 truncate text-sm font-medium text-foreground">
                 {movie.title}
               </h2>
-              <p className="mt-1 truncate text-xs text-muted-foreground">
-                {providers.map((provider) => provider.label).join(" · ")}
-              </p>
             </Link>
           ))}
         </div>

@@ -9,6 +9,10 @@ import { useMemo } from "react";
 
 import type { ViewingPlatform } from "@/lib/api/movies";
 import { watchProviderMoviesQueryOptions } from "@/lib/queries/movie-search.query";
+import {
+  TMDB_IMAGE_BASE_URL,
+  getPlatformLogoSrc,
+} from "@/lib/platform-logo";
 
 export const PLATFORM_PROVIDERS = [
   { provider: "NETFLIX", label: "Netflix" },
@@ -20,8 +24,6 @@ export const PLATFORM_PROVIDERS = [
   { provider: "PRIME_VIDEO", label: "Prime Video" },
 ] satisfies Array<{provider: ViewingPlatform; label: string}>;
 
-export const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w185";
-
 export type PlatformProvider = {
   provider: ViewingPlatform;
   label: string;
@@ -32,6 +34,37 @@ export type PlatformMovie = {
   movie: MovieSearchItemResponse;
   providers: PlatformProvider[];
 };
+
+type PlatformLogoBadgeProps = {
+  provider: PlatformProvider;
+  size?: "sm" | "md";
+};
+
+export function PlatformLogoBadge({
+  provider,
+  size = "md",
+}: PlatformLogoBadgeProps) {
+  const src = getPlatformLogoSrc(provider.provider, provider.logoPath);
+
+  if (!src) return null;
+
+  const sizeClass = size === "sm" ? "h-6 w-6 rounded-md" : "h-8 w-8 rounded-lg";
+
+  return (
+    <span
+      title={provider.label}
+      className={`inline-flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden`}
+    >
+      <Image
+        src={src}
+        alt={provider.label}
+        width={40}
+        height={40}
+        className="h-full w-full object-contain"
+      />
+    </span>
+  );
+}
 
 export function getMovieProviders(
   movie: Pick<MovieSearchItemResponse, "watchOptions">,
@@ -137,8 +170,8 @@ export function usePlatformMovies(
 
   return {
     movies,
-    isPending: providerQueries.every((query) => query.isPending),
-    isError: providerQueries.some((query) => query.isError),
+    isPending: providerQueries.some((query) => query.isPending),
+    isError: providerQueries.every((query) => query.isError),
   };
 }
 
@@ -183,41 +216,34 @@ export function PlatformMovieCollection() {
             className="w-32 shrink-0 sm:w-40 max-sm:w-[34vw] max-sm:snap-center"
           >
             <Link href={`/movies/${movie.id}`} className="group block">
-              <div className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-card">
+              <div className="relative aspect-[2/3] overflow-hidden rounded-2xl border border-cinemo-gold/35 bg-card">
                 <Image
                   src={movie.posterUrl!}
                   alt={`${movie.title} 포스터`}
                   fill
                   sizes="(min-width: 640px) 160px, 34vw"
-                  className="object-contain bg-black transition-transform duration-300 group-hover:scale-105"
+                  className="object-cover bg-black"
                 />
 
-                <div className="absolute inset-x-2 top-2 flex flex-wrap gap-1.5">
-                  {providers.map((provider) => (
-                    <span
-                      key={provider.provider}
-                      title={provider.label}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-lg shadow-lg"
-                    >
-                      {provider.logoPath ? (
-                        <Image
-                          src={`${TMDB_IMAGE_BASE_URL}${provider.logoPath}`}
-                          alt={provider.label}
-                          width={40}
-                          height={40}
-                          className="h-7 w-7 rounded-lg object-contain"
-                        />
-                      ) : (
-                        <span className="text-[8px] font-bold text-white/80">
-                          {provider.label}
-                        </span>
-                      )}
-                    </span>
-                  ))}
-                </div>
               </div>
 
-              <h3 className="mt-3 truncate text-sm font-medium text-foreground">
+              <div className="mt-2 flex min-h-6 w-fit items-center gap-1.5 rounded-lg border border-white/10 bg-black/25 px-1.5 py-1 backdrop-blur-sm">
+                {providers.slice(0, 2).map((provider) => (
+                  <PlatformLogoBadge
+                    key={provider.provider}
+                    provider={provider}
+                    size="sm"
+                  />
+                ))}
+
+                {providers.length > 2 && (
+                  <span className="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md bg-white/10 px-1.5 text-[11px] font-semibold text-cinemo-muted">
+                    +{providers.length - 2}
+                  </span>
+                )}
+              </div>
+
+              <h3 className="mt-2 truncate text-sm font-medium text-foreground">
                 {movie.title}
               </h3>
             </Link>

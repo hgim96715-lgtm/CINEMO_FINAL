@@ -280,6 +280,7 @@ export type MyMovie = {
   title: string;
   posterUrl: string | null;
   releaseDate: string | null;
+  genres: string[];
   isFavorite: boolean;
   isWatched: boolean;
   watchedAt: string | null;

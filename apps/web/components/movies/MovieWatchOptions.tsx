@@ -1,12 +1,11 @@
 import Image from "next/image";
 import type {MovieResponse} from "@cinemo/api-contract";
+import {getPlatformLogoSrc} from "@/lib/platform-logo";
 
 type MovieWatchOptionsProps = {
   watchOptions: MovieResponse["watchOptions"];
   movieTitle: string;
 };
-
-const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w185";
 
 type WatchProvider = MovieResponse["watchOptions"][number]["watchProvider"];
 //watchProvider: 'WATCHA', ....
@@ -21,6 +20,7 @@ const providerSearchUrls: Partial<Record<WatchProvider, string>> = {
   WAVVE: "https://www.wavve.com/search?searchWord=",
   APPLE_TV: "https://tv.apple.com/kr/search?term=",
   PRIME_VIDEO: "https://www.primevideo.com/search/ref=atv_nb_sr?phrase=",
+  COUPANG_PLAY: "https://www.coupangplay.com/search?query=",
 };
 
 const getProviderHref = (provider: WatchProvider, movieTitle: string, fallbackUrl: string) => {
@@ -73,9 +73,9 @@ export function MovieWatchOptions({
             title={`${provider.watchProvider}에서 보기`}
             className="flex h-12 items-center justify-start"
           >
-            {provider.logoPath ? (
+            {getPlatformLogoSrc(provider.watchProvider, provider.logoPath) ? (
               <Image
-                src={`${TMDB_IMAGE_BASE_URL}${provider.logoPath}`}
+                src={getPlatformLogoSrc(provider.watchProvider, provider.logoPath)!}
                 alt={provider.watchProvider}
                 width={40}
                 height={40}
