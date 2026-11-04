@@ -63,6 +63,28 @@ function normalizeGenre(genre: string) {
   return genre.trim().replace(/\s+/g, " ");
 }
 
+function sharedNames(
+  first: MyMovie,
+  second: MyMovie,
+  relation: "directors" | "actors",
+) {
+  const secondIds = new Set((second[relation] ?? []).map((person) => person.id));
+
+  return (first[relation] ?? [])
+    .filter((person) => secondIds.has(person.id))
+    .map((person) => person.name);
+}
+
+function sharedGenres(first: MyMovie, second: MyMovie) {
+  const secondGenres = new Set(
+    (second.genres ?? []).map(normalizeGenre).filter(Boolean),
+  );
+
+  return (first.genres ?? [])
+    .map(normalizeGenre)
+    .filter((genre) => genre && secondGenres.has(genre));
+}
+
 function linksCross(left: StarLink, right: StarLink) {
   const cross = (
     ax: number,
@@ -124,57 +146,65 @@ function createStars(movies: MyMovie[]): StarNode[] {
 }
 
 /**
- * 화면에 배치된 실제 영화 별을 기준으로 같은 장르의 별을 연결함.
- * 추상적인 별자리 도형을 따로 그리지 않고 영화 1편이 별 1개가 되도록 유지함.
+ * 영화 1편은 별 1개로 유지하고, 공통 감독·출연진·장르가 있을 때만 별을 연결함.
+ * 같은 감독이 가장 강한 관계이고, 출연진과 장르는 그 다음 보조 관계임.
  */
 function createStarMap(movies: MyMovie[]) {
   const stars = createStars(movies);
   const starsByMovieId = new Map(
     stars.map((star) => [star.movie.movieId, star]),
   );
-  const grouped = new Map<string, MyMovie[]>();
+  const candidates: Array<
+    StarLink & {
+      score: number;
+    }
+  > = [];
 
-  for (const movie of movies) {
-    for (const rawGenre of movie.genres ?? []) {
-      const genre = normalizeGenre(rawGenre);
-      if (!genre) continue;
-      grouped.set(genre, [...(grouped.get(genre) ?? []), movie]);
+  for (let firstIndex = 0; firstIndex < movies.length; firstIndex += 1) {
+    for (let secondIndex = firstIndex + 1; secondIndex < movies.length; secondIndex += 1) {
+      const first = movies[firstIndex];
+      const second = movies[secondIndex];
+      const from = starsByMovieId.get(first.movieId);
+      const to = starsByMovieId.get(second.movieId);
+      if (!from || !to) continue;
+
+      const directors = sharedNames(first, second, "directors");
+      const actors = sharedNames(first, second, "actors");
+      const genres = sharedGenres(first, second);
+      if (directors.length === 0 && actors.length === 0 && genres.length === 0) {
+        continue;
+      }
+
+      const distance = Math.hypot(from.left - to.left, from.top - to.top);
+      const color = directors.length > 0
+        ? GOLD
+        : actors.length > 0
+          ? "#9fc8ef"
+          : GENRE_COLORS[(firstIndex + secondIndex) % GENRE_COLORS.length];
+
+      candidates.push({
+        from,
+        to,
+        color,
+        score:
+          directors.length * 2400 +
+          actors.length * 750 +
+          genres.length * 160 -
+          distance,
+      });
     }
   }
 
-  const candidates: Array<StarLink & { distance: number; genreIndex: number }> = [];
-  const maxLinkDistance = 20;
-
-  Array.from(grouped.entries()).forEach(([, genreMovies], genreIndex) => {
-    if (genreMovies.length < 3) return;
-
-    const color = GENRE_COLORS[genreIndex % GENRE_COLORS.length];
-    for (let fromIndex = 0; fromIndex < genreMovies.length; fromIndex += 1) {
-      for (let toIndex = fromIndex + 1; toIndex < genreMovies.length; toIndex += 1) {
-        const from = starsByMovieId.get(genreMovies[fromIndex].movieId);
-        const to = starsByMovieId.get(genreMovies[toIndex].movieId);
-        if (!from || !to) continue;
-
-        const distance = Math.hypot(from.left - to.left, from.top - to.top);
-        if (distance <= maxLinkDistance) {
-          candidates.push({ from, to, color, distance, genreIndex });
-        }
-      }
-    }
-  });
-
-  // 가장 가까운 같은 장르끼리만 연결하고, 한 별에서 뻗는 선을 최대 2개로 제한함.
-  // 이웃하지 않은 영화를 순서대로 잇는 방식보다 긴 대각선과 선 겹침이 줄어듦.
-  candidates.sort(
-    (left, right) => left.distance - right.distance || left.genreIndex - right.genreIndex,
-  );
+  // 감독 → 출연진 → 장르 순으로 의미 있는 관계를 먼저 연결함.
+  // 교차 선과 과도한 연결은 제한해 별자리의 형태를 유지함.
+  candidates.sort((left, right) => right.score - left.score);
   const degree = new Map<string, number>();
   const links = new Map<string, StarLink>();
 
   for (const candidate of candidates) {
     const fromId = candidate.from.movie.movieId;
     const toId = candidate.to.movie.movieId;
-    if ((degree.get(fromId) ?? 0) >= 2 || (degree.get(toId) ?? 0) >= 2) continue;
+    if ((degree.get(fromId) ?? 0) >= 3 || (degree.get(toId) ?? 0) >= 3) continue;
 
     const key = [fromId, toId].sort().join(":");
     if (links.has(key)) continue;

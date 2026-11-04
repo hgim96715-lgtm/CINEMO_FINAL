@@ -274,6 +274,11 @@ export type MyMovieVenue = {
   jibunAddress: string | null;
 };
 
+export type MyMoviePerson = {
+  id: string;
+  name: string;
+};
+
 export type MyMovie = {
   id: string;
   movieId: string;
@@ -281,6 +286,8 @@ export type MyMovie = {
   posterUrl: string | null;
   releaseDate: string | null;
   genres: string[];
+  directors: MyMoviePerson[];
+  actors: MyMoviePerson[];
   isFavorite: boolean;
   isWatched: boolean;
   watchedAt: string | null;

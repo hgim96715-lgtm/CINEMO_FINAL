@@ -1,5 +1,12 @@
 import {Injectable} from "@nestjs/common";
-import {MediaType, Prisma, TitleType, ViewingPlaceType, ViewingPlatform} from "@prisma/client";
+import {
+  CreditType,
+  MediaType,
+  Prisma,
+  TitleType,
+  ViewingPlaceType,
+  ViewingPlatform,
+} from "@prisma/client";
 
 import {PrismaService} from "@/prisma/prisma.service";
 
@@ -184,6 +191,23 @@ export class UserMovieRecordRepository {
               },
               select: {
                 name: true,
+              },
+            },
+            movieCredits: {
+              where: {
+                creditType: {
+                  in: [CreditType.DIRECTOR, CreditType.ACTOR],
+                },
+              },
+              orderBy: [{creditType: "asc"}, {displayOrder: "asc"}],
+              select: {
+                creditType: true,
+                person: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
           },

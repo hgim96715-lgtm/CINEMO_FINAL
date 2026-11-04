@@ -2,12 +2,19 @@ import type { MobileLoginResponse } from "@/lib/api/auth";
 import { apiClient } from "@/lib/api/apiClient";
 import type { ViewingPlatform } from "./movie-records";
 
+export type MyMoviePerson = {
+  id: string;
+  name: string;
+};
+
 export type MyMovie = {
   movieId: string;
   title: string;
   posterUrl: string | null;
   releaseDate: string | null;
   genres: string[];
+  directors: MyMoviePerson[];
+  actors: MyMoviePerson[];
   isFavorite: boolean;
   isWatched: boolean;
   watchedAt: string | null;

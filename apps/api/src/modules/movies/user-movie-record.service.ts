@@ -6,7 +6,7 @@ import {UserMovieRecordRepository} from "./repositories/user-movie-record.reposi
 import {UpdateMovieRecordRequestDto} from "../auth/dto/requests/update-movie-record.request.dto";
 import {toUserMovieCalendarResponse} from "@/modules/movies/mappers/user-movie-calendar.mapper";
 import {ActivityService} from "@/modules/activity/activity.service";
-import {UserActivityType} from "@prisma/client";
+import {CreditType, UserActivityType} from "@prisma/client";
 
 @Injectable()
 export class UserMovieRecordService {
@@ -134,6 +134,12 @@ export class UserMovieRecordService {
       posterUrl: record.movie.media[0]?.url ?? null,
       releaseDate: record.movie.releases[0]?.releaseDate ?? null,
       genres: record.movie.movieGenres.map((genre) => genre.name),
+  directors: record.movie.movieCredits
+    .filter((credit) => credit.creditType === CreditType.DIRECTOR)
+    .map((credit) => credit.person),
+  actors: record.movie.movieCredits
+    .filter((credit) => credit.creditType === CreditType.ACTOR)
+    .map((credit) => credit.person),
       isFavorite: record.isFavorite,
       isWatched: record.isWatched,
       watchedAt: record.watchedAt,

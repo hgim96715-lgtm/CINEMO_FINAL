@@ -1,1047 +1,674 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  Volume2,
-  VolumeX,
-  X,
-} from "lucide-react";
+import { Minus, Plus, RotateCcw, Volume2, VolumeX, X } from "lucide-react";
 
 import type { MyMovie } from "@/lib/api/movies";
 import { myMoviesQueryOptions } from "@/lib/queries/my-movies.query";
 
-type Constellation = {
-  id: string;
-  title: string;
-  subtitle: string;
-  accent: string;
-  label: string;
-  points: Array<[number, number, number]>;
-  lines: Array<[number, number]>;
-  movieIds: string[];
-  posterUrl?: string | null;
+const WORLD_WIDTH = 1600;
+const WORLD_HEIGHT = 1000;
+const LAYOUT_STORAGE_KEY = "cinemo:my-universe:graph-layout:v1";
+const MIN_SCALE = 0.35;
+const MAX_SCALE = 2.4;
+
+type Point = { x: number; y: number };
+type Layout = Record<string, Point>;
+
+type GraphEdge = {
+  from: MyMovie;
+  to: MyMovie;
+  sharedDirectors: string[];
+  sharedActors: string[];
+  sharedGenres: string[];
 };
 
-type TagConstellation = Constellation & {
-  tag: string;
-  left: string;
-  top: string;
-};
-
-type MovieStar = {
-  movie: MyMovie;
-  left: string;
-  top: string;
-  size: string;
-  accent: string;
-};
-
-type MovieLink = {
-  from: MovieStar;
-  to: MovieStar;
-  accent: string;
-};
-
-const tagStyles = [
-  { color: "#d9c083", shape: "heart" },
-  { color: "#9fc8ef", shape: "orbit" },
-  { color: "#efb7c8", shape: "burst" },
-  { color: "#b8d8b0", shape: "crown" },
-] as const;
-
-const shapePoints = {
-  heart: [
-    [70, 24, 2],
-    [54, 12, 1.4],
-    [39, 17, 1.5],
-    [29, 31, 1.2],
-    [38, 49, 1.4],
-    [52, 67, 1.8],
-    [70, 86, 1.5],
-    [88, 67, 1.8],
-    [102, 49, 1.3],
-    [111, 31, 1.2],
-    [101, 17, 1.5],
-    [86, 12, 1.4],
-  ] as Array<[number, number, number]>,
-  orbit: [
-    [70, 12, 1.4],
-    [92, 20, 1.6],
-    [108, 39, 1.2],
-    [104, 62, 1.7],
-    [88, 80, 1.3],
-    [65, 87, 1.6],
-    [43, 78, 1.2],
-    [29, 57, 1.5],
-    [33, 34, 1.2],
-    [51, 19, 1.6],
-  ] as Array<[number, number, number]>,
-  burst: [
-    [70, 10, 2],
-    [83, 29, 1.3],
-    [108, 30, 1.6],
-    [90, 47, 1.2],
-    [102, 70, 1.5],
-    [70, 58, 2],
-    [39, 70, 1.4],
-    [50, 47, 1.2],
-    [32, 30, 1.5],
-    [57, 29, 1.3],
-  ] as Array<[number, number, number]>,
-  crown: [
-    [30, 70, 1.4],
-    [38, 32, 1.7],
-    [56, 55, 1.2],
-    [70, 22, 2],
-    [84, 55, 1.2],
-    [102, 32, 1.7],
-    [110, 70, 1.4],
-    [70, 82, 1.5],
-  ] as Array<[number, number, number]>,
-};
-
-const shapeLines = {
-  heart: [
-    [0, 1],
-    [1, 2],
-    [2, 3],
-    [3, 4],
-    [4, 5],
-    [5, 6],
-    [6, 7],
-    [7, 8],
-    [8, 9],
-    [9, 10],
-    [10, 11],
-    [11, 0],
-  ] as Array<[number, number]>,
-  orbit: [
-    [0, 1],
-    [1, 2],
-    [2, 3],
-    [3, 4],
-    [4, 5],
-    [5, 6],
-    [6, 7],
-    [7, 8],
-    [8, 9],
-    [9, 0],
-    [1, 6],
-    [3, 8],
-  ] as Array<[number, number]>,
-  burst: [
-    [0, 1],
-    [0, 2],
-    [0, 3],
-    [0, 4],
-    [0, 5],
-    [0, 6],
-    [0, 7],
-    [0, 8],
-    [0, 9],
-  ] as Array<[number, number]>,
-  crown: [
-    [0, 1],
-    [1, 2],
-    [2, 3],
-    [3, 4],
-    [4, 5],
-    [5, 6],
-    [6, 7],
-    [7, 0],
-    [1, 4],
-  ] as Array<[number, number]>,
-};
-
-function normalizeTag(tag: string) {
-  return tag.trim().replace(/\s+/g, " ");
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
 
-function linksCross(left: MovieLink, right: MovieLink) {
-  const leftFrom = {
-    x: Number.parseFloat(left.from.left),
-    y: Number.parseFloat(left.from.top),
-  };
-  const leftTo = {
-    x: Number.parseFloat(left.to.left),
-    y: Number.parseFloat(left.to.top),
-  };
-  const rightFrom = {
-    x: Number.parseFloat(right.from.left),
-    y: Number.parseFloat(right.from.top),
-  };
-  const rightTo = {
-    x: Number.parseFloat(right.to.left),
-    y: Number.parseFloat(right.to.top),
-  };
-  const cross = (
-    a: { x: number; y: number },
-    b: { x: number; y: number },
-    c: { x: number; y: number },
-  ) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+function hashString(value: string) {
+  let hash = 2166136261;
 
-  const leftSideA = cross(leftFrom, leftTo, rightFrom);
-  const leftSideB = cross(leftFrom, leftTo, rightTo);
-  const rightSideA = cross(rightFrom, rightTo, leftFrom);
-  const rightSideB = cross(rightFrom, rightTo, leftTo);
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
 
-  return leftSideA * leftSideB < 0 && rightSideA * rightSideB < 0;
+  return hash >>> 0;
 }
 
-function makeMovieConstellation(movie: MyMovie): Constellation {
-  const genres = movie.genres?.filter(Boolean) ?? [];
-  const accent = tagStyles[genres.length % tagStyles.length].color;
-  return {
-    id: `movie:${movie.movieId}`,
-    title: movie.title || "이름 없는 영화",
-    subtitle: genres.length > 0 ? genres.join(" · ") : "아직 이름 붙지 않은 별",
-    accent,
-    label: `${movie.title || "영화"} 별`,
-    points: [[70, 115, 3.2]],
-    lines: [],
-    movieIds: [movie.movieId],
-    posterUrl: movie.posterUrl,
-  };
+function randomFromHash(hash: number, offset: number) {
+  const value = Math.sin(hash * 0.000001 + offset * 12.9898) * 43758.5453;
+  return value - Math.floor(value);
 }
 
-function getScatteredPosition(index: number, total: number) {
-  const angle = index * 2.399963;
-  const radius = total <= 1 ? 0 : 14 + ((index * 31) % 100) * 0.54;
-  return {
-    left: `${Math.max(4, Math.min(96, 50 + Math.cos(angle) * radius))}%`,
-    top: `${Math.max(8, Math.min(92, 46 + Math.sin(angle) * radius * 0.72))}%`,
-  };
+function distance(a: Point, b: Point) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-function buildTagConstellations(movies: MyMovie[]): TagConstellation[] {
-  const grouped = new Map<string, MyMovie[]>();
+function readStoredLayout(): Layout {
+  if (typeof window === "undefined") return {};
+
+  try {
+    const raw = window.localStorage.getItem(LAYOUT_STORAGE_KEY);
+    if (!raw) return {};
+
+    const parsed = JSON.parse(raw) as Layout;
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        ([, point]) =>
+          point &&
+          Number.isFinite(point.x) &&
+          Number.isFinite(point.y) &&
+          point.x >= 0 &&
+          point.x <= WORLD_WIDTH &&
+          point.y >= 0 &&
+          point.y <= WORLD_HEIGHT,
+      ),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function createStableLayout(movies: MyMovie[], previous: Layout): Layout {
+  const next: Layout = {};
+  const occupied: Point[] = [];
+
   for (const movie of movies) {
-    for (const rawTag of movie.genres ?? []) {
-      const tag = normalizeTag(rawTag);
-      if (!tag) continue;
-      grouped.set(tag, [...(grouped.get(tag) ?? []), movie]);
+    const saved = previous[movie.movieId];
+    if (saved) {
+      next[movie.movieId] = saved;
+      occupied.push(saved);
     }
   }
 
-  return Array.from(grouped.entries())
-    .filter(([, groupedMovies]) => groupedMovies.length >= 3)
-    .sort((a, b) => b[1].length - a[1].length)
-    .slice(0, 4)
-    .map(([tag, groupedMovies], index) => {
-      const style = tagStyles[index % tagStyles.length];
-      const points = shapePoints[style.shape].slice(
-        0,
-        Math.max(
-          3,
-          Math.min(groupedMovies.length, shapePoints[style.shape].length),
-        ),
-      );
-      return {
-        id: `tag:${tag}`,
-        tag,
-        title: `${tag}의 궤도`,
-        subtitle: `${groupedMovies.length}편의 영화가 만든 별자리`,
-        accent: style.color,
-        label: `${tag} 별자리`,
-        points,
-        lines: shapeLines[style.shape].filter(
-          ([from, to]) => from < points.length && to < points.length,
-        ),
-        movieIds: groupedMovies.map((movie) => movie.movieId),
-        left: `${22 + (index % 2) * 56}%`,
-        top: `${25 + Math.floor(index / 2) * 28}%`,
+  for (const movie of movies) {
+    if (next[movie.movieId]) continue;
+
+    const hash = hashString(movie.movieId);
+    const seedX = 140 + randomFromHash(hash, 1) * (WORLD_WIDTH - 280);
+    const seedY = 130 + randomFromHash(hash, 2) * (WORLD_HEIGHT - 260);
+    let candidate = { x: seedX, y: seedY };
+
+    for (let attempt = 0; attempt < 48; attempt += 1) {
+      const angle = randomFromHash(hash, attempt + 3) * Math.PI * 2;
+      const radius = 90 + attempt * 22;
+      const nextCandidate = {
+        x: clamp(seedX + Math.cos(angle) * radius, 120, WORLD_WIDTH - 120),
+        y: clamp(seedY + Math.sin(angle) * radius, 110, WORLD_HEIGHT - 110),
       };
-    });
-}
 
-/**
- * 영화 별의 실제 화면 좌표를 사용해 같은 장르의 별을 연결함.
- * 장르별 추상 도형을 따로 그리지 않고, 화면에 보이는 영화 별 자체가
- * 별자리의 점이 되도록 하는 것이 핵심임.
- */
-function buildMovieLinks(movies: MyMovie[], stars: MovieStar[]): MovieLink[] {
-  const starsByMovieId = new Map(
-    stars.map((star) => [star.movie.movieId, star]),
-  );
-  const grouped = new Map<string, MyMovie[]>();
-
-  for (const movie of movies) {
-    for (const rawGenre of movie.genres ?? []) {
-      const genre = normalizeTag(rawGenre);
-      if (!genre) continue;
-      grouped.set(genre, [...(grouped.get(genre) ?? []), movie]);
-    }
-  }
-
-  const candidates: Array<MovieLink & { distance: number; genreIndex: number }> = [];
-  const maxLinkDistance = 20;
-
-  Array.from(grouped.entries()).forEach(([, genreMovies], genreIndex) => {
-    if (genreMovies.length < 3) return;
-
-    const accent = tagStyles[genreIndex % tagStyles.length].color;
-    for (let fromIndex = 0; fromIndex < genreMovies.length; fromIndex += 1) {
-      for (let toIndex = fromIndex + 1; toIndex < genreMovies.length; toIndex += 1) {
-        const from = starsByMovieId.get(genreMovies[fromIndex].movieId);
-        const to = starsByMovieId.get(genreMovies[toIndex].movieId);
-        if (!from || !to) continue;
-
-        const fromLeft = Number.parseFloat(from.left);
-        const fromTop = Number.parseFloat(from.top);
-        const toLeft = Number.parseFloat(to.left);
-        const toTop = Number.parseFloat(to.top);
-        const distance = Math.hypot(fromLeft - toLeft, fromTop - toTop);
-        if (distance <= maxLinkDistance) {
-          candidates.push({ from, to, accent, distance, genreIndex });
-        }
+      if (occupied.every((point) => distance(point, nextCandidate) > 95)) {
+        candidate = nextCandidate;
+        break;
       }
     }
-  });
 
-  // 가장 가까운 같은 장르끼리만 연결하고, 한 별에서 뻗는 선을 최대 2개로 제한함.
-  // 이웃하지 않은 영화를 순서대로 잇는 방식보다 긴 대각선과 선 겹침이 줄어듦.
-  candidates.sort(
-    (left, right) => left.distance - right.distance || left.genreIndex - right.genreIndex,
-  );
-  const degree = new Map<string, number>();
-  const links = new Map<string, MovieLink>();
-
-  for (const candidate of candidates) {
-    const fromId = candidate.from.movie.movieId;
-    const toId = candidate.to.movie.movieId;
-    if ((degree.get(fromId) ?? 0) >= 2 || (degree.get(toId) ?? 0) >= 2) continue;
-
-    const key = [fromId, toId].sort().join(":");
-    if (links.has(key)) continue;
-
-    const link = {
-      from: candidate.from,
-      to: candidate.to,
-      accent: candidate.accent,
-    } satisfies MovieLink;
-    if (Array.from(links.values()).some((existing) => linksCross(existing, link))) {
-      continue;
-    }
-
-    links.set(key, link);
-    degree.set(fromId, (degree.get(fromId) ?? 0) + 1);
-    degree.set(toId, (degree.get(toId) ?? 0) + 1);
+    next[movie.movieId] = candidate;
+    occupied.push(candidate);
   }
 
-  return Array.from(links.values());
+  return next;
+}
+
+function getGenres(movie: MyMovie) {
+  return Array.from(
+    new Set(
+      movie.genres
+        .map((genre) => genre.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  );
+}
+
+function segmentsCross(a: Point, b: Point, c: Point, d: Point) {
+  const orientation = (p: Point, q: Point, r: Point) =>
+    (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+
+  const first = orientation(a, b, c);
+  const second = orientation(a, b, d);
+  const third = orientation(c, d, a);
+  const fourth = orientation(c, d, b);
+
+  return first * second < 0 && third * fourth < 0;
+}
+
+function getSharedPeople(
+  first: MyMovie,
+  second: MyMovie,
+  relation: "directors" | "actors",
+) {
+  const secondPeople = new Set(
+    (second[relation] ?? []).map((person) => person.id),
+  );
+
+  return (first[relation] ?? [])
+    .filter((person) => secondPeople.has(person.id))
+    .map((person) => person.name);
+}
+
+function buildRelatedEdges(movies: MyMovie[], layout: Layout): GraphEdge[] {
+  const candidates: Array<GraphEdge & { score: number }> = [];
+
+  for (let firstIndex = 0; firstIndex < movies.length; firstIndex += 1) {
+    for (
+      let secondIndex = firstIndex + 1;
+      secondIndex < movies.length;
+      secondIndex += 1
+    ) {
+      const first = movies[firstIndex];
+      const second = movies[secondIndex];
+      const secondGenres = new Set(getGenres(second));
+      const sharedGenres = getGenres(first).filter((genre) =>
+        secondGenres.has(genre),
+      );
+      const sharedDirectors = getSharedPeople(first, second, "directors");
+      const sharedActors = getSharedPeople(first, second, "actors");
+      const firstPoint = layout[first.movieId];
+      const secondPoint = layout[second.movieId];
+
+      if (
+        (!sharedDirectors.length && !sharedActors.length && !sharedGenres.length) ||
+        !firstPoint ||
+        !secondPoint
+      ) {
+        continue;
+      }
+
+      candidates.push({
+        from: first,
+        to: second,
+        sharedDirectors,
+        sharedActors,
+        sharedGenres,
+        score:
+          sharedDirectors.length * 2_400 +
+          sharedActors.length * 750 +
+          sharedGenres.length * 160 -
+          distance(firstPoint, secondPoint),
+      });
+    }
+  }
+
+  candidates.sort((first, second) => second.score - first.score);
+
+  const degree = new Map<string, number>();
+  const edges: GraphEdge[] = [];
+
+  for (const candidate of candidates) {
+    const fromDegree = degree.get(candidate.from.movieId) ?? 0;
+    const toDegree = degree.get(candidate.to.movieId) ?? 0;
+    if (fromDegree >= 3 || toDegree >= 3) continue;
+
+    const crossesExisting = edges.some((edge) => {
+      const edgeFrom = layout[edge.from.movieId];
+      const edgeTo = layout[edge.to.movieId];
+      const candidateFrom = layout[candidate.from.movieId];
+      const candidateTo = layout[candidate.to.movieId];
+
+      if (!edgeFrom || !edgeTo || !candidateFrom || !candidateTo) return false;
+      if (
+        edge.from.movieId === candidate.from.movieId ||
+        edge.from.movieId === candidate.to.movieId ||
+        edge.to.movieId === candidate.from.movieId ||
+        edge.to.movieId === candidate.to.movieId
+      ) {
+        return false;
+      }
+
+      return segmentsCross(edgeFrom, edgeTo, candidateFrom, candidateTo);
+    });
+
+    if (crossesExisting) continue;
+
+    edges.push(candidate);
+    degree.set(candidate.from.movieId, fromDegree + 1);
+    degree.set(candidate.to.movieId, toDegree + 1);
+  }
+
+  return edges;
+}
+
+function MovieModal({
+  movie,
+  onClose,
+}: {
+  movie: MyMovie;
+  onClose: () => void;
+}) {
+  const router = useRouter();
+
+  return (
+    <div
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#02050d]/80 p-5 backdrop-blur-sm"
+      role="dialog"
+      onClick={onClose}
+    >
+      <div
+        className="relative flex max-h-[min(720px,calc(100vh-40px))] w-full max-w-2xl gap-6 overflow-auto rounded-[28px] border border-[#d9b866]/35 bg-[#09162b] p-6 text-[#f7f1e7] shadow-2xl shadow-black/50 max-sm:flex-col"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button
+          aria-label="영화 모달 닫기"
+          className="absolute right-4 top-4 z-10 rounded-full p-2 text-[#f7f1e7]/70 transition hover:bg-white/10 hover:text-white"
+          type="button"
+          onClick={onClose}
+        >
+          <X size={24} />
+        </button>
+
+        <div className="w-44 shrink-0 overflow-hidden rounded-2xl bg-[#101d34] max-sm:w-full">
+          {movie.posterUrl ? (
+            <img
+              alt={movie.title + " 포스터"}
+              className="h-full max-h-64 w-full object-cover max-sm:max-h-72"
+              src={movie.posterUrl}
+            />
+          ) : (
+            <div className="flex h-64 items-center justify-center p-5 text-center text-sm text-white/50">
+              포스터 없음
+            </div>
+          )}
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col justify-center pr-8">
+          <p className="mb-3 text-xs font-semibold tracking-[0.28em] text-[#d9b866]">
+            OBSERVED STAR
+          </p>
+          <h2 className="text-3xl font-semibold tracking-tight max-sm:text-2xl">
+            {movie.title}
+          </h2>
+          <p className="mt-3 text-sm text-white/55">
+            {movie.releaseDate?.slice(0, 10) ?? "개봉일 정보 없음"}
+            {movie.genres.length ? " · " + movie.genres.join(" · ") : ""}
+          </p>
+          <button
+            className="mt-7 inline-flex w-fit items-center rounded-full bg-[#d9b866] px-5 py-3 text-sm font-semibold text-[#07101e] transition hover:bg-[#eed28a]"
+            type="button"
+            onClick={() => {
+              onClose();
+              router.push("/movies/" + movie.movieId);
+            }}
+          >
+            영화 상세 보기 <span className="ml-2 text-lg">→</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function MyUniversePage() {
-  const router = useRouter();
   const moviesQuery = useQuery(myMoviesQueryOptions());
-  const movies = useMemo(
-    () => (moviesQuery.data ?? []).filter((movie) => movie.isWatched),
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
+  const [layout, setLayout] = useState<Layout>({});
+  const [view, setView] = useState({ x: 0, y: 0, scale: 0.8 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [selectedMovie, setSelectedMovie] = useState<MyMovie | null>(null);
+
+  const watchedMovies = useMemo(
+    () =>
+      (moviesQuery.data ?? [])
+        .filter((movie) => movie.isWatched)
+        .sort((first, second) => first.movieId.localeCompare(second.movieId)),
     [moviesQuery.data],
   );
-  const tagConstellations = useMemo(
-    () => buildTagConstellations(movies),
-    [movies],
-  );
-  const movieConstellations = useMemo(
-    () => movies.map(makeMovieConstellation),
-    [movies],
-  );
-  const movieConstellationById = useMemo(
-    () => new Map(movieConstellations.map((item) => [item.movieIds[0], item])),
-    [movieConstellations],
-  );
-  const targets = useMemo(
-    () => [...tagConstellations, ...movieConstellations],
-    [tagConstellations, movieConstellations],
-  );
-  const stars = useMemo<MovieStar[]>(
-    () =>
-      movies.map((movie, index) => ({
-        movie,
-        ...getScatteredPosition(index, movies.length),
-        size: movie.isFavorite ? "size-3" : "size-2",
-        accent:
-          tagConstellations.find((tag) => tag.movieIds.includes(movie.movieId))
-            ?.accent ?? "#fff9df",
-      })),
-    [movies, tagConstellations],
-  );
-  const movieLinks = useMemo(
-    () => buildMovieLinks(movies, stars),
-    [movies, stars],
-  );
-  const [selected, setSelected] = useState<Constellation | null>(null);
-  const [isMicroscopeOpen, setIsMicroscopeOpen] = useState(false);
-  const [isSpaceSoundMuted, setIsSpaceSoundMuted] = useState(true);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const universeViewportRef = useRef<HTMLDivElement>(null);
-  const universeScale = Math.max(
-    1,
-    Math.ceil(Math.sqrt(Math.max(movies.length, 1) / 12)),
-  );
-  const universeWidth = 1800 * universeScale;
-  const universeHeight = 1500 * universeScale;
+  const movieKey = watchedMovies.map((movie) => movie.movieId).join("|");
 
-  const toggleSpaceSound = async () => {
+  useEffect(() => {
+    const stored = readStoredLayout();
+    const next = createStableLayout(watchedMovies, stored);
+    setLayout(next);
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(next));
+    }
+  }, [movieKey, watchedMovies]);
+
+  const edges = useMemo(
+    () => buildRelatedEdges(watchedMovies, layout),
+    [layout, watchedMovies],
+  );
+
+  const fitView = useCallback(() => {
+    const viewport = viewportRef.current;
+    const points = watchedMovies
+      .map((movie) => layout[movie.movieId])
+      .filter((point): point is Point => Boolean(point));
+
+    if (!viewport || !points.length) {
+      setView({ x: 0, y: 0, scale: 0.8 });
+      return;
+    }
+
+    const minX = Math.min(...points.map((point) => point.x));
+    const maxX = Math.max(...points.map((point) => point.x));
+    const minY = Math.min(...points.map((point) => point.y));
+    const maxY = Math.max(...points.map((point) => point.y));
+    const contentWidth = Math.max(560, maxX - minX + 260);
+    const contentHeight = Math.max(420, maxY - minY + 220);
+    const scale = clamp(
+      Math.min(
+        (viewport.clientWidth - 60) / contentWidth,
+        (viewport.clientHeight - 110) / contentHeight,
+      ),
+      MIN_SCALE,
+      1.15,
+    );
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    setView({
+      x: viewport.clientWidth / 2 - centerX * scale,
+      y: viewport.clientHeight / 2 - centerY * scale,
+      scale,
+    });
+  }, [layout, watchedMovies]);
+
+  useEffect(() => {
+    if (!viewportRef.current) return;
+
+    const observer = new ResizeObserver(() => fitView());
+    observer.observe(viewportRef.current);
+    fitView();
+
+    return () => observer.disconnect();
+  }, [fitView]);
+
+  // 화면을 새로 열거나 관람 기록이 달라지면 전체 별자리가 다시 보이게 맞춘다.
+  useEffect(() => {
+    if (!watchedMovies.length || !Object.keys(layout).length) return;
+
+    const frame = window.requestAnimationFrame(fitView);
+    return () => window.cancelAnimationFrame(frame);
+  }, [fitView, layout, watchedMovies.length]);
+
+  const zoomBy = useCallback(
+    (factor: number, clientX?: number, clientY?: number) => {
+      const viewport = viewportRef.current;
+      if (!viewport) return;
+
+      const rect = viewport.getBoundingClientRect();
+      setView((current) => {
+        const scale = clamp(current.scale * factor, MIN_SCALE, MAX_SCALE);
+        const anchorX =
+          clientX === undefined ? rect.width / 2 : clientX - rect.left;
+        const anchorY =
+          clientY === undefined ? rect.height / 2 : clientY - rect.top;
+        const worldX = (anchorX - current.x) / current.scale;
+        const worldY = (anchorY - current.y) / current.scale;
+
+        return {
+          scale,
+          x: anchorX - worldX * scale,
+          y: anchorY - worldY * scale,
+        };
+      });
+    },
+    [],
+  );
+
+  const handleWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const factor = event.deltaY < 0 ? 1.1 : 0.9;
+    zoomBy(factor, event.clientX, event.clientY);
+  };
+
+  const toggleAudio = useCallback(async () => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (isSpaceSoundMuted) {
+
+    if (audio.paused) {
       try {
-        audio.muted = false;
         await audio.play();
-        setIsSpaceSoundMuted(false);
       } catch {
-        audio.muted = true;
-        setIsSpaceSoundMuted(true);
+        setIsAudioPlaying(false);
       }
       return;
     }
-    audio.muted = true;
-    audio.pause();
-    setIsSpaceSoundMuted(true);
-  };
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    // 페이지에 다시 진입할 때 이전 audio 요소가 남아 있지 않도록
-    // 초기 상태부터 재생을 중지하고 음소거함.
-    audio.muted = true;
     audio.pause();
     audio.currentTime = 0;
-    const handleEnded = () => setIsSpaceSoundMuted(true);
-    audio.addEventListener("ended", handleEnded);
-    return () => {
-      // 상세 페이지로 이동하거나 브라우저 뒤로가기를 할 때
-      // 기존 오디오가 계속 살아 있으면 재진입 시 소리가 겹침.
-      audio.pause();
-      audio.muted = true;
-      audio.currentTime = 0;
-      audio.removeAttribute("src");
-      audio.load();
-      audio.removeEventListener("ended", handleEnded);
-    };
   }, []);
 
   useEffect(() => {
-    const viewport = universeViewportRef.current;
-    if (!viewport) return;
-
-    const center = () => {
-      viewport.scrollLeft = Math.max(
-        0,
-        (viewport.scrollWidth - viewport.clientWidth) / 2,
-      );
-      viewport.scrollTop = Math.max(
-        0,
-        (viewport.scrollHeight - viewport.clientHeight) / 2,
-      );
-    };
-
-    const frame = requestAnimationFrame(center);
-    window.addEventListener("resize", center);
     return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("resize", center);
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.pause();
+      audio.currentTime = 0;
     };
-  }, [universeHeight, universeWidth]);
+  }, []);
 
-  const inspect = (constellation: Constellation) => {
-    setSelected(constellation);
-    setIsMicroscopeOpen(true);
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const target = event.target;
+    if (target instanceof Element && target.closest("[data-universe-node]")) {
+      return;
+    }
+
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: view.x,
+      originY: view.y,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsDragging(true);
   };
 
-  const openMovieDetail = (movieId: string) => {
-    const audio = audioRef.current;
-    if (audio) {
-      try {
-        audio.pause();
-        audio.muted = true;
-        audio.currentTime = 0;
-      } catch {
-        // 오디오가 이미 해제된 경우
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    setView((current) => ({
+      ...current,
+      x: drag.originX + event.clientX - drag.startX,
+      y: drag.originY + event.clientY - drag.startY,
+    }));
+  };
+
+  const stopDragging = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragRef.current?.pointerId === event.pointerId) {
+      dragRef.current = null;
+      setIsDragging(false);
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
       }
     }
-    setIsSpaceSoundMuted(true);
-    setIsMicroscopeOpen(false);
-    setSelected(null);
-    router.push(`/movies/${movieId}`);
   };
 
   return (
-    <main className="relative min-h-[calc(100vh-5.5rem)] overflow-hidden bg-[#030711] text-[#f7f1e7]">
+    <main className="min-h-screen overflow-hidden bg-[#02050d] text-[#f7f1e7]">
       <audio
         ref={audioRef}
-        src="/audio/space-ambient.mp3"
         loop
         preload="metadata"
-        className="hidden"
+        src="/audio/space-ambient.mp3"
+        onPause={() => setIsAudioPlaying(false)}
+        onPlay={() => setIsAudioPlaying(true)}
       />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,rgba(15,39,82,0.28),transparent_47%),linear-gradient(180deg,#01030a_0%,#030a18_58%,#01030a_100%)]" />
-      <div className="pointer-events-none absolute -left-24 top-[28%] size-64 rounded-full bg-[radial-gradient(circle_at_35%_30%,rgba(115,161,220,0.2),rgba(30,58,108,0.1)_45%,transparent_72%)] opacity-75" />
-      <div className="pointer-events-none absolute -right-28 top-[48%] size-80 rounded-full border border-[#9fc8ef]/10 bg-[radial-gradient(circle_at_35%_30%,rgba(213,179,109,0.12),rgba(21,40,74,0.12)_48%,transparent_72%)] opacity-70" />
-      <div className="pointer-events-none absolute -right-20 top-[48%] h-24 w-96 -rotate-[18deg] rounded-[50%] border border-[#9fc8ef]/10 opacity-50" />
-      <header className="relative z-20 mx-auto flex w-full max-w-7xl justify-end px-5 py-7 sm:px-8 lg:px-12">
-        <button
-          type="button"
-          onClick={toggleSpaceSound}
-          aria-pressed={!isSpaceSoundMuted}
-          aria-label={isSpaceSoundMuted ? "우주 소리 켜기" : "우주 소리 음소거"}
-          className={`flex size-10 items-center justify-center rounded-full border backdrop-blur-md transition hover:border-[#d5b36d]/50 hover:text-[#f5d68f] ${isSpaceSoundMuted ? "border-white/15 bg-white/[0.04] text-white/55" : "border-[#d5b36d]/65 bg-[#d5b36d]/10 text-[#f5d68f]"}`}
-        >
-          {isSpaceSoundMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-        </button>
+      <header className="relative z-10 flex items-center justify-between border-b border-white/10 bg-[#02050d]/90 px-6 py-5 backdrop-blur-md sm:px-10">
+        <p className="text-[10px] font-semibold tracking-[0.38em] text-[#d9b866]">
+          MY UNIVERSE
+        </p>
+        <p className="text-xs text-white/45">{watchedMovies.length}편 관람</p>
       </header>
-      <section className="relative mx-auto h-[calc(100vh-10rem)] min-h-[34rem] w-full max-w-7xl overflow-hidden px-5 pb-10 sm:px-8 lg:px-12">
-        <div
-          ref={universeViewportRef}
-          className="absolute inset-0 overflow-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
+
+      <section
+        ref={viewportRef}
+        aria-label="관람 영화 그래프"
+        className={
+          "relative h-[calc(100vh-72px)] min-h-[560px] overflow-hidden bg-[radial-gradient(circle_at_50%_40%,rgba(31,58,98,0.3),transparent_45%),linear-gradient(135deg,#030714_0%,#071526_55%,#02050d_100%)] " +
+          (isDragging ? "cursor-grabbing" : "cursor-grab")
+        }
+        style={{ touchAction: "none" }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={stopDragging}
+        onPointerCancel={stopDragging}
+        onWheel={handleWheel}
+      >
+        {moviesQuery.isLoading ? (
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-white/45">
+            내 우주를 펼치는 중…
+          </div>
+        ) : moviesQuery.isError || watchedMovies.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
+            <div>
+              <p className="text-lg font-medium">관람 기록이 아직 없습니다.</p>
+            </div>
+          </div>
+        ) : (
           <div
-            className="relative bg-[#030711]"
-            style={{ height: universeHeight, width: universeWidth }}
+            className="absolute left-0 top-0 will-change-transform"
+            style={{
+              height: WORLD_HEIGHT,
+              width: WORLD_WIDTH,
+              transform:
+                "translate3d(" +
+                view.x +
+                "px, " +
+                view.y +
+                "px, 0) scale(" +
+                view.scale +
+                ")",
+              transformOrigin: "0 0",
+            }}
           >
-          <div className="absolute left-1/2 top-3 -translate-x-1/2 text-center text-[10px] tracking-[0.3em] text-white/25">
-            DISTANT LIGHTS
-          </div>
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            className="pointer-events-none absolute inset-0 h-full w-full"
-            aria-hidden="true"
-          >
-            {movieLinks.map((link) => (
-              <line
-                key={`${link.from.movie.movieId}-${link.to.movie.movieId}`}
-                x1={Number.parseFloat(link.from.left)}
-                y1={Number.parseFloat(link.from.top)}
-                x2={Number.parseFloat(link.to.left)}
-                y2={Number.parseFloat(link.to.top)}
-                stroke={link.accent}
-                strokeOpacity="0.58"
-                strokeWidth="0.28"
-              />
-            ))}
-          </svg>
-          {stars.map(({ movie, left, top, size, accent }) => (
-            <button
-              key={movie.movieId}
-              type="button"
-              aria-label={`${movie.title} 영화 별 보기`}
-              onClick={() => {
-                const constellation = movieConstellationById.get(movie.movieId);
-                if (constellation) inspect(constellation);
-              }}
-              className="pointer-events-auto absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-0 bg-transparent p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d5b36d]"
-              style={{ left, top }}
+            <svg
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+              height={WORLD_HEIGHT}
+              viewBox={"0 0 " + WORLD_WIDTH + " " + WORLD_HEIGHT}
+              width={WORLD_WIDTH}
             >
-              <span
-                className="pointer-events-none absolute -inset-3 rounded-full blur-md"
-                style={{ boxShadow: `0 0 16px 2px ${accent}66` }}
-              />
-              <span
-                className={`pointer-events-none relative block ${size} rounded-full bg-[#fff9df] shadow-[0_0_10px_3px_rgba(255,249,223,0.8)]`}
-              />
-            </button>
-          ))}
-          {moviesQuery.isLoading && (
-            <p className="absolute left-1/2 top-1/2 -translate-x-1/2 text-xs tracking-[0.12em] text-white/40">
-              별빛을 불러오는 중
-            </p>
-          )}
-          {!moviesQuery.isLoading && movies.length === 0 && (
-            <p className="absolute left-1/2 top-1/2 w-full -translate-x-1/2 text-center text-sm text-white/40">
-              영화를 기록하면 이곳에 별이 생깁니다.
-            </p>
-          )}
+              {edges.map((edge) => {
+                const from = layout[edge.from.movieId];
+                const to = layout[edge.to.movieId];
+                if (!from || !to) return null;
+
+                return (
+                  <line
+                    key={edge.from.movieId + "-" + edge.to.movieId}
+                    opacity={0.45}
+                    stroke="#b8c8df"
+                    strokeLinecap="round"
+                    strokeWidth="1.5"
+                    x1={from.x}
+                    x2={to.x}
+                    y1={from.y}
+                    y2={to.y}
+                  />
+                );
+              })}
+            </svg>
+
+            {watchedMovies.map((movie, index) => {
+              const point = layout[movie.movieId];
+              if (!point) return null;
+
+              return (
+                <button
+                  key={movie.movieId}
+                  aria-label={movie.title + " 영화 모달 열기"}
+                  className="group absolute -translate-x-1/2 -translate-y-1/2 rounded-full p-3 text-left outline-none"
+                  data-universe-node
+                  style={{ left: point.x, top: point.y }}
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setSelectedMovie(movie);
+                  }}
+                >
+                  <span
+                    className="block h-3.5 w-3.5 rounded-full border border-[#fff8dc] bg-[#e7ca7a] shadow-[0_0_0_3px_rgba(231,202,122,0.08),0_0_22px_7px_rgba(231,202,122,0.55)] transition duration-200 group-hover:scale-150 group-focus-visible:scale-150"
+                    style={{
+                      backgroundColor: index % 5 === 0 ? "#fff8dc" : "#e7ca7a",
+                    }}
+                  />
+                  <span className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#02050d]/75 px-2.5 py-1 text-[13px] font-medium text-white/80 opacity-75 backdrop-blur-sm transition group-hover:opacity-100 group-focus-visible:opacity-100">
+                    {movie.title}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-        </div>
-        <div className="pointer-events-none absolute inset-0 z-20">
-          <div className="pointer-events-auto absolute inset-0">
-            <Observer onInspect={() => targets[0] && inspect(targets[0])} />
+        )}
+
+        <div
+          className="absolute bottom-5 left-5 right-5 flex items-end justify-end gap-4 sm:bottom-7 sm:left-8 sm:right-8"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-[#050b18]/75 p-2 backdrop-blur-md">
+            <button
+              aria-label="축소"
+              className="rounded-xl p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+              type="button"
+              onClick={() => zoomBy(0.85)}
+            >
+              <Minus size={18} />
+            </button>
+            <span className="min-w-12 text-center text-xs tabular-nums text-white/50">
+              {Math.round(view.scale * 100)}%
+            </span>
+            <button
+              aria-label="확대"
+              className="rounded-xl p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+              type="button"
+              onClick={() => zoomBy(1.18)}
+            >
+              <Plus size={18} />
+            </button>
+            <button
+              aria-label="전체 그래프 보기"
+              className="ml-1 rounded-xl p-2 text-[#d9b866] transition hover:bg-white/10"
+              type="button"
+              onClick={fitView}
+            >
+              <RotateCcw size={17} />
+            </button>
+            <span aria-hidden="true" className="h-5 w-px bg-white/10" />
+            <button
+              aria-label={isAudioPlaying ? "우주 사운드 끄기" : "우주 사운드 켜기"}
+              className="rounded-xl p-2 text-[#d9b866] transition hover:bg-white/10"
+              type="button"
+              onClick={toggleAudio}
+            >
+              {isAudioPlaying ? <Volume2 size={18} /> : <VolumeX size={18} />}
+            </button>
           </div>
         </div>
       </section>
-      {isMicroscopeOpen && selected && (
-        <MicroscopeModal
-          key={selected.id}
-          constellation={selected}
-          targets={targets}
-          onClose={() => setIsMicroscopeOpen(false)}
-          onMovieDetail={openMovieDetail}
+
+      {selectedMovie ? (
+        <MovieModal
+          movie={selectedMovie}
+          onClose={() => setSelectedMovie(null)}
         />
-      )}
+      ) : null}
     </main>
-  );
-}
-
-function MainConstellation({
-  constellation,
-  onClick,
-}: {
-  constellation: TagConstellation;
-  onClick: () => void;
-}) {
-  const points = constellation.points.map(([x, y]) => `${x},${y}`).join(" ");
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group absolute h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d5b36d]"
-      style={{ left: constellation.left, top: constellation.top }}
-      aria-label={`${constellation.tag} 별자리 관측`}
-    >
-      <svg
-        viewBox="0 0 140 100"
-        className="absolute inset-0 h-full w-full overflow-visible opacity-45 transition group-hover:opacity-90"
-        aria-hidden="true"
-      >
-        {constellation.lines.map(([from, to]) => {
-          const a = constellation.points[from];
-          const b = constellation.points[to];
-          return (
-            <line
-              key={`${from}-${to}`}
-              x1={a[0]}
-              y1={a[1]}
-              x2={b[0]}
-              y2={b[1]}
-              stroke={constellation.accent}
-              strokeOpacity="0.7"
-              strokeWidth="0.55"
-            />
-          );
-        })}
-        <polyline
-          points={points}
-          fill="none"
-          stroke={constellation.accent}
-          strokeOpacity="0.3"
-          strokeWidth="0.35"
-        />
-        {constellation.points.map(([x, y, radius], index) => (
-          <circle
-            key={`${x}-${y}-${index}`}
-            cx={x}
-            cy={y}
-            r={radius * 1.1}
-            fill="#fff9df"
-            opacity="0.85"
-          />
-        ))}
-      </svg>
-      <span
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] tracking-[0.14em] opacity-0 transition group-hover:opacity-80"
-        style={{ color: constellation.accent }}
-      >
-        {constellation.tag} · {constellation.movieIds.length}편
-      </span>
-    </button>
-  );
-}
-
-function Observer({ onInspect }: { onInspect: () => void }) {
-  return (
-    <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center sm:bottom-6">
-      <div className="relative h-44 w-[min(19rem,calc(100vw-2rem))] sm:h-52 sm:w-[22rem]">
-        <svg
-          viewBox="0 0 360 220"
-          className="h-full w-full drop-shadow-[0_12px_22px_rgba(0,0,0,0.55)]"
-          role="img"
-          aria-label="현미경으로 별을 관측하는 캐릭터"
-        >
-          <defs>
-            <linearGradient id="observer-body" x1="0" x2="1" y1="0" y2="1">
-              <stop offset="0" stopColor="#253d63" />
-              <stop offset="1" stopColor="#0d1b34" />
-            </linearGradient>
-            <linearGradient id="microscope-metal" x1="0" x2="1" y1="0" y2="1">
-              <stop offset="0" stopColor="#e6c978" />
-              <stop offset="1" stopColor="#99733a" />
-            </linearGradient>
-            <filter
-              id="observer-glow"
-              x="-50%"
-              y="-50%"
-              width="200%"
-              height="200%"
-            >
-              <feGaussianBlur stdDeviation="4" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <ellipse
-            cx="180"
-            cy="205"
-            rx="142"
-            ry="6"
-            fill="#020611"
-            opacity="0.8"
-          />
-          <g>
-            <path
-              d="M72 198c0-34 20-61 52-61s52 27 52 61Z"
-              fill="url(#observer-body)"
-              stroke="#7893bb"
-              strokeOpacity="0.5"
-            />
-            <path
-              d="M89 151c10-11 21-17 35-17s26 6 36 17"
-              fill="none"
-              stroke="#9eb5d5"
-              strokeOpacity="0.45"
-              strokeWidth="3"
-              strokeLinecap="round"
-            />
-            <circle
-              cx="124"
-              cy="101"
-              r="38"
-              fill="#263f66"
-              stroke="#b5d3e8"
-              strokeOpacity="0.8"
-              strokeWidth="2"
-            />
-            <path
-              d="M90 102c3-20 16-31 34-31 17 0 30 11 34 30-16 12-51 13-68 1Z"
-              fill="#07152b"
-              stroke="#87a8d2"
-              strokeOpacity="0.45"
-              strokeWidth="2"
-            />
-            <path
-              d="M102 83c10-6 24-6 35 0"
-              fill="none"
-              stroke="#e2c886"
-              strokeOpacity="0.52"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-            <circle
-              cx="145"
-              cy="95"
-              r="4"
-              fill="#f5d68f"
-              filter="url(#observer-glow)"
-            />
-            <path
-              d="M157 154c15-7 28-13 38-26"
-              fill="none"
-              stroke="#31547c"
-              strokeWidth="11"
-              strokeLinecap="round"
-            />
-            <circle
-              cx="195"
-              cy="127"
-              r="7"
-              fill="#b5d3e8"
-              stroke="#d5b36d"
-              strokeWidth="2"
-            />
-            <circle cx="124" cy="138" r="6" fill="#d5b36d" opacity="0.9" />
-          </g>
-          <g>
-            <path
-              d="M174 198h124"
-              stroke="url(#microscope-metal)"
-              strokeWidth="10"
-              strokeLinecap="round"
-            />
-            <path
-              d="M248 194V94"
-              stroke="url(#microscope-metal)"
-              strokeWidth="10"
-              strokeLinecap="round"
-            />
-            <path
-              d="M248 101c-20 7-35 1-40-16-4-13 2-27 14-38"
-              fill="none"
-              stroke="url(#microscope-metal)"
-              strokeWidth="11"
-              strokeLinecap="round"
-            />
-            <path
-              d="M217 46 245 32"
-              stroke="#f0d58c"
-              strokeWidth="12"
-              strokeLinecap="round"
-            />
-            <path
-              d="M208 45 198 36"
-              stroke="#b58b45"
-              strokeWidth="8"
-              strokeLinecap="round"
-            />
-            <path
-              d="M245 91h-28"
-              stroke="#d5b36d"
-              strokeWidth="7"
-              strokeLinecap="round"
-            />
-            <circle
-              cx="203"
-              cy="93"
-              r="12"
-              fill="#0b1d35"
-              stroke="#d5b36d"
-              strokeWidth="3"
-              filter="url(#observer-glow)"
-            />
-            <path
-              d="M225 124h32"
-              stroke="#91a7c5"
-              strokeWidth="4"
-              strokeLinecap="round"
-            />
-            <path
-              d="M218 145h44"
-              stroke="#91a7c5"
-              strokeWidth="4"
-              strokeLinecap="round"
-            />
-            <circle cx="248" cy="198" r="6" fill="#f5d68f" />
-          </g>
-        </svg>
-        <button
-          type="button"
-          onClick={onInspect}
-          className="absolute left-[55%] top-[11%] h-[38%] w-[27%] rounded-2xl bg-transparent transition hover:bg-[#d5b36d]/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f5d68f]"
-          aria-label="현미경으로 별자리 보기"
-        />
-      </div>
-    </div>
-  );
-}
-
-function MicroscopeModal({
-  constellation,
-  targets,
-  onClose,
-  onMovieDetail,
-}: {
-  constellation: Constellation;
-  targets: Constellation[];
-  onClose: () => void;
-  onMovieDetail: (movieId: string) => void;
-}) {
-  const initialIndex = Math.max(
-    0,
-    targets.findIndex((item) => item.id === constellation.id),
-  );
-  const [viewIndex, setViewIndex] = useState(initialIndex);
-  const [dragStartX, setDragStartX] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const observed = targets[viewIndex] ?? constellation;
-  const moveBy = (delta: number) =>
-    setViewIndex((current) =>
-      Math.max(0, Math.min(targets.length - 1, current + delta)),
-    );
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDragStartX(event.clientX);
-    setIsDragging(true);
-  };
-  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (Math.abs(event.clientX - dragStartX) > 42)
-      moveBy(event.clientX < dragStartX ? 1 : -1);
-    setIsDragging(false);
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-      if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-        event.preventDefault();
-        moveBy(-1);
-      }
-      if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-        event.preventDefault();
-        moveBy(1);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, targets.length]);
-
-  return (
-    <div className="fixed inset-0 z-[70] overflow-hidden bg-[#02050e] text-[#f7f1e7]">
-      <div className="relative h-full w-full overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,rgba(25,63,120,0.34),transparent_45%),linear-gradient(180deg,#02050e_0%,#06142d_56%,#01030a_100%)]" />
-        <div className="pointer-events-none absolute inset-0 opacity-90 [background-image:radial-gradient(circle_at_8%_14%,rgba(255,255,255,0.95)_0_0.8px,transparent_1.5px),radial-gradient(circle_at_19%_72%,rgba(170,212,255,0.78)_0_0.8px,transparent_1.6px),radial-gradient(circle_at_35%_23%,rgba(255,239,190,0.82)_0_0.9px,transparent_1.7px),radial-gradient(circle_at_52%_12%,rgba(255,255,255,0.84)_0_0.7px,transparent_1.5px),radial-gradient(circle_at_73%_62%,rgba(182,216,255,0.76)_0_0.8px,transparent_1.6px),radial-gradient(circle_at_91%_25%,rgba(255,241,193,0.8)_0_0.9px,transparent_1.7px)]" />
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-5 top-[max(1.25rem,calc(env(safe-area-inset-top)+1.25rem))] z-30 p-2 text-white/45 transition hover:text-white sm:right-8 sm:top-8"
-          aria-label="현미경 닫기"
-        >
-          <X className="size-5" />
-        </button>
-        <div className="pointer-events-none absolute left-5 top-[max(1.25rem,calc(env(safe-area-inset-top)+1.25rem))] z-20 sm:left-8 sm:top-8">
-          <p className="text-[9px] font-semibold tracking-[0.42em] text-[#d5b36d]/75 sm:text-[10px]">
-            THROUGH THE MICROSCOPE
-          </p>
-          <p className="mt-2 text-xs text-white/45">
-            {observed.title} · {observed.subtitle}
-          </p>
-        </div>
-        <div
-          className={`relative h-full w-full overflow-hidden ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={() => setIsDragging(false)}
-          style={{ touchAction: "none" }}
-        >
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.82))]" />
-          <div className="absolute left-1/2 top-[48%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
-            <div className="absolute -inset-24 rounded-full bg-[#d5b36d]/10 blur-3xl" />
-            <div className="relative">
-              <MicroscopeConstellation
-                constellation={observed}
-                className="relative w-[235px] drop-shadow-[0_0_18px_rgba(255,249,223,0.45)] sm:w-[320px] lg:w-[390px]"
-              />
-            </div>
-            <span
-              className="relative mt-2 text-[10px] font-medium tracking-[0.28em]"
-              style={{ color: observed.accent }}
-            >
-              {observed.label}
-            </span>
-            <p className="mt-2 max-w-[260px] text-center text-[10px] text-white/35">
-              {observed.movieIds.length}편의 영화 기록이 이 별자리를 만듦
-            </p>
-            {observed.movieIds.length === 1 && (
-              <button
-                type="button"
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={() => onMovieDetail(observed.movieIds[0])}
-                className="pointer-events-auto mt-5 inline-flex items-center gap-2 rounded-full bg-[#d5b36d] px-6 py-3 text-sm font-semibold text-[#02050e] shadow-[0_8px_30px_rgba(213,179,109,0.18)] transition hover:bg-[#e6c978]"
-                aria-label={`${observed.title} 영화 상세 보기`}
-              >
-                영화 상세 보기 <ChevronRight className="size-4" />
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={() => moveBy(-1)}
-            disabled={viewIndex === 0}
-            className="absolute left-5 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/15 bg-white/[0.04] p-3 text-white/70 transition hover:border-[#d5b36d]/60 hover:text-[#f5d68f] disabled:cursor-not-allowed disabled:opacity-20"
-            aria-label="이전 별자리 보기"
-          >
-            <ChevronLeft className="size-7" />
-          </button>
-          <button
-            type="button"
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={() => moveBy(1)}
-            disabled={viewIndex === targets.length - 1}
-            className="absolute right-5 top-1/2 z-10 rounded-full border border-white/15 bg-white/[0.04] p-3 text-white/70 transition hover:border-[#d5b36d]/60 hover:text-[#f5d68f] disabled:cursor-not-allowed disabled:opacity-20"
-            aria-label="다음 별자리 보기"
-          >
-            <ChevronRight className="size-7" />
-          </button>
-          <button
-            type="button"
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={() => moveBy(-1)}
-            disabled={viewIndex === 0}
-            className="absolute left-1/2 top-20 z-10 -translate-x-1/2 rounded-full border border-white/15 bg-white/[0.04] p-2 text-white/70 transition hover:border-[#d5b36d]/60 hover:text-[#f5d68f] disabled:opacity-20"
-            aria-label="위쪽 별자리 보기"
-          >
-            <ChevronUp className="size-5" />
-          </button>
-          <button
-            type="button"
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={() => moveBy(1)}
-            disabled={viewIndex === targets.length - 1}
-            className="absolute bottom-20 left-1/2 z-10 -translate-x-1/2 rounded-full border border-white/15 bg-white/[0.04] p-2 text-white/70 transition hover:border-[#d5b36d]/60 hover:text-[#f5d68f] disabled:opacity-20"
-            aria-label="아래쪽 별자리 보기"
-          >
-            <ChevronDown className="size-5" />
-          </button>
-        </div>
-        <div className="pointer-events-none absolute bottom-5 left-5 right-5 z-20 flex items-end justify-between gap-4 sm:bottom-8 sm:left-8 sm:right-8">
-          <div>
-            <p className="text-xs text-[#d5b36d]/85">
-              현재 관측 · {observed.title}
-            </p>
-            <p className="mt-1 text-[10px] text-white/35">
-              {observed.subtitle}
-            </p>
-          </div>
-          <div
-            className="pointer-events-auto flex items-center gap-1.5"
-            aria-label="별자리 위치"
-          >
-            {targets.map((item, index) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setViewIndex(index)}
-                aria-label={`${item.title}로 이동`}
-                className={`size-2 rounded-full transition ${index === viewIndex ? "bg-[#d5b36d] shadow-[0_0_10px_#d5b36d]" : "bg-white/25 hover:bg-white/60"}`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MicroscopeConstellation({
-  constellation,
-  className,
-}: {
-  constellation: Constellation;
-  className: string;
-}) {
-  return (
-    <svg
-      viewBox="0 0 140 230"
-      className={className}
-      aria-hidden="true"
-    >
-      {constellation.lines.map(([from, to]) => {
-        const a = constellation.points[from];
-        const b = constellation.points[to];
-        return (
-          <line
-            key={`${from}-${to}`}
-            x1={a[0]}
-            y1={a[1]}
-            x2={b[0]}
-            y2={b[1]}
-            stroke={constellation.accent}
-            strokeOpacity="0.72"
-            strokeWidth="0.8"
-          />
-        );
-      })}
-      {constellation.points.map(([x, y, radius], index) => (
-        <circle
-          key={`${x}-${y}-${index}`}
-          cx={x}
-          cy={y}
-          r={radius * 1.7}
-          fill="#fff9df"
-          opacity={index % 3 === 0 ? 1 : 0.8}
-          className="pointer-events-none drop-shadow-[0_0_5px_#fff7d5]"
-        />
-      ))}
-    </svg>
   );
 }
