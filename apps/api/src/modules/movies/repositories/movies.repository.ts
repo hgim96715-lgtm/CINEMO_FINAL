@@ -221,27 +221,48 @@ export class MoviesRepository {
       .normalize("NFKC")
       .replace(/[\s\p{P}\p{S}]+/gu, "");
 
+    const normalizedTitleExpression = Prisma.sql`
+      regexp_replace(
+        lower("title"),
+        '[[:space:][:punct:]]',
+        '',
+        'g'
+      )
+    `;
+
+    // 한 글자 검색은 기존처럼 포함 검색을 허용하고,
+    // 두 글자 이상은 제목의 시작 부분을 우선 매칭해 불필요한 중간 문자열 결과를 줄인다.
+    // 예: "워"는 "스타워즈"도 검색하지만, "타워"는 "스타워즈"보다
+    // "타워"·"타워 하이스트" 같은 제목을 먼저 찾도록 한다.
+    const normalizedTitleMatch =
+      normalizedKeyword.length === 1
+        ? Prisma.sql`${normalizedTitleExpression} LIKE '%' || ${normalizedKeyword} || '%'`
+        : Prisma.sql`${normalizedTitleExpression} LIKE ${normalizedKeyword} || '%'`;
+
     const normalizedTitleMovies =
       normalizedKeyword.length > 0
-        ? await this.prisma.$queryRaw<Array<{ movieId: string }>>(Prisma.sql`
-            SELECT DISTINCT "movieId"
+        ? await this.prisma.$queryRaw<
+            Array<{ movieId: string; isExact: boolean }>
+          >(Prisma.sql`
+            SELECT DISTINCT ON ("movieId")
+              "movieId",
+              ${normalizedTitleExpression} = ${normalizedKeyword} AS "isExact"
             FROM "movie_titles"
-            WHERE regexp_replace(
-              lower("title"),
-              '[[:space:][:punct:]]',
-              '',
-              'g'
-            ) LIKE '%' || ${normalizedKeyword} || '%'
+            WHERE ${normalizedTitleMatch}
             AND (
               lower(coalesce("languageCode", '')) LIKE 'ko%'
               OR "title" ~ '[가-힣]'
             )
+            ORDER BY "movieId", "isExact" DESC
           `)
         : [];
 
     const normalizedTitleMovieIds = normalizedTitleMovies.map(
       ({ movieId }) => movieId,
     );
+    const exactTitleMovieIds = normalizedTitleMovies
+      .filter(({ isExact }) => isExact)
+      .map(({ movieId }) => movieId);
 
     const koreanTitleWhere: Prisma.MovieWhereInput = {
       titles: {
@@ -253,40 +274,53 @@ export class MoviesRepository {
       },
     };
 
+    const titleWhere: Prisma.MovieWhereInput =
+      normalizedKeyword.length > 1
+        ? {
+            id: {
+              in: normalizedTitleMovieIds,
+            },
+          }
+        : {
+            OR: [
+              {
+                id: {
+                  in: normalizedTitleMovieIds,
+                },
+              },
+              {
+                AND: [
+                  koreanTitleWhere,
+                  {
+                    titles: {
+                      some: {
+                        titleType: {
+                          in: [
+                            TitleType.PRIMARY,
+                            TitleType.ALIAS,
+                            TitleType.ORIGINAL,
+                            TitleType.RERELEASE,
+                          ],
+                        },
+                        title: {
+                          contains: keyword,
+                          mode: "insensitive",
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          };
+
     const where: Prisma.MovieWhereInput = {
       AND: [
         publicMovieWhere,
         koreanAvailabilityWhere,
         {
           OR: [
-            {
-              id: {
-                in: normalizedTitleMovieIds,
-              },
-            },
-            {
-              AND: [
-                koreanTitleWhere,
-                {
-                  titles: {
-                    some: {
-                      titleType: {
-                        in: [
-                          TitleType.PRIMARY,
-                          TitleType.ALIAS,
-                          TitleType.ORIGINAL,
-                          TitleType.RERELEASE,
-                        ],
-                      },
-                      title: {
-                        contains: keyword,
-                        mode: "insensitive",
-                      },
-                    },
-                  },
-                },
-              ],
-            },
+            titleWhere,
             {
               AND: [
                 koreanTitleWhere,
@@ -334,21 +368,70 @@ export class MoviesRepository {
       ],
     };
 
-    const [movies, totalCount] = await Promise.all([
-      this.prisma.movie.findMany({
+    const offset = (page - 1) * limit;
+    const exactWhere: Prisma.MovieWhereInput = {
+      AND: [
         where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: {
-          updatedAt: "desc",
+        {
+          id: {
+            in: exactTitleMovieIds,
+          },
         },
-        ...movieSearchInclude,
-      }),
+      ],
+    };
+    const remainingWhere: Prisma.MovieWhereInput = {
+      AND: [
+        where,
+        {
+          id: {
+            notIn: exactTitleMovieIds,
+          },
+        },
+      ],
+    };
+
+    const [totalCount, exactCount] = await Promise.all([
       this.prisma.movie.count({ where }),
+      exactTitleMovieIds.length > 0
+        ? this.prisma.movie.count({ where: exactWhere })
+        : Promise.resolve(0),
+    ]);
+
+    const exactSkip = Math.min(offset, exactCount);
+    const exactTake = Math.max(
+      0,
+      Math.min(limit, exactCount - exactSkip),
+    );
+    const remainingTake = limit - exactTake;
+    const remainingSkip = Math.max(0, offset - exactCount);
+
+    const [exactMovies, remainingMovies] = await Promise.all([
+      exactTake > 0
+        ? this.prisma.movie.findMany({
+            where: exactWhere,
+            skip: exactSkip,
+            take: exactTake,
+            orderBy: {
+              updatedAt: "desc",
+            },
+            ...movieSearchInclude,
+          })
+        : Promise.resolve([] as MovieSearchWithDetails[]),
+      remainingTake > 0
+        ? this.prisma.movie.findMany({
+            where: remainingWhere,
+            skip: remainingSkip,
+            take: remainingTake,
+            orderBy: {
+              updatedAt: "desc",
+            },
+            ...movieSearchInclude,
+          })
+        : Promise.resolve([] as MovieSearchWithDetails[]),
     ]);
 
     return {
-      movies,
+      movies: [...exactMovies, ...remainingMovies],
       totalCount,
     };
   }
