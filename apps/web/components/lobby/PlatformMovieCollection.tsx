@@ -227,7 +227,7 @@ export function PlatformMovieCollection() {
 
               </div>
 
-              <div className="mt-2 flex min-h-6 w-fit items-center gap-1.5 rounded-lg border border-white/10 bg-black/25 px-1.5 py-1 backdrop-blur-sm">
+              <div className="mt-2 flex min-h-6 w-fit items-center gap-1.5">
                 {providers.slice(0, 2).map((provider) => (
                   <PlatformLogoBadge
                     key={provider.provider}

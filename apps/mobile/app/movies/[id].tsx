@@ -384,7 +384,7 @@ export default function MovieDetailScreen() {
                 </Text>
               </View>
 
-              <View className="mt-4 flex-row flex-wrap gap-6 self-start rounded-lg border border-white/10 bg-black/25 px-1.5 py-1">
+              <View className="mt-4 flex-row flex-wrap gap-6 self-start">
                 {providers.map((provider) => (
                   <Pressable
                     key={`${provider.tmdbProviderId ?? provider.watchProvider}`}

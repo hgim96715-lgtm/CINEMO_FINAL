@@ -366,7 +366,7 @@ export function CurationHero({
             </Link>
 
             {!isUpcoming && featuredPlatformProviders.length > 0 && (
-              <div className="mt-2 flex w-fit max-w-full flex-wrap gap-1.5 rounded-lg border border-white/10 bg-black/25 px-1.5 py-1 backdrop-blur-sm">
+              <div className="mt-2 flex w-fit max-w-full flex-wrap gap-1.5">
                 {featuredPlatformProviders.map((provider) =>
                   getPlatformLogoSrc(provider.provider, provider.logoPath) ? (
                     <PlatformLogoBadge

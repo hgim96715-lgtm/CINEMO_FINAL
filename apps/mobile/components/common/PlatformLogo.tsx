@@ -39,6 +39,7 @@ export function PlatformLogo({
         height: size,
         alignItems: "center",
         justifyContent: "center",
+        borderRadius: size * 0.18,
         overflow: "hidden",
       }}
     >
