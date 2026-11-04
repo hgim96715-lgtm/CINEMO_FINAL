@@ -39,6 +39,12 @@ const toWatchProvider = (providerName: string): WatchProvider | null => {
   ) {
     return WatchProvider.PRIME_VIDEO;
   }
+  if (
+    normalizedName === "COUPANG PLAY" ||
+    normalizedName === "COUPANGPLAY"
+  ) {
+    return WatchProvider.COUPANG_PLAY;
+  }
 
   return null;
 };

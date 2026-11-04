@@ -178,6 +178,14 @@ export class UserMovieRecordRepository {
                 url: true,
               },
             },
+            movieGenres: {
+              orderBy: {
+                createdAt: "asc",
+              },
+              select: {
+                name: true,
+              },
+            },
           },
         },
       },

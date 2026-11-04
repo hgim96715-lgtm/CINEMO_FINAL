@@ -133,6 +133,7 @@ export class UserMovieRecordService {
       title: record.movie.titles[0]?.title ?? "",
       posterUrl: record.movie.media[0]?.url ?? null,
       releaseDate: record.movie.releases[0]?.releaseDate ?? null,
+      genres: record.movie.movieGenres.map((genre) => genre.name),
       isFavorite: record.isFavorite,
       isWatched: record.isWatched,
       watchedAt: record.watchedAt,

@@ -62,6 +62,7 @@ enum WatchProvider {
   WAVVE
   APPLE_TV
   PRIME_VIDEO
+  COUPANG_PLAY
 }
 
 enum AvailabilityType {
@@ -282,6 +283,21 @@ enum CurationStatus {
   ARCHIVED
 }
 
+enum UniverseStampTexture {
+  INK
+  PAPER
+  GRAIN
+  GLOW
+}
+
+enum UniverseConstellationType {
+  GENRE
+  CURATION
+  PLATFORM
+  YEAR
+  CUSTOM
+}
+
 model Curation {
   id          String         @id @default(uuid(7)) @db.Uuid
   slug        String         @unique @db.VarChar(100)
@@ -339,11 +355,11 @@ model CinemaVisit {
   venue       Venue            @relation(fields: [venueId], references: [id], onDelete: Restrict)
   movieRecord UserMovieRecord? @relation(fields: [movieRecordId], references: [id], onDelete: SetNull)
 
+  @@unique([userId, idempotencyKey])
   @@index([userId, visitedAt])
   @@index([userId, venueId, visitedAt])
   @@index([venueId, visitedAt])
   @@index([userId, verificationStatus])
-  @@unique([userId, idempotencyKey])
   @@map("cinema_visits")
 }
 
@@ -698,6 +714,8 @@ model User {
   pushTokens                 PushToken[] // 사용자의 기기별 푸시 토큰
   cinemaVisits               CinemaVisit[]
   activityLogs               UserActivityLog[]
+  universeStars              UniverseStar[]
+  universeConstellations     UniverseConstellation[]
 
   @@index([nickname])
   @@index([status])
@@ -864,6 +882,7 @@ model UserMovieRecord {
   movie        Movie         @relation(fields: [movieId], references: [id], onDelete: Cascade)
   venue        Venue?        @relation(fields: [venueId], references: [id], onDelete: SetNull)
   cinemaVisits CinemaVisit[]
+  universeStar UniverseStar?
 
   @@unique([userId, movieId])
   @@index([userId, isFavorite])
@@ -941,7 +960,7 @@ model UserMovieNotification {
   releaseId           String?               @db.Uuid
   notificationType    MovieNotificationType
   enabled             Boolean               @default(true)
-  dayBeforeNotifiedAt DateTime?             @db.Timestamptz(3) @map("day_before_notified_at")
+  dayBeforeNotifiedAt DateTime?             @map("day_before_notified_at") @db.Timestamptz(3)
   notifiedAt          DateTime?             @db.Timestamptz(3)
   createdAt           DateTime              @default(now()) @db.Timestamptz(3)
   updatedAt           DateTime              @updatedAt @db.Timestamptz(3)
@@ -986,6 +1005,8 @@ model Movie {
   postcardGenerations    PostcardGeneration[]
   postcardDailyUsages    PostcardDailyUsage[]
   curationMovies         CurationMovie[]
+  universeStars          UniverseStar[]
+  movieStamp             MovieStamp?
 
   @@index([visibility])
   @@map("movies")
@@ -1123,6 +1144,80 @@ model MoviePopularitySnapshot {
   @@index([collectedAt, rank])
   @@index([movieId, collectedAt])
   @@map("movie_popularity_snapshots")
+}
+
+model UniverseStar {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  userId            String   @db.Uuid
+  movieId           String   @db.Uuid
+  userMovieRecordId String   @unique @map("user_movie_record_id") @db.Uuid
+  discoveredAt      DateTime @default(now()) @map("discovered_at") @db.Timestamptz(3)
+  positionX         Float    @map("position_x")
+  positionY         Float    @map("position_y")
+  depth             Float
+  brightness        Float
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user            User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie           Movie                       @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  userMovieRecord UserMovieRecord             @relation(fields: [userMovieRecordId], references: [id], onDelete: Cascade)
+  constellations  UniverseStarConstellation[]
+
+  @@unique([userId, movieId])
+  @@index([userId, discoveredAt])
+  @@index([movieId])
+  @@map("universe_stars")
+}
+
+model MovieStamp {
+  id           String               @id @default(uuid(7)) @db.Uuid
+  movieId      String               @unique @db.Uuid
+  primaryColor String               @map("primary_color") @db.VarChar(7)
+  accentColor  String               @map("accent_color") @db.VarChar(7)
+  texture      UniverseStampTexture
+  emblem       String               @db.VarChar(100)
+  version      Int                  @default(1)
+  isActive     Boolean              @default(true) @map("is_active")
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@index([isActive])
+  @@map("movie_stamps")
+}
+
+model UniverseConstellation {
+  id          String                    @id @default(uuid(7)) @db.Uuid
+  userId      String                    @db.Uuid
+  title       String                    @db.Text
+  type        UniverseConstellationType
+  description String?                   @db.Text
+  lineColor   String                    @map("line_color") @db.VarChar(7)
+  createdAt   DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user  User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stars UniverseStarConstellation[]
+
+  @@unique([userId, type, title])
+  @@index([userId, type])
+  @@map("universe_constellations")
+}
+
+model UniverseStarConstellation {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  starId          String   @map("star_id") @db.Uuid
+  constellationId String   @map("constellation_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  star          UniverseStar          @relation(fields: [starId], references: [id], onDelete: Cascade)
+  constellation UniverseConstellation @relation(fields: [constellationId], references: [id], onDelete: Cascade)
+
+  @@unique([starId, constellationId])
+  @@index([constellationId])
+  @@map("universe_star_constellations")
 }
 
 model MoviePerson {
