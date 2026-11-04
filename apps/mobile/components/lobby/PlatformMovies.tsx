@@ -10,16 +10,52 @@ import {
   moviePlatformQueryOptions,
 } from "@/lib/queries/movie-platform.query";
 import { SectionHeader } from "@/components/lobby/SectionHeader";
+import { PlatformLogo } from "@/components/common/PlatformLogo";
 
 type PlatformMovie = {
   movie: MovieSearchItemResponse;
   providers: Array<{
+    provider: string;
     label: string;
     logoPath: string | null;
   }>;
 };
 
-const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w185";
+function PlatformLogoRow({
+  providers,
+}: {
+  providers: PlatformMovie["providers"];
+}) {
+  const visibleProviders = providers.slice(0, 4);
+  const remainingCount = providers.length - visibleProviders.length;
+
+  return (
+    <View className="mt-2 h-5 flex-row items-center gap-1">
+      {visibleProviders.map((provider) => (
+        <PlatformLogo
+          key={provider.provider}
+          provider={provider.provider}
+          logoPath={provider.logoPath}
+          size={18}
+          accessibilityLabel={`${provider.label} 로고`}
+        />
+      ))}
+      {remainingCount > 0 && (
+        <View
+          className="h-[18px] min-w-[18px] items-center justify-center rounded-full px-1"
+          style={{ backgroundColor: "rgba(255,255,255,0.14)" }}
+        >
+          <Text
+            className="text-[10px] font-semibold"
+            style={{ color: CINEMO_COLORS.textSecondary }}
+          >
+            +{remainingCount}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 export function PlatformMovies() {
   const providerQueries = useQueries({
@@ -37,6 +73,7 @@ export function PlatformMovies() {
       const providers = MOBILE_PLATFORM_PROVIDERS.filter(({ provider }) =>
         movie.watchOptions.some((option) => option.watchProvider === provider),
       ).map(({ provider, label }) => ({
+        provider,
         label,
         logoPath:
           movie.watchOptions.find(
@@ -67,7 +104,7 @@ export function PlatformMovies() {
   });
 
   const items = Array.from(movies.values()).slice(0, 12);
-  const isPending = providerQueries.every((query) => query.isPending);
+  const isPending = providerQueries.some((query) => query.isPending);
 
   if (isPending || items.length === 0) return null;
 
@@ -100,6 +137,8 @@ export function PlatformMovies() {
                   width: 132,
                   height: 198,
                   backgroundColor: CINEMO_COLORS.surface,
+                  borderWidth: 1,
+                  borderColor: "rgba(199,161,75,0.35)",
                 }}
               >
                 {posterUrl ? (
@@ -110,39 +149,11 @@ export function PlatformMovies() {
                     accessibilityLabel={`${movie.title} 포스터`}
                   />
                 ) : null}
-                <View className="absolute inset-x-0 top-2 flex-row flex-wrap gap-1.5 px-2">
-                  {providers.map((provider) =>
-                    provider.logoPath ? (
-                      <Image
-                        key={provider.label}
-                        source={{
-                          uri: `${TMDB_IMAGE_BASE_URL}${provider.logoPath}`,
-                        }}
-                        resizeMode="contain"
-                        style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 8,
-                          backgroundColor: "rgba(0,0,0,0.62)",
-                        }}
-                        accessibilityLabel={`${provider.label} 로고`}
-                      />
-                    ) : (
-                      <View
-                        key={provider.label}
-                        className="rounded-lg bg-black/70 px-1.5 py-1"
-                      >
-                        <Text className="text-[8px] font-bold text-white">
-                          {provider.label}
-                        </Text>
-                      </View>
-                    ),
-                  )}
-                </View>
               </View>
+              <PlatformLogoRow providers={providers} />
               <Text
                 numberOfLines={1}
-                className="mt-3 text-sm font-medium"
+                className="mt-2 text-sm font-medium"
                 style={{ color: CINEMO_COLORS.textPrimary }}
               >
                 {movie.title}

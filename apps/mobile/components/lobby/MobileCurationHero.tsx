@@ -10,6 +10,7 @@ import { activeCurationsQueryOptions } from "@/lib/queries/curation.query";
 import { moviePlatformQueryOptions, MOBILE_PLATFORM_PROVIDERS } from "@/lib/queries/movie-platform.query";
 import { movieUpcomingQueryOptions } from "@/lib/queries/movie-upcoming.query";
 import { getImageUrl } from "@/lib/utils";
+import { PlatformLogo } from "@/components/common/PlatformLogo";
 
 export type MobileHeroKind = "commemorative" | "upcoming" | "platform";
 
@@ -20,12 +21,11 @@ type MobileHeroMovie = {
   releaseDate: string | null;
   reason: string | null;
   providers: Array<{
+    provider: string;
     label: string;
     logoPath: string | null;
   }>;
 };
-
-const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w185";
 
 function isValidMovie(movie: { title?: string | null; posterUrl?: string | null }) {
   return Boolean(movie.title?.trim() && movie.posterUrl);
@@ -45,6 +45,42 @@ function toHeroMovie(movie: MovieSearchItemResponse): MobileHeroMovie {
 type MobileCurationHeroProps = {
   kind: MobileHeroKind;
 };
+
+function PlatformLogoRow({
+  providers,
+}: {
+  providers: MobileHeroMovie["providers"];
+}) {
+  const visibleProviders = providers.slice(0, 4);
+  const remainingCount = providers.length - visibleProviders.length;
+
+  return (
+    <View className="mt-2 h-5 flex-row items-center gap-1">
+      {visibleProviders.map((provider) => (
+        <PlatformLogo
+          key={provider.provider}
+          provider={provider.provider}
+          logoPath={provider.logoPath}
+          size={18}
+          accessibilityLabel={`${provider.label} 로고`}
+        />
+      ))}
+      {remainingCount > 0 && (
+        <View
+          className="h-[18px] min-w-[18px] items-center justify-center rounded-full px-1"
+          style={{ backgroundColor: "rgba(255,255,255,0.14)" }}
+        >
+          <Text
+            className="text-[10px] font-semibold"
+            style={{ color: CINEMO_COLORS.textSecondary }}
+          >
+            +{remainingCount}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -101,6 +137,7 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
         const providers = MOBILE_PLATFORM_PROVIDERS.filter(({ provider }) =>
           movie.watchOptions.some((option) => option.watchProvider === provider),
         ).map(({ provider, label }) => ({
+          provider,
           label,
           logoPath:
             movie.watchOptions.find(
@@ -207,19 +244,27 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
         onPress={() => router.push(`/movies/${movie.id}`)}
         className="mt-6 flex-row gap-4"
       >
-        {posterUrl ? (
-          <Image
-            source={{ uri: posterUrl }}
-            resizeMode="cover"
-            accessibilityLabel={`${movie.title} 포스터`}
-            style={{
-              width: 132,
-              height: 198,
-              borderRadius: 18,
-              backgroundColor: CINEMO_COLORS.background,
-            }}
-          />
-        ) : null}
+        <View className="w-[132px] shrink-0">
+          {posterUrl ? (
+            <Image
+              source={{ uri: posterUrl }}
+              resizeMode="cover"
+              accessibilityLabel={`${movie.title} 포스터`}
+              style={{
+                width: 132,
+                height: 198,
+                borderRadius: 18,
+                backgroundColor: CINEMO_COLORS.background,
+                borderWidth: 1,
+                borderColor: "rgba(199,161,75,0.35)",
+              }}
+            />
+          ) : null}
+
+          {kind === "platform" && movie.providers.length > 0 && (
+            <PlatformLogoRow providers={movie.providers} />
+          )}
+        </View>
 
         <View className="min-w-0 flex-1 justify-center">
           <Text className="text-xl font-bold text-cinemo-text">
@@ -232,38 +277,6 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
               <Text className="text-sm text-cinemo-gold">
                 {movie.releaseDate ?? "개봉일 미정"} 개봉 예정
               </Text>
-            </View>
-          )}
-
-          {kind === "platform" && movie.providers.length > 0 && (
-            <View className="mt-4 flex-row flex-wrap gap-2">
-              {movie.providers.map((provider) =>
-                provider.logoPath ? (
-                  <Image
-                    key={provider.label}
-                    source={{
-                      uri: `${TMDB_IMAGE_BASE_URL}${provider.logoPath}`,
-                    }}
-                    resizeMode="contain"
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 9,
-                      backgroundColor: "rgba(0,0,0,0.62)",
-                    }}
-                    accessibilityLabel={`${provider.label} 로고`}
-                  />
-                ) : (
-                  <View
-                    key={provider.label}
-                    className="rounded-lg bg-black/70 px-2 py-1.5"
-                  >
-                    <Text className="text-[9px] font-bold text-white">
-                      {provider.label}
-                    </Text>
-                  </View>
-                ),
-              )}
             </View>
           )}
 
@@ -283,6 +296,7 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
           )}
         </View>
       </Pressable>
+
     </View>
   );
 }

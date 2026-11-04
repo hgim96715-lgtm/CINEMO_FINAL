@@ -25,6 +25,7 @@ import { MovieTrailerDialog } from "@/components/lobby/MovieTrailerDialog";
 import { MovieTrailerButton } from "@/components/movies/MovieTrailerButton";
 import { MovieNotificationButton } from "@/components/movies/MovieNotificationButton";
 import { MovieRecordActions } from "@/components/movies/MovieRecordActions";
+import { PlatformLogo } from "@/components/common/PlatformLogo";
 
 function formatReleaseDate(date: string | null) {
   if (!date) return "개봉일 미정";
@@ -144,8 +145,6 @@ export default function MovieDetailScreen() {
       </SafeAreaView>
     );
   }
-  const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w185";
-
   const providerSearchUrls: Record<string, string> = {
     NETFLIX: "https://www.netflix.com/kr/search?q=",
     WATCHA: "https://pedia.watcha.com/ko/search?query=",
@@ -154,6 +153,7 @@ export default function MovieDetailScreen() {
     WAVVE: "https://www.wavve.com/search?searchWord=",
     APPLE_TV: "https://tv.apple.com/kr/search?term=",
     PRIME_VIDEO: "https://www.primevideo.com/search/ref=atv_nb_sr?phrase=",
+    COUPANG_PLAY: "https://www.coupangplay.com/search?query=",
   };
 
   function getProviderUrl(
@@ -384,7 +384,7 @@ export default function MovieDetailScreen() {
                 </Text>
               </View>
 
-              <View className="mt-4 flex-row flex-wrap gap-6">
+              <View className="mt-4 flex-row flex-wrap gap-6 self-start rounded-lg border border-white/10 bg-black/25 px-1.5 py-1">
                 {providers.map((provider) => (
                   <Pressable
                     key={`${provider.tmdbProviderId ?? provider.watchProvider}`}
@@ -399,24 +399,12 @@ export default function MovieDetailScreen() {
                       )
                     }
                   >
-                    {provider.logoPath ? (
-                      <Image
-                        source={{
-                          uri: `${TMDB_IMAGE_BASE_URL}${provider.logoPath}`,
-                        }}
-                        resizeMode="contain"
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 12,
-                        }}
-                        accessibilityLabel={`${provider.watchProvider} 로고`}
-                      />
-                    ) : (
-                      <Text style={{ color: CINEMO_COLORS.textPrimary }}>
-                        {provider.watchProvider}
-                      </Text>
-                    )}
+                    <PlatformLogo
+                      provider={provider.watchProvider}
+                      logoPath={provider.logoPath}
+                      size={40}
+                      accessibilityLabel={`${provider.watchProvider} 로고`}
+                    />
                   </Pressable>
                 ))}
               </View>

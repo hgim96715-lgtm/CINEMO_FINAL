@@ -166,8 +166,8 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
+						DevelopmentTeam = 9ZXPC6JNMT;
 						LastSwiftMigration = 1250;
-						DevelopmentTeam = "9ZXPC6JNMT";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -364,7 +364,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = CINEMO/CINEMO.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9ZXPC6JNMT;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -391,9 +394,6 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
-				DEVELOPMENT_TEAM = "9ZXPC6JNMT";
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 			};
 			name = Debug;
 		};
@@ -404,7 +404,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = CINEMO/CINEMO.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 9ZXPC6JNMT;
 				INFOPLIST_FILE = CINEMO/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -425,9 +428,6 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
-				DEVELOPMENT_TEAM = "9ZXPC6JNMT";
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 			};
 			name = Release;
 		};
@@ -495,7 +495,7 @@
 					"-DRCT_REMOVE_LEGACY_ARCH=1",
 				);
 				PODFILE_DIR = "$(SRCROOT)";
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/.pnpm/react-native@0.86.3_@babel+core@7.29.7_supports-color@8.1.1__@react-native+metro-config_1d6dcd1f85e0febfee7048ed36b91734/node_modules/react-native";
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/.pnpm/react-native@0.86.3_@babel+core@7.29.7_@react-native+metro-config@0.86.3_@babel+core@7._dcc1ba86c4f0f476b4029bc2604f6bbc/node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
 				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
@@ -559,7 +559,7 @@
 					"-DRCT_REMOVE_LEGACY_ARCH=1",
 				);
 				PODFILE_DIR = "$(SRCROOT)";
-				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/.pnpm/react-native@0.86.3_@babel+core@7.29.7_supports-color@8.1.1__@react-native+metro-config_1d6dcd1f85e0febfee7048ed36b91734/node_modules/react-native";
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/.pnpm/react-native@0.86.3_@babel+core@7.29.7_@react-native+metro-config@0.86.3_@babel+core@7._dcc1ba86c4f0f476b4029bc2604f6bbc/node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ENABLE_EXPLICIT_MODULES = NO;
 				USE_HERMES = true;

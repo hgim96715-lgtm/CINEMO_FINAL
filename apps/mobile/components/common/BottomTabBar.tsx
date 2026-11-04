@@ -4,13 +4,13 @@ import { router, useGlobalSearchParams, useSegments } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type TabKey = "lobby" | "search" | "postcards" | "my-cinema";
+type TabKey = "lobby" | "search" | "postcards" | "my-cinema" | "my-universe";
 
 const tabs: Array<{
   key: TabKey;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
-  route: "/lobby" | "/search" | "/postcards" | "/my-cinema";
+  route: "/lobby" | "/search" | "/postcards" | "/my-cinema" | "/my-universe";
 }> = [
   { key: "lobby", label: "홈", icon: "home-outline", route: "/lobby" },
   { key: "search", label: "검색", icon: "search-outline", route: "/search" },
@@ -25,6 +25,12 @@ const tabs: Array<{
     label: "내 시네마",
     icon: "person-outline",
     route: "/my-cinema",
+  },
+  {
+    key: "my-universe",
+    label: "내 우주",
+    icon: "planet-outline",
+    route: "/my-universe",
   },
 ];
 

@@ -16,13 +16,13 @@ import type { MovieSearchItemResponse } from "@cinemo/api-contract";
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { CinemoBackground } from "@/components/common/CinemoBackground";
 import { MovieListHeader } from "@/components/movies/MovieListHeader";
+import { PlatformLogo } from "@/components/common/PlatformLogo";
 import {
   MOBILE_PLATFORM_PROVIDERS,
   moviePlatformQueryOptions,
 } from "@/lib/queries/movie-platform.query";
 import { getImageUrl } from "@/lib/utils";
 
-const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w185";
 const GRID_HORIZONTAL_PADDING = 32;
 const GRID_GAP = 16;
 
@@ -97,8 +97,8 @@ export default function PlatformMoviesScreen() {
           ),
     [filter, movies],
   );
-  const isPending = providerQueries.every((query) => query.isPending);
-  const isError = providerQueries.some((query) => query.isError);
+  const isPending = providerQueries.some((query) => query.isPending);
+  const isError = providerQueries.every((query) => query.isError);
   const filterOptions = [
     { value: "ALL", label: "전체" },
     ...MOBILE_PLATFORM_PROVIDERS.map(({ provider, label }) => ({
@@ -163,6 +163,8 @@ export default function PlatformMoviesScreen() {
                     width: cardWidth,
                     aspectRatio: 2 / 3,
                     backgroundColor: CINEMO_COLORS.surface,
+                    borderWidth: 1,
+                    borderColor: "rgba(199,161,75,0.35)",
                   }}
                 >
                   {posterUrl ? (
@@ -174,35 +176,18 @@ export default function PlatformMoviesScreen() {
                     />
                   ) : null}
 
-                  <View className="absolute inset-x-2 top-2 flex-row flex-wrap gap-1.5">
-                    {item.providers.map((provider) =>
-                      provider.logoPath ? (
-                        <Image
-                          key={provider.provider}
-                          source={{
-                            uri: `${TMDB_IMAGE_BASE_URL}${provider.logoPath}`,
-                          }}
-                          resizeMode="contain"
-                          style={{
-                            width: 30,
-                            height: 30,
-                            borderRadius: 8,
-                            backgroundColor: "rgba(0,0,0,0.62)",
-                          }}
-                          accessibilityLabel={`${provider.label} 로고`}
-                        />
-                      ) : (
-                        <View
-                          key={provider.provider}
-                          className="rounded-lg bg-black/70 px-2 py-1"
-                        >
-                          <Text className="text-[9px] font-bold text-white">
-                            {provider.label}
-                          </Text>
-                        </View>
-                      ),
-                    )}
-                  </View>
+                </View>
+
+                <View className="mt-2 flex-row flex-wrap gap-1.5 self-start rounded-lg border border-white/10 bg-black/25 px-1.5 py-1">
+                  {item.providers.map((provider) => (
+                    <PlatformLogo
+                      key={provider.provider}
+                      provider={provider.provider}
+                      logoPath={provider.logoPath}
+                      size={30}
+                      accessibilityLabel={`${provider.label} 로고`}
+                    />
+                  ))}
                 </View>
 
                 <Text
@@ -211,13 +196,6 @@ export default function PlatformMoviesScreen() {
                   style={{ color: CINEMO_COLORS.textPrimary }}
                 >
                   {item.movie.title}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  className="mt-1 text-xs"
-                  style={{ color: CINEMO_COLORS.textSecondary }}
-                >
-                  {item.providers.map((provider) => provider.label).join(" · ")}
                 </Text>
               </Pressable>
             );
