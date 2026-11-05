@@ -30,8 +30,20 @@ import {
 
 export type CurationKind = "commemorative" | "upcoming" | "platform";
 
+type HeroMovieCandidate = Pick<MovieSearchItemResponse, "title" | "posterUrl">;
+
+const JAPANESE_SCRIPT_PATTERN = /[\u3040-\u30ff\uff66-\uff9f]/u;
+
+// 한국어 현지화가 없는 일본어 원제는 공개 로비 Hero 후보에서 제외함.
+const isPublicHeroMovie = (movie: HeroMovieCandidate) =>
+  Boolean(
+    movie.title?.trim() &&
+      movie.posterUrl &&
+      !JAPANESE_SCRIPT_PATTERN.test(movie.title),
+  );
+
 const getValidMovies = (movies: MovieSearchItemResponse[] | undefined) =>
-  (movies ?? []).filter((movie) => Boolean(movie.title && movie.posterUrl));
+  (movies ?? []).filter(isPublicHeroMovie);
 
 const pickRandomMovie = (movies: MovieSearchItemResponse[]) => {
   if (movies.length === 0) return undefined;
@@ -102,13 +114,16 @@ export function CurationHero({
     [upcomingQuery.data?.items],
   );
   const platformMovies = useMemo(
-    () => platformMoviesWithProviders.map(({ movie }) => movie),
+    () =>
+      platformMoviesWithProviders
+        .map(({ movie }) => movie)
+        .filter(isPublicHeroMovie),
     [platformMoviesWithProviders],
   );
   const commemorativeMovies = useMemo(() => {
     if (configuredCuration) {
       return configuredCuration.movies
-        .filter((movie) => Boolean(movie.title && movie.posterUrl))
+        .filter(isPublicHeroMovie)
         .map(toHeroMovie);
     }
 
@@ -118,7 +133,7 @@ export function CurationHero({
     const movieMap = new Map<string, MovieSearchItemResponse>();
 
     for (const movie of movies) {
-      if (movie.title && movie.posterUrl) {
+      if (isPublicHeroMovie(movie)) {
         movieMap.set(movie.id, movie);
       }
     }

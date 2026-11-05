@@ -1,27 +1,19 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
-import { router, usePathname } from "expo-router";
+import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  type LayoutChangeEvent,
   Modal,
+  PanResponder,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, {
-  Circle,
-  Defs,
-  Ellipse,
-  LinearGradient,
-  Line,
-  Path,
-  Stop,
-} from "react-native-svg";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Line } from "react-native-svg";
 
 import { CINEMO_COLORS } from "@cinemo/shared";
 import type { MyMovie } from "@/lib/api/my-cinema";
@@ -32,22 +24,27 @@ const spaceAmbient = require("@/assets/audio/space-ambient.mp3");
 type ExpoAudioApi = typeof import("expo-audio");
 
 let expoAudio: ExpoAudioApi | null = null;
-
 try {
   expoAudio = require("expo-audio") as ExpoAudioApi;
 } catch {
-  // Expo Go나 이전 개발 빌드처럼 ExpoAudio가 없는 환경에서도 화면은 표시해야 함.
+  // 이전 개발 빌드에서도 그래프 자체는 표시함.
 }
 
-const SPACE = "#020711";
-const FIELD = "#030a18";
+let activeAmbientPlayer: { pause: () => void } | null = null;
+
+const SPACE = "#020611";
+const CANVAS = "#030817";
 const GOLD = CINEMO_COLORS.accentLight;
 const IVORY = "#f8f2e8";
+const WORLD_WIDTH = 1800;
+const WORLD_HEIGHT = 1200;
+const MIN_SCALE = 0.12;
+const MAX_SCALE = 1.7;
 
 type StarNode = {
   movie: MyMovie;
-  left: number;
-  top: number;
+  x: number;
+  y: number;
   size: number;
 };
 
@@ -57,705 +54,487 @@ type StarLink = {
   color: string;
 };
 
-const GENRE_COLORS = [GOLD, "#9fc8ef", "#efb7c8", "#b8d8b0"];
+type Transform = { x: number; y: number; scale: number };
 
-function normalizeGenre(genre: string) {
+type GraphBounds = {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  width: number;
+  height: number;
+  centerX: number;
+  centerY: number;
+};
+
+function hash(value: string) {
+  let result = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    result ^= value.charCodeAt(index);
+    result = Math.imul(result, 16777619);
+  }
+  return result >>> 0;
+}
+
+function unit(value: string, salt: string) {
+  return hash(`${salt}:${value}`) / 0xffffffff;
+}
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
+function normalizedGenre(genre: string) {
   return genre.trim().replace(/\s+/g, " ");
 }
 
-function sharedNames(
-  first: MyMovie,
-  second: MyMovie,
-  relation: "directors" | "actors",
-) {
-  const secondIds = new Set((second[relation] ?? []).map((person) => person.id));
-
-  return (first[relation] ?? [])
-    .filter((person) => secondIds.has(person.id))
-    .map((person) => person.name);
+function sharedPeople(first: MyMovie, second: MyMovie, key: "directors" | "actors") {
+  const ids = new Set((second[key] ?? []).map((person) => person.id));
+  return (first[key] ?? []).filter((person) => ids.has(person.id));
 }
 
 function sharedGenres(first: MyMovie, second: MyMovie) {
-  const secondGenres = new Set(
-    (second.genres ?? []).map(normalizeGenre).filter(Boolean),
-  );
-
-  return (first.genres ?? [])
-    .map(normalizeGenre)
-    .filter((genre) => genre && secondGenres.has(genre));
+  const genres = new Set((second.genres ?? []).map(normalizedGenre).filter(Boolean));
+  return (first.genres ?? []).map(normalizedGenre).filter((genre) => genres.has(genre));
 }
 
-function linksCross(left: StarLink, right: StarLink) {
-  const cross = (
-    ax: number,
-    ay: number,
-    bx: number,
-    by: number,
-    cx: number,
-    cy: number,
-  ) => (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+function createStars(movies: MyMovie[]) {
+  const placed: StarNode[] = [];
 
-  const leftSideA = cross(
-    left.from.left,
-    left.from.top,
-    left.to.left,
-    left.to.top,
-    right.from.left,
-    right.from.top,
-  );
-  const leftSideB = cross(
-    left.from.left,
-    left.from.top,
-    left.to.left,
-    left.to.top,
-    right.to.left,
-    right.to.top,
-  );
-  const rightSideA = cross(
-    right.from.left,
-    right.from.top,
-    right.to.left,
-    right.to.top,
-    left.from.left,
-    left.from.top,
-  );
-  const rightSideB = cross(
-    right.from.left,
-    right.from.top,
-    right.to.left,
-    right.to.top,
-    left.to.left,
-    left.to.top,
-  );
+  for (const movie of movies) {
+    let x = 140 + unit(movie.movieId, "x") * (WORLD_WIDTH - 280);
+    let y = 130 + unit(movie.movieId, "y") * (WORLD_HEIGHT - 260);
 
-  return leftSideA * leftSideB < 0 && rightSideA * rightSideB < 0;
+    // 같은 데이터면 같은 좌표를 쓰되, 겹치는 별만 최소한으로 밀어냄.
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const overlap = placed.some((star) => Math.hypot(star.x - x, star.y - y) < 112);
+      if (!overlap) break;
+      const angle = unit(movie.movieId, `angle-${attempt}`) * Math.PI * 2;
+      x = clamp(x + Math.cos(angle) * 126, 100, WORLD_WIDTH - 100);
+      y = clamp(y + Math.sin(angle) * 126, 100, WORLD_HEIGHT - 100);
+    }
+
+    placed.push({ movie, x, y, size: movie.isFavorite ? 28 : 22 });
+  }
+
+  return placed;
 }
 
-function createStars(movies: MyMovie[]): StarNode[] {
-  return movies.map((movie, index) => {
-    const angle = index * 2.399963;
-    const radius = 12 + (index % 10) * 6.5;
-
-    return {
-      movie,
-      left: Math.max(4, Math.min(96, 50 + Math.cos(angle) * radius)),
-      top: Math.max(8, Math.min(92, 44 + Math.sin(angle) * radius * 0.72)),
-      size: movie.isFavorite ? 6 : 4,
-    };
-  });
+function segmentsCross(first: StarLink, second: StarLink) {
+  const cross = (a: number, b: number, c: number, d: number, e: number, f: number) =>
+    (c - a) * (f - b) - (d - b) * (e - a);
+  const a = cross(first.from.x, first.from.y, first.to.x, first.to.y, second.from.x, second.from.y);
+  const b = cross(first.from.x, first.from.y, first.to.x, first.to.y, second.to.x, second.to.y);
+  const c = cross(second.from.x, second.from.y, second.to.x, second.to.y, first.from.x, first.from.y);
+  const d = cross(second.from.x, second.from.y, second.to.x, second.to.y, first.to.x, first.to.y);
+  return a * b < 0 && c * d < 0;
 }
 
-/**
- * 영화 1편은 별 1개로 유지하고, 공통 감독·출연진·장르가 있을 때만 별을 연결함.
- * 같은 감독이 가장 강한 관계이고, 출연진과 장르는 그 다음 보조 관계임.
- */
 function createStarMap(movies: MyMovie[]) {
   const stars = createStars(movies);
-  const starsByMovieId = new Map(
-    stars.map((star) => [star.movie.movieId, star]),
-  );
-  const candidates: Array<
-    StarLink & {
-      score: number;
-    }
-  > = [];
+  const starById = new Map(stars.map((star) => [star.movie.movieId, star]));
+  const candidates: Array<StarLink & { score: number }> = [];
 
-  for (let firstIndex = 0; firstIndex < movies.length; firstIndex += 1) {
-    for (let secondIndex = firstIndex + 1; secondIndex < movies.length; secondIndex += 1) {
-      const first = movies[firstIndex];
-      const second = movies[secondIndex];
-      const from = starsByMovieId.get(first.movieId);
-      const to = starsByMovieId.get(second.movieId);
+  for (let left = 0; left < movies.length; left += 1) {
+    for (let right = left + 1; right < movies.length; right += 1) {
+      const first = movies[left];
+      const second = movies[right];
+      const from = starById.get(first.movieId);
+      const to = starById.get(second.movieId);
       if (!from || !to) continue;
 
-      const directors = sharedNames(first, second, "directors");
-      const actors = sharedNames(first, second, "actors");
+      const directors = sharedPeople(first, second, "directors");
+      const actors = sharedPeople(first, second, "actors");
       const genres = sharedGenres(first, second);
-      if (directors.length === 0 && actors.length === 0 && genres.length === 0) {
-        continue;
-      }
+      if (!directors.length && !actors.length && !genres.length) continue;
 
-      const distance = Math.hypot(from.left - to.left, from.top - to.top);
-      const color = directors.length > 0
-        ? GOLD
-        : actors.length > 0
-          ? "#9fc8ef"
-          : GENRE_COLORS[(firstIndex + secondIndex) % GENRE_COLORS.length];
-
+      const distance = Math.hypot(from.x - to.x, from.y - to.y);
       candidates.push({
         from,
         to,
-        color,
-        score:
-          directors.length * 2400 +
-          actors.length * 750 +
-          genres.length * 160 -
-          distance,
+        color: directors.length ? "#d9bd70" : actors.length ? "#7193bf" : "#626d96",
+        score: directors.length * 2600 + actors.length * 750 + genres.length * 120 - distance * 0.16,
       });
     }
   }
 
-  // 감독 → 출연진 → 장르 순으로 의미 있는 관계를 먼저 연결함.
-  // 교차 선과 과도한 연결은 제한해 별자리의 형태를 유지함.
   candidates.sort((left, right) => right.score - left.score);
-  const degree = new Map<string, number>();
-  const links = new Map<string, StarLink>();
+  const degrees = new Map<string, number>();
+  const links: StarLink[] = [];
 
   for (const candidate of candidates) {
     const fromId = candidate.from.movie.movieId;
     const toId = candidate.to.movie.movieId;
-    if ((degree.get(fromId) ?? 0) >= 3 || (degree.get(toId) ?? 0) >= 3) continue;
+    if ((degrees.get(fromId) ?? 0) >= 3 || (degrees.get(toId) ?? 0) >= 3) continue;
+    if (links.some((link) => segmentsCross(link, candidate))) continue;
 
-    const key = [fromId, toId].sort().join(":");
-    if (links.has(key)) continue;
-
-    const link = {
-      from: candidate.from,
-      to: candidate.to,
-      color: candidate.color,
-    } satisfies StarLink;
-    if (Array.from(links.values()).some((existing) => linksCross(existing, link))) {
-      continue;
-    }
-
-    links.set(key, link);
-    degree.set(fromId, (degree.get(fromId) ?? 0) + 1);
-    degree.set(toId, (degree.get(toId) ?? 0) + 1);
+    links.push(candidate);
+    degrees.set(fromId, (degrees.get(fromId) ?? 0) + 1);
+    degrees.set(toId, (degrees.get(toId) ?? 0) + 1);
   }
 
-  return { links: Array.from(links.values()), stars };
+  return { stars, links };
+}
+
+function getGraphBounds(stars: StarNode[]): GraphBounds {
+  if (!stars.length) {
+    return {
+      left: 0,
+      right: WORLD_WIDTH,
+      top: 0,
+      bottom: WORLD_HEIGHT,
+      width: WORLD_WIDTH,
+      height: WORLD_HEIGHT,
+      centerX: WORLD_WIDTH / 2,
+      centerY: WORLD_HEIGHT / 2,
+    };
+  }
+
+  const padding = 150;
+  const left = Math.max(0, Math.min(...stars.map((star) => star.x - padding)));
+  const right = Math.min(WORLD_WIDTH, Math.max(...stars.map((star) => star.x + padding)));
+  const top = Math.max(0, Math.min(...stars.map((star) => star.y - padding)));
+  const bottom = Math.min(WORLD_HEIGHT, Math.max(...stars.map((star) => star.y + padding)));
+
+  return {
+    left,
+    right,
+    top,
+    bottom,
+    width: right - left,
+    height: bottom - top,
+    centerX: (left + right) / 2,
+    centerY: (top + bottom) / 2,
+  };
 }
 
 function SpaceAudio({ muted }: { muted: boolean }) {
   if (!expoAudio) return null;
-
   return <SpaceAudioPlayer audio={expoAudio} muted={muted} />;
 }
 
 function SpaceAudioPlayer({ audio, muted }: { audio: ExpoAudioApi; muted: boolean }) {
   const player = audio.useAudioPlayer(spaceAmbient, { updateInterval: 500 });
-  const audioSessionReady = useRef(false);
-  const mutedRef = useRef(muted);
 
   useEffect(() => {
-    mutedRef.current = muted;
-  }, [muted]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const startAmbientSound = async () => {
+    let disposed = false;
+    const sync = async () => {
       try {
-        // iOS 무음 모드에서도 재생되도록 세션 설정을 먼저 완료해야 함.
         await audio.setAudioModeAsync({ playsInSilentMode: true });
-
-        if (cancelled) return;
+        if (disposed) return;
 
         player.loop = true;
-        player.volume = 0.2;
-        player.muted = mutedRef.current;
+        player.volume = 0.16;
+        player.muted = muted;
 
-        if (!mutedRef.current) {
-          player.play();
+        if (muted) {
+          try {
+            player.pause();
+          } catch {}
+          if (activeAmbientPlayer === player) activeAmbientPlayer = null;
+          return;
         }
-        audioSessionReady.current = true;
-      } catch (error) {
-        audioSessionReady.current = false;
-        console.warn("우주 소리 재생을 시작하지 못함", error);
+
+        if (activeAmbientPlayer && activeAmbientPlayer !== player) {
+          try {
+            activeAmbientPlayer.pause();
+          } catch {}
+        }
+        activeAmbientPlayer = player;
+        player.play();
+      } catch {
+        // 오디오 네이티브 모듈이 없는 개발 빌드는 무음으로 계속 사용함.
       }
     };
-
-    void startAmbientSound();
+    void sync();
 
     return () => {
-      cancelled = true;
-      audioSessionReady.current = false;
-
-      // 상세 페이지로 이동할 때 기존 네이티브 플레이어를 멈추지 않으면
-      // 내 우주로 돌아왔을 때 이전 인스턴스와 새 인스턴스가 겹쳐 재생됨.
-      // 이미 네이티브 객체가 해제된 경우 pause/muted가 예외를 던질 수 있어
-      // 정리 단계에서는 안전하게 무시함.
-      try {
-        player.muted = true;
-      } catch {
-        // ExpoAudio가 이미 플레이어 객체를 해제한 경우
-      }
-      try {
-        player.pause();
-      } catch {
-        // ExpoAudio가 이미 플레이어 객체를 해제한 경우
-      }
-      try {
-        player.remove();
-      } catch {
-        // ExpoAudio가 이미 플레이어 객체를 해제한 경우
+      disposed = true;
+      if (activeAmbientPlayer === player) {
+        try {
+          player.pause();
+        } catch {}
+        activeAmbientPlayer = null;
       }
     };
-  }, [audio, player]);
-
-  useEffect(() => {
-    if (!audioSessionReady.current) return;
-
-    try {
-      player.muted = muted;
-      if (muted) {
-        player.pause();
-      } else {
-        player.play();
-      }
-    } catch (error) {
-      // 화면 전환이나 Fast Refresh 중 네이티브 플레이어가 먼저 폐기될 수 있음.
-      // 이 경우 JS에서 다시 조작하지 않고 다음 마운트에서 새 플레이어를 만듦.
-      audioSessionReady.current = false;
-      console.warn("우주 소리 상태를 변경하지 못함", error);
-    }
-  }, [muted, player]);
+  }, [audio, muted, player]);
 
   return null;
 }
 
-function Observer({ onInspect }: { onInspect: () => void }) {
-  return (
-    <View pointerEvents="box-none" style={styles.observerWrap}>
-      <Svg
-        accessibilityLabel="현미경으로 별을 관측하는 관찰자"
-        height="100%"
-        viewBox="0 0 360 220"
-        width="100%"
-      >
-        <Defs>
-          <LinearGradient id="body" x1="0" x2="1" y1="0" y2="1">
-            <Stop offset="0" stopColor="#263f66" />
-            <Stop offset="1" stopColor="#0b1b34" />
-          </LinearGradient>
-          <LinearGradient id="metal" x1="0" x2="1" y1="0" y2="1">
-            <Stop offset="0" stopColor="#f1d58a" />
-            <Stop offset="1" stopColor="#9f7738" />
-          </LinearGradient>
-        </Defs>
-        <Ellipse cx="180" cy="207" fill="#01040b" opacity="0.82" rx="140" ry="6" />
-        <Path d="M72 198c0-34 20-61 52-61s52 27 52 61Z" fill="url(#body)" stroke="#91a8c6" strokeOpacity="0.55" />
-        <Circle cx="124" cy="101" fill="#263f66" r="38" stroke="#b5d3e8" strokeOpacity="0.8" strokeWidth="2" />
-        <Path d="M90 102c3-20 16-31 34-31 17 0 30 11 34 30-16 12-51 13-68 1Z" fill="#07152b" stroke="#87a8d2" strokeOpacity="0.5" strokeWidth="2" />
-        <Path d="M102 83c10-6 24-6 35 0" fill="none" stroke="#e2c886" strokeOpacity="0.6" strokeLinecap="round" strokeWidth="2" />
-        <Circle cx="145" cy="95" fill="#f5d68f" r="4" />
-        <Path d="M157 154c15-7 28-13 38-26" fill="none" stroke="#31547c" strokeLinecap="round" strokeWidth="11" />
-        <Circle cx="195" cy="127" fill="#b5d3e8" r="7" stroke="#d5b36d" strokeWidth="2" />
-        <Circle cx="124" cy="138" fill="#d5b36d" opacity="0.9" r="6" />
-        <Path d="M174 198h124" stroke="url(#metal)" strokeLinecap="round" strokeWidth="10" />
-        <Path d="M248 194V94" stroke="url(#metal)" strokeLinecap="round" strokeWidth="10" />
-        <Path d="M248 101c-20 7-35 1-40-16-4-13 2-27 14-38" fill="none" stroke="url(#metal)" strokeLinecap="round" strokeWidth="11" />
-        <Path d="m217 46 28-14" stroke="#f0d58c" strokeLinecap="round" strokeWidth="12" />
-        <Path d="m208 45-10-9" stroke="#b58b45" strokeLinecap="round" strokeWidth="8" />
-        <Path d="M245 91h-28" stroke="#d5b36d" strokeLinecap="round" strokeWidth="7" />
-        <Circle cx="203" cy="93" fill="#0b1d35" r="12" stroke="#d5b36d" strokeWidth="3" />
-        <Path d="M225 124h32M218 145h44" stroke="#91a7c5" strokeLinecap="round" strokeWidth="4" />
-        <Circle cx="248" cy="198" fill="#f5d68f" r="6" />
-      </Svg>
-      <Pressable accessibilityLabel="현미경으로 별자리 보기" onPress={onInspect} style={styles.observerHitArea} />
-    </View>
-  );
-}
-
-function MicroscopeModal({
-  movie,
-  onClose,
-  onMovieDetail,
-  onNavigate,
-}: {
-  movie: MyMovie | null;
-  onClose: () => void;
-  onMovieDetail: () => void;
-  onNavigate: (direction: -1 | 1) => void;
-}) {
-  const insets = useSafeAreaInsets();
+function MovieModal({ movie, onClose }: { movie: MyMovie | null; onClose: () => void }) {
   if (!movie) return null;
 
   return (
-    <Modal animationType="fade" onRequestClose={onClose} transparent>
+    <Modal animationType="fade" transparent visible onRequestClose={onClose}>
       <View style={styles.modalBackdrop}>
-        <SafeAreaView
-          edges={[]}
-          style={[
-            styles.modalSafeArea,
-            {
-              paddingBottom: Math.max(insets.bottom, 12),
-              paddingTop: insets.top + 4,
-            },
-          ]}
-        >
-          <View style={styles.modalTopBar}>
-            <Text style={styles.modalEyebrow}>THROUGH THE MICROSCOPE</Text>
-            <Pressable accessibilityLabel="현미경 닫기" hitSlop={8} onPress={onClose} style={styles.modalCloseButton}>
-              <Ionicons color={IVORY} name="close" size={28} />
-            </Pressable>
-          </View>
-          <Text style={styles.modalTitle}>영화의 별</Text>
-          <Text style={styles.modalDescription}>밤하늘에 남은 하나의 빛</Text>
-          <View style={styles.observationSpace}>
-            <Svg height="100%" viewBox="0 0 390 320" width="100%">
-              <Circle cx="18" cy="38" fill="#fff9df" opacity="0.65" r="1.4" />
-              <Circle cx="62" cy="238" fill="#fff9df" opacity="0.42" r="1.2" />
-              <Circle cx="184" cy="42" fill="#fff9df" opacity="0.5" r="1.2" />
-              <Circle cx="229" cy="276" fill="#fff9df" opacity="0.56" r="1.5" />
-              <Circle cx="354" cy="66" fill="#fff9df" opacity="0.45" r="1.2" />
-              <Circle cx="370" cy="246" fill="#fff9df" opacity="0.6" r="1.3" />
-              <Circle cx="195" cy="160" fill="#fff7d9" r="6" />
-              <Circle cx="195" cy="160" fill="none" opacity="0.2" r="16" stroke="#fff7d9" strokeWidth="1" />
-              <Circle cx="96" cy="88" fill="#b8d1ec" opacity="0.7" r="1.4" />
-              <Circle cx="126" cy="226" fill="#b8d1ec" opacity="0.55" r="1.2" />
-              <Circle cx="281" cy="92" fill="#b8d1ec" opacity="0.65" r="1.3" />
-              <Circle cx="318" cy="214" fill="#b8d1ec" opacity="0.58" r="1.5" />
-              <Circle cx="238" cy="54" fill="#fff9df" opacity="0.5" r="1.1" />
-            </Svg>
-            <View pointerEvents="none" style={styles.selectedMovieMeta}>
-              <Text numberOfLines={1} style={styles.selectedMovieTitle}>{movie.title}</Text>
-            </View>
-            <Pressable
-              accessibilityLabel="이전 영화"
-              hitSlop={8}
-              onPress={() => onNavigate(-1)}
-              style={[styles.navArrow, styles.navArrowLeft]}
-            >
-              <Ionicons color={IVORY} name="arrow-back" size={22} />
-            </Pressable>
-            <Pressable
-              accessibilityLabel="다음 영화"
-              hitSlop={8}
-              onPress={() => onNavigate(1)}
-              style={[styles.navArrow, styles.navArrowRight]}
-            >
-              <Ionicons color={IVORY} name="arrow-forward" size={22} />
-            </Pressable>
-            <Pressable
-              accessibilityLabel="이전 영화 위로 이동"
-              hitSlop={8}
-              onPress={() => onNavigate(-1)}
-              style={[styles.navArrow, styles.navArrowUp]}
-            >
-              <Ionicons color={IVORY} name="arrow-up" size={22} />
-            </Pressable>
-            <Pressable
-              accessibilityLabel="다음 영화 아래로 이동"
-              hitSlop={8}
-              onPress={() => onNavigate(1)}
-              style={[styles.navArrow, styles.navArrowDown]}
-            >
-              <Ionicons color={IVORY} name="arrow-down" size={22} />
-            </Pressable>
-          </View>
+        <View style={styles.modalCard}>
+          <Pressable accessibilityLabel="닫기" hitSlop={12} onPress={onClose} style={styles.modalClose}>
+            <Ionicons color={IVORY} name="close" size={26} />
+          </Pressable>
+          <Text style={styles.modalEyebrow}>CINEMO UNIVERSE</Text>
+          <View style={styles.modalStar} />
+          <Text style={styles.modalTitle}>{movie.title}</Text>
           <Pressable
-            accessibilityLabel={`${movie.title} 영화 상세 보기`}
-            accessibilityRole="button"
-            onPress={onMovieDetail}
+            onPress={() => {
+              onClose();
+              router.push(`/movies/${movie.movieId}`);
+            }}
             style={styles.detailButton}
           >
             <Text style={styles.detailButtonText}>영화 상세 보기</Text>
-            <Ionicons color={SPACE} name="arrow-forward" size={20} style={{ marginLeft: 8 }} />
+            <Ionicons color={SPACE} name="arrow-forward" size={20} />
           </Pressable>
-        </SafeAreaView>
+        </View>
       </View>
     </Modal>
   );
 }
 
-function Star({ node, onPress }: { node: StarNode; onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityLabel={`${node.movie.title} 영화 별 보기`}
-      accessibilityRole="button"
-      hitSlop={10}
-      onPress={onPress}
-      style={[
-        styles.star,
-        {
-          backgroundColor: node.movie.isFavorite ? GOLD : "#fff9df",
-          height: node.size,
-          left: `${node.left}%`,
-          shadowColor: GOLD,
-          shadowOpacity: node.movie.isFavorite ? 0.75 : 0.38,
-          shadowRadius: node.movie.isFavorite ? 8 : 4,
-          top: `${node.top}%`,
-          width: node.size,
-        },
-      ]}
-    />
-  );
-}
-
 export default function MyUniverseScreen() {
-  const pathname = usePathname();
-  const { height: viewportHeight, width: viewportWidth } = useWindowDimensions();
+  const [selectedMovie, setSelectedMovie] = useState<MyMovie | null>(null);
+  const [muted, setMuted] = useState(false);
+  const [transform, setTransform] = useState<Transform>({ x: 0, y: 0, scale: 1 });
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+  const transformRef = useRef(transform);
+  const gestureRef = useRef({ distance: 0, transform });
   const moviesQuery = useQuery(myMoviesQueryOptions());
-  const movies = useMemo(
+  const watchedMovies = useMemo(
     () => (moviesQuery.data ?? []).filter((movie) => movie.isWatched),
     [moviesQuery.data],
   );
-  const [selectedMovie, setSelectedMovie] = useState<MyMovie | null>(null);
-  const [selectedMovieIndex, setSelectedMovieIndex] = useState(0);
-  const [isSpaceSoundMuted, setIsSpaceSoundMuted] = useState(false);
-  const horizontalScrollRef = useRef<ScrollView | null>(null);
-  const verticalScrollRef = useRef<ScrollView | null>(null);
-  const isUniverseRoute = pathname === "/my-universe";
-  const universeScale = Math.max(
-    1,
-    Math.ceil(Math.sqrt(Math.max(movies.length, 1) / 8)),
+  const graph = useMemo(() => createStarMap(watchedMovies), [watchedMovies]);
+  const graphBounds = useMemo(() => getGraphBounds(graph.stars), [graph.stars]);
+  const signature = useMemo(
+    () => watchedMovies.map((movie) => movie.movieId).sort().join(":"),
+    [watchedMovies],
   );
-  const canvasWidth = Math.max(viewportWidth * 2.4, 1000 * universeScale);
-  const canvasHeight = Math.max(viewportHeight * 1.7, 1200 * universeScale);
-  const starMap = useMemo(() => createStarMap(movies), [movies]);
-  const { links, stars } = starMap;
+  const canvasReady = canvasSize.width > 0 && canvasSize.height > 0;
+
+  const handleCanvasLayout = (event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    setCanvasSize((current) =>
+      current.width === width && current.height === height ? current : { width, height },
+    );
+  };
+
+  const updateTransform = (next: Transform) => {
+    if (!canvasReady) return;
+    const scale = clamp(next.scale, MIN_SCALE, MAX_SCALE);
+    const scaledWidth = graphBounds.width * scale;
+    const scaledHeight = graphBounds.height * scale;
+    const centeredX = canvasSize.width / 2 - graphBounds.centerX * scale;
+    const centeredY = canvasSize.height / 2 - graphBounds.centerY * scale;
+    const minX =
+      scaledWidth <= canvasSize.width - 80
+        ? centeredX
+        : canvasSize.width - 40 - graphBounds.right * scale;
+    const maxX =
+      scaledWidth <= canvasSize.width - 80
+        ? centeredX
+        : 40 - graphBounds.left * scale;
+    const minY =
+      scaledHeight <= canvasSize.height - 160
+        ? centeredY
+        : canvasSize.height - 80 - graphBounds.bottom * scale;
+    const maxY =
+      scaledHeight <= canvasSize.height - 160
+        ? centeredY
+        : 80 - graphBounds.top * scale;
+    const safe = {
+      scale,
+      x: clamp(next.x, minX, maxX),
+      y: clamp(next.y, minY, maxY),
+    };
+    transformRef.current = safe;
+    setTransform(safe);
+  };
+
+  const resetUniverse = () => {
+    if (!canvasReady) return;
+    const scale = clamp(
+      Math.min(
+        (canvasSize.width - 72) / graphBounds.width,
+        (canvasSize.height - 160) / graphBounds.height,
+      ),
+      MIN_SCALE,
+      0.82,
+    );
+    updateTransform({
+      scale,
+      x: canvasSize.width / 2 - graphBounds.centerX * scale,
+      y: canvasSize.height / 2 - graphBounds.centerY * scale,
+    });
+  };
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      horizontalScrollRef.current?.scrollTo({
-        animated: false,
-        x: Math.max(0, (canvasWidth - viewportWidth) / 2),
-      });
-      verticalScrollRef.current?.scrollTo({
-        animated: false,
-        y: Math.max(0, (canvasHeight - Math.max(viewportHeight - 68, 0)) / 2),
-      });
-    });
+    resetUniverse();
+    // 관람 목록 또는 화면 크기가 바뀔 때만 전체 우주를 다시 맞춤.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasReady, canvasSize.height, canvasSize.width, graphBounds, signature]);
 
-    return () => cancelAnimationFrame(frame);
-  }, [canvasHeight, canvasWidth, viewportHeight, viewportWidth]);
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) =>
+          Math.abs(gesture.dx) > 5 || Math.abs(gesture.dy) > 5 || gesture.numberActiveTouches > 1,
+        onPanResponderGrant: (event) => {
+          const touches = event.nativeEvent.touches;
+          const distance = touches.length > 1
+            ? Math.hypot(touches[1].locationX - touches[0].locationX, touches[1].locationY - touches[0].locationY)
+            : 0;
+          gestureRef.current = { distance, transform: transformRef.current };
+        },
+        onPanResponderMove: (event, gesture) => {
+          const touches = event.nativeEvent.touches;
+          const start = gestureRef.current;
+          if (touches.length > 1 && start.distance > 0) {
+            const distance = Math.hypot(touches[1].locationX - touches[0].locationX, touches[1].locationY - touches[0].locationY);
+            const scale = start.transform.scale * (distance / start.distance);
+            const focusX = (touches[0].locationX + touches[1].locationX) / 2;
+            const focusY = (touches[0].locationY + touches[1].locationY) / 2;
+            const worldX = (focusX - start.transform.x) / start.transform.scale;
+            const worldY = (focusY - start.transform.y) / start.transform.scale;
+            updateTransform({ x: focusX - worldX * scale, y: focusY - worldY * scale, scale });
+            return;
+          }
+          updateTransform({
+            scale: start.transform.scale,
+            x: start.transform.x + gesture.dx,
+            y: start.transform.y + gesture.dy,
+          });
+        },
+      }),
+    [canvasReady, canvasSize.height, canvasSize.width, graphBounds],
+  );
 
-  const selectMovie = (movie: MyMovie, index: number) => {
-    setSelectedMovie(movie);
-    setSelectedMovieIndex(index);
-  };
-
-  const navigateMovie = (direction: -1 | 1) => {
-    if (movies.length < 2) return;
-    const nextIndex = (selectedMovieIndex + direction + movies.length) % movies.length;
-    selectMovie(movies[nextIndex], nextIndex);
-  };
-
-  const openMovieDetail = () => {
-    if (!selectedMovie) return;
-
-    const movieId = selectedMovie.movieId;
-    setSelectedMovie(null);
-    setIsSpaceSoundMuted(true);
-    router.push(`/movies/${movieId}`);
+  const changeScale = (amount: number) => {
+    if (!canvasReady) return;
+    const current = transformRef.current;
+    const scale = clamp(current.scale + amount, MIN_SCALE, MAX_SCALE);
+    const centerX = canvasSize.width / 2;
+    const centerY = canvasSize.height / 2;
+    const worldX = (centerX - current.x) / current.scale;
+    const worldY = (centerY - current.y) / current.scale;
+    updateTransform({ scale, x: centerX - worldX * scale, y: centerY - worldY * scale });
   };
 
   return (
-    <View style={styles.screen}>
-      <SafeAreaView edges={["top"]} style={styles.pageHeader}>
+    <SafeAreaView edges={["top"]} style={styles.safeArea}>
+      <SpaceAudio muted={muted} />
+      <View {...panResponder.panHandlers} onLayout={handleCanvasLayout} style={styles.canvas}>
         <Pressable
-          accessibilityLabel={isSpaceSoundMuted ? "우주 소리 켜기" : "우주 소리 음소거"}
-          accessibilityRole="button"
-          accessibilityState={{ checked: isSpaceSoundMuted }}
-          hitSlop={8}
-          onPress={() => setIsSpaceSoundMuted((muted) => !muted)}
+          accessibilityLabel={muted ? "우주 소리 켜기" : "우주 소리 끄기"}
+          onPress={() => setMuted((value) => !value)}
           style={styles.soundButton}
         >
-          <Ionicons
-            color={GOLD}
-            name={isSpaceSoundMuted ? "volume-mute-outline" : "volume-high-outline"}
-            size={24}
-          />
+          <Ionicons color={GOLD} name={muted ? "volume-mute-outline" : "volume-high-outline"} size={22} />
         </Pressable>
-      </SafeAreaView>
-      <SpaceAudio muted={isSpaceSoundMuted || !isUniverseRoute} />
-      <View style={styles.universeViewport}>
-        <ScrollView
-          ref={horizontalScrollRef}
-          bounces
-          contentContainerStyle={{ width: canvasWidth }}
-          directionalLockEnabled
-          horizontal
-          nestedScrollEnabled
-          showsHorizontalScrollIndicator={false}
-          style={styles.universeHorizontalScroll}
-        >
-          <ScrollView
-            ref={verticalScrollRef}
-            bounces
-            contentContainerStyle={{ height: canvasHeight }}
-            nestedScrollEnabled
-            showsVerticalScrollIndicator={false}
-            style={{ width: canvasWidth }}
-          >
-            <View style={[styles.universeCanvas, { height: canvasHeight, width: canvasWidth }]}>
-        <Svg pointerEvents="none" style={styles.planetLayer} viewBox="0 0 100 100">
-          <Defs>
-            <LinearGradient id="ambientPlanetBlue" x1="0" x2="1" y1="0" y2="1">
-              <Stop offset="0" stopColor="#6f9bd0" stopOpacity="0.2" />
-              <Stop offset="1" stopColor="#172b51" stopOpacity="0.02" />
-            </LinearGradient>
-            <LinearGradient id="ambientPlanetGold" x1="0" x2="1" y1="0" y2="1">
-              <Stop offset="0" stopColor="#d5b36d" stopOpacity="0.14" />
-              <Stop offset="1" stopColor="#182b4b" stopOpacity="0.02" />
-            </LinearGradient>
-          </Defs>
-          <Circle cx="8" cy="22" fill="url(#ambientPlanetBlue)" opacity="0.8" r="12" />
-          <Ellipse
-            cx="8"
-            cy="22"
-            fill="none"
-            opacity="0.45"
-            rx="17"
-            ry="4"
-            rotation="-18"
-            stroke="#9fc8ef"
-            strokeOpacity="0.16"
-            strokeWidth="0.5"
-          />
-          <Circle cx="91" cy="54" fill="url(#ambientPlanetGold)" opacity="0.75" r="16" />
-          <Ellipse
-            cx="91"
-            cy="54"
-            fill="none"
-            opacity="0.4"
-            rx="22"
-            ry="5"
-            rotation="-18"
-            stroke="#d5b36d"
-            strokeOpacity="0.14"
-            strokeWidth="0.5"
-          />
-        </Svg>
-        <Svg
-          pointerEvents="none"
-          preserveAspectRatio="none"
-          style={styles.connectionLayer}
-          viewBox="0 0 100 100"
-        >
-          {links.map((link) => (
-            <Line
-              key={`${link.from.movie.movieId}-${link.to.movie.movieId}`}
-              x1={link.from.left}
-              y1={link.from.top}
-              x2={link.to.left}
-              y2={link.to.top}
-              stroke={link.color}
-              strokeOpacity={0.58}
-              strokeWidth={0.28}
-            />
-          ))}
-        </Svg>
-        {stars.map((node) => {
-          const movieIndex = movies.findIndex(
-            ({ movieId }) => movieId === node.movie.movieId,
-          );
-
-          return (
-            <Star
-              key={node.movie.movieId}
-              node={node}
-              onPress={() => {
-                if (movieIndex >= 0) selectMovie(node.movie, movieIndex);
-              }}
-            />
-          );
-        })}
-        {moviesQuery.isPending && (
-          <View style={styles.statusMessage}>
+        {!canvasReady || moviesQuery.isLoading ? (
+          <View style={styles.loadingState}>
             <ActivityIndicator color={GOLD} />
-            <Text style={styles.statusText}>우주를 불러오는 중...</Text>
+          </View>
+        ) : watchedMovies.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons color={GOLD} name="sparkles-outline" size={28} />
+            <Text style={styles.emptyTitle}>관람 기록이 아직 없음</Text>
+            <Text style={styles.emptyCopy}>영화를 기록하면 이곳에 별이 생김</Text>
+          </View>
+        ) : (
+          <View
+            pointerEvents="box-none"
+            style={[
+              styles.world,
+              {
+                transform: [
+                  { translateX: transform.x },
+                  { translateY: transform.y },
+                  { scale: transform.scale },
+                ],
+              },
+            ]}
+          >
+            <Svg height={WORLD_HEIGHT} style={StyleSheet.absoluteFill} width={WORLD_WIDTH}>
+              {graph.links.map((link) => (
+                <Line
+                  key={`${link.from.movie.movieId}-${link.to.movie.movieId}`}
+                  opacity={0.64}
+                  stroke={link.color}
+                  strokeWidth={2.4}
+                  x1={link.from.x}
+                  x2={link.to.x}
+                  y1={link.from.y}
+                  y2={link.to.y}
+                />
+              ))}
+            </Svg>
+            {graph.stars.map((star) => (
+              <Pressable
+                accessibilityLabel={`${star.movie.title} 상세 보기`}
+                disabled={transform.scale < 0.56}
+                key={star.movie.movieId}
+                onPress={() => setSelectedMovie(star.movie)}
+                style={[
+                  styles.starTouch,
+                  { left: star.x - 42, top: star.y - 42 },
+                ]}
+              >
+                <View style={[styles.starGlow, { width: star.size + 18, height: star.size + 18, borderRadius: 40 }]}>
+                  <View style={[styles.star, { width: star.size, height: star.size, borderRadius: star.size }]} />
+                </View>
+                {transform.scale >= 0.56 ? <Text numberOfLines={1} style={styles.starLabel}>{star.movie.title}</Text> : null}
+              </Pressable>
+            ))}
           </View>
         )}
-        {!moviesQuery.isPending && movies.length === 0 && (
-          <View style={styles.statusMessage}>
-            <Text style={styles.statusTitle}>아직 별이 없음</Text>
-            <Text style={styles.statusText}>영화를 기록하면 작은 별이 생김</Text>
-          </View>
-        )}
+
+        {canvasReady && watchedMovies.length > 0 ? (
+          <View pointerEvents="box-none" style={styles.controls}>
+            <View style={styles.zoomControl}>
+              <Pressable accessibilityLabel="축소" hitSlop={8} onPress={() => changeScale(-0.14)} style={styles.zoomButton}>
+                <Ionicons color={IVORY} name="remove" size={20} />
+              </Pressable>
+              <Text style={styles.zoomText}>{Math.round(transform.scale * 100)}%</Text>
+              <Pressable accessibilityLabel="확대" hitSlop={8} onPress={() => changeScale(0.14)} style={styles.zoomButton}>
+                <Ionicons color={IVORY} name="add" size={20} />
+              </Pressable>
+              <Pressable accessibilityLabel="전체 보기" hitSlop={8} onPress={resetUniverse} style={styles.zoomButton}>
+                <Ionicons color={GOLD} name="scan-outline" size={18} />
+              </Pressable>
             </View>
-          </ScrollView>
-        </ScrollView>
-        <View pointerEvents="box-none" style={styles.observerOverlay}>
-          <Observer onInspect={() => movies[0] && selectMovie(movies[0], 0)} />
-        </View>
+          </View>
+        ) : null}
       </View>
-      <MicroscopeModal
-        movie={selectedMovie}
-        onClose={() => setSelectedMovie(null)}
-        onMovieDetail={openMovieDetail}
-        onNavigate={navigateMovie}
-      />
-    </View>
+
+      <MovieModal movie={selectedMovie} onClose={() => setSelectedMovie(null)} />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { backgroundColor: SPACE, flex: 1 },
-  pageHeader: {
-    alignItems: "flex-end",
-    backgroundColor: "rgba(2,7,17,0.86)",
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    minHeight: 68,
-    paddingHorizontal: 18,
-    paddingTop: 8,
-  },
-  soundButton: {
-    alignItems: "center",
-    borderColor: "rgba(213,179,109,0.65)",
-    borderRadius: 24,
-    borderWidth: 1,
-    height: 48,
-    justifyContent: "center",
-    width: 48,
-  },
-  universeViewport: { backgroundColor: FIELD, flex: 1, overflow: "hidden", position: "relative" },
-  universeHorizontalScroll: { flex: 1 },
-  universeCanvas: { backgroundColor: FIELD, position: "relative" },
-  observerOverlay: { ...StyleSheet.absoluteFill },
-  planetLayer: { bottom: 0, left: 0, position: "absolute", right: 0, top: 0 },
-  connectionLayer: { bottom: 0, left: 0, position: "absolute", right: 0, top: 0 },
-  star: { borderRadius: 5, position: "absolute", shadowOffset: { height: 0, width: 0 } },
-  observerWrap: { bottom: 2, height: 140, left: "50%", marginLeft: -120, position: "absolute", width: 240 },
-  observerHitArea: { bottom: 28, height: 78, left: "52%", position: "absolute", width: 64 },
-  statusMessage: { alignItems: "center", left: 0, position: "absolute", right: 0, top: "38%" },
-  statusTitle: { color: IVORY, fontSize: 17, fontWeight: "700" },
-  statusText: { color: "rgba(224,230,232,0.58)", fontSize: 12, marginTop: 8 },
-  modalBackdrop: { backgroundColor: SPACE, flex: 1 },
-  modalSafeArea: { alignItems: "center", flex: 1, paddingHorizontal: 12, paddingTop: 4 },
-  modalTopBar: { alignItems: "center", alignSelf: "stretch", flexDirection: "row", justifyContent: "space-between", minHeight: 44 },
-  modalCloseButton: { alignItems: "center", height: 40, justifyContent: "center", width: 40 },
-  modalEyebrow: { color: GOLD, fontSize: 9, fontWeight: "700", letterSpacing: 3.2 },
-  modalTitle: { color: IVORY, fontSize: 30, fontWeight: "800", marginTop: 18, textAlign: "center" },
-  modalDescription: { color: "rgba(224,230,232,0.62)", fontSize: 14, marginTop: 8 },
-  observationSpace: { alignSelf: "stretch", flex: 1, marginTop: 18, minHeight: 240 },
-  detailButton: {
-    alignItems: "center",
-    alignSelf: "stretch",
-    backgroundColor: GOLD,
-    borderRadius: 18,
-    flexDirection: "row",
-    justifyContent: "center",
-    marginHorizontal: 12,
-    marginTop: 10,
-    minHeight: 52,
-    paddingHorizontal: 18,
-  },
+  safeArea: { flex: 1, backgroundColor: SPACE },
+  soundButton: { position: "absolute", zIndex: 3, top: 16, right: 18, width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(216,188,112,0.52)", backgroundColor: "rgba(4,11,27,0.82)" },
+  canvas: { flex: 1, overflow: "hidden", backgroundColor: CANVAS },
+  world: { position: "absolute", width: WORLD_WIDTH, height: WORLD_HEIGHT },
+  loadingState: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
+  emptyState: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center", paddingHorizontal: 30 },
+  emptyTitle: { marginTop: 12, color: IVORY, fontSize: 21, fontWeight: "700" },
+  emptyCopy: { marginTop: 8, color: "#9aa5b6", fontSize: 14 },
+  starTouch: { position: "absolute", width: 84, height: 84, alignItems: "center", justifyContent: "center" },
+  starGlow: { alignItems: "center", justifyContent: "center", backgroundColor: "rgba(227,196,113,0.08)", shadowColor: "#e6ca7d", shadowOpacity: 0.56, shadowRadius: 13, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
+  star: { backgroundColor: "#fff3cf", shadowColor: "#fff3cf", shadowOpacity: 0.9, shadowRadius: 7, shadowOffset: { width: 0, height: 0 } },
+  starLabel: { position: "absolute", top: 65, width: 148, textAlign: "center", color: "#e7e0d0", fontSize: 13, fontWeight: "600", textShadowColor: "rgba(0,0,0,0.9)", textShadowRadius: 4 },
+  controls: { position: "absolute", right: 18, bottom: 18 },
+  zoomControl: { flexDirection: "row", alignItems: "center", height: 42, paddingHorizontal: 4, borderRadius: 22, borderWidth: 1, borderColor: "rgba(226,231,242,0.2)", backgroundColor: "rgba(3,8,21,0.86)" },
+  zoomButton: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
+  zoomText: { width: 48, color: "#d4d8df", fontSize: 12, textAlign: "center", fontVariant: ["tabular-nums"] },
+  modalBackdrop: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, backgroundColor: "rgba(1,4,12,0.82)" },
+  modalCard: { width: "100%", maxWidth: 360, alignItems: "center", borderRadius: 24, borderWidth: 1, borderColor: "rgba(220,191,112,0.55)", padding: 28, backgroundColor: "#09152b" },
+  modalClose: { position: "absolute", top: 14, right: 14, width: 38, height: 38, alignItems: "center", justifyContent: "center" },
+  modalEyebrow: { color: GOLD, fontSize: 11, fontWeight: "700", letterSpacing: 2.6 },
+  modalStar: { width: 30, height: 30, marginTop: 24, borderRadius: 15, backgroundColor: "#fff3cf", shadowColor: "#fff3cf", shadowOpacity: 0.95, shadowRadius: 16, shadowOffset: { width: 0, height: 0 } },
+  modalTitle: { marginTop: 18, color: IVORY, fontSize: 24, fontWeight: "800", textAlign: "center" },
+  modalCopy: { marginTop: 10, color: "#aeb8c8", fontSize: 14, textAlign: "center" },
+  detailButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", height: 52, marginTop: 28, borderRadius: 16, backgroundColor: GOLD },
   detailButtonText: { color: SPACE, fontSize: 16, fontWeight: "800" },
-  selectedMovieMeta: {
-    alignItems: "center",
-    left: 24,
-    position: "absolute",
-    right: 24,
-    top: "50%",
-    transform: [{ translateY: 22 }],
-  },
-  selectedMovieTitle: { color: IVORY, fontSize: 21, fontWeight: "800", maxWidth: "90%" },
-  navArrow: {
-    alignItems: "center",
-    backgroundColor: "rgba(2,7,17,0.46)",
-    borderColor: "rgba(248,242,232,0.34)",
-    borderRadius: 20,
-    borderWidth: 1,
-    height: 40,
-    justifyContent: "center",
-    position: "absolute",
-    width: 40,
-  },
-  navArrowLeft: { left: 8, top: "50%", transform: [{ translateY: -20 }] },
-  navArrowRight: { right: 8, top: "50%", transform: [{ translateY: -20 }] },
-  navArrowUp: { left: "50%", top: 8, transform: [{ translateX: -20 }] },
-  navArrowDown: { bottom: 8, left: "50%", transform: [{ translateX: -20 }] },
 });

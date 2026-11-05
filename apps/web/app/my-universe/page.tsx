@@ -253,58 +253,60 @@ function MovieModal({
   return (
     <div
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#02050d]/80 p-5 backdrop-blur-sm"
+      className="fixed inset-0 z-50 overflow-y-auto bg-[#02050d]/80 px-3 py-5 backdrop-blur-sm sm:px-6 sm:py-10"
       role="dialog"
       onClick={onClose}
     >
       <div
-        className="relative flex max-h-[min(720px,calc(100vh-40px))] w-full max-w-2xl gap-6 overflow-auto rounded-[28px] border border-[#d9b866]/35 bg-[#09162b] p-6 text-[#f7f1e7] shadow-2xl shadow-black/50 max-sm:flex-col"
+        className="relative mx-auto flex min-h-[calc(100dvh-2.5rem)] w-full max-w-4xl items-center"
         onClick={(event) => event.stopPropagation()}
       >
         <button
           aria-label="영화 모달 닫기"
-          className="absolute right-4 top-4 z-10 rounded-full p-2 text-[#f7f1e7]/70 transition hover:bg-white/10 hover:text-white"
+          className="absolute -top-11 right-0 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-[#07101e]/95 text-[#f7f1e7] shadow-lg transition hover:border-[#d9b866]/70 hover:text-[#d9b866] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d9b866]"
           type="button"
           onClick={onClose}
         >
-          <X size={24} />
+          <X size={20} />
         </button>
 
-        <div className="w-44 shrink-0 overflow-hidden rounded-2xl bg-[#101d34] max-sm:w-full">
-          {movie.posterUrl ? (
-            <img
-              alt={movie.title + " 포스터"}
-              className="h-full max-h-64 w-full object-cover max-sm:max-h-72"
-              src={movie.posterUrl}
-            />
-          ) : (
-            <div className="flex h-64 items-center justify-center p-5 text-center text-sm text-white/50">
-              포스터 없음
-            </div>
-          )}
-        </div>
+        <div className="flex max-h-[calc(100dvh-2.5rem)] w-full flex-row items-center gap-4 overflow-y-auto rounded-[28px] border border-[#d9b866]/35 bg-[#09162b] p-4 text-[#f7f1e7] shadow-2xl shadow-black/50 sm:gap-6 sm:p-6 md:gap-8 md:p-8">
+          <div className="aspect-[16/9] w-[46%] shrink-0 overflow-hidden rounded-2xl bg-[#101d34]">
+            {movie.posterUrl ? (
+              <img
+                alt={movie.title + " 포스터"}
+                className="h-full w-full object-cover"
+                src={movie.posterUrl}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center p-3 text-center text-xs text-white/50 sm:p-5 sm:text-sm">
+                포스터 없음
+              </div>
+            )}
+          </div>
 
-        <div className="flex min-w-0 flex-1 flex-col justify-center pr-8">
-          <p className="mb-3 text-xs font-semibold tracking-[0.28em] text-[#d9b866]">
-            OBSERVED STAR
-          </p>
-          <h2 className="text-3xl font-semibold tracking-tight max-sm:text-2xl">
-            {movie.title}
-          </h2>
-          <p className="mt-3 text-sm text-white/55">
-            {movie.releaseDate?.slice(0, 10) ?? "개봉일 정보 없음"}
-            {movie.genres.length ? " · " + movie.genres.join(" · ") : ""}
-          </p>
-          <button
-            className="mt-7 inline-flex w-fit items-center rounded-full bg-[#d9b866] px-5 py-3 text-sm font-semibold text-[#07101e] transition hover:bg-[#eed28a]"
-            type="button"
-            onClick={() => {
-              onClose();
-              router.push("/movies/" + movie.movieId);
-            }}
-          >
-            영화 상세 보기 <span className="ml-2 text-lg">→</span>
-          </button>
+          <div className="flex min-w-0 flex-1 flex-col justify-center">
+            <p className="mb-2 text-[10px] font-semibold tracking-[0.2em] text-[#d9b866] sm:mb-3 sm:text-xs sm:tracking-[0.28em]">
+              OBSERVED STAR
+            </p>
+            <h2 className="text-xl font-semibold tracking-tight sm:text-3xl">
+              {movie.title}
+            </h2>
+            <p className="mt-2 text-xs text-white/55 sm:mt-3 sm:text-sm">
+              {movie.releaseDate?.slice(0, 10) ?? "개봉일 정보 없음"}
+              {movie.genres.length ? " · " + movie.genres.join(" · ") : ""}
+            </p>
+            <button
+              className="mt-5 inline-flex w-fit items-center rounded-full bg-[#d9b866] px-4 py-2.5 text-xs font-semibold text-[#07101e] transition hover:bg-[#eed28a] sm:mt-7 sm:px-5 sm:py-3 sm:text-sm"
+              type="button"
+              onClick={() => {
+                onClose();
+                router.push("/movies/" + movie.movieId);
+              }}
+            >
+              영화 상세 보기 <span className="ml-2 text-lg">→</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

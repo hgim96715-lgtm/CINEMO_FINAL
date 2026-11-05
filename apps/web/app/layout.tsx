@@ -7,6 +7,7 @@ import "./globals.css";
 import { AuthSessionHydrator, QueryProvider } from "@/providers";
 import { Header } from "../components/common/Header";
 import { Footer } from "../components/common/Footer";
+import { MobileBottomNavigation } from "../components/common/MobileBottomNavigation";
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 
@@ -51,8 +52,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <QueryProvider>
           <AuthSessionHydrator>
             <Header />
-            <div className="flex-1">{children}</div>
+            <div className="flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0">
+              {children}
+            </div>
             <Footer />
+            <MobileBottomNavigation />
           </AuthSessionHydrator>
         </QueryProvider>
       </body>

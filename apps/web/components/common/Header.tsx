@@ -24,7 +24,7 @@ const navigationItems = [
   { href: "/lobby/postcards", label: "엽서" },
 ] as const;
 
-function GlobalNavigation({ mobile = false }: { mobile?: boolean }) {
+function GlobalNavigation() {
   const pathname = usePathname();
   const resetSearchForm = useSearchStore((state) => state.closeSearch);
 
@@ -39,12 +39,7 @@ function GlobalNavigation({ mobile = false }: { mobile?: boolean }) {
   return (
     <nav
       aria-label="주요 메뉴"
-      className={cn(
-        "items-center gap-1",
-        mobile
-          ? "flex min-w-max flex-nowrap"
-          : "hidden shrink-0 lg:flex",
-      )}
+      className="hidden shrink-0 items-center gap-1 lg:flex"
     >
       {navigationItems.map((item) => {
         const isActive = isNavigationActive(item.href);
@@ -153,10 +148,10 @@ export function Header() {
     >
       <div
         className={cn(
-          "mx-auto flex h-22 w-full items-center px-4",
+              "mx-auto flex h-16 w-full items-center px-4 lg:h-22",
           isLobby
-            ? "max-w-[120rem] gap-2 sm:gap-4 sm:px-6 lg:px-10"
-            : "max-w-6xl gap-4 px-4 sm:gap-8 sm:px-6",
+            ? "max-w-[120rem] gap-2 px-5 lg:gap-4 lg:px-10"
+            : "max-w-6xl gap-4 px-5 lg:gap-8 lg:px-6",
         )}
       >
         <Link
@@ -171,7 +166,7 @@ export function Header() {
             width={44}
             height={44}
             priority
-            className="h-10 w-10 object-contain sm:h-11 sm:w-11"
+            className="h-9 w-9 object-contain lg:h-11 lg:w-11"
           />
         </Link>
 
@@ -179,7 +174,7 @@ export function Header() {
 
         <div
           ref={searchRef}
-          className="relative ml-auto md:mx-auto md:flex md:flex-1 md:justify-center"
+          className="relative ml-auto lg:mx-auto lg:flex lg:flex-1 lg:justify-center"
         >
           <button
             type="button"
@@ -190,7 +185,7 @@ export function Header() {
               openSearch();
             }}
             className={cn(
-              "flex h-11 w-11 items-center justify-center rounded-full text-cinemo-gold-light transition hover:bg-white/10 hover:text-cinemo-gold md:hidden",
+              "flex h-11 w-11 items-center justify-center rounded-full text-cinemo-gold-light transition hover:bg-white/10 hover:text-cinemo-gold lg:hidden",
               isSearchOpen && "bg-white/10 text-cinemo-gold",
             )}
           >
@@ -200,11 +195,11 @@ export function Header() {
           <form
             onSubmit={handleSubmit(onSubmit)}
             className={cn(
-              "fixed inset-0 z-50 flex min-h-screen flex-col bg-cinemo-bg/96 p-4 text-cinemo-text shadow-2xl backdrop-blur-xl md:relative md:min-h-0 md:w-[min(42rem,52vw)] md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none",
-              !isSearchOpen && "hidden md:flex",
+              "fixed inset-0 z-50 flex min-h-screen flex-col bg-cinemo-bg/96 p-4 text-cinemo-text shadow-2xl backdrop-blur-xl lg:relative lg:min-h-0 lg:w-[min(42rem,52vw)] lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none",
+              !isSearchOpen && "hidden lg:flex",
             )}
           >
-            <div className="mb-4 flex items-center gap-3 md:hidden">
+            <div className="mb-4 flex items-center gap-3 lg:hidden">
               <button
                 type="button"
                 aria-label="검색 닫기"
@@ -217,7 +212,7 @@ export function Header() {
               <span className="text-base font-semibold">영화 검색</span>
             </div>
 
-            <div className="flex h-12 items-center rounded-lg border border-cinemo-gold/30 bg-transparent px-4 transition-colors focus-within:border-cinemo-gold/60 focus-within:bg-white/5 md:h-14">
+            <div className="flex h-12 items-center rounded-lg border border-cinemo-gold/30 bg-transparent px-4 transition-colors focus-within:border-cinemo-gold/60 focus-within:bg-white/5 lg:h-14">
               <input
                 {...register("query")}
                 autoFocus
@@ -225,7 +220,7 @@ export function Header() {
                 placeholder="영화 검색"
                 aria-label="영화 검색"
                 autoComplete="off"
-                className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-white/40 md:text-lg"
+                className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-white/40 lg:text-lg"
               />
 
               {query.trim() && (
@@ -252,8 +247,8 @@ export function Header() {
 
             <div
               className={cn(
-                "empty:hidden scroll-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden mt-4 flex-1 overflow-y-auto md:absolute md:left-0 md:right-0 md:top-16 md:z-50 md:max-h-112 md:overflow-y-auto md:rounded-2xl md:bg-cinemo-bg/96 md:p-3 md:shadow-2xl md:backdrop-blur-xl",
-                !query.trim() && "md:hidden",
+                "empty:hidden scroll-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden mt-4 flex-1 overflow-y-auto lg:absolute lg:left-0 lg:right-0 lg:top-16 lg:z-50 lg:max-h-112 lg:overflow-y-auto lg:rounded-2xl lg:bg-cinemo-bg/96 lg:p-3 lg:shadow-2xl lg:backdrop-blur-xl",
+                !query.trim() && "lg:hidden",
               )}
             >
               <MovieSearchSuggestions query={query} enabled={isSearchOpen} />
@@ -261,7 +256,7 @@ export function Header() {
           </form>
         </div>
         {user ? (
-          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+          <div className="hidden shrink-0 items-center gap-3 lg:flex">
             <Link
               href="/my-cinema"
               aria-label="MY CINEMA"
@@ -281,7 +276,7 @@ export function Header() {
                 )}
               </span>
 
-              <span className="hidden max-w-24 truncate sm:inline">
+              <span className="max-w-24 truncate">
                 {user.nickname}
               </span>
             </Link>
@@ -290,17 +285,11 @@ export function Header() {
         ) : (
           <Link
             href="/login"
-            className="shrink-0 text-sm text-cinemo-muted transition hover:text-cinemo-gold-light"
+            className="hidden shrink-0 text-sm text-cinemo-muted transition hover:text-cinemo-gold-light lg:block"
           >
             로그인
           </Link>
         )}
-      </div>
-
-      <div className="border-y border-white/10 bg-cinemo-bg-deep/75 px-4 backdrop-blur-lg lg:hidden">
-        <div className="mx-auto max-w-6xl overflow-x-auto scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <GlobalNavigation mobile />
-        </div>
       </div>
     </header>
   );
