@@ -9,7 +9,7 @@ type HeroTab = CurationKind | "postcard";
 
 const tabs: Array<{ value: HeroTab; label: string }> = [
   { value: "commemorative", label: "기념일" },
-  { value: "upcoming", label: "이번 주 극장" },
+  { value: "upcoming", label: "개봉 예정" },
   { value: "platform", label: "플랫폼" },
   { value: "postcard", label: "엽서" },
 ];

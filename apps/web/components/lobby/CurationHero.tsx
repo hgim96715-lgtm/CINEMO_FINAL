@@ -272,7 +272,7 @@ export function CurationHero({
                       : "text-cinemo-muted hover:text-cinemo-text"
                   }`}
                 >
-                  이번 주 극장
+                  개봉 예정
                 </button>
               )}
               {hasPlatformMovies && (

@@ -34,7 +34,7 @@ function formatReleaseDate(releaseDate: string | null) {
 
 export function UpcomingMovies() {
   const upcomingQuery = useQuery(
-    movieUpcomingQueryOptions({ period: "this-week", page: 1, limit: 10 }),
+    movieUpcomingQueryOptions({ page: 1, limit: 10 }),
   );
 
   if (upcomingQuery.isPending) return null;
@@ -51,7 +51,7 @@ export function UpcomingMovies() {
     <View className="mt-6">
       <SectionHeader
         eyebrow="COMING SOON"
-        title="이번 주 극장에서 만날 영화"
+        title="개봉 예정작"
         morePath="/movies/upcoming"
       />
 

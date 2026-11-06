@@ -145,6 +145,39 @@ function segmentsCross(a: Point, b: Point, c: Point, d: Point) {
   return first * second < 0 && third * fourth < 0;
 }
 
+// 별자리 전체의 크기는 제한하지 않는다. 한 별에서만 가까운 관계를
+// 네 갈래까지 유지해 한 지점에 선이 과하게 얽히는 것을 막는다.
+const MAX_CONSTELLATION_BRANCHES = 4;
+const MAX_CONSTELLATION_LINK_DISTANCE = 560;
+
+function createsConstellationCycle(edges: GraphEdge[], fromId: string, toId: string) {
+  const neighbors = new Map<string, string[]>();
+  const connect = (source: string, target: string) => {
+    const current = neighbors.get(source) ?? [];
+    current.push(target);
+    neighbors.set(source, current);
+  };
+
+  for (const edge of edges) {
+    connect(edge.from.movieId, edge.to.movieId);
+    connect(edge.to.movieId, edge.from.movieId);
+  }
+
+  const visited = new Set<string>();
+  const pending = [fromId];
+
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (!current || visited.has(current)) continue;
+    if (current === toId) return true;
+
+    visited.add(current);
+    pending.push(...(neighbors.get(current) ?? []));
+  }
+
+  return false;
+}
+
 function getSharedPeople(
   first: MyMovie,
   second: MyMovie,
@@ -179,11 +212,17 @@ function buildRelatedEdges(movies: MyMovie[], layout: Layout): GraphEdge[] {
       const firstPoint = layout[first.movieId];
       const secondPoint = layout[second.movieId];
 
-      if (
-        (!sharedDirectors.length && !sharedActors.length && !sharedGenres.length) ||
-        !firstPoint ||
-        !secondPoint
-      ) {
+      const hasStrongRelation =
+        sharedDirectors.length > 0 ||
+        sharedActors.length > 0 ||
+        sharedGenres.length >= 2;
+
+      if (!hasStrongRelation || !firstPoint || !secondPoint) {
+        continue;
+      }
+
+      const linkDistance = distance(firstPoint, secondPoint);
+      if (linkDistance > MAX_CONSTELLATION_LINK_DISTANCE) {
         continue;
       }
 
@@ -196,8 +235,8 @@ function buildRelatedEdges(movies: MyMovie[], layout: Layout): GraphEdge[] {
         score:
           sharedDirectors.length * 2_400 +
           sharedActors.length * 750 +
-          sharedGenres.length * 160 -
-          distance(firstPoint, secondPoint),
+          sharedGenres.length * 260 -
+          linkDistance * 1.15,
       });
     }
   }
@@ -210,7 +249,21 @@ function buildRelatedEdges(movies: MyMovie[], layout: Layout): GraphEdge[] {
   for (const candidate of candidates) {
     const fromDegree = degree.get(candidate.from.movieId) ?? 0;
     const toDegree = degree.get(candidate.to.movieId) ?? 0;
-    if (fromDegree >= 3 || toDegree >= 3) continue;
+    if (
+      fromDegree >= MAX_CONSTELLATION_BRANCHES ||
+      toDegree >= MAX_CONSTELLATION_BRANCHES
+    ) {
+      continue;
+    }
+    if (
+      createsConstellationCycle(
+        edges,
+        candidate.from.movieId,
+        candidate.to.movieId,
+      )
+    ) {
+      continue;
+    }
 
     const crossesExisting = edges.some((edge) => {
       const edgeFrom = layout[edge.from.movieId];
@@ -575,10 +628,10 @@ export default function MyUniversePage() {
                 return (
                   <line
                     key={edge.from.movieId + "-" + edge.to.movieId}
-                    opacity={0.45}
-                    stroke="#b8c8df"
+                    opacity={0.48}
+                    stroke="#a8b9d0"
                     strokeLinecap="round"
-                    strokeWidth="1.5"
+                    strokeWidth="1.25"
                     x1={from.x}
                     x2={to.x}
                     y1={from.y}
@@ -592,26 +645,39 @@ export default function MyUniversePage() {
               const point = layout[movie.movieId];
               if (!point) return null;
 
+              // 캔버스가 축소되어도 별을 누르는 영역은 손가락으로 누를 수 있는 크기를 유지함.
+              const starTapSize = 52 / view.scale;
+
               return (
                 <button
                   key={movie.movieId}
                   aria-label={movie.title + " 영화 모달 열기"}
-                  className="group absolute -translate-x-1/2 -translate-y-1/2 rounded-full p-3 text-left outline-none"
+                  className="group absolute z-10 cursor-pointer text-left outline-none"
                   data-universe-node
-                  style={{ left: point.x, top: point.y }}
+                  style={{
+                    left: point.x,
+                    top: point.y,
+                    width: starTapSize,
+                    height: starTapSize,
+                    transform: "translate(-50%, -50%)",
+                  }}
                   type="button"
+                  onPointerDown={(event) => {
+                    // 별을 누른 동작은 캔버스 드래그로 넘기지 않음.
+                    event.stopPropagation();
+                  }}
                   onClick={(event) => {
                     event.stopPropagation();
                     setSelectedMovie(movie);
                   }}
                 >
                   <span
-                    className="block h-3.5 w-3.5 rounded-full border border-[#fff8dc] bg-[#e7ca7a] shadow-[0_0_0_3px_rgba(231,202,122,0.08),0_0_22px_7px_rgba(231,202,122,0.55)] transition duration-200 group-hover:scale-150 group-focus-visible:scale-150"
+                    className="pointer-events-none absolute left-1/2 top-1/2 block h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#fff8dc] bg-[#e7ca7a] shadow-[0_0_0_3px_rgba(231,202,122,0.08),0_0_22px_7px_rgba(231,202,122,0.55)] transition duration-200 group-hover:scale-150 group-focus-visible:scale-150"
                     style={{
                       backgroundColor: index % 5 === 0 ? "#fff8dc" : "#e7ca7a",
                     }}
                   />
-                  <span className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#02050d]/75 px-2.5 py-1 text-[13px] font-medium text-white/80 opacity-75 backdrop-blur-sm transition group-hover:opacity-100 group-focus-visible:opacity-100">
+                  <span className="pointer-events-none absolute left-1/2 top-1/2 mt-4 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#02050d]/75 px-2.5 py-1 text-[13px] font-medium text-white/80 opacity-75 backdrop-blur-sm transition group-hover:opacity-100 group-focus-visible:opacity-100">
                     {movie.title}
                   </span>
                 </button>

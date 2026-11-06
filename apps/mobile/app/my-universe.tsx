@@ -40,6 +40,7 @@ const WORLD_WIDTH = 1800;
 const WORLD_HEIGHT = 1200;
 const MIN_SCALE = 0.12;
 const MAX_SCALE = 1.7;
+const PAN_GESTURE_THRESHOLD = 12;
 
 type StarNode = {
   movie: MyMovie;
@@ -130,6 +131,41 @@ function segmentsCross(first: StarLink, second: StarLink) {
   return a * b < 0 && c * d < 0;
 }
 
+// 별자리 전체의 크기는 제한하지 않는다. 한 별에서만 가까운 관계를
+// 네 갈래까지 유지해 한 지점에 선이 과하게 얽히는 것을 막는다.
+const MAX_CONSTELLATION_BRANCHES = 4;
+const MAX_CONSTELLATION_LINK_DISTANCE = 620;
+
+function createsConstellationCycle(links: StarLink[], fromId: string, toId: string) {
+  const neighbors = new Map<string, string[]>();
+  const connect = (source: string, target: string) => {
+    const current = neighbors.get(source) ?? [];
+    current.push(target);
+    neighbors.set(source, current);
+  };
+
+  for (const link of links) {
+    const source = link.from.movie.movieId;
+    const target = link.to.movie.movieId;
+    connect(source, target);
+    connect(target, source);
+  }
+
+  const visited = new Set<string>();
+  const pending = [fromId];
+
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (!current || visited.has(current)) continue;
+    if (current === toId) return true;
+
+    visited.add(current);
+    pending.push(...(neighbors.get(current) ?? []));
+  }
+
+  return false;
+}
+
 function createStarMap(movies: MyMovie[]) {
   const stars = createStars(movies);
   const starById = new Map(stars.map((star) => [star.movie.movieId, star]));
@@ -146,14 +182,24 @@ function createStarMap(movies: MyMovie[]) {
       const directors = sharedPeople(first, second, "directors");
       const actors = sharedPeople(first, second, "actors");
       const genres = sharedGenres(first, second);
-      if (!directors.length && !actors.length && !genres.length) continue;
+      const hasStrongRelation =
+        directors.length > 0 || actors.length > 0 || genres.length >= 2;
+      if (!hasStrongRelation) continue;
 
       const distance = Math.hypot(from.x - to.x, from.y - to.y);
+      if (distance > MAX_CONSTELLATION_LINK_DISTANCE) {
+        continue;
+      }
+
       candidates.push({
         from,
         to,
-        color: directors.length ? "#d9bd70" : actors.length ? "#7193bf" : "#626d96",
-        score: directors.length * 2600 + actors.length * 750 + genres.length * 120 - distance * 0.16,
+        color: "#a8b9d0",
+        score:
+          directors.length * 2600 +
+          actors.length * 750 +
+          genres.length * 260 -
+          distance * 0.6,
       });
     }
   }
@@ -165,7 +211,13 @@ function createStarMap(movies: MyMovie[]) {
   for (const candidate of candidates) {
     const fromId = candidate.from.movie.movieId;
     const toId = candidate.to.movie.movieId;
-    if ((degrees.get(fromId) ?? 0) >= 3 || (degrees.get(toId) ?? 0) >= 3) continue;
+    if (
+      (degrees.get(fromId) ?? 0) >= MAX_CONSTELLATION_BRANCHES ||
+      (degrees.get(toId) ?? 0) >= MAX_CONSTELLATION_BRANCHES
+    ) {
+      continue;
+    }
+    if (createsConstellationCycle(links, fromId, toId)) continue;
     if (links.some((link) => segmentsCross(link, candidate))) continue;
 
     links.push(candidate);
@@ -320,31 +372,49 @@ export default function MyUniverseScreen() {
 
   const updateTransform = (next: Transform) => {
     if (!canvasReady) return;
+
     const scale = clamp(next.scale, MIN_SCALE, MAX_SCALE);
+    const viewportLeft = 32;
+    const viewportRight = Math.max(viewportLeft + 1, canvasSize.width - 32);
+    const viewportTop = 32;
+    const viewportBottom = Math.max(viewportTop + 1, canvasSize.height - 104);
+    const viewportWidth = viewportRight - viewportLeft;
+    const viewportHeight = viewportBottom - viewportTop;
     const scaledWidth = graphBounds.width * scale;
     const scaledHeight = graphBounds.height * scale;
-    const centeredX = canvasSize.width / 2 - graphBounds.centerX * scale;
-    const centeredY = canvasSize.height / 2 - graphBounds.centerY * scale;
+
+    const contentLeft = (graphBounds.left - WORLD_WIDTH / 2) * scale;
+    const contentRight = (graphBounds.right - WORLD_WIDTH / 2) * scale;
+    const contentTop = (graphBounds.top - WORLD_HEIGHT / 2) * scale;
+    const contentBottom = (graphBounds.bottom - WORLD_HEIGHT / 2) * scale;
+    const centeredX =
+      (viewportLeft + viewportRight) / 2 -
+      canvasSize.width / 2 -
+      (graphBounds.centerX - WORLD_WIDTH / 2) * scale;
+    const centeredY =
+      (viewportTop + viewportBottom) / 2 -
+      canvasSize.height / 2 -
+      (graphBounds.centerY - WORLD_HEIGHT / 2) * scale;
     const minX =
-      scaledWidth <= canvasSize.width - 80
+      scaledWidth <= viewportWidth
         ? centeredX
-        : canvasSize.width - 40 - graphBounds.right * scale;
+        : viewportLeft - canvasSize.width / 2 - contentLeft;
     const maxX =
-      scaledWidth <= canvasSize.width - 80
+      scaledWidth <= viewportWidth
         ? centeredX
-        : 40 - graphBounds.left * scale;
+        : viewportRight - canvasSize.width / 2 - contentRight;
     const minY =
-      scaledHeight <= canvasSize.height - 160
+      scaledHeight <= viewportHeight
         ? centeredY
-        : canvasSize.height - 80 - graphBounds.bottom * scale;
+        : viewportTop - canvasSize.height / 2 - contentTop;
     const maxY =
-      scaledHeight <= canvasSize.height - 160
+      scaledHeight <= viewportHeight
         ? centeredY
-        : 80 - graphBounds.top * scale;
+        : viewportBottom - canvasSize.height / 2 - contentBottom;
     const safe = {
       scale,
-      x: clamp(next.x, minX, maxX),
-      y: clamp(next.y, minY, maxY),
+      x: clamp(next.x, Math.min(minX, maxX), Math.max(minX, maxX)),
+      y: clamp(next.y, Math.min(minY, maxY), Math.max(minY, maxY)),
     };
     transformRef.current = safe;
     setTransform(safe);
@@ -354,17 +424,13 @@ export default function MyUniverseScreen() {
     if (!canvasReady) return;
     const scale = clamp(
       Math.min(
-        (canvasSize.width - 72) / graphBounds.width,
-        (canvasSize.height - 160) / graphBounds.height,
+        Math.max(1, canvasSize.width - 64) / graphBounds.width,
+        Math.max(1, canvasSize.height - 136) / graphBounds.height,
       ),
       MIN_SCALE,
       0.82,
     );
-    updateTransform({
-      scale,
-      x: canvasSize.width / 2 - graphBounds.centerX * scale,
-      y: canvasSize.height / 2 - graphBounds.centerY * scale,
-    });
+    updateTransform({ scale, x: 0, y: 0 });
   };
 
   useEffect(() => {
@@ -376,8 +442,11 @@ export default function MyUniverseScreen() {
   const panResponder = useMemo(
     () =>
       PanResponder.create({
+        // 가벼운 탭은 별의 Pressable에 맡기고, 드래그·핀치만 우주 캔버스가 처리함.
+        onStartShouldSetPanResponder: (_, gesture) => gesture.numberActiveTouches > 1,
         onMoveShouldSetPanResponder: (_, gesture) =>
-          Math.abs(gesture.dx) > 5 || Math.abs(gesture.dy) > 5 || gesture.numberActiveTouches > 1,
+          gesture.numberActiveTouches > 1 ||
+          Math.hypot(gesture.dx, gesture.dy) > PAN_GESTURE_THRESHOLD,
         onPanResponderGrant: (event) => {
           const touches = event.nativeEvent.touches;
           const distance = touches.length > 1
@@ -393,9 +462,21 @@ export default function MyUniverseScreen() {
             const scale = start.transform.scale * (distance / start.distance);
             const focusX = (touches[0].locationX + touches[1].locationX) / 2;
             const focusY = (touches[0].locationY + touches[1].locationY) / 2;
-            const worldX = (focusX - start.transform.x) / start.transform.scale;
-            const worldY = (focusY - start.transform.y) / start.transform.scale;
-            updateTransform({ x: focusX - worldX * scale, y: focusY - worldY * scale, scale });
+          const worldX =
+            WORLD_WIDTH / 2 +
+            (focusX - canvasSize.width / 2 - start.transform.x) / start.transform.scale;
+          const worldY =
+            WORLD_HEIGHT / 2 +
+            (focusY - canvasSize.height / 2 - start.transform.y) / start.transform.scale;
+          const nextX =
+            focusX -
+            canvasSize.width / 2 -
+            (worldX - WORLD_WIDTH / 2) * scale;
+          const nextY =
+            focusY -
+            canvasSize.height / 2 -
+            (worldY - WORLD_HEIGHT / 2) * scale;
+          updateTransform({ x: nextX, y: nextY, scale });
             return;
           }
           updateTransform({
@@ -414,22 +495,29 @@ export default function MyUniverseScreen() {
     const scale = clamp(current.scale + amount, MIN_SCALE, MAX_SCALE);
     const centerX = canvasSize.width / 2;
     const centerY = canvasSize.height / 2;
-    const worldX = (centerX - current.x) / current.scale;
-    const worldY = (centerY - current.y) / current.scale;
-    updateTransform({ scale, x: centerX - worldX * scale, y: centerY - worldY * scale });
+  const worldX =
+    WORLD_WIDTH / 2 +
+    (centerX - canvasSize.width / 2 - current.x) / current.scale;
+  const worldY =
+    WORLD_HEIGHT / 2 +
+    (centerY - canvasSize.height / 2 - current.y) / current.scale;
+  updateTransform({
+    scale,
+    x:
+      centerX -
+      canvasSize.width / 2 -
+      (worldX - WORLD_WIDTH / 2) * scale,
+    y:
+      centerY -
+      canvasSize.height / 2 -
+      (worldY - WORLD_HEIGHT / 2) * scale,
+  });
   };
 
   return (
     <SafeAreaView edges={["top"]} style={styles.safeArea}>
       <SpaceAudio muted={muted} />
       <View {...panResponder.panHandlers} onLayout={handleCanvasLayout} style={styles.canvas}>
-        <Pressable
-          accessibilityLabel={muted ? "우주 소리 켜기" : "우주 소리 끄기"}
-          onPress={() => setMuted((value) => !value)}
-          style={styles.soundButton}
-        >
-          <Ionicons color={GOLD} name={muted ? "volume-mute-outline" : "volume-high-outline"} size={22} />
-        </Pressable>
         {!canvasReady || moviesQuery.isLoading ? (
           <View style={styles.loadingState}>
             <ActivityIndicator color={GOLD} />
@@ -444,23 +532,31 @@ export default function MyUniverseScreen() {
           <View
             pointerEvents="box-none"
             style={[
-              styles.world,
+              styles.worldAnchor,
               {
-                transform: [
-                  { translateX: transform.x },
-                  { translateY: transform.y },
-                  { scale: transform.scale },
-                ],
+                left: canvasSize.width / 2 + transform.x,
+                top: canvasSize.height / 2 + transform.y,
               },
             ]}
           >
+            <View
+              pointerEvents="box-none"
+              style={[
+                styles.world,
+                {
+                  left: -WORLD_WIDTH / 2,
+                  top: -WORLD_HEIGHT / 2,
+                  transform: [{ scale: transform.scale }],
+                },
+              ]}
+            >
             <Svg height={WORLD_HEIGHT} style={StyleSheet.absoluteFill} width={WORLD_WIDTH}>
               {graph.links.map((link) => (
                 <Line
                   key={`${link.from.movie.movieId}-${link.to.movie.movieId}`}
-                  opacity={0.64}
+                    opacity={0.52}
                   stroke={link.color}
-                  strokeWidth={2.4}
+                    strokeWidth={1.35}
                   x1={link.from.x}
                   x2={link.to.x}
                   y1={link.from.y}
@@ -485,6 +581,7 @@ export default function MyUniverseScreen() {
                 {transform.scale >= 0.56 ? <Text numberOfLines={1} style={styles.starLabel}>{star.movie.title}</Text> : null}
               </Pressable>
             ))}
+            </View>
           </View>
         )}
 
@@ -501,6 +598,18 @@ export default function MyUniverseScreen() {
               <Pressable accessibilityLabel="전체 보기" hitSlop={8} onPress={resetUniverse} style={styles.zoomButton}>
                 <Ionicons color={GOLD} name="scan-outline" size={18} />
               </Pressable>
+              <Pressable
+                accessibilityLabel={muted ? "우주 소리 켜기" : "우주 소리 끄기"}
+                hitSlop={8}
+                onPress={() => setMuted((value) => !value)}
+                style={styles.zoomButton}
+              >
+                <Ionicons
+                  color={GOLD}
+                  name={muted ? "volume-mute-outline" : "volume-high-outline"}
+                  size={18}
+                />
+              </Pressable>
             </View>
           </View>
         ) : null}
@@ -513,8 +622,8 @@ export default function MyUniverseScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: SPACE },
-  soundButton: { position: "absolute", zIndex: 3, top: 16, right: 18, width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(216,188,112,0.52)", backgroundColor: "rgba(4,11,27,0.82)" },
   canvas: { flex: 1, overflow: "hidden", backgroundColor: CANVAS },
+  worldAnchor: { position: "absolute", width: 1, height: 1 },
   world: { position: "absolute", width: WORLD_WIDTH, height: WORLD_HEIGHT },
   loadingState: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center" },
   emptyState: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center", paddingHorizontal: 30 },

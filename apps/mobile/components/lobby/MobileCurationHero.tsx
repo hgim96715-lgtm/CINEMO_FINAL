@@ -90,7 +90,6 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
   });
   const upcomingQuery = useQuery(
     movieUpcomingQueryOptions({
-      period: "this-week",
       page: 1,
       limit: 20,
       enabled: kind === "upcoming",
@@ -208,7 +207,7 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
     kind === "commemorative"
       ? curation?.title ?? "기념일에 함께 보는 영화"
       : kind === "upcoming"
-        ? "이번 주 극장에서 만날 영화"
+        ? "개봉 예정작"
         : "플랫폼에서 볼 수 있는 영화";
 
   return (
