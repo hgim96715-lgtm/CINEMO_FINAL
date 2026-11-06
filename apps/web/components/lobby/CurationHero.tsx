@@ -19,14 +19,11 @@ import {
   getCommemorativeMovieReason,
 } from "@/lib/commemorative-curations";
 import {
-  PlatformLogoBadge,
   getMovieProviders,
+  PlatformLogoBadge,
   usePlatformMovies,
 } from "./PlatformMovieCollection";
-import {
-  TMDB_IMAGE_BASE_URL,
-  getPlatformLogoSrc,
-} from "@/lib/platform-logo";
+import { getPlatformLogoSrc } from "@/lib/platform-logo";
 
 export type CurationKind = "commemorative" | "upcoming" | "platform";
 
@@ -38,8 +35,8 @@ const JAPANESE_SCRIPT_PATTERN = /[\u3040-\u30ff\uff66-\uff9f]/u;
 const isPublicHeroMovie = (movie: HeroMovieCandidate) =>
   Boolean(
     movie.title?.trim() &&
-      movie.posterUrl &&
-      !JAPANESE_SCRIPT_PATTERN.test(movie.title),
+    movie.posterUrl &&
+    !JAPANESE_SCRIPT_PATTERN.test(movie.title),
   );
 
 const getValidMovies = (movies: MovieSearchItemResponse[] | undefined) =>
@@ -99,8 +96,10 @@ export function CurationHero({
   const fallbackCuration = getActiveCommemorativeCuration();
   const commemorativeCuration = configuredCuration ?? fallbackCuration;
   const commemorativeQueries = useQueries({
-    queries: (configuredCuration ? [] : fallbackCuration?.movieTitles ?? []).map(
-      (title) =>
+    queries: (configuredCuration
+      ? []
+      : (fallbackCuration?.movieTitles ?? [])
+    ).map((title) =>
       movieSearchQueryOptions({
         query: title,
         page: 1,
@@ -169,7 +168,10 @@ export function CurationHero({
   useEffect(() => {
     if (movies.length > 0) {
       setSelectedMovie((currentMovie) => {
-        if (currentMovie && movies.some((movie) => movie.id === currentMovie.id)) {
+        if (
+          currentMovie &&
+          movies.some((movie) => movie.id === currentMovie.id)
+        ) {
           return currentMovie;
         }
 
@@ -207,10 +209,9 @@ export function CurationHero({
   const platformMovieProviders = platformMoviesWithProviders.find(
     ({ movie }) => movie.id === featuredMovie.id,
   )?.providers;
-  const featuredPlatformProviders =
-    platformMovieProviders?.length
-      ? platformMovieProviders
-      : getMovieProviders(featuredMovieDetailQuery.data ?? { watchOptions: [] });
+  const featuredPlatformProviders = platformMovieProviders?.length
+    ? platformMovieProviders
+    : getMovieProviders(featuredMovieDetailQuery.data ?? { watchOptions: [] });
 
   const reshuffle = () => {
     setSelectedMovie(pickRandomMovie(movies));
@@ -247,48 +248,48 @@ export function CurationHero({
           <div className="flex items-center gap-2">
             {showKindTabs && (
               <div className="flex rounded-full border border-white/15 bg-black/25 p-1 backdrop-blur-md">
-              {hasCommemorativeMovies && commemorativeCuration && (
-                <button
-                  type="button"
-                  aria-pressed={currentKind === "commemorative"}
-                  onClick={() => changeKind("commemorative")}
-                  className={`rounded-full px-3 py-1.5 text-xs transition sm:px-4 sm:text-sm ${
-                    currentKind === "commemorative"
-                      ? "bg-cinemo-gold font-semibold text-cinemo-dark shadow-lg"
-                      : "text-cinemo-muted hover:text-cinemo-text"
-                  }`}
-                >
-                  기념일
-                </button>
-              )}
-              {hasUpcomingMovies && (
-                <button
-                  type="button"
-                  aria-pressed={currentKind === "upcoming"}
-                  onClick={() => changeKind("upcoming")}
-                  className={`rounded-full px-3 py-1.5 text-xs transition sm:px-4 sm:text-sm ${
-                    currentKind === "upcoming"
-                      ? "bg-cinemo-gold font-semibold text-cinemo-dark shadow-lg"
-                      : "text-cinemo-muted hover:text-cinemo-text"
-                  }`}
-                >
-                  개봉 예정
-                </button>
-              )}
-              {hasPlatformMovies && (
-                <button
-                  type="button"
-                  aria-pressed={currentKind === "platform"}
-                  onClick={() => changeKind("platform")}
-                  className={`rounded-full px-3 py-1.5 text-xs transition sm:px-4 sm:text-sm ${
-                    currentKind === "platform"
-                      ? "bg-cinemo-gold font-semibold text-cinemo-dark shadow-lg"
-                      : "text-cinemo-muted hover:text-cinemo-text"
-                  }`}
-                >
-                  플랫폼
-                </button>
-              )}
+                {hasCommemorativeMovies && commemorativeCuration && (
+                  <button
+                    type="button"
+                    aria-pressed={currentKind === "commemorative"}
+                    onClick={() => changeKind("commemorative")}
+                    className={`rounded-full px-3 py-1.5 text-xs transition sm:px-4 sm:text-sm ${
+                      currentKind === "commemorative"
+                        ? "bg-cinemo-gold font-semibold text-cinemo-dark shadow-lg"
+                        : "text-cinemo-muted hover:text-cinemo-text"
+                    }`}
+                  >
+                    기념일
+                  </button>
+                )}
+                {hasUpcomingMovies && (
+                  <button
+                    type="button"
+                    aria-pressed={currentKind === "upcoming"}
+                    onClick={() => changeKind("upcoming")}
+                    className={`rounded-full px-3 py-1.5 text-xs transition sm:px-4 sm:text-sm ${
+                      currentKind === "upcoming"
+                        ? "bg-cinemo-gold font-semibold text-cinemo-dark shadow-lg"
+                        : "text-cinemo-muted hover:text-cinemo-text"
+                    }`}
+                  >
+                    개봉 예정
+                  </button>
+                )}
+                {hasPlatformMovies && (
+                  <button
+                    type="button"
+                    aria-pressed={currentKind === "platform"}
+                    onClick={() => changeKind("platform")}
+                    className={`rounded-full px-3 py-1.5 text-xs transition sm:px-4 sm:text-sm ${
+                      currentKind === "platform"
+                        ? "bg-cinemo-gold font-semibold text-cinemo-dark shadow-lg"
+                        : "text-cinemo-muted hover:text-cinemo-text"
+                    }`}
+                  >
+                    플랫폼
+                  </button>
+                )}
               </div>
             )}
 
@@ -354,14 +355,17 @@ export function CurationHero({
                 </Link>
 
                 <Link
-                  href={isUpcoming ? "/lobby/movies/upcoming" : "/lobby/movies/platform"}
+                  href={
+                    isUpcoming
+                      ? "/lobby/movies/upcoming"
+                      : "/lobby/movies/platform"
+                  }
                   className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-5 py-3.5 text-sm font-medium text-cinemo-text backdrop-blur-sm transition hover:border-cinemo-gold/60 hover:bg-white/10"
                 >
                   {isUpcoming ? "전체 개봉 예정작" : "플랫폼 영화 전체 보기"}
                 </Link>
               </div>
             )}
-
           </div>
 
           <div className="mx-auto w-full max-w-[11rem] sm:max-w-[16rem] lg:max-w-[20rem]">
@@ -404,7 +408,11 @@ export function CurationHero({
                 </Link>
 
                 <Link
-                  href={isUpcoming ? "/lobby/movies/upcoming" : "/lobby/movies/platform"}
+                  href={
+                    isUpcoming
+                      ? "/lobby/movies/upcoming"
+                      : "/lobby/movies/platform"
+                  }
                   className="inline-flex w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-5 py-3.5 text-sm font-medium text-cinemo-text backdrop-blur-sm transition hover:border-cinemo-gold/60 hover:bg-white/10"
                 >
                   {isUpcoming ? "전체 개봉 예정작" : "플랫폼 영화 전체 보기"}

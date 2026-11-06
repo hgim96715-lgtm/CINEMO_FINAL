@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { Minus, Plus, RotateCcw, Volume2, VolumeX, X } from "lucide-react";
 
 import type { MyMovie } from "@/lib/api/movies";
+import { authMeQueryOptions } from "@/lib/queries/auth.query";
 import { myMoviesQueryOptions } from "@/lib/queries/my-movies.query";
 
 const WORLD_WIDTH = 1600;
@@ -131,6 +132,66 @@ function getGenres(movie: MyMovie) {
         .filter(Boolean),
     ),
   );
+}
+
+function LoginRequiredModal() {
+  const router = useRouter();
+
+  return (
+    <div
+      aria-labelledby="login-required-title"
+      aria-modal="true"
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-[#02050d]/85 px-4 py-8 backdrop-blur-sm"
+      role="dialog"
+    >
+      <section className="w-full max-w-md rounded-[28px] border border-[#d9b866]/35 bg-[#09162b] p-6 text-[#f7f1e7] shadow-2xl shadow-black/40 sm:p-8">
+        <p className="text-xs font-semibold tracking-[0.28em] text-[#d9b866]">
+          MY UNIVERSE
+        </p>
+        <h1 id="login-required-title" className="mt-3 text-2xl font-bold">
+          로그인 해주세요
+        </h1>
+        <p className="mt-3 text-sm leading-6 text-white/60">
+          내 우주는 관람 기록으로 만들어집니다.
+        </p>
+        <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            className="rounded-full border border-white/20 px-5 py-3 text-sm font-semibold text-white/75 transition hover:border-white/40 hover:text-white"
+            type="button"
+            onClick={() => router.push("/lobby")}
+          >
+            취소
+          </button>
+          <button
+            className="rounded-full bg-[#d9b866] px-5 py-3 text-sm font-bold text-[#07101e] transition hover:bg-[#ecd081]"
+            type="button"
+            onClick={() => router.push("/login")}
+          >
+            로그인 하러가기
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export default function MyUniversePage() {
+  const authQuery = useQuery(authMeQueryOptions());
+
+  if (authQuery.isPending) {
+    return (
+      <main
+        aria-busy="true"
+        className="min-h-[calc(100dvh-11rem)] bg-[#02050d]"
+      />
+    );
+  }
+
+  if (!authQuery.data) {
+    return <LoginRequiredModal />;
+  }
+
+  return <UniverseCanvas />;
 }
 
 function segmentsCross(a: Point, b: Point, c: Point, d: Point) {
@@ -314,21 +375,21 @@ function MovieModal({
         className="relative mx-auto flex min-h-[calc(100dvh-2.5rem)] w-full max-w-4xl items-center"
         onClick={(event) => event.stopPropagation()}
       >
-        <button
-          aria-label="영화 모달 닫기"
-          className="absolute -top-11 right-0 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-[#07101e]/95 text-[#f7f1e7] shadow-lg transition hover:border-[#d9b866]/70 hover:text-[#d9b866] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d9b866]"
-          type="button"
-          onClick={onClose}
-        >
-          <X size={20} />
-        </button>
+        <div className="relative flex max-h-[calc(100dvh-2.5rem)] w-full flex-row items-center gap-4 overflow-y-auto rounded-[28px] border border-[#d9b866]/35 bg-[#09162b] p-4 pr-14 text-[#f7f1e7] shadow-2xl shadow-black/50 sm:gap-6 sm:p-6 sm:pr-16 md:gap-8 md:p-8 md:pr-20">
+          <button
+            aria-label="영화 모달 닫기"
+            className="absolute right-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-[#07101e] text-[#f7f1e7] shadow-lg transition hover:border-[#d9b866]/70 hover:text-[#d9b866] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d9b866] sm:right-4 sm:top-4"
+            type="button"
+            onClick={onClose}
+          >
+            <X size={22} />
+          </button>
 
-        <div className="flex max-h-[calc(100dvh-2.5rem)] w-full flex-row items-center gap-4 overflow-y-auto rounded-[28px] border border-[#d9b866]/35 bg-[#09162b] p-4 text-[#f7f1e7] shadow-2xl shadow-black/50 sm:gap-6 sm:p-6 md:gap-8 md:p-8">
-          <div className="aspect-[16/9] w-[46%] shrink-0 overflow-hidden rounded-2xl bg-[#101d34]">
+          <div className="aspect-[2/3] w-[38%] max-w-[240px] shrink-0 overflow-hidden rounded-2xl bg-[#101d34]">
             {movie.posterUrl ? (
               <img
                 alt={movie.title + " 포스터"}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
                 src={movie.posterUrl}
               />
             ) : (
@@ -357,7 +418,7 @@ function MovieModal({
                 router.push("/movies/" + movie.movieId);
               }}
             >
-              영화 상세 보기 <span className="ml-2 text-lg">→</span>
+              영화 상세 보기
             </button>
           </div>
         </div>
@@ -366,7 +427,7 @@ function MovieModal({
   );
 }
 
-export default function MyUniversePage() {
+function UniverseCanvas() {
   const moviesQuery = useQuery(myMoviesQueryOptions());
   const viewportRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);

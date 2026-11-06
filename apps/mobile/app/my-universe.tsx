@@ -565,11 +565,9 @@ export default function MyUniverseScreen() {
               ))}
             </Svg>
             {graph.stars.map((star) => (
-              <Pressable
-                accessibilityLabel={`${star.movie.title} 상세 보기`}
-                disabled={transform.scale < 0.56}
+              <View
                 key={star.movie.movieId}
-                onPress={() => setSelectedMovie(star.movie)}
+                pointerEvents="none"
                 style={[
                   styles.starTouch,
                   { left: star.x - 42, top: star.y - 42 },
@@ -579,11 +577,31 @@ export default function MyUniverseScreen() {
                   <View style={[styles.star, { width: star.size, height: star.size, borderRadius: star.size }]} />
                 </View>
                 {transform.scale >= 0.56 ? <Text numberOfLines={1} style={styles.starLabel}>{star.movie.title}</Text> : null}
-              </Pressable>
+              </View>
             ))}
             </View>
           </View>
         )}
+
+        {canvasReady && watchedMovies.length > 0 ? (
+          <View pointerEvents="box-none" style={styles.starHitLayer}>
+            {graph.stars.map((star) => {
+              const screenX = canvasSize.width / 2 + transform.x + (star.x - WORLD_WIDTH / 2) * transform.scale;
+              const screenY = canvasSize.height / 2 + transform.y + (star.y - WORLD_HEIGHT / 2) * transform.scale;
+
+              return (
+                <Pressable
+                  accessibilityLabel={`${star.movie.title} 상세 보기`}
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  key={`hit-${star.movie.movieId}`}
+                  onPress={() => setSelectedMovie(star.movie)}
+                  style={[styles.starHitArea, { left: screenX - 24, top: screenY - 24 }]}
+                />
+              );
+            })}
+          </View>
+        ) : null}
 
         {canvasReady && watchedMovies.length > 0 ? (
           <View pointerEvents="box-none" style={styles.controls}>
@@ -630,10 +648,12 @@ const styles = StyleSheet.create({
   emptyTitle: { marginTop: 12, color: IVORY, fontSize: 21, fontWeight: "700" },
   emptyCopy: { marginTop: 8, color: "#9aa5b6", fontSize: 14 },
   starTouch: { position: "absolute", width: 84, height: 84, alignItems: "center", justifyContent: "center" },
+  starHitLayer: { ...StyleSheet.absoluteFill, zIndex: 1 },
+  starHitArea: { position: "absolute", width: 48, height: 48, borderRadius: 24 },
   starGlow: { alignItems: "center", justifyContent: "center", backgroundColor: "rgba(227,196,113,0.08)", shadowColor: "#e6ca7d", shadowOpacity: 0.56, shadowRadius: 13, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
   star: { backgroundColor: "#fff3cf", shadowColor: "#fff3cf", shadowOpacity: 0.9, shadowRadius: 7, shadowOffset: { width: 0, height: 0 } },
   starLabel: { position: "absolute", top: 65, width: 148, textAlign: "center", color: "#e7e0d0", fontSize: 13, fontWeight: "600", textShadowColor: "rgba(0,0,0,0.9)", textShadowRadius: 4 },
-  controls: { position: "absolute", right: 18, bottom: 18 },
+  controls: { position: "absolute", right: 18, bottom: 18, zIndex: 2 },
   zoomControl: { flexDirection: "row", alignItems: "center", height: 42, paddingHorizontal: 4, borderRadius: 22, borderWidth: 1, borderColor: "rgba(226,231,242,0.2)", backgroundColor: "rgba(3,8,21,0.86)" },
   zoomButton: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
   zoomText: { width: 48, color: "#d4d8df", fontSize: 12, textAlign: "center", fontVariant: ["tabular-nums"] },
