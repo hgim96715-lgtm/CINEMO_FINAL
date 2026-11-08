@@ -7,6 +7,7 @@ import { envValidationSchema } from "@/config/env.validation";
 import { appConfig } from "@/config/app.config";
 import { databaseConfig } from "@/config/database.config";
 import { HealthModule } from "@/health/health.module";
+import { DailyMoviesModule } from "@/modules/daily-movies/daily-movies.module";
 import { MoviesModule } from "@/modules/movies/movies.module";
 import { kobisConfig } from "@/config/kobis.config";
 import { KobisModule } from "@/integrations/kobis/kobis.module";
@@ -67,6 +68,7 @@ import { ActivityModule } from "@/modules/activity/activity.module";
     PrismaModule,
     HealthModule,
     MoviesModule,
+    DailyMoviesModule,
     KobisModule,
     TmdbModule,
     KmdbModule,

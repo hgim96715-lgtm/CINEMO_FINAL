@@ -8,10 +8,15 @@ import { CurationController } from "./curation.controller";
 import { CurationRepository } from "./curation.repository";
 import { CurationService } from "./curation.service";
 
+import { PostcardReportsController } from "./postcard-reports.controller";
+import { ServiceVisitsController } from "./service-visits.controller";
+import { ServiceVisitsService } from "./service-visits.service";
+
 @Module({
-  controllers: [AdminController, CurationController],
+  controllers: [AdminController, CurationController, ServiceVisitsController, PostcardReportsController],
   providers: [
     AdminRepository,
+    ServiceVisitsService,
     AdminService,
     AdminGuard,
     CurationRepository,

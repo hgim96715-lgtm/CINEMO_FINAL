@@ -1,6 +1,7 @@
+import { CachedImage as Image } from "@/components/common/CachedImage";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Image, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { activeCurationsQueryOptions } from "@/lib/queries/curation.query";

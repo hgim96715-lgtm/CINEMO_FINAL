@@ -7,7 +7,8 @@
     "version": "1.0.0",
     "description": "영화 속으로, 추억의 한 장면으로",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0b181b",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -45,6 +46,14 @@
     "plugins": [
       "expo-router",
       "expo-apple-authentication",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CINEMO 프로필 사진을 선택하는 데 사진 보관함을 사용해요.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
       [
         "@react-native-google-signin/google-signin",
         {

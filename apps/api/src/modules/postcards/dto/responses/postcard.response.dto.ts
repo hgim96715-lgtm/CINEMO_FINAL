@@ -1,4 +1,4 @@
-import {ApiProperty} from "@nestjs/swagger";
+import {ApiProperty, ApiPropertyOptional} from "@nestjs/swagger";
 import {
   PostcardQuoteSource,
   PostcardSource,
@@ -76,6 +76,9 @@ export class PostcardResponseDto {
     nullable: true,
   })
   author!: PostcardAuthorSummaryDto | null;
+
+  @ApiPropertyOptional({ description: "상세 조회 요청자가 엽서 작성자인지 여부" })
+  isMine?: boolean;
 
   @ApiProperty({
     description: "엽서에 직접 첨부한 이미지 목록",

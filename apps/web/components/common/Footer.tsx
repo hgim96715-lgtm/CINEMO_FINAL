@@ -1,5 +1,6 @@
 import { CINEMO_BRAND } from "@cinemo/shared";
 import { Mail } from "lucide-react";
+import Link from "next/link";
 
 export function Footer() {
   return (
@@ -19,12 +20,16 @@ export function Footer() {
 
         <div className="flex flex-col items-start gap-3 sm:items-end">
           <a
-            href="mailto:hello@cinemo.app"
+            href="mailto:hello_cinemo@icloud.com"
             className="inline-flex items-center gap-2 text-xs text-cinemo-muted transition-colors hover:text-cinemo-gold-light"
           >
             <Mail className="size-4" />
             문의하기
           </a>
+          <div className="flex flex-wrap gap-3 text-xs text-cinemo-muted">
+            <Link href="/terms" className="hover:underline">서비스 이용약관</Link>
+            <Link href="/privacy" className="hover:underline">개인정보 처리방침</Link>
+          </div>
           <p className="text-xs text-muted-foreground/60">
             © {new Date().getFullYear()} CINEMO. All rights reserved.
           </p>

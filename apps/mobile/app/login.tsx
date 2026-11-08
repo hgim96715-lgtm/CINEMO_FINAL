@@ -2,7 +2,7 @@ import { CINEMO_COLORS } from "@cinemo/shared";
 import axios from "axios";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { Alert, Linking, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppleAuthenticationCredential } from "expo-apple-authentication";
 import { AppleLoginButton } from "@/components/auth/AppleLoginButton";
@@ -52,7 +52,7 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-function moveAfterSocialLogin(result: MobileAppleLoginResponse) {
+function moveAfterSocialLogin(result: MobileAppleLoginResponse, from?: string) {
   if ("requiresRegistration" in result && result.requiresRegistration) {
     router.replace({
       pathname: "/oauth-signup",
@@ -62,7 +62,7 @@ function moveAfterSocialLogin(result: MobileAppleLoginResponse) {
     });
     return;
   }
-  router.replace("/lobby");
+  router.replace(from === "my-cinema" ? "/my-cinema" : "/lobby");
 }
 
 export default function LoginScreen() {
@@ -83,7 +83,7 @@ export default function LoginScreen() {
         identityToken: credential.identityToken,
         authorizationCode: credential.authorizationCode ?? undefined,
       });
-      moveAfterSocialLogin(result);
+      moveAfterSocialLogin(result, from);
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "Apple 로그인에 실패했습니다."));
     }
@@ -92,7 +92,7 @@ export default function LoginScreen() {
     try {
       setErrorMessage(null);
       const result = await loginGoogleMobile({ identityToken });
-      moveAfterSocialLogin(result);
+      moveAfterSocialLogin(result, from);
     } catch (error) {
       setErrorMessage(getErrorMessage(error, "Google 로그인에 실패했습니다."));
     }
@@ -179,7 +179,7 @@ export default function LoginScreen() {
             />
 
             <NaverLoginButton
-              onSuccess={moveAfterSocialLogin}
+              onSuccess={(result) => moveAfterSocialLogin(result, from)}
               onError={(error) => {
                 setErrorMessage(
                   getErrorMessage(error, "네이버 로그인에 실패했습니다."),
@@ -201,6 +201,22 @@ export default function LoginScreen() {
             {/*    이메일로 로그인*/}
             {/*  </Text>*/}
             {/*</Pressable>*/}
+            <View className="mt-5 flex-row flex-wrap justify-center gap-4">
+              {[
+                ["서비스 이용약관", process.env.EXPO_PUBLIC_TERMS_URL],
+                ["개인정보 처리방침", process.env.EXPO_PUBLIC_PRIVACY_URL],
+              ].map(([label, url]) => url && (
+                <Pressable
+                  key={label}
+                  accessibilityRole="link"
+                  onPress={() => void Linking.openURL(url).catch(() =>
+                    Alert.alert("문서를 열 수 없어요", "hello_cinemo@icloud.com으로 문의해 주세요."),
+                  )}
+                >
+                  <Text className="text-xs text-cinemo-muted">{label}</Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
         </View>
       </View>

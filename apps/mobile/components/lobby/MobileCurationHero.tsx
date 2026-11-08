@@ -1,8 +1,9 @@
+import { CachedImage as Image } from "@/components/common/CachedImage";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { CalendarDays, Shuffle } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import type { MovieSearchItemResponse } from "@cinemo/api-contract";
 import { CINEMO_COLORS } from "@cinemo/shared";

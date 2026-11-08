@@ -13,7 +13,7 @@ type HeaderProps = {
   showAccount?: boolean;
 };
 
-const CINEMO_LOGO = require("../../assets/icon.png");
+const CINEMO_LOGO = require("../../assets/header-logo.webp");
 
 export function Header({
   onSearchPress,
@@ -62,6 +62,8 @@ export function Header({
   return (
     <View className="flex-row items-center justify-between px-5 py-4">
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="CINEMO 홈"
         className="flex-col items-center"
         onPress={() => router.replace("/lobby")}
       >

@@ -1,6 +1,7 @@
+import { CachedImage as Image } from "@/components/common/CachedImage";
 import { useQuery } from "@tanstack/react-query";
 import { UserRound } from "lucide-react-native";
-import { Image, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import { CINEMO_COLORS } from "@cinemo/shared";

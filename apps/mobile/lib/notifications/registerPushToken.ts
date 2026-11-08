@@ -31,6 +31,10 @@ export async function registerPushToken(): Promise<PushTokenResult> {
     permissionStatus = requestedPermission.status;
   }
 
+  if (permissionStatus !== Notifications.PermissionStatus.GRANTED) {
+    throw new Error("기기 설정에서 CINEMO 알림을 허용해 주세요.");
+  }
+
   const projectId =
     Constants.expoConfig?.extra?.eas?.projectId ??
     Constants.easConfig?.projectId ??

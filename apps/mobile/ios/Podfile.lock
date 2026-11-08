@@ -66,6 +66,15 @@ PODS:
     - ExpoModulesCore
   - ExpoGlassEffect (57.0.4):
     - ExpoModulesCore
+  - ExpoImage (57.0.5):
+    - ExpoModulesCore
+    - libavif/libdav1d
+    - SDWebImage (~> 5.21.0)
+    - SDWebImageAVIFCoder (~> 0.11.0)
+    - SDWebImageSVGCoder (~> 1.7.0)
+    - SDWebImageWebPCoder (~> 0.14.6)
+  - ExpoImagePicker (57.0.21):
+    - ExpoModulesCore
   - ExpoKeepAwake (57.0.2):
     - ExpoModulesCore
   - ExpoLinking (57.0.11):
@@ -146,6 +155,23 @@ PODS:
   - hermes-engine (250829098.0.17):
     - hermes-engine/Pre-built (= 250829098.0.17)
   - hermes-engine/Pre-built (250829098.0.17)
+  - libavif/core (1.0.0)
+  - libavif/libdav1d (1.0.0):
+    - libavif/core
+    - libdav1d (>= 0.6.0)
+  - libdav1d (1.2.0)
+  - libwebp (1.6.0):
+    - libwebp/demux (= 1.6.0)
+    - libwebp/mux (= 1.6.0)
+    - libwebp/sharpyuv (= 1.6.0)
+    - libwebp/webp (= 1.6.0)
+  - libwebp/demux (1.6.0):
+    - libwebp/webp
+  - libwebp/mux (1.6.0):
+    - libwebp/demux
+  - libwebp/sharpyuv (1.6.0)
+  - libwebp/webp (1.6.0):
+    - libwebp/sharpyuv
   - PromisesObjC (2.4.1)
   - PromisesSwift (2.4.1):
     - PromisesObjC (= 2.4.1)
@@ -2390,6 +2416,17 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - SDWebImage (5.21.7):
+    - SDWebImage/Core (= 5.21.7)
+  - SDWebImage/Core (5.21.7)
+  - SDWebImageAVIFCoder (0.11.1):
+    - libavif/core (>= 0.11.0)
+    - SDWebImage (~> 5.10)
+  - SDWebImageSVGCoder (1.7.0):
+    - SDWebImage/Core (~> 5.6)
+  - SDWebImageWebPCoder (0.14.6):
+    - libwebp (~> 1.0)
+    - SDWebImage/Core (~> 5.17)
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -2406,6 +2443,8 @@ DEPENDENCIES:
   - "ExpoFileSystem (from `../../../node_modules/.pnpm/expo-file-system@57.0.7_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_@react-nati_eb30e5fb1f1cbb63bdf7e6b73f606fa5/node_modules/expo-file-system/ios`)"
   - "ExpoFont (from `../../../node_modules/.pnpm/expo-font@57.0.4_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_@react-native+metr_26ce57284ca85fa2b47a0f1f880f3543/node_modules/expo-font/ios`)"
   - "ExpoGlassEffect (from `../../../node_modules/.pnpm/expo-glass-effect@57.0.4_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_@react-nat_1b047c6eda004a82f8a462a019c3296c/node_modules/expo-glass-effect/ios`)"
+  - "ExpoImage (from `../../../node_modules/.pnpm/expo-image@57.0.5_expo@57.0.26_react-native-web@0.21.3_react-dom@19.2.3_react@19.2.3__r_d043cd304b3fe82cbe662cec9d5a0014/node_modules/expo-image/ios`)"
+  - "ExpoImagePicker (from `../../../node_modules/.pnpm/expo-image-picker@57.0.21_expo@57.0.26/node_modules/expo-image-picker/ios`)"
   - "ExpoKeepAwake (from `../../../node_modules/.pnpm/expo-keep-awake@57.0.2_expo@57.0.26_react@19.2.3/node_modules/expo-keep-awake/ios`)"
   - "ExpoLinking (from `../../../node_modules/.pnpm/expo-linking@57.0.11_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_@react-native+_e3b28f842540c895ce5f0cbe2603210d/node_modules/expo-linking/ios`)"
   - "ExpoLogBox (from `../../../node_modules/.pnpm/@expo+log-box@57.0.4_@expo+dom-webview@57.0.1_expo@57.0.26_react-native@0.86.3_@babel+c_19afeabd4c1cdf40d929c8b7ddd80cd3/node_modules/@expo/log-box`)"
@@ -2514,9 +2553,16 @@ SPEC REPOS:
     - GoogleUtilities
     - GTMAppAuth
     - GTMSessionFetcher
+    - libavif
+    - libdav1d
+    - libwebp
     - PromisesObjC
     - PromisesSwift
     - RecaptchaInterop
+    - SDWebImage
+    - SDWebImageAVIFCoder
+    - SDWebImageSVGCoder
+    - SDWebImageWebPCoder
 
 EXTERNAL SOURCES:
   EXApplication:
@@ -2545,6 +2591,10 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/.pnpm/expo-font@57.0.4_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_@react-native+metr_26ce57284ca85fa2b47a0f1f880f3543/node_modules/expo-font/ios"
   ExpoGlassEffect:
     :path: "../../../node_modules/.pnpm/expo-glass-effect@57.0.4_expo@57.0.26_react-native@0.86.3_@babel+core@7.29.7_@react-nat_1b047c6eda004a82f8a462a019c3296c/node_modules/expo-glass-effect/ios"
+  ExpoImage:
+    :path: "../../../node_modules/.pnpm/expo-image@57.0.5_expo@57.0.26_react-native-web@0.21.3_react-dom@19.2.3_react@19.2.3__r_d043cd304b3fe82cbe662cec9d5a0014/node_modules/expo-image/ios"
+  ExpoImagePicker:
+    :path: "../../../node_modules/.pnpm/expo-image-picker@57.0.21_expo@57.0.26/node_modules/expo-image-picker/ios"
   ExpoKeepAwake:
     :path: "../../../node_modules/.pnpm/expo-keep-awake@57.0.2_expo@57.0.26_react@19.2.3/node_modules/expo-keep-awake/ios"
   ExpoLinking:
@@ -2759,6 +2809,8 @@ SPEC CHECKSUMS:
   ExpoFileSystem: 28778f942725170102f7c6cf4dee05a526ddacd0
   ExpoFont: f8198a952ba2ff53c9b393b5269ea435f232cfc3
   ExpoGlassEffect: 310dc75c8d862de1c4b3ff15a90439ba51a39798
+  ExpoImage: abe60c6c68d08d837b2c51fb9e8b6c6e320b9125
+  ExpoImagePicker: cd64953ddcfc7b4a2cbc6edd47e0bbdef88ae326
   ExpoKeepAwake: 72af0b3be3615e59bc819d26061ff4e06b155ee0
   ExpoLinking: 52819633a2225a0c2a3cd3de64056b021bb55202
   ExpoLogBox: 80957303325cd4439137765c90a87d7f22aaf2ff
@@ -2779,6 +2831,9 @@ SPEC CHECKSUMS:
   GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   hermes-engine: f950618e994e43d007f013c66a7666906b11ed29
+  libavif: 5f8e715bea24debec477006f21ef9e95432e254d
+  libdav1d: 23581a4d8ec811ff171ed5e2e05cd27bad64c39f
+  libwebp: af5937a13536ef73f3784d69cc342b98961acf33
   PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
   PromisesSwift: 217dea0fd5d2ad65222a109c48698add13cc1c5b
   RCTDeprecation: 96f68ebf33f8762466b01d57d6e873c4f30efb07
@@ -2863,6 +2918,10 @@ SPEC CHECKSUMS:
   RNScreens: c1a06fd73d0581a2a28a160577be393f579662b9
   RNSVG: 6cae8d4082913be2eb43eaec2a456222c42195ed
   RNWorklets: e8ffeffba1a7a883a25c1caa59298f6ccc24ff2b
+  SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
+  SDWebImageAVIFCoder: afe194a084e851f70228e4be35ef651df0fc5c57
+  SDWebImageSVGCoder: 15a300a97ec1c8ac958f009c02220ac0402e936c
+  SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   Yoga: 18b74b3ade30bebc1904004dfaceae1dd02a330a
 
 PODFILE CHECKSUM: 030a466da1cfb8a6d4671620a5d93fa3f3bccd9b

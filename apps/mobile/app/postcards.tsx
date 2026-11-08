@@ -1,3 +1,4 @@
+import { CachedImage as Image } from "@/components/common/CachedImage";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { Heart, MessageCircle, Share2 } from "lucide-react-native";
@@ -5,7 +6,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   Text,
   View,
@@ -50,6 +50,9 @@ export default function PostcardsScreen() {
   return (
     <SafeAreaView edges={[]} className="flex-1 bg-cinemo-bg">
       <FlatList
+        initialNumToRender={5}
+        maxToRenderPerBatch={5}
+        windowSize={5}
         data={postcards}
         keyExtractor={(postcard) => postcard.id}
         showsVerticalScrollIndicator={false}

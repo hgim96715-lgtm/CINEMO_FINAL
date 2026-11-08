@@ -1,7 +1,8 @@
+import { CachedImage as Image } from "@/components/common/CachedImage";
 import type { MovieSearchItemResponse } from "@cinemo/api-contract";
 import { Ionicons } from "@expo/vector-icons";
 import { CINEMO_COLORS } from "@cinemo/shared";
-import { Image, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { getImageUrl } from "@/lib/utils";
 
 type MovieCardProps = {
@@ -73,6 +74,7 @@ export function MovieCard({ movie, index, onPress }: MovieCardProps) {
         {posterUrl ? (
           <Image
             source={{ uri: posterUrl }}
+            imageWidth={112}
             resizeMode="cover"
             style={{ width: "100%", height: "100%" }}
             accessibilityLabel={`${movie.title} 포스터`}

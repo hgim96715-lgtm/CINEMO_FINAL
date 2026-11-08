@@ -1,6 +1,7 @@
+import { CachedImage as Image } from "@/components/common/CachedImage";
 import { useQueries } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, FlatList, Text, View } from "react-native";
 
 import { CINEMO_COLORS } from "@cinemo/shared";
 import type { MovieSearchItemResponse } from "@cinemo/api-contract";
@@ -116,17 +117,20 @@ export function PlatformMovies() {
         morePath="/movies/platform"
       />
 
-      <ScrollView
+      <FlatList
         horizontal
+        data={items}
+        keyExtractor={({ movie }) => movie.id}
+        initialNumToRender={4}
+        maxToRenderPerBatch={4}
+        windowSize={3}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingLeft: 20, paddingRight: 4 }}
-      >
-        {items.map(({ movie, providers }) => {
+        renderItem={({ item: { movie, providers } }) => {
           const posterUrl = getImageUrl(movie.posterUrl);
 
           return (
             <Pressable
-              key={movie.id}
               className="mr-4"
               style={{ width: 132 }}
               onPress={() => router.push(`/movies/${movie.id}`)}
@@ -144,6 +148,7 @@ export function PlatformMovies() {
                 {posterUrl ? (
                   <Image
                     source={{ uri: posterUrl }}
+                    imageWidth={132}
                     resizeMode="cover"
                     style={{ width: "100%", height: "100%" }}
                     accessibilityLabel={`${movie.title} 포스터`}
@@ -160,8 +165,8 @@ export function PlatformMovies() {
               </Text>
             </Pressable>
           );
-        })}
-      </ScrollView>
+        }}
+      />
     </View>
   );
 }

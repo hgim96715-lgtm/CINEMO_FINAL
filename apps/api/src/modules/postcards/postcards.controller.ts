@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -70,6 +71,39 @@ export class PostcardsController {
     @Body() request: CreatePostcardQuoteSuggestionRequestDto,
   ) {
     return this.postcardService.suggestQuote(request);
+  }
+
+  @Get("blocks")
+  findBlocks(@CurrentUser() user: SessionUser) {
+    return this.postcardService.findBlocks(user.id);
+  }
+
+  @Delete("blocks/:userId")
+  async unblock(
+    @CurrentUser() user: SessionUser,
+    @Param("userId", ParseUUIDPipe) blockedId: string,
+  ) {
+    await this.postcardService.unblock(user.id, blockedId);
+    return { blocked: false };
+  }
+
+  @Post(":postcardId/block-author")
+  async blockPostcardAuthor(
+    @CurrentUser() user: SessionUser,
+    @Param("postcardId", ParseUUIDPipe) postcardId: string,
+  ) {
+    await this.postcardService.blockAuthor(user.id, postcardId);
+    return { blocked: true };
+  }
+
+  @Post(":postcardId/comments/:commentId/block-author")
+  async blockCommentAuthor(
+    @CurrentUser() user: SessionUser,
+    @Param("postcardId", ParseUUIDPipe) postcardId: string,
+    @Param("commentId", ParseUUIDPipe) commentId: string,
+  ) {
+    await this.postcardService.blockAuthor(user.id, postcardId, commentId);
+    return { blocked: true };
   }
 
   @OptionalAuth()
@@ -177,7 +211,7 @@ export class PostcardsController {
   ) {
     const postcard = await this.postcardService.findById(user?.id, postcardId);
 
-    return toPostcardResponse(postcard);
+    return { ...toPostcardResponse(postcard), isMine: postcard.userId === user?.id };
   }
 
   @ApiCookieAuth("cinemo_session")
@@ -389,6 +423,19 @@ export class PostcardsController {
     return { reported: true };
   }
 
+  @ApiCookieAuth("cinemo_session")
+  @Post(":postcardId/comments/:commentId/reports")
+  @ApiOperation({ summary: "엽서 댓글 신고" })
+  async reportComment(
+    @Param("postcardId", ParseUUIDPipe) postcardId: string,
+    @Param("commentId", ParseUUIDPipe) commentId: string,
+    @CurrentUser() user: SessionUser,
+    @Body() request: CreatePostcardReportRequestDto,
+  ) {
+    await this.postcardService.report(user.id, postcardId, request, commentId);
+    return { reported: true };
+  }
+
   @OptionalAuth()
   @Post(":postcardId/share")
   @ApiOperation({
@@ -402,7 +449,7 @@ export class PostcardsController {
     return this.postcardService.share(user?.id, postcardId, request);
   }
 
-  @Public()
+  @OptionalAuth()
   @Get(":postcardId/comments")
   @ApiOperation({
     summary: "엽서 댓글 목록 조회",
@@ -410,8 +457,9 @@ export class PostcardsController {
   async findComments(
     @Param("postcardId") postcardId: string,
     @Query() request: GetPostcardCommentsRequestDto,
+    @CurrentUser() user?: SessionUser,
   ) {
-    const result = await this.postcardService.findComments(postcardId, request);
+    const result = await this.postcardService.findComments(postcardId, request, user?.id);
 
     return {
       items: result.items.map(toPostcardCommentResponse),

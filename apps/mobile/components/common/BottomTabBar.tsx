@@ -47,6 +47,7 @@ export function BottomTabBar() {
     <View
       className="border-t bg-cinemo-bg"
       style={{
+        backgroundColor: CINEMO_COLORS.background,
         borderTopColor: "rgba(255,255,255,0.1)",
         paddingBottom: insets.bottom,
       }}
@@ -64,7 +65,9 @@ export function BottomTabBar() {
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
               accessibilityLabel={tab.label}
-              onPress={() => router.replace(tab.route)}
+              onPress={() => {
+                if (segments.length !== 1 || segments[0] !== tab.key) router.replace(tab.route);
+              }}
               className="h-12 min-w-[68px] items-center justify-center gap-0.5 rounded-2xl px-2 py-1"
               style={{
                 backgroundColor: isActive

@@ -1,5 +1,6 @@
 import {
   BadGatewayException,
+  BadRequestException,
   ConflictException,
   Injectable,
   Logger,
@@ -384,6 +385,7 @@ export class PostcardService {
     postcardId: string,
     request: UpdatePostcardRequestDto,
   ): Promise<DomainPostcard> {
+    this.validateCommunityText(request.content);
     const postcard = await this.postcardRepository.update({
       postcardId,
       userId,
@@ -425,6 +427,8 @@ export class PostcardService {
     userId: string,
     postcardId: string,
   ): Promise<DomainPostcard> {
+    const draft = await this.postcardRepository.findById(postcardId, userId);
+    if (draft?.userId === userId) this.validateCommunityText(draft.content);
     const postcard = await this.postcardRepository.publish(postcardId, userId);
 
     if (!postcard) {
@@ -471,6 +475,7 @@ export class PostcardService {
     userId: string,
     request: CreatePostcardRequestDto,
   ): Promise<DomainPostcard> {
+    this.validateCommunityText(request.content);
     const postcard = await this.postcardRepository.create({
       userId,
       movieId: request.movieId,
@@ -511,6 +516,7 @@ export class PostcardService {
     userId: string,
     request: CreatePostcardCommentRequestDto,
   ): Promise<PostcardCommentWithUser> {
+    this.validateCommunityText(request.content);
     const comment = await this.postcardRepository.createComment({
       postcardId,
       userId,
@@ -549,6 +555,7 @@ export class PostcardService {
     userId: string,
     request: UpdatePostcardCommentRequestDto,
   ): Promise<PostcardCommentWithUser> {
+    this.validateCommunityText(request.content);
     const comment = await this.postcardRepository.updateComment({
       postcardId,
       commentId,
@@ -563,9 +570,32 @@ export class PostcardService {
     return comment;
   }
 
+  async blockAuthor(userId: string, postcardId: string, commentId?: string) {
+    if (!(await this.postcardRepository.blockAuthor(userId, postcardId, commentId))) {
+      throw new NotFoundException("차단할 작성자를 찾을 수 없습니다.");
+    }
+  }
+
+  findBlocks(userId: string) {
+    return this.postcardRepository.findBlocks(userId);
+  }
+
+  unblock(userId: string, blockedId: string) {
+    return this.postcardRepository.unblock(userId, blockedId);
+  }
+
+  private validateCommunityText(content?: string | null) {
+    if (!content) return;
+    const normalized = content.normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}\p{Cf}]/gu, "");
+    if (/씨발|시발|병신|개새끼|좆같|죽어버려/u.test(normalized)) {
+      throw new BadRequestException("부적절한 표현이 포함되어 있어요. 내용을 수정해 주세요.");
+    }
+  }
+
   async findComments(
     postcardId: string,
     request: GetPostcardCommentsRequestDto,
+    userId?: string,
   ): Promise<CursorPage<PostcardCommentWithUser>> {
     const pageSize = Math.min(request.pageSize ?? 20, 50);
 
@@ -573,6 +603,7 @@ export class PostcardService {
       postcardId,
       request.cursor,
       pageSize,
+      userId,
     );
   }
 
@@ -653,15 +684,17 @@ export class PostcardService {
     userId: string,
     postcardId: string,
     request: CreatePostcardReportRequestDto,
+    commentId?: string,
   ): Promise<void> {
     const report = await this.postcardRepository.createReport({
       postcardId,
+      commentId,
       reporterId: userId,
       reason: request.reason,
     });
 
     if (!report) {
-      throw new NotFoundException("신고할 공개 엽서를 찾을 수 없습니다.");
+      throw new NotFoundException(commentId ? "신고할 댓글을 찾을 수 없습니다." : "신고할 공개 엽서를 찾을 수 없습니다.");
     }
 
     if (report.reporterId === userId && report.status !== "PENDING") {

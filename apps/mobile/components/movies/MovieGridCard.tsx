@@ -1,9 +1,10 @@
+import { CachedImage as Image } from "@/components/common/CachedImage";
 import type { MovieSearchItemResponse } from "@cinemo/api-contract";
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { router } from "expo-router";
 import { CalendarDays } from "lucide-react-native";
 import { memo } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { getImageUrl } from "@/lib/utils";
 
@@ -38,6 +39,7 @@ export const MovieGridCard = memo(function MovieGridCard({
         {posterUrl ? (
           <Image
             source={{ uri: posterUrl }}
+            imageWidth={cardWidth}
             resizeMode="cover"
             style={{ width: "100%", height: "100%" }}
             accessibilityLabel={`${movie.title} 포스터`}

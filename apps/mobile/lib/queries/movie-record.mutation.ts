@@ -23,6 +23,7 @@ export function useUpdateMovieRecord(movieId: string) {
       void queryClient.invalidateQueries({
         queryKey: ["my-cinema", "calendar"],
       });
+      void queryClient.invalidateQueries({ queryKey: ["daily-movie"] });
     },
   });
 }
@@ -42,6 +43,7 @@ export function useDeleteMovieRecord(movieId: string) {
       void queryClient.invalidateQueries({
         queryKey: ["my-cinema", "calendar"],
       });
+      void queryClient.invalidateQueries({ queryKey: ["daily-movie"] });
     },
   });
 }

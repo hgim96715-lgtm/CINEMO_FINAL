@@ -1,19 +1,31 @@
+import { isAxiosError } from "axios";
 import {
   useInfiniteQuery,
+  useMutation,
+  useQueryClient,
   useQuery,
 } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import {
+  Ban,
+  Check,
+  Ellipsis,
   Heart,
+  Flag,
   MessageCircle,
+  Pencil,
   Send,
   Share2,
+  Trash2,
   UserRound,
 } from "lucide-react-native";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  findNodeHandle,
   Image,
+  Keyboard,
+  Platform,
   KeyboardAvoidingView,
   Modal,
   Pressable,
@@ -23,12 +35,13 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { PostcardQuoteContent } from "@/components/postcard/PostcardQuoteContent";
+import { blockPostcardAuthor, deletePostcard, reportPostcard } from "@/lib/api/postcards";
 import { getRefreshToken } from "@/lib/api/auth";
-import type { PostcardComment } from "@/lib/api/postcard-comments";
+import { deletePostcardComment, reportPostcardComment, updatePostcardComment, type PostcardComment } from "@/lib/api/postcard-comments";
 import { postcardCommentsQueryOptions } from "@/lib/queries/postcard-comment.query";
 import { useCreatePostcardComment } from "@/lib/queries/postcard-comment.mutation";
 import { postcardDetailQueryOptions } from "@/lib/queries/postcard-detail.query";
@@ -36,7 +49,28 @@ import {
   useSetPostcardHeart,
   useSharePostcard,
 } from "@/lib/queries/postcard.mutation";
+import { currentUserQueryOptions } from "@/lib/queries/my-cinema.query";
+import { myPostcardsQueryOptions, postcardFeedQueryOptions } from "@/lib/queries/postcard-feed.query";
 import { getImageUrl } from "@/lib/utils";
+
+function commentErrorMessage(error: unknown) {
+  if (isAxiosError<{ message?: string }>(error) &&
+      error.response?.status === 400 && typeof error.response.data.message === "string") {
+    return error.response.data.message;
+  }
+  return "잠시 후 다시 시도해 주세요.";
+}
+
+type ActionSheet = {
+  title: string;
+  message?: string;
+  actions?: {
+    label: string;
+    icon?: typeof Pencil;
+    danger?: boolean;
+    onPress: () => void;
+  }[];
+};
 
 const postcardTypeLabels = {
   REVIEW: "감상",
@@ -107,7 +141,27 @@ export default function PostcardDetailScreen() {
   const [reactionCount, setReactionCount] = useState(0);
   const [shareCount, setShareCount] = useState(0);
   const [loginModalVisible, setLoginModalVisible] = useState(false);
+  const [sheet, setSheet] = useState<ActionSheet | null>(null);
+  const [editing, setEditing] = useState<{ id: string; content: string } | null>(null);
+  const { bottom } = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
+
+  const composeInputRef = useRef<TextInput>(null);
+  const editInputRef = useRef<TextInput>(null);
+
+  function revealCommentInput() {
+    const input = editInputRef.current?.isFocused() ? editInputRef.current : composeInputRef.current;
+    if (!input?.isFocused()) return;
+    const handle = input ? findNodeHandle(input) : null;
+    if (handle !== null) {
+      scrollViewRef.current?.scrollResponderScrollNativeHandleToKeyboard(handle, 82, true);
+    }
+  }
+
+  useEffect(() => {
+    const subscription = Keyboard.addListener("keyboardDidShow", revealCommentInput);
+    return () => subscription.remove();
+  }, []);
 
   const postcardQuery = useQuery(postcardDetailQueryOptions(postcardId ?? ""));
   const commentsQuery = useInfiniteQuery(
@@ -115,6 +169,65 @@ export default function PostcardDetailScreen() {
   );
   const commentMutation = useCreatePostcardComment();
   const heartMutation = useSetPostcardHeart(postcardId ?? "");
+  const reportMutation = useMutation({
+    mutationFn: (reason: string) => reportPostcard(postcardId ?? "", reason),
+    onSuccess: () => setSheet({ title: "신고 접수", message: "운영팀 검토를 위해 신고가 접수되었어요." }),
+    onError: () => setSheet({ title: "신고 접수 실패", message: "잠시 후 다시 시도해 주세요." }),
+  });
+  const queryClient = useQueryClient();
+  const viewerQuery = useQuery({ ...currentUserQueryOptions(), enabled: hasSession });
+  const blockAuthor = useMutation({
+    mutationFn: (commentId?: string) => blockPostcardAuthor(postcardId ?? "", commentId),
+    onSuccess: (_, commentId) => {
+      if (!commentId) router.replace("/postcards");
+      void queryClient.invalidateQueries({ queryKey: ["postcards"] });
+      if (commentId) setSheet({ title: "차단 완료", message: "설정·지원에서 차단을 해제할 수 있어요." });
+    },
+    onError: () => setSheet({ title: "차단 실패", message: "잠시 후 다시 시도해 주세요." }),
+  });
+  const commentDelete = useMutation({
+    mutationFn: (commentId: string) => deletePostcardComment(postcardId ?? "", commentId),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: postcardCommentsQueryOptions(postcardId ?? "").queryKey }),
+        queryClient.invalidateQueries({ queryKey: postcardDetailQueryOptions(postcardId ?? "").queryKey }),
+        queryClient.invalidateQueries({ queryKey: postcardFeedQueryOptions().queryKey }),
+      ]);
+    },
+    onError: () => setSheet({ title: "댓글 삭제 실패", message: "잠시 후 다시 시도해 주세요." }),
+  });
+  const commentReport = useMutation({
+    mutationFn: ({ commentId, reason }: { commentId: string; reason: string }) =>
+      reportPostcardComment(postcardId ?? "", commentId, reason),
+    onSuccess: () => setSheet({ title: "신고 접수", message: "댓글 신고가 접수되었어요." }),
+    onError: () => setSheet({ title: "신고 접수 실패", message: "잠시 후 다시 시도해 주세요." }),
+  });
+  const commentUpdate = useMutation({
+    mutationFn: ({ id, content }: { id: string; content: string }) =>
+      updatePostcardComment(postcardId ?? "", id, content.trim()),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(
+        postcardCommentsQueryOptions(postcardId ?? "").queryKey,
+        (data) => data && {
+          ...data,
+          pages: data.pages.map((page) => ({
+            ...page,
+            items: page.items.map((item) => item.id === updated.id ? updated : item),
+          })),
+        },
+      );
+      setEditing(null);
+    },
+  });
+  const postcardDelete = useMutation({
+    mutationFn: () => deletePostcard(postcardId ?? ""),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: postcardFeedQueryOptions().queryKey });
+      void queryClient.invalidateQueries({ queryKey: myPostcardsQueryOptions().queryKey });
+      router.replace("/postcards");
+    },
+    onError: () => setSheet({ title: "엽서 삭제 실패", message: "잠시 후 다시 시도해 주세요." }),
+  });
   const shareMutation = useSharePostcard(postcardId ?? "");
 
   useEffect(() => {
@@ -201,6 +314,86 @@ export default function PostcardDetailScreen() {
   }
 
   const postcard = postcardQuery.data;
+  const isOwnPostcard = hasSession && postcard.isMine === true;
+
+  function openActions(item?: PostcardComment) {
+    if (!hasSession) {
+      setLoginModalVisible(true);
+      return;
+    }
+
+    const label = item ? "댓글" : "엽서";
+    const isMine = item ? item.author?.id === viewerQuery.data?.id : isOwnPostcard;
+
+    if (isMine) {
+      setSheet({
+        title: `${label} 관리`,
+        actions: [
+          {
+            label: "수정",
+            icon: Pencil,
+            onPress: () => {
+              if (item) {
+                commentUpdate.reset();
+                setEditing({ id: item.id, content: item.content });
+              } else {
+                router.push({ pathname: "/postcards/new", params: { postcardId: postcard.id } });
+              }
+            },
+          },
+          {
+            label: "삭제",
+            icon: Trash2,
+            danger: true,
+            onPress: () => setSheet({
+              title: `${label} 삭제`,
+              message: `이 ${label}을 삭제할까요?`,
+              actions: [{
+                label: "삭제하기",
+                icon: Trash2,
+                danger: true,
+                onPress: () => item ? commentDelete.mutate(item.id) : postcardDelete.mutate(),
+              }],
+            }),
+          },
+        ],
+      });
+      return;
+    }
+
+    setSheet({
+      title: `${label} 더보기`,
+      actions: [{
+        label: "신고",
+        icon: Flag,
+        onPress: () => setSheet({
+          title: `${label} 신고`,
+          message: "신고 사유를 선택하면 접수돼요.",
+          actions: ["스팸·광고", "부적절한 콘텐츠"].map((reason) => ({
+            label: reason,
+            onPress: () => item
+              ? commentReport.mutate({ commentId: item.id, reason })
+              : reportMutation.mutate(reason),
+          })),
+        }),
+      }, {
+        label: "작성자 차단",
+        icon: Ban,
+        danger: true,
+        onPress: () => setSheet({
+          title: "작성자 차단",
+          message: "이 작성자의 엽서와 댓글이 보이지 않아요. 설정·지원에서 차단을 해제할 수 있어요.",
+          actions: [{
+            label: "차단하기",
+            icon: Ban,
+            danger: true,
+            onPress: () => blockAuthor.mutate(item?.id),
+          }],
+        }),
+      }],
+    });
+  }
+
   const imageUrl = getImageUrl(
     postcard.movie?.posterUrl ?? postcard.media[0]?.url,
   );
@@ -221,6 +414,10 @@ export default function PostcardDetailScreen() {
         onSuccess: () => {
           setComment("");
         },
+        onError: (error) => setSheet({
+          title: "댓글을 등록하지 못했어요",
+          message: commentErrorMessage(error),
+        }),
       },
     );
   };
@@ -270,7 +467,7 @@ export default function PostcardDetailScreen() {
     <SafeAreaView edges={[]} className="flex-1 bg-cinemo-bg">
       <KeyboardAvoidingView
         className="flex-1"
-        behavior="padding"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={8}
       >
         <Modal
@@ -319,6 +516,42 @@ export default function PostcardDetailScreen() {
           </View>
         </Modal>
 
+        <Modal visible={sheet !== null} transparent animationType="slide" onRequestClose={() => setSheet(null)}>
+          <View className="flex-1 justify-end">
+            <Pressable accessibilityLabel="더보기 닫기" onPress={() => setSheet(null)} className="absolute inset-0 bg-black/60" />
+            <View
+              accessibilityViewIsModal
+              className="rounded-t-3xl border border-white/10 bg-cinemo-bg px-5 pt-3"
+              style={{ paddingBottom: bottom + 12 }}
+            >
+              <View className="mb-4 h-1 w-9 self-center rounded-full bg-white/25" />
+              <Text accessibilityRole="header" className="mb-2 text-lg font-semibold text-cinemo-text">
+                {sheet?.title}
+              </Text>
+              {sheet?.message && <Text className="mb-3 text-cinemo-muted">{sheet.message}</Text>}
+              {sheet?.actions?.map(({ label, icon: Icon, danger, onPress }) => (
+                <Pressable
+                  key={label}
+                  accessibilityRole="button"
+                  className="min-h-12 flex-row items-center gap-3 px-1"
+                  onPress={() => {
+                    setSheet(null);
+                    onPress();
+                  }}
+                >
+                  {Icon && <Icon size={18} color={danger ? "#f87171" : CINEMO_COLORS.accentLight} />}
+                  <Text className={danger ? "font-semibold text-red-400" : "font-semibold text-cinemo-text"}>
+                    {label}
+                  </Text>
+                </Pressable>
+              ))}
+              <Pressable accessibilityRole="button" onPress={() => setSheet(null)} className="min-h-12 items-center justify-center">
+                <Text className="font-semibold text-cinemo-muted">{sheet?.actions ? "취소" : "닫기"}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+
         <ScrollView
           ref={scrollViewRef}
           className="flex-1"
@@ -363,14 +596,30 @@ export default function PostcardDetailScreen() {
                 )}
               </View>
 
-              <View className="mt-5 flex-row items-center justify-between">
+              <View className="mt-5 flex-row items-center gap-2">
                 <Text className="text-sm font-semibold text-cinemo-gold">
                   {postcardTypeLabels[postcard.type]}
                 </Text>
-                <Text className="text-xs text-cinemo-muted">
+                <Text numberOfLines={1} className="min-w-0 flex-1 text-right text-xs text-cinemo-muted">
                   {postcard.author?.nickname ?? "익명"} ·{" "}
                   {formatDate(postcard.createdAt)}
                 </Text>
+                {(isOwnPostcard || postcard.visibility === "PUBLIC") && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={reportMutation.isSuccess ? "엽서 신고 접수됨" : "엽서 더보기"}
+                    hitSlop={8}
+                    className="h-7 w-8 shrink-0 items-center justify-center"
+                    disabled={postcardDelete.isPending || reportMutation.isPending || blockAuthor.isPending}
+                    onPress={() => openActions()}
+                  >
+                    {reportMutation.isSuccess ? (
+                      <Check size={17} color={CINEMO_COLORS.accentLight} />
+                    ) : (
+                      <Ellipsis size={20} color={CINEMO_COLORS.textSecondary} />
+                    )}
+                  </Pressable>
+                )}
               </View>
 
               {sceneImageUrl && (
@@ -427,7 +676,7 @@ export default function PostcardDetailScreen() {
                     color={CINEMO_COLORS.textSecondary}
                   />
                   <Text className="text-sm text-cinemo-muted">
-                    {comments.length || postcard.commentCount}
+                    {postcard.commentCount}
                   </Text>
                 </View>
                 <Pressable
@@ -447,26 +696,26 @@ export default function PostcardDetailScreen() {
 
             <View className="mt-8">
               <Text className="text-xl font-semibold text-cinemo-text">
-                댓글 {comments.length || postcard.commentCount}
+                댓글 {postcard.commentCount}
               </Text>
 
               {hasSession ? (
                 <View className="mt-4 flex-row items-center gap-2 rounded-2xl border border-white/15 bg-cinemo-surface p-3">
                   <TextInput
+                    ref={composeInputRef}
                     value={comment}
                     onChangeText={setComment}
                     placeholder="댓글을 남겨보세요"
                     placeholderTextColor={CINEMO_COLORS.textSecondary}
                     multiline
-                    returnKeyType="done"
-                    textAlignVertical="center"
-                    style={{ paddingTop: 8, paddingBottom: 0 }}
+                    maxLength={1000}
+                    scrollEnabled
+                    textAlignVertical="top"
+                    style={{ height: 56, paddingTop: 8, paddingBottom: 8, lineHeight: 20 }}
                     onFocus={() => {
-                      setTimeout(() => {
-                        scrollViewRef.current?.scrollToEnd({ animated: true });
-                      }, 100);
+                      if (Keyboard.isVisible()) requestAnimationFrame(revealCommentInput);
                     }}
-                    className="min-h-10 flex-1 px-1 text-cinemo-text"
+                    className="flex-1 px-1 text-cinemo-text"
                   />
                   <Pressable
                     accessibilityLabel="댓글 등록"
@@ -522,17 +771,70 @@ export default function PostcardDetailScreen() {
                       </View>
 
                       <View className="min-w-0 flex-1">
-                        <View className="flex-row items-center gap-2">
-                          <Text className="font-semibold text-cinemo-text">
+                        <View className="min-h-8 flex-row items-center gap-2">
+                          <Text numberOfLines={1} className="shrink font-semibold text-cinemo-text">
                             {getCommentAuthor(item)}
                           </Text>
-                          <Text className="text-xs text-cinemo-muted">
+                          <Text className="shrink-0 text-xs text-cinemo-muted">
                             {formatCommentDate(item.createdAt)}
                           </Text>
+                          {item.status === "PUBLISHED" &&
+                            (!hasSession || viewerQuery.data) &&
+                            (postcard.visibility === "PUBLIC" ||
+                              (hasSession && item.author?.id === viewerQuery.data?.id)) && (
+                            <Pressable
+                              accessibilityRole="button"
+                              accessibilityLabel={`${getCommentAuthor(item)} 댓글 더보기`}
+                              hitSlop={8}
+                              className="ml-auto h-7 w-8 shrink-0 items-center justify-center"
+                              disabled={commentDelete.isPending || commentReport.isPending || commentUpdate.isPending || blockAuthor.isPending}
+                              onPress={() => openActions(item)}
+                            >
+                              <Ellipsis size={18} color={CINEMO_COLORS.textSecondary} />
+                            </Pressable>
+                          )}
                         </View>
-                        <Text className="mt-2 leading-6 text-cinemo-muted">
-                          {item.content}
-                        </Text>
+                        {editing?.id === item.id ? (
+                          <View className="mt-2 gap-2">
+                            <TextInput
+                              ref={editInputRef}
+                              accessibilityLabel="댓글 수정"
+                              multiline
+                              scrollEnabled
+                              textAlignVertical="top"
+                              style={{ height: 88, lineHeight: 20 }}
+                              onFocus={() => {
+                                if (Keyboard.isVisible()) requestAnimationFrame(revealCommentInput);
+                              }}
+                              maxLength={1000}
+                              editable={!commentUpdate.isPending}
+                              value={editing.content}
+                              onChangeText={(content) => setEditing({ id: item.id, content })}
+                              className="rounded-xl border border-white/15 bg-cinemo-surface px-3 py-2 text-cinemo-text"
+                            />
+                            {commentUpdate.isError && (
+                              <Text accessibilityRole="alert" className="text-xs text-red-400">
+                                {commentErrorMessage(commentUpdate.error)}
+                              </Text>
+                            )}
+                            <View className="flex-row justify-end gap-2">
+                              <Pressable disabled={commentUpdate.isPending} onPress={() => setEditing(null)} className="px-3 py-2">
+                                <Text className="text-cinemo-muted">취소</Text>
+                              </Pressable>
+                              <Pressable
+                                disabled={commentUpdate.isPending || !editing.content.trim() || editing.content.trim() === item.content}
+                                onPress={() => commentUpdate.mutate(editing)}
+                                className="px-3 py-2 disabled:opacity-40"
+                              >
+                                <Text className="font-semibold text-cinemo-gold-light">
+                                  {commentUpdate.isPending ? "저장 중" : "저장"}
+                                </Text>
+                              </Pressable>
+                            </View>
+                          </View>
+                        ) : (
+                          <Text className="leading-6 text-cinemo-text">{item.content}</Text>
+                        )}
                       </View>
                     </View>
                   ))}

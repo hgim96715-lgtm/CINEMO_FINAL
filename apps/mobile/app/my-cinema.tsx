@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { Redirect, router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Linking,
   Image,
   Modal,
   Pressable,
@@ -15,14 +17,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BookmarkedPeopleList } from "@/components/my-cinema/BookmarkedPeopleList";
-import { CinemaVisitSection } from "@/components/my-cinema/CinemaVisitSection";
 import { MyCinemaTabBar } from "@/components/my-cinema/MyCinemaTabBar";
 import { MyMoviesSection } from "@/components/my-cinema/MyMoviesSection";
 import { MyNotificationsSection } from "@/components/my-cinema/MyNotificationsSection";
+import { ProfileEditor } from "@/components/my-cinema/ProfileEditor";
 import { MyPostcardsList } from "@/components/my-cinema/MyPostcardsList";
 import { MovieRecordCalendar } from "@/components/movies/MovieRecordCalendar";
 import { MovieViewingDetailsModal } from "@/components/movies/MovieViewingDetailsModal";
-import { logoutMobile } from "@/lib/api/auth";
+import { deleteMobileAccount, logoutMobile } from "@/lib/api/auth";
+import { getDailyMoviePreference, setDailyMoviePreference } from "@/lib/api/daily-movie";
+import { registerDevicePushToken } from "@/lib/api/notifications";
+import { getBlockedPostcardAuthors, unblockPostcardAuthor } from "@/lib/api/postcards";
 import type { MyMovie } from "@/lib/api/my-cinema";
 import type {
   UpdateMovieRecordInput,
@@ -316,7 +321,7 @@ function MovieRecordEditModal({
               <ScrollView>
                 <View className="flex-row items-start justify-between px-6 pb-5 pt-6">
                   <View className="flex-1 pr-4">
-                    <Text className="text-xl font-bold text-cinemo-gold-light">
+                    <Text className="text-base font-bold text-cinemo-gold-light">
                       관람 기록 수정
                     </Text>
                     <Text className="mt-3 text-sm text-cinemo-muted">
@@ -520,7 +525,56 @@ function MovieRecordEditModal({
   );
 }
 
+function SettingsGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View className="gap-2">
+      <Text accessibilityRole="header" className="px-1 text-xs font-semibold text-cinemo-muted">
+        {title}
+      </Text>
+      <View className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 px-3">
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function SettingsRow({
+  icon, title, detail, danger, disabled, onPress,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  title: string;
+  detail?: string;
+  danger?: boolean;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  const iconColor = danger ? "#f87171" : CINEMO_COLORS.accentLight;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={disabled}
+      onPress={onPress}
+      className="min-h-14 flex-row items-center gap-3 rounded-xl px-1 py-3 active:bg-white/10"
+    >
+      <View className="h-9 w-9 items-center justify-center rounded-xl bg-white/5">
+        <Ionicons name={icon} size={18} color={iconColor} />
+      </View>
+      <View className="flex-1 gap-0.5">
+        <Text className={danger ? "font-semibold text-red-400" : "font-semibold text-cinemo-text"}>
+          {title}
+        </Text>
+        {detail && <Text className="text-xs text-cinemo-muted">{detail}</Text>}
+      </View>
+      <Ionicons name="chevron-forward" size={16} color={CINEMO_COLORS.textSecondary} />
+    </Pressable>
+  );
+}
+
 export default function MyCinemaScreen() {
+  const cinemaScrollRef = useRef<ScrollView>(null);
+  const cinemaHeadingHeight = useRef(0);
+  const cinemaTabsOffset = useRef(0);
   const [activeTab, setActiveTab] = useState<Tab>("movies");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isResultModalVisible, setIsResultModalVisible] = useState(false);
@@ -546,6 +600,58 @@ export default function MyCinemaScreen() {
     [movies, notifications],
   );
 
+  const queryClient = useQueryClient();
+  const dailyMoviePreferenceKey = ["daily-movie-preference", userQuery.data?.id];
+  const dailyMoviePreference = useQuery({
+    queryKey: dailyMoviePreferenceKey,
+    queryFn: ({ signal }) => getDailyMoviePreference(signal),
+    enabled: activeTab === "settings" && Boolean(userQuery.data),
+    retry: false,
+  });
+  const updateDailyMoviePreference = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const token = enabled ? await registerDevicePushToken() : undefined;
+      return setDailyMoviePreference(enabled, token?.id);
+    },
+    onSuccess: (preference) => queryClient.setQueryData(dailyMoviePreferenceKey, preference),
+    onError: () => Alert.alert("추천 알림 설정 실패", "기기 알림 권한이나 네트워크 연결을 확인해 주세요."),
+  });
+  const blockedAuthors = useQuery({
+    queryKey: ["postcards", "blocks"],
+    queryFn: ({ signal }) => getBlockedPostcardAuthors(signal),
+    enabled: activeTab === "settings" && Boolean(userQuery.data),
+  });
+  const unblockAuthor = useMutation({
+    mutationFn: unblockPostcardAuthor,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["postcards"] }),
+    onError: () => Alert.alert("차단 해제 실패", "잠시 후 다시 시도해 주세요."),
+  });
+  const deleteAccount = useMutation({
+    mutationFn: deleteMobileAccount,
+    onSuccess: (deleted) => {
+      if (!deleted) return;
+      queryClient.clear();
+      router.replace("/login");
+    },
+    onError: (error) => Alert.alert(
+      "회원 탈퇴 실패",
+      error instanceof Error && !("response" in error) ? error.message : "잠시 후 다시 시도해 주세요.",
+    ),
+  });
+
+  const openSettingsLink = async (url: string | undefined, title: string) => {
+    if (!url) {
+      Alert.alert(title, "문서를 준비 중이에요. hello_cinemo@icloud.com으로 문의해 주세요.");
+      return;
+    }
+
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert(title, "열 수 없어요. hello_cinemo@icloud.com으로 문의해 주세요.");
+    }
+  };
+
   const handleLogout = async () => {
     if (isLoggingOut) return;
 
@@ -553,7 +659,10 @@ export default function MyCinemaScreen() {
 
     try {
       await logoutMobile();
+    } catch {
+      Alert.alert("로그아웃", "기기의 로그인 정보 정리 중 오류가 발생했어요.");
     } finally {
+      queryClient.clear();
       router.replace("/login");
     }
   };
@@ -580,21 +689,25 @@ export default function MyCinemaScreen() {
   return (
     <SafeAreaView edges={[]} className="flex-1 bg-cinemo-bg">
       <ScrollView
+        ref={cinemaScrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        <View className="px-5 pb-6 pt-4">
+        <View
+          className="px-5 pb-3 pt-3"
+          onLayout={({ nativeEvent }) => { cinemaHeadingHeight.current = nativeEvent.layout.height; }}
+        >
           <Text className="text-xs font-semibold tracking-[4px] text-cinemo-gold">
             MY CINEMA
           </Text>
-          <Text className="mt-2 text-2xl font-bold text-cinemo-text">
+          <Text className="mt-1 text-xl font-bold text-cinemo-text">
             나만의 영화 공간
           </Text>
         </View>
 
         <View className="px-5">
           <View
-            className="rounded-3xl border p-5"
+            className="rounded-2xl border p-3"
             style={{
               borderColor: "rgba(212,181,106,0.35)",
               backgroundColor: "#101f21",
@@ -604,8 +717,8 @@ export default function MyCinemaScreen() {
               <View
                 className="items-center justify-center overflow-hidden rounded-full"
                 style={{
-                  width: 72,
-                  height: 72,
+                  width: 48,
+                  height: 48,
                   borderWidth: 1,
                   borderColor: `${CINEMO_COLORS.accentLight}99`,
                   backgroundColor: "rgba(255,255,255,0.08)",
@@ -615,24 +728,21 @@ export default function MyCinemaScreen() {
                   <Image
                     source={{ uri: userQuery.data.profileImageUrl }}
                     resizeMode="cover"
-                    style={{ width: 72, height: 72 }}
+                    style={{ width: 48, height: 48 }}
                   />
                 ) : (
                   <Ionicons
                     name="person-outline"
-                    size={30}
+                    size={23}
                     color={CINEMO_COLORS.textSecondary}
                   />
                 )}
               </View>
 
-              <View className="min-w-0 flex-1 pl-4">
-                <Text className="text-xs font-semibold tracking-[2px] text-cinemo-gold-light">
-                  CINEMO MEMBER
-                </Text>
+              <View className="min-w-0 flex-1 px-3">
                 <Text
                   numberOfLines={1}
-                  className="mt-2 text-xl font-bold text-cinemo-text"
+                  className="text-base font-bold text-cinemo-text"
                 >
                   {userQuery.data.nickname}의 영화 공간
                 </Text>
@@ -643,14 +753,11 @@ export default function MyCinemaScreen() {
                   {userQuery.data.email}
                 </Text>
               </View>
+              <ProfileEditor user={userQuery.data} />
             </View>
-
-            <Text className="mt-5 border-t border-white/10 pt-4 text-sm leading-5 text-cinemo-muted">
-              좋아하는 영화와 관람 기록을 나만의 시네마에 쌓아보세요.
-            </Text>
           </View>
 
-          <View className="mt-4 flex-row gap-3">
+          <View className="mt-2 flex-row gap-2">
             {[
               ["saved", "저장한 영화", counts.saved],
               ["watched", "관람 기록", counts.watched],
@@ -658,10 +765,10 @@ export default function MyCinemaScreen() {
             ].map(([key, label, value]) => (
               <View
                 key={key}
-                className="flex-1 items-center rounded-2xl border px-2 py-4"
+                className="flex-1 items-center rounded-xl border px-1 py-2"
                 style={panelStyle}
               >
-                <Text className="text-xl font-bold text-cinemo-gold-light">
+                <Text className="text-base font-bold text-cinemo-gold-light">
                   {value}
                 </Text>
                 <Text className="mt-1 text-center text-[11px] text-cinemo-muted">
@@ -671,10 +778,19 @@ export default function MyCinemaScreen() {
             ))}
           </View>
 
-          <MyCinemaTabBar
-            activeTab={activeTab}
-            onChange={(tab) => setActiveTab(tab)}
-          />
+          <View onLayout={({ nativeEvent }) => { cinemaTabsOffset.current = nativeEvent.layout.y; }}>
+            <MyCinemaTabBar
+              activeTab={activeTab}
+              onChange={(tab) => {
+                if (tab === activeTab) return;
+                setActiveTab(tab);
+                requestAnimationFrame(() => cinemaScrollRef.current?.scrollTo({
+                  y: cinemaHeadingHeight.current + cinemaTabsOffset.current,
+                  animated: true,
+                }));
+              }}
+            />
+          </View>
 
           {activeTab === "movies" && (
             <MyMoviesSection
@@ -713,24 +829,105 @@ export default function MyCinemaScreen() {
             </View>
           )}
 
-          {activeTab === "visits" && <CinemaVisitSection />}
+          {activeTab === "settings" && (
+            <View className="mt-6 gap-5">
+              <SettingsGroup title="앱 설정">
+                <SettingsRow icon="notifications-outline" title="알림 권한" detail="기기 설정에서 알림 허용 여부 변경" onPress={() => {
+                  void Linking.openSettings().catch(() =>
+                    Alert.alert("알림 권한", "기기 설정에서 CINEMO 알림 권한을 변경해 주세요."),
+                  );
+                }} />
+              </SettingsGroup>
 
-          <Pressable
-            onPress={handleLogout}
-            disabled={isLoggingOut}
-            className="mt-8 items-center rounded-xl border py-4"
-            style={{
-              borderColor: "rgba(255,255,255,0.14)",
-              backgroundColor: "rgba(255,255,255,0.06)",
-              opacity: isLoggingOut ? 0.5 : 1,
-            }}
-          >
-            {isLoggingOut ? (
-              <ActivityIndicator color={CINEMO_COLORS.textSecondary} />
-            ) : (
-              <Text className="font-semibold text-cinemo-muted">로그아웃</Text>
-            )}
-          </Pressable>
+              <SettingsGroup title="영화 추천 알림">
+                {dailyMoviePreference.data ? (
+                  <SettingsRow
+                    icon="sparkles-outline"
+                    title={dailyMoviePreference.data.enabled ? "오늘의 영화 알림 끄기" : "오늘의 영화 알림 켜기"}
+                    detail="앱을 열지 않은 화·금 저녁 8시 · 한국 시간"
+                    disabled={updateDailyMoviePreference.isPending}
+                    onPress={() => {
+                      if (dailyMoviePreference.data?.enabled) {
+                        updateDailyMoviePreference.mutate(false);
+                        return;
+                      }
+                      Alert.alert(
+                        "오늘의 영화 알림",
+                        "앱을 열지 않은 화요일과 금요일 저녁 8시에 영화 한 편을 추천해요. 이 화면에서 언제든 끌 수 있어요.",
+                        [
+                          { text: "취소", style: "cancel" },
+                          { text: "알림 받기", onPress: () => updateDailyMoviePreference.mutate(true) },
+                        ],
+                      );
+                    }}
+                  />
+                ) : (
+                  <SettingsRow
+                    icon="refresh-outline"
+                    title={dailyMoviePreference.isError ? "추천 알림 설정 다시 불러오기" : "추천 알림 설정 불러오는 중"}
+                    disabled={!dailyMoviePreference.isError}
+                    onPress={() => void dailyMoviePreference.refetch()}
+                  />
+                )}
+              </SettingsGroup>
+
+              <SettingsGroup title="고객지원">
+                <SettingsRow icon="mail-outline" title="문의하기" detail="hello_cinemo@icloud.com" onPress={() =>
+                  void openSettingsLink("mailto:hello_cinemo@icloud.com", "고객센터 문의")
+                } />
+                <SettingsRow icon="document-text-outline" title="서비스 이용약관" onPress={() =>
+                  void openSettingsLink(process.env.EXPO_PUBLIC_TERMS_URL, "서비스 이용약관")
+                } />
+                <SettingsRow icon="shield-checkmark-outline" title="개인정보 처리방침" onPress={() =>
+                  void openSettingsLink(process.env.EXPO_PUBLIC_PRIVACY_URL, "개인정보 처리방침")
+                } />
+              </SettingsGroup>
+
+              <SettingsGroup title="차단한 작성자">
+                {blockedAuthors.isPending && <Text className="px-1 py-3 text-cinemo-muted">불러오는 중…</Text>}
+                {blockedAuthors.isError && (
+                  <SettingsRow icon="refresh-outline" title="목록 다시 불러오기" onPress={() => void blockedAuthors.refetch()} />
+                )}
+                {blockedAuthors.data?.length === 0 && <Text className="px-1 py-3 text-cinemo-muted">차단한 작성자가 없어요.</Text>}
+                {blockedAuthors.data?.map((author) => (
+                  <SettingsRow
+                    key={author.id}
+                    icon="person-outline"
+                    title={author.nickname}
+                    detail="차단 해제"
+                    disabled={unblockAuthor.isPending}
+                    onPress={() => Alert.alert("차단 해제", `${author.nickname}님의 차단을 해제할까요?`, [
+                      { text: "취소", style: "cancel" },
+                      { text: "해제", onPress: () => unblockAuthor.mutate(author.id) },
+                    ])}
+                  />
+                ))}
+              </SettingsGroup>
+
+              <SettingsGroup title="계정">
+                <SettingsRow
+                  icon="log-out-outline"
+                  title={isLoggingOut ? "로그아웃 중" : "로그아웃"}
+                  disabled={isLoggingOut || deleteAccount.isPending}
+                  onPress={handleLogout}
+                />
+                <SettingsRow
+                  icon="person-remove-outline"
+                  title={deleteAccount.isPending ? "탈퇴 처리 중" : "회원 탈퇴"}
+                  danger
+                  disabled={deleteAccount.isPending || isLoggingOut}
+                  onPress={() => Alert.alert(
+                    "회원 탈퇴",
+                    "계정을 삭제할까요? 삭제한 계정은 복구할 수 없어요.",
+                    [
+                      { text: "취소", style: "cancel" },
+                      { text: "탈퇴", style: "destructive", onPress: () => deleteAccount.mutate() },
+                    ],
+                  )}
+                />
+              </SettingsGroup>
+            </View>
+          )}
         </View>
       </ScrollView>
 

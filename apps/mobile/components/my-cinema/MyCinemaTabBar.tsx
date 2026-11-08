@@ -7,7 +7,7 @@ export type MyCinemaTabKey =
   | "people"
   | "notifications"
   | "postcards"
-  | "visits";
+  | "settings";
 
 type MyCinemaTabBarProps = {
   activeTab: MyCinemaTabKey;
@@ -19,7 +19,7 @@ const tabs: Array<[MyCinemaTabKey, string]> = [
   ["people", "저장한 인물"],
   ["notifications", "알림"],
   ["postcards", "내 엽서"],
-  ["visits", "영화관 스탬프"],
+  ["settings", "설정·지원"],
 ];
 
 export function MyCinemaTabBar({
@@ -28,7 +28,7 @@ export function MyCinemaTabBar({
 }: MyCinemaTabBarProps) {
   return (
     <View
-      className="mt-6 flex-row rounded-2xl border p-1"
+      className="mt-3 flex-row rounded-2xl border p-1"
       style={panelStyle}
     >
       {tabs.map(([key, label]) => {
@@ -37,6 +37,9 @@ export function MyCinemaTabBar({
         return (
           <Pressable
             key={key}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isActive }}
+            accessibilityLabel={key === "settings" ? "설정 및 고객지원" : label}
             onPress={() => onChange(key)}
             className="min-w-0 flex-1 items-center justify-center rounded-xl px-1 py-3"
             style={{

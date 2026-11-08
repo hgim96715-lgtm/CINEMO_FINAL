@@ -1,5 +1,11 @@
+import * as AppleAuthentication from "expo-apple-authentication";
 import * as SecureStore from "expo-secure-store";
-import { apiClient, setAccessToken } from "@/lib/api/apiClient";
+import { isAxiosError } from "axios";
+import { apiClient, getMobileAccessToken, setAccessToken } from "@/lib/api/apiClient";
+
+import { recordDailyMovieVisit } from "./daily-movie";
+import { myCinemaKeys } from "@/lib/queries/my-cinema.query";
+import { mobileQueryClient } from "@/provider/query-provider";
 
 export type MobileLoginResponse = {
   user: {
@@ -30,6 +36,36 @@ export type MobileAppleLoginResponse =
     };
 
 const REFRESH_TOKEN_KEY = "cinemo.refresh_token";
+
+let sessionVersion = 0;
+let tokenStorage = Promise.resolve();
+let refreshInFlight: Promise<MobileLoginResponse> | null = null;
+
+function queueTokenWrite(write: () => Promise<void>) {
+  const operation = tokenStorage.then(write);
+  tokenStorage = operation.catch(() => {});
+  return operation;
+}
+
+async function saveMobileSession(session: MobileLoginResponse, version: number) {
+  await queueTokenWrite(async () => {
+    if (version !== sessionVersion) throw new Error("세션이 변경되었습니다.");
+    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, session.refreshToken);
+    if (version !== sessionVersion) throw new Error("세션이 변경되었습니다.");
+    setAccessToken(session.accessToken);
+  });
+}
+
+async function completeMobileLogin(session: MobileLoginResponse) {
+  const version = ++sessionVersion;
+  refreshInFlight = null;
+  await saveMobileSession(session, version);
+  await mobileQueryClient.cancelQueries({ queryKey: myCinemaKeys.user() });
+  if (version !== sessionVersion) return;
+  mobileQueryClient.setQueryData(myCinemaKeys.user(), session.user);
+  void recordDailyMovieVisit();
+  void registerPushTokenAfterLogin();
+}
 
 async function registerPushTokenAfterLogin(): Promise<void> {
   try {
@@ -63,79 +99,79 @@ export async function loginAppleMobile(
   const data = response.data;
 
   if ("accessToken" in data) {
-    setAccessToken(data.accessToken);
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken);
-    await registerPushTokenAfterLogin();
+    await completeMobileLogin(data);
   }
 
   return data;
 }
 
-export async function refreshMobileAccessToken(input?: {
-  deviceId?: string;
-}): Promise<MobileLoginResponse> {
-  const refreshToken = await getRefreshToken();
+export function refreshMobileAccessToken(): Promise<MobileLoginResponse> {
+  if (refreshInFlight) return refreshInFlight;
 
-  if (!refreshToken) {
-    throw new Error("Refresh Token이 없습니다.");
-  }
+  const version = sessionVersion;
+  const operation = (async () => {
+    await tokenStorage;
+    const refreshToken = await getRefreshToken();
+    if (!refreshToken || version !== sessionVersion) {
+      throw new Error("갱신할 세션이 없습니다.");
+    }
 
-  try {
-    const response = await apiClient.post<MobileLoginResponse>(
-      "/auth/mobile/refresh",
-      {
+    try {
+      const { data } = await apiClient.post<MobileLoginResponse>("/auth/mobile/refresh", {
         refreshToken,
-        deviceId: input?.deviceId,
-      },
-    );
+      });
+      await saveMobileSession(data, version);
+      return data;
+    } catch (error) {
+      if (
+        version === sessionVersion &&
+        isAxiosError(error) &&
+        error.response?.status === 401
+      ) {
+        await clearAuthTokens();
+      }
+      throw error;
+    }
+  })().finally(() => {
+    if (refreshInFlight === operation) refreshInFlight = null;
+  });
 
-    const data = response.data;
-
-    setAccessToken(data.accessToken);
-
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken);
-
-    return data;
-  } catch (error) {
-    setAccessToken(null);
-
-    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-
-    throw error;
-  }
+  refreshInFlight = operation;
+  return operation;
 }
 
-export async function clearAuthTokens(): Promise<void> {
+export function clearAuthTokens(): Promise<void> {
+  sessionVersion++;
+  refreshInFlight = null;
   setAccessToken(null);
-
-  await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+  return queueTokenWrite(() => SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY));
 }
 
 export async function logoutMobile(): Promise<void> {
-  const refreshToken = await getRefreshToken();
+  const accessToken = getMobileAccessToken();
+  let refreshToken: string | null = null;
+  const readRefreshToken = queueTokenWrite(async () => {
+    refreshToken = await getRefreshToken();
+  });
+  await Promise.all([readRefreshToken, clearAuthTokens()]);
 
-  try {
-    if (refreshToken) {
-      await apiClient.post("/auth/mobile/logout", {
-        refreshToken,
-      });
-    }
-  } finally {
-    await clearAuthTokens();
+  if (refreshToken) {
+    void apiClient.post("/auth/mobile/logout", { refreshToken }, {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+    }).catch((error) => {
+      console.warn("[서버 로그아웃 실패]", error instanceof Error ? error.message : error);
+    });
   }
 }
 
 export async function restoreMobileSession(): Promise<MobileLoginResponse | null> {
-  const refreshToken = await getRefreshToken();
-
-  if (!refreshToken) {
-    return null;
-  }
-
   try {
-    return await refreshMobileAccessToken();
+    const session = await refreshMobileAccessToken();
+    await mobileQueryClient.cancelQueries({ queryKey: myCinemaKeys.user() });
+    if (getMobileAccessToken() !== session.accessToken) return null;
+    mobileQueryClient.setQueryData(myCinemaKeys.user(), session.user);
+    return session;
   } catch {
-    await clearAuthTokens();
     return null;
   }
 }
@@ -167,9 +203,7 @@ export async function completeMobileOauthSignup(
     },
   );
   const data = response.data;
-  setAccessToken(data.accessToken);
-  await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken);
-  await registerPushTokenAfterLogin();
+  await completeMobileLogin(data);
   return data;
 }
 
@@ -196,10 +230,7 @@ export async function loginEmailMobile(
 
   const data = response.data;
 
-  setAccessToken(data.accessToken);
-
-  await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken);
-  await registerPushTokenAfterLogin();
+  await completeMobileLogin(data);
 
   return data;
 }
@@ -300,9 +331,7 @@ export async function loginGoogleMobile(
   );
   const data = response.data;
   if ("accessToken" in data) {
-    setAccessToken(data.accessToken);
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken);
-    await registerPushTokenAfterLogin();
+    await completeMobileLogin(data);
   }
   return data;
 }
@@ -353,9 +382,31 @@ export async function loginNaverMobile(
   );
   const data = response.data;
   if ("accessToken" in data) {
-    setAccessToken(data.accessToken);
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, data.refreshToken);
-    await registerPushTokenAfterLogin();
+    await completeMobileLogin(data);
   }
   return data;
+}
+
+export async function deleteMobileAccount(): Promise<boolean> {
+  const { data } = await apiClient.get<{ requiresAppleAuthorization: boolean }>(
+    "/auth/me/deletion-requirements",
+  );
+  let appleAuthorizationCode: string | undefined;
+  if (data.requiresAppleAuthorization) {
+    if (!(await AppleAuthentication.isAvailableAsync())) {
+      throw new Error("Apple 로그인을 사용할 수 있는 iPhone에서 탈퇴를 진행해 주세요.");
+    }
+    try {
+      const credential = await AppleAuthentication.signInAsync();
+      appleAuthorizationCode = credential.authorizationCode ?? undefined;
+    } catch (error) {
+      if ((error as { code?: string } | null)?.code === "ERR_REQUEST_CANCELED") return false;
+      throw error;
+    }
+    if (!appleAuthorizationCode) throw new Error("Apple 계정 인증을 다시 진행해 주세요.");
+  }
+
+  await apiClient.delete("/auth/me", { data: { appleAuthorizationCode }, timeout: 20_000 });
+  await clearAuthTokens();
+  return true;
 }

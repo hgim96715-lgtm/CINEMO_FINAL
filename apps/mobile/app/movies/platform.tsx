@@ -1,10 +1,10 @@
+import { CachedImage as Image } from "@/components/common/CachedImage";
 import { useMemo, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { router } from "expo-router";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   Text,
   useWindowDimensions,

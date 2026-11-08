@@ -7,6 +7,7 @@ import { databaseConfig } from "@/config/database.config";
 import { kmdbConfig } from "@/config/kmdb.config";
 import { kobisConfig } from "@/config/kobis.config";
 import { tmdbConfig } from "@/config/tmdb.config";
+import { DailyMoviesModule } from "@/modules/daily-movies/daily-movies.module";
 import { MoviesModule } from "@/modules/movies/movies.module";
 import { PrismaModule } from "@/prisma/prisma.module";
 import { mailConfig } from "@/config/mail.config";
@@ -35,6 +36,7 @@ import { appConfig } from "@/config/app.config";
     }),
     PrismaModule,
     MoviesModule,
+    DailyMoviesModule,
   ],
 })
 export class BatchAppModule {}

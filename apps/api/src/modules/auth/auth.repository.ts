@@ -222,7 +222,7 @@ export class AuthRepository {
       }
 
       if (input.refreshTokenHash) {
-        await tx.mobileRefreshToken.updateMany({
+        const revokedTokens = await tx.mobileRefreshToken.updateManyAndReturn({
           where: {
             tokenHash: input.refreshTokenHash,
             revokedAt: null,
@@ -231,8 +231,21 @@ export class AuthRepository {
             revokedAt: input.revokedAt,
             lastUsedAt: input.revokedAt,
           },
+          select: { userId: true },
         });
+        if (revokedTokens[0]) {
+          await tx.dailyMoviePreference.deleteMany({
+            where: { userId: revokedTokens[0].userId, enabledAt: { lte: input.revokedAt } },
+          });
+        }
       }
+    });
+  }
+
+  findAppleIdentity(userId: string) {
+    return this.prisma.userIdentity.findFirst({
+      where: { userId, provider: AuthProvider.APPLE },
+      select: { providerUserId: true },
     });
   }
 
@@ -241,6 +254,24 @@ export class AuthRepository {
       await tx.authSession.deleteMany({ where: { userId } });
       await tx.user.delete({ where: { id: userId } });
     });
+  }
+
+  async updateProfile(userId: string, nickname: string, profileImageUrl?: string) {
+    try {
+      return await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          nickname,
+          ...(profileImageUrl !== undefined && { profileImageUrl, profileImageKey: null }),
+        },
+        select: authUserSelect,
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        throw new ConflictException("이미 사용 중인 닉네임입니다.");
+      }
+      throw error;
+    }
   }
 
   async updateProfileVisibility(

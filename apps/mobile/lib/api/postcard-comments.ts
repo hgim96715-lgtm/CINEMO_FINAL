@@ -39,3 +39,30 @@ export async function createPostcardComment(
 
   return response.data;
 }
+
+export async function deletePostcardComment(postcardId: string, commentId: string): Promise<void> {
+  await apiClient.delete(`/postcards/${encodeURIComponent(postcardId)}/comments/${encodeURIComponent(commentId)}`);
+}
+
+export async function reportPostcardComment(
+  postcardId: string,
+  commentId: string,
+  reason: string,
+): Promise<void> {
+  await apiClient.post(
+    `/postcards/${encodeURIComponent(postcardId)}/comments/${encodeURIComponent(commentId)}/reports`,
+    { reason },
+  );
+}
+
+export async function updatePostcardComment(
+  postcardId: string,
+  commentId: string,
+  content: string,
+): Promise<PostcardComment> {
+  const { data } = await apiClient.patch<PostcardComment>(
+    `/postcards/${encodeURIComponent(postcardId)}/comments/${encodeURIComponent(commentId)}`,
+    { content },
+  );
+  return data;
+}

@@ -44,6 +44,11 @@ class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
 }
 
 class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
+  override func customize(_ rootView: UIView) {
+    super.customize(rootView)
+    rootView.backgroundColor = UIColor(red: 11.0 / 255.0, green: 24.0 / 255.0, blue: 27.0 / 255.0, alpha: 1)
+  }
+
   // Extension point for config-plugins
 
   override func sourceURL(for bridge: RCTBridge) -> URL? {

@@ -15,6 +15,7 @@ import {useQueryClient} from "@tanstack/react-query";
 import {MovieSearchSuggestions} from "../movies/MovieSearchSuggestions";
 import {cn} from "@/lib/utils";
 import {useAuthStore} from "@/stores/auth.store";
+import { MobileNavigation } from "./MobileNavigation";
 import {postcardFeedQueryOptions} from "@/lib/queries/postcard-feed.query";
 
 const navigationItems = [
@@ -255,6 +256,8 @@ export function Header() {
             </div>
           </form>
         </div>
+        <MobileNavigation />
+
         {user ? (
           <div className="hidden shrink-0 items-center gap-3 lg:flex">
             <Link

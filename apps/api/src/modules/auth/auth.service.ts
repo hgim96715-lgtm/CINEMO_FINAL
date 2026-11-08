@@ -1,3 +1,4 @@
+import sharp from "sharp";
 import {
   BadRequestException,
   Injectable,
@@ -201,8 +202,38 @@ export class AuthService {
     };
   }
 
+  findAppleIdentity(userId: string) {
+    return this.authRepository.findAppleIdentity(userId);
+  }
+
   async deleteAccount(userId: string) {
     await this.authRepository.deleteAccount(userId);
+  }
+
+  async updateProfile(userId: string, nickname: string, image?: Buffer) {
+    const error = validateNickname(nickname);
+    if (error) throw new BadRequestException(error);
+
+    let profileImageUrl: string | undefined;
+    if (image) {
+      try {
+        const source = sharp(image, { limitInputPixels: 24_000_000 });
+        const { format } = await source.metadata();
+        if (format !== "jpeg" && format !== "png" && format !== "webp") {
+          throw new Error("Unsupported image format");
+        }
+        const thumbnail = await source
+          .rotate()
+          .resize(256, 256, { fit: "cover" })
+          .webp({ quality: 75 })
+          .toBuffer();
+        profileImageUrl = `data:image/webp;base64,${thumbnail.toString("base64")}`;
+      } catch {
+        throw new BadRequestException("JPEG, PNG 또는 WebP 사진을 선택해주세요.");
+      }
+    }
+
+    return this.authRepository.updateProfile(userId, normalizeNickname(nickname), profileImageUrl);
   }
 
   async updateProfileVisibility(

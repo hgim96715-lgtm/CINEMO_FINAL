@@ -1,4 +1,8 @@
+import { DeleteAccountRequestDto } from "./dto/requests/delete-account.request.dto";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { UpdateProfileRequestDto } from "./dto/requests/update-profile.request.dto";
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,6 +12,8 @@ import {
   Query,
   Req,
   Res,
+  UploadedFile,
+  UseInterceptors,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
@@ -89,6 +95,16 @@ export class AuthController {
       user.id,
       input.profileVisibility,
     );
+  }
+
+  @Patch("me/profile")
+  @UseInterceptors(FileInterceptor("image", { limits: { fileSize: 8 * 1024 * 1024, fields: 1 } }))
+  updateProfile(
+    @CurrentUser() user: SessionUser,
+    @Body() input: UpdateProfileRequestDto,
+    @UploadedFile() image?: { buffer: Buffer },
+  ) {
+    return this.authService.updateProfile(user.id, input.nickname, image?.buffer);
   }
 
   @Get("check-nickname")
@@ -631,6 +647,11 @@ export class AuthController {
     };
   }
 
+  @Get("me/deletion-requirements")
+  async getDeletionRequirements(@CurrentUser() user: SessionUser) {
+    return { requiresAppleAuthorization: Boolean(await this.authService.findAppleIdentity(user.id)) };
+  }
+
   @ApiCookieAuth("cinemo_session")
   @Delete("me")
   @ApiOperation({
@@ -641,8 +662,19 @@ export class AuthController {
   })
   async deleteAccount(
     @CurrentUser() user: SessionUser,
+    @Body() input: DeleteAccountRequestDto,
     @Res({ passthrough: true }) response: Response,
   ) {
+    const appleIdentity = await this.authService.findAppleIdentity(user.id);
+    if (appleIdentity) {
+      if (!input?.appleAuthorizationCode) {
+        throw new BadRequestException("회원 탈퇴를 위해 Apple 계정 인증이 필요합니다.");
+      }
+      await this.appleAuthService.revokeMobileAuthorization(
+        input.appleAuthorizationCode,
+        appleIdentity.providerUserId,
+      );
+    }
     await this.authService.deleteAccount(user.id);
 
     response.clearCookie(SESSION_COOKIE_NAME, {

@@ -16,6 +16,7 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { ServiceVisitsService } from "./service-visits.service";
 import { AdminGuard } from "./admin.guard";
 import { AdminService } from "./admin.service";
 import { CreateCurationRequestDto } from "./dto/requests/create-curation.request.dto";
@@ -27,7 +28,16 @@ import { CurationResponseDto } from "./dto/responses/curation.response.dto";
 @UseGuards(AdminGuard)
 @Controller("admin")
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly visits: ServiceVisitsService,
+  ) {}
+
+  @Get("visits")
+  @ApiOperation({ summary: "최근 7일 방문 통계" })
+  findVisits() {
+    return this.visits.summary();
+  }
 
   @Get("users")
   @ApiOperation({ summary: "관리자용 회원·접속 현황 조회" })

@@ -1,5 +1,6 @@
+import { CachedImage as Image } from "@/components/common/CachedImage";
 import { useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { CINEMO_COLORS } from "@cinemo/shared";
 import type { MyMovie } from "@/lib/api/my-cinema";

@@ -13,6 +13,7 @@ import { apiClient } from "./apiClient";
 export type { PostcardMetadata } from "@cinemo/api-contract";
 
 export type Postcard = Omit<PostcardResponse, "metadata" | "style"> & {
+  isMine?: boolean;
   metadata: PostcardMetadata | null;
   style: PostcardStyle | null;
 };
@@ -198,4 +199,25 @@ export async function sharePostcard(
   );
 
   return response.data;
+}
+
+export async function reportPostcard(postcardId: string, reason: string): Promise<void> {
+  await apiClient.post(`/postcards/${encodeURIComponent(postcardId)}/reports`, { reason });
+}
+
+export type BlockedPostcardAuthor = { id: string; nickname: string };
+
+export async function getBlockedPostcardAuthors(signal?: AbortSignal) {
+  const { data } = await apiClient.get<BlockedPostcardAuthor[]>("/postcards/blocks", { signal });
+  return data;
+}
+
+export async function blockPostcardAuthor(postcardId: string, commentId?: string) {
+  const postcardPath = `/postcards/${encodeURIComponent(postcardId)}`;
+  const targetPath = commentId ? `${postcardPath}/comments/${encodeURIComponent(commentId)}` : postcardPath;
+  await apiClient.post(`${targetPath}/block-author`);
+}
+
+export async function unblockPostcardAuthor(userId: string) {
+  await apiClient.delete(`/postcards/blocks/${encodeURIComponent(userId)}`);
 }

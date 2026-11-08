@@ -7,7 +7,11 @@ type RetryableRequestConfig = InternalAxiosRequestConfig & {
 };
 
 let accessToken: string | null = null;
-let refreshPromise: Promise<string> | null = null;
+
+
+export function getMobileAccessToken() {
+  return accessToken;
+}
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
@@ -22,7 +26,7 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  if (accessToken) {
+  if (accessToken && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
 
@@ -60,27 +64,10 @@ apiClient.interceptors.response.use(
 
     request._retry = true;
 
-    if (!refreshPromise) {
-      refreshPromise = (async () => {
-        try {
-          const {
-            refreshMobileAccessToken,
-          } = await import("./auth");
-
-          const result =
-            await refreshMobileAccessToken();
-
-          return result.accessToken;
-        } finally {
-          refreshPromise = null;
-        }
-      })();
-    }
-
-    const newAccessToken = await refreshPromise;
-
-    request.headers.Authorization =
-      `Bearer ${newAccessToken}`;
+    const { refreshMobileAccessToken } = await import("./auth");
+    const session = await refreshMobileAccessToken();
+    if (accessToken !== session.accessToken) throw error;
+    request.headers.Authorization = `Bearer ${session.accessToken}`;
 
     return apiClient(request);
   },

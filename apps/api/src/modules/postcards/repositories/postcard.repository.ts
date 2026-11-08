@@ -94,6 +94,7 @@ export type CreateReactionRepositoryInput = {
 
 export type CreateReportRepositoryInput = {
   postcardId: string;
+  commentId?: string;
   reporterId: string;
   reason: string;
 };
@@ -159,6 +160,51 @@ export class PostcardRepository {
     );
   }
 
+  private visibleAuthor(userId?: string): Prisma.UserWhereInput | undefined {
+    if (!userId) return undefined;
+    return {
+      postcardBlocksReceived: { none: { blockerId: userId } },
+      postcardBlocksMade: { none: { blockedId: userId } },
+    };
+  }
+
+  async blockAuthor(userId: string, postcardId: string, commentId?: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const postcard = await tx.postcard.findFirst({
+        where: { id: postcardId, visibility: PostcardVisibility.PUBLIC, status: PostcardStatus.PUBLISHED },
+        select: { userId: true },
+      });
+      if (!postcard) return false;
+
+      const author = commentId
+        ? await tx.postcardComment.findFirst({
+            where: { id: commentId, postcardId, status: PostcardCommentStatus.PUBLISHED },
+            select: { userId: true },
+          })
+        : postcard;
+      if (!author || author.userId === userId) return false;
+
+      await tx.postcardUserBlock.createMany({
+        data: { blockerId: userId, blockedId: author.userId },
+        skipDuplicates: true,
+      });
+      return true;
+    });
+  }
+
+  async findBlocks(userId: string) {
+    const blocks = await this.prisma.postcardUserBlock.findMany({
+      where: { blockerId: userId },
+      orderBy: { createdAt: "desc" },
+      select: { blocked: { select: { id: true, nickname: true } } },
+    });
+    return blocks.map(({ blocked }) => blocked);
+  }
+
+  async unblock(userId: string, blockedId: string) {
+    await this.prisma.postcardUserBlock.deleteMany({ where: { blockerId: userId, blockedId } });
+  }
+
   async findPublicFeed(
     userId: string | undefined,
     cursor: string | undefined,
@@ -167,6 +213,7 @@ export class PostcardRepository {
     const items = await this.prisma.postcard.findMany({
       include: postcardWithMovieArgs.include,
       where: {
+        user: this.visibleAuthor(userId),
         visibility: PostcardVisibility.PUBLIC,
         status: PostcardStatus.PUBLISHED,
       },
@@ -277,6 +324,7 @@ export class PostcardRepository {
     const record = await this.prisma.postcard.findFirst({
       include: postcardWithMovieArgs.include,
       where: {
+        user: this.visibleAuthor(userId),
         id,
         status: {
           not: PostcardStatus.DELETED,
@@ -481,9 +529,7 @@ export class PostcardRepository {
         where: {
           id: postcardId,
           userId,
-          status: {
-            not: PostcardStatus.DELETED,
-          },
+          status: { in: [PostcardStatus.DRAFT, PostcardStatus.PUBLISHED] },
         },
       });
 
@@ -491,9 +537,10 @@ export class PostcardRepository {
         return null;
       }
 
-      const updatedPostcard = await tx.postcard.update({
+      const updatedPostcard = await tx.postcard.updateManyAndReturn({
         where: {
           id: postcard.id,
+          status: { in: [PostcardStatus.DRAFT, PostcardStatus.PUBLISHED] },
         },
         data: {
           status: PostcardStatus.PUBLISHED,
@@ -502,7 +549,7 @@ export class PostcardRepository {
         },
       });
 
-      return toPostcard(updatedPostcard);
+      return updatedPostcard[0] ? toPostcard(updatedPostcard[0]) : null;
     });
   }
   async findMine(
@@ -569,6 +616,7 @@ export class PostcardRepository {
       const postcard = await tx.postcard.findFirst({
         where: {
           id: input.postcardId,
+          user: this.visibleAuthor(input.userId),
           visibility: PostcardVisibility.PUBLIC,
           status: PostcardStatus.PUBLISHED,
         },
@@ -584,6 +632,7 @@ export class PostcardRepository {
         parentComment = await tx.postcardComment.findFirst({
           where: {
             id: input.parentId,
+            user: this.visibleAuthor(input.userId),
             postcardId: input.postcardId,
             status: PostcardCommentStatus.PUBLISHED,
           },
@@ -796,6 +845,7 @@ export class PostcardRepository {
       const postcard = await tx.postcard.findFirst({
         where: {
           id: input.postcardId,
+          user: this.visibleAuthor(input.userId),
           visibility: PostcardVisibility.PUBLIC,
           status: PostcardStatus.PUBLISHED,
         },
@@ -947,9 +997,24 @@ export class PostcardRepository {
         return null;
       }
 
+      const commentId = input.commentId ?? null;
+      if (commentId) {
+        const comment = await tx.postcardComment.findFirst({
+          where: {
+            id: commentId,
+            postcardId: input.postcardId,
+            userId: { not: input.reporterId },
+            status: PostcardCommentStatus.PUBLISHED,
+          },
+          select: { id: true },
+        });
+        if (!comment) return null;
+      }
+
       const existing = await tx.postcardReport.findFirst({
         where: {
           postcardId: input.postcardId,
+          commentId,
           reporterId: input.reporterId,
           status: {
             in: [PostcardReportStatus.PENDING, PostcardReportStatus.REVIEWING],
@@ -964,6 +1029,7 @@ export class PostcardRepository {
       return tx.postcardReport.create({
         data: {
           postcardId: input.postcardId,
+          commentId,
           reporterId: input.reporterId,
           reason: input.reason,
         },
@@ -1018,6 +1084,7 @@ export class PostcardRepository {
     const notifications = await this.prisma.postcardNotification.findMany({
       where: {
         recipientId: userId,
+        actor: this.visibleAuthor(userId),
         ...(unreadOnly && { readAt: null }),
       },
       include: {
@@ -1071,10 +1138,12 @@ export class PostcardRepository {
     postcardId: string,
     cursor: string | undefined,
     pageSize: number,
+    userId?: string,
   ): Promise<CursorPage<PostcardCommentWithUser>> {
     const comments = await this.prisma.postcardComment.findMany({
       where: {
         postcardId,
+        user: this.visibleAuthor(userId),
         OR: [
           { status: PostcardCommentStatus.PUBLISHED },
           {
@@ -1083,6 +1152,7 @@ export class PostcardRepository {
           },
         ],
         postcard: {
+          user: this.visibleAuthor(userId),
           visibility: PostcardVisibility.PUBLIC,
           status: PostcardStatus.PUBLISHED,
         },

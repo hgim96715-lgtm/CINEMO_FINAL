@@ -1,5 +1,6 @@
+import { CachedImage as Image } from "@/components/common/CachedImage";
 import { useQuery } from "@tanstack/react-query";
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, FlatList, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import { CINEMO_COLORS } from "@cinemo/shared";
@@ -25,17 +26,20 @@ export function CommemorativeMovies() {
         morePath="/movies/commemorative"
       />
 
-      <ScrollView
+      <FlatList
         horizontal
+        data={movies}
+        keyExtractor={(movie) => movie.id}
+        initialNumToRender={4}
+        maxToRenderPerBatch={4}
+        windowSize={3}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingLeft: 20, paddingRight: 4 }}
-      >
-        {movies.map((movie) => {
+        renderItem={({ item: movie }) => {
           const posterUrl = getImageUrl(movie.posterUrl);
 
           return (
             <Pressable
-              key={movie.id}
               className="mr-4"
               style={{ width: 112 }}
               onPress={() => router.push(`/movies/${movie.id}`)}
@@ -51,6 +55,7 @@ export function CommemorativeMovies() {
                 {posterUrl ? (
                   <Image
                     source={{ uri: posterUrl }}
+                    imageWidth={112}
                     resizeMode="cover"
                     style={{ width: "100%", height: "100%" }}
                     accessibilityLabel={`${movie.title} 포스터`}
@@ -67,8 +72,8 @@ export function CommemorativeMovies() {
               </Text>
             </Pressable>
           );
-        })}
-      </ScrollView>
+        }}
+      />
     </View>
   );
 }

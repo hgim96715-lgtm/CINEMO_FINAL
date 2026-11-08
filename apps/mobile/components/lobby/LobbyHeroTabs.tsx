@@ -6,11 +6,13 @@ import {
   MobileCurationHero,
   type MobileHeroKind,
 } from "./MobileCurationHero";
+import { TodayMovieHero } from "./TodayMovieHero";
 import { PostcardHeroCarousel } from "./PostcardHeroCarousel";
 
-type HeroTab = MobileHeroKind | "postcard";
+type HeroTab = MobileHeroKind | "postcard" | "today";
 
 const tabs: Array<{ value: HeroTab; label: string }> = [
+  { value: "today", label: "오늘의 영화" },
   { value: "commemorative", label: "기념일" },
   { value: "upcoming", label: "개봉 예정" },
   { value: "platform", label: "플랫폼" },
@@ -18,7 +20,7 @@ const tabs: Array<{ value: HeroTab; label: string }> = [
 ];
 
 export function LobbyHeroTabs() {
-  const [activeTab, setActiveTab] = useState<HeroTab>("commemorative");
+  const [activeTab, setActiveTab] = useState<HeroTab>("today");
 
   return (
     <View>
@@ -59,7 +61,8 @@ export function LobbyHeroTabs() {
         })}
       </ScrollView>
 
-      {activeTab !== "postcard" && <MobileCurationHero kind={activeTab} />}
+      {activeTab === "today" && <TodayMovieHero />}
+      {activeTab !== "postcard" && activeTab !== "today" && <MobileCurationHero kind={activeTab} />}
       {activeTab === "postcard" && <PostcardHeroCarousel />}
     </View>
   );

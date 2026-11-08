@@ -1,5 +1,6 @@
+import { CachedImage as Image } from "@/components/common/CachedImage";
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 
 import { CINEMO_COLORS } from "@cinemo/shared";

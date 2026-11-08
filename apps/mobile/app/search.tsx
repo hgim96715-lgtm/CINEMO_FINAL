@@ -1,9 +1,9 @@
+import { CachedImage as Image } from "@/components/common/CachedImage";
 import {
   getMovieSearchKey,
-  isSearchableTmdbTitle,
+  movieTitleMatchRank,
   unifiedSearchQueryOptions,
   tmdbMovieSearchQueryOptions,
-  preferExactTmdbTitleMatches,
 } from "@/lib/queries/movie-search.query";
 import type {
   MovieSearchItemResponse,
@@ -13,13 +13,12 @@ import type {
 import { importMovieFromTmdb } from "@/lib/api/movies";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, X } from "lucide-react-native";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
   Pressable,
   Text,
   TextInput,
@@ -47,6 +46,14 @@ export default function SearchScreen() {
   const [submittedKeyword, setSubmittedKeyword] = useState("");
   const [importingTmdbId, setImportingTmdbId] = useState<number | null>(null);
 
+  useEffect(() => {
+    const query = keyword.trim();
+    if (query.length < 2) return;
+
+    const timer = setTimeout(() => setSubmittedKeyword(query), 350);
+    return () => clearTimeout(timer);
+  }, [keyword]);
+
   const searchQuery = useQuery(
     unifiedSearchQueryOptions({
       query: submittedKeyword,
@@ -59,9 +66,7 @@ export default function SearchScreen() {
     tmdbMovieSearchQueryOptions({
       query: submittedKeyword,
       page: 1,
-      enabled:
-        searchQuery.isSuccess &&
-        searchQuery.data.movies.length < 10,
+      enabled: submittedKeyword.length > 0,
     }),
   );
 
@@ -83,20 +88,15 @@ export default function SearchScreen() {
   const localMovieKeys = new Set(
     movies.map((movie) => getMovieSearchKey(movie.title, movie.releaseDate)),
   );
-  const tmdbMovies = preferExactTmdbTitleMatches(
-    (tmdbQuery.data?.results ?? [])
-      .filter(
-        (movie) =>
-          isSearchableTmdbTitle(movie.title, submittedKeyword) &&
-          Boolean(movie.poster_path),
-      )
-      .filter(
-        (movie) =>
-          !localMovieKeys.has(
-            getMovieSearchKey(movie.title, movie.release_date),
-          ),
-      ),
-    submittedKeyword,
+  const tmdbMovies = (tmdbQuery.data?.results ?? []).filter((movie) =>
+    !localMovieKeys.has(getMovieSearchKey(movie.title, movie.release_date)),
+  );
+  const movieItems = [
+    ...movies.map((movie) => ({ kind: "local" as const, id: movie.id, movie })),
+    ...tmdbMovies.map((movie) => ({ kind: "tmdb" as const, id: movie.id, movie })),
+  ].sort((first, second) =>
+    movieTitleMatchRank(second.movie.title, submittedKeyword) -
+    movieTitleMatchRank(first.movie.title, submittedKeyword),
   );
   const listItems: SearchListItem[] = submittedKeyword
     ? [
@@ -111,16 +111,7 @@ export default function SearchScreen() {
         ...(movies.length > 0 || tmdbMovies.length > 0
           ? [{ kind: "section" as const, id: "movies-section", title: "영화" }]
           : []),
-        ...movies.map((movie) => ({
-          kind: "local" as const,
-          id: movie.id,
-          movie,
-        })),
-        ...tmdbMovies.map((movie) => ({
-          kind: "tmdb" as const,
-          id: movie.id,
-          movie,
-        })),
+        ...movieItems,
       ]
     : movies.map((movie) => ({
         kind: "local" as const,
@@ -160,7 +151,7 @@ export default function SearchScreen() {
             value={keyword}
             onChangeText={(value) => {
               setKeyword(value);
-              if (value.trim().length === 0) {
+              if (value.trim().length < 2) {
                 setSubmittedKeyword("");
               }
             }}
@@ -195,6 +186,9 @@ export default function SearchScreen() {
 
       <FlatList
         data={listItems}
+        initialNumToRender={8}
+        maxToRenderPerBatch={6}
+        windowSize={5}
         keyExtractor={(item) => `${item.kind}-${item.id}`}
         contentContainerClassName="gap-4 px-5 "
         contentContainerStyle={{
@@ -273,6 +267,7 @@ export default function SearchScreen() {
                 {profileUrl ? (
                   <Image
                     source={{ uri: profileUrl }}
+                    imageWidth={56}
                     resizeMode="cover"
                     className="h-14 w-14 rounded-full"
                     accessibilityLabel={`${item.person.name} 프로필`}
@@ -317,6 +312,7 @@ export default function SearchScreen() {
               {posterUrl ? (
                 <Image
                   source={{ uri: posterUrl }}
+                  imageWidth={96}
                   resizeMode="cover"
                   className="h-32 w-24 rounded-xl"
                 />

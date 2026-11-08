@@ -1,9 +1,10 @@
+import { CachedImage as Image } from "@/components/common/CachedImage";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Plus } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { Image, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 
 import { CINEMO_COLORS } from "@cinemo/shared";
 import {

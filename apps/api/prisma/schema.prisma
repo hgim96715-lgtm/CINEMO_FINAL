@@ -470,6 +470,7 @@ model PostcardComment {
   user          User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent        PostcardComment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
   replies       PostcardComment[]         @relation("CommentReplies")
+  reports       PostcardReport[]
   reactions     PostcardCommentReaction[]
   notifications PostcardNotification[]
 
@@ -533,6 +534,7 @@ model PostcardShare {
 model PostcardReport {
   id         String               @id @default(uuid(7)) @db.Uuid
   postcardId String               @db.Uuid
+  commentId  String?              @db.Uuid
   reporterId String               @db.Uuid
   reason     String               @db.Text
   status     PostcardReportStatus @default(PENDING)
@@ -540,10 +542,12 @@ model PostcardReport {
   resolvedAt DateTime?            @map("resolved_at") @db.Timestamptz(3)
 
   postcard Postcard @relation(fields: [postcardId], references: [id], onDelete: Cascade)
+  comment  PostcardComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
   reporter User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
 
   @@index([postcardId, status, createdAt])
   @@index([reporterId, createdAt])
+  @@index([commentId, reporterId, status])
   @@map("postcard_reports")
 }
 
@@ -704,6 +708,8 @@ model User {
   postcardBookmarks          PostcardBookmark[]
   postcardShares             PostcardShare[]
   postcardReports            PostcardReport[]
+  postcardBlocksMade         PostcardUserBlock[] @relation("PostcardBlocksMade")
+  postcardBlocksReceived     PostcardUserBlock[] @relation("PostcardBlocksReceived")
   postcardModerations        PostcardModeration[]
   postcardRestrictions       PostcardUserRestriction[]
   postcardGenerations        PostcardGeneration[]
@@ -711,6 +717,8 @@ model User {
   postcardNotifications      PostcardNotification[]    @relation("PostcardNotificationRecipient")
   postcardNotificationActors PostcardNotification[]    @relation("PostcardNotificationActor")
   mobileRefreshTokens        MobileRefreshToken[]
+  dailyMoviePreference       DailyMoviePreference?
+  dailyMovieDeliveries       DailyMovieDelivery[]
   pushTokens                 PushToken[] // 사용자의 기기별 푸시 토큰
   cinemaVisits               CinemaVisit[]
   activityLogs               UserActivityLog[]
@@ -748,6 +756,8 @@ model PushToken {
   updatedAt  DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3) // 수정 시각
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade) // 사용자 삭제 시 토큰도 삭제
+
+  dailyMoviePreferences DailyMoviePreference[]
 
   @@index([userId, platform]) // 사용자·플랫폼별 조회 최적화
   @@map("push_tokens") // PostgreSQL 테이블명
@@ -1007,6 +1017,7 @@ model Movie {
   curationMovies         CurationMovie[]
   universeStars          UniverseStar[]
   movieStamp             MovieStamp?
+  dailyMoviePicks        DailyMoviePick[]
 
   @@index([visibility])
   @@map("movies")
@@ -1326,4 +1337,61 @@ model MobileRefreshToken {
   @@index([userId, expiresAt])
   @@index([userId, revokedAt])
   @@map("mobile_refresh_tokens")
+}
+
+model ServiceVisit {
+  id             String  @id @db.Char(64)
+  day            String  @db.Char(10)
+  channel        String  @db.VarChar(8)
+  visitorKey     String  @map("visitor_key") @db.Char(64)
+  authenticated  Boolean
+
+  @@index([day, channel])
+  @@map("service_visits")
+}
+
+model PostcardUserBlock {
+  blockerId String   @db.Uuid
+  blockedId String   @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  blocker User @relation("PostcardBlocksMade", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("PostcardBlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId, blockerId])
+  @@map("postcard_user_blocks")
+}
+
+model DailyMoviePick {
+  day     String @id @db.Char(10)
+  movieId String @map("movie_id") @db.Uuid
+  copy    String @db.VarChar(160)
+  movie   Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@index([movieId])
+  @@map("daily_movie_picks")
+}
+
+model DailyMoviePreference {
+  userId      String    @id @map("user_id") @db.Uuid
+  pushTokenId String    @map("push_token_id") @db.Uuid
+  enabledAt   DateTime  @map("enabled_at") @db.Timestamptz(3)
+  lastVisitAt DateTime  @map("last_visit_at") @db.Timestamptz(3)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pushToken   PushToken @relation(fields: [pushTokenId], references: [id], onDelete: Cascade)
+
+  @@index([pushTokenId])
+  @@index([lastVisitAt])
+  @@map("daily_movie_preferences")
+}
+
+model DailyMovieDelivery {
+  userId      String   @map("user_id") @db.Uuid
+  day         String   @db.Char(10)
+  attemptedAt DateTime @default(now()) @map("attempted_at") @db.Timestamptz(3)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day])
+  @@map("daily_movie_deliveries")
 }
