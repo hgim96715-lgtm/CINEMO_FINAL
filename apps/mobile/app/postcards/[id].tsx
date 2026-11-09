@@ -448,7 +448,7 @@ export default function PostcardDetailScreen() {
 
     const movieTitle = postcardQuery.data?.movie?.title ?? "영화";
     const title = `${movieTitle} · CINEMO 엽서`;
-    const message = `🎬 ${movieTitle}의 여운을 담은 CINEMO 엽서예요.\n좋아하는 장면과 감상을 함께 읽어보세요.`;
+    const message = `🎬 ${movieTitle} · CINEMO 엽서\n좋아하는 장면과 감상을 함께 읽어보세요.`;
     const url = `https://www.cinemo.site/lobby/postcards/${postcardId}`;
 
     try {

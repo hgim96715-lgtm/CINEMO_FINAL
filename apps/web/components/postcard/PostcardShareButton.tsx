@@ -35,7 +35,7 @@ export function PostcardShareButton({
 
   const handleShare = async () => {
     const url = window.location.href;
-    const message = `🎬 ${title}의 여운을 담은 CINEMO 엽서예요. 좋아하는 장면과 감상을 함께 읽어보세요.`;
+    const message = `🎬 ${title} · CINEMO 엽서\n좋아하는 장면과 감상을 함께 읽어보세요.`;
 
     try {
       const canNativeShare = typeof navigator.share === "function";
