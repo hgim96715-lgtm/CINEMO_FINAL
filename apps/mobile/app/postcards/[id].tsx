@@ -446,11 +446,17 @@ export default function PostcardDetailScreen() {
     if (shareInFlight.current || postcardQuery.data?.visibility !== "PUBLIC") return;
     shareInFlight.current = true;
 
-    const title = postcardQuery.data?.movie?.title ?? "CINEMO 엽서";
+    const movieTitle = postcardQuery.data?.movie?.title ?? "영화";
+    const title = `${movieTitle} · CINEMO 엽서`;
+    const message = `🎬 ${movieTitle}의 여운을 담은 CINEMO 엽서예요.\n좋아하는 장면과 감상을 함께 읽어보세요.`;
     const url = `https://www.cinemo.site/lobby/postcards/${postcardId}`;
 
     try {
-      const result = await Share.share(Platform.OS === "ios" ? { url } : { title, message: url });
+      const result = await Share.share(
+        Platform.OS === "ios"
+          ? { title, message, url }
+          : { title, message: `${message}\n${url}` },
+      );
 
       if (result.action === Share.sharedAction) {
         const data = await shareMutation.mutateAsync("native");
