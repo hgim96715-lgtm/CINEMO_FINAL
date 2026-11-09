@@ -2,8 +2,8 @@ import { CachedImage as Image } from "@/components/common/CachedImage";
 import {
   getMovieSearchKey,
   movieTitleMatchRank,
-  unifiedSearchQueryOptions,
   tmdbMovieSearchQueryOptions,
+  unifiedSearchQueryOptions,
 } from "@/lib/queries/movie-search.query";
 import type {
   MovieSearchItemResponse,
@@ -13,7 +13,7 @@ import type {
 import { importMovieFromTmdb } from "@/lib/api/movies";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react-native";
 import {
   ActivityIndicator,
@@ -42,6 +42,7 @@ type SearchListItem =
     };
 
 export default function SearchScreen() {
+  const searchInputRef = useRef<TextInput>(null);
   const [keyword, setKeyword] = useState("");
   const [submittedKeyword, setSubmittedKeyword] = useState("");
   const [importingTmdbId, setImportingTmdbId] = useState<number | null>(null);
@@ -53,6 +54,11 @@ export default function SearchScreen() {
     const timer = setTimeout(() => setSubmittedKeyword(query), 350);
     return () => clearTimeout(timer);
   }, [keyword]);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => searchInputRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   const searchQuery = useQuery(
     unifiedSearchQueryOptions({
@@ -88,15 +94,21 @@ export default function SearchScreen() {
   const localMovieKeys = new Set(
     movies.map((movie) => getMovieSearchKey(movie.title, movie.releaseDate)),
   );
-  const tmdbMovies = (tmdbQuery.data?.results ?? []).filter((movie) =>
-    !localMovieKeys.has(getMovieSearchKey(movie.title, movie.release_date)),
+  const tmdbMovies = (tmdbQuery.data?.results ?? []).filter(
+    (movie) =>
+      !localMovieKeys.has(getMovieSearchKey(movie.title, movie.release_date)),
   );
   const movieItems = [
     ...movies.map((movie) => ({ kind: "local" as const, id: movie.id, movie })),
-    ...tmdbMovies.map((movie) => ({ kind: "tmdb" as const, id: movie.id, movie })),
-  ].sort((first, second) =>
-    movieTitleMatchRank(second.movie.title, submittedKeyword) -
-    movieTitleMatchRank(first.movie.title, submittedKeyword),
+    ...tmdbMovies.map((movie) => ({
+      kind: "tmdb" as const,
+      id: movie.id,
+      movie,
+    })),
+  ].sort(
+    (first, second) =>
+      movieTitleMatchRank(second.movie.title, submittedKeyword) -
+      movieTitleMatchRank(first.movie.title, submittedKeyword),
   );
   const listItems: SearchListItem[] = submittedKeyword
     ? [
@@ -147,8 +159,11 @@ export default function SearchScreen() {
       <View className="flex-row items-center gap-2 px-5 pb-4">
         <View className="relative flex-1">
           <TextInput
+            ref={searchInputRef}
             autoFocus
+            showSoftInputOnFocus
             value={keyword}
+            onPressIn={() => searchInputRef.current?.focus()}
             onChangeText={(value) => {
               setKeyword(value);
               if (value.trim().length < 2) {
@@ -240,7 +255,8 @@ export default function SearchScreen() {
           ) : null
         }
         ListFooterComponent={
-          submittedKeyword && (searchQuery.isFetching || tmdbQuery.isFetching) ? (
+          submittedKeyword &&
+          (searchQuery.isFetching || tmdbQuery.isFetching) ? (
             <View className="items-center py-6">
               <ActivityIndicator color="#D9B15A" />
               <Text className="mt-2 text-cinemo-muted">검색 중...</Text>

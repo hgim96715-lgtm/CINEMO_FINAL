@@ -1,3 +1,5 @@
+import type { ImagePickerAsset } from "expo-image-picker";
+
 import type { MobileLoginResponse } from "@/lib/api/auth";
 import { apiClient } from "@/lib/api/apiClient";
 import type { ViewingPlatform } from "./movie-records";
@@ -69,6 +71,42 @@ export async function getCurrentUser(signal?: AbortSignal) {
   );
 
   return response.data;
+}
+
+export type UpdateMyProfileInput = {
+  nickname: string;
+  removeImage: boolean;
+  photo?: ImagePickerAsset;
+};
+
+export async function updateMyProfile({
+  nickname,
+  removeImage,
+  photo,
+}: UpdateMyProfileInput) {
+  const form = new FormData();
+  form.append("nickname", nickname);
+
+  if (removeImage) {
+    form.append("removeImage", "true");
+  }
+
+  if (photo) {
+    const file = photo.file ?? {
+      uri: photo.uri,
+      name: photo.fileName ?? "profile.jpg",
+      type: photo.mimeType ?? "image/jpeg",
+    };
+    form.append("image", file as Blob);
+  }
+
+  const { data } = await apiClient.patch<MobileLoginResponse["user"]>(
+    "/auth/me/profile",
+    form,
+    { headers: { "Content-Type": "multipart/form-data" } },
+  );
+
+  return data;
 }
 
 export async function getMyMovies(signal?: AbortSignal) {
