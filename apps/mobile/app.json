@@ -19,7 +19,10 @@
       "usesAppleSignIn": true,
       "supportsTablet": true,
       "deploymentTarget": "16.4",
-      "bundleIdentifier": "site.cinemo.app"
+      "bundleIdentifier": "site.cinemo.app",
+      "infoPlist": {
+        "NSMotionUsageDescription": "기기의 동작 접근성 설정을 반영해 CINEMO의 화면 전환 효과를 자연스럽게 표시하기 위해 사용해요."
+      }
     },
     "android": {
       "package": "site.cinemo.app",
