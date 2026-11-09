@@ -1,3 +1,4 @@
+import { DailyMoviesModule } from "@/modules/daily-movies/daily-movies.module";
 import { Module } from "@nestjs/common";
 
 import { AdminController } from "./admin.controller";
@@ -13,6 +14,7 @@ import { ServiceVisitsController } from "./service-visits.controller";
 import { ServiceVisitsService } from "./service-visits.service";
 
 @Module({
+  imports: [DailyMoviesModule],
   controllers: [AdminController, CurationController, ServiceVisitsController, PostcardReportsController],
   providers: [
     AdminRepository,

@@ -415,6 +415,7 @@ export function PostcardCommentSection({
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
+                    {comment.status === "PUBLISHED" && <>
                     <button
                       type="button"
                       aria-haspopup="dialog"
@@ -437,6 +438,7 @@ export function PostcardCommentSection({
                     >
                       {formatCommentDate(comment.createdAt)}
                     </time>
+                    </>}
                     {comment.status === "PUBLISHED" &&
                       currentUser?.id === comment.author.id && (
                       <div
@@ -568,7 +570,7 @@ export function PostcardCommentSection({
                         </button>
                       )}
 
-                      {currentUser && (
+                      {currentUser && comment.status === "PUBLISHED" && (
                         <button
                           type="button"
                           onClick={() => setReplyingToCommentId(comment.id)}
@@ -578,7 +580,7 @@ export function PostcardCommentSection({
                         </button>
                       )}
 
-                      {replyingToCommentId === comment.id && currentUser && (
+                      {replyingToCommentId === comment.id && currentUser && comment.status === "PUBLISHED" && (
                         <PostcardReplyForm
                           replyToNickname={comment.author.nickname}
                           isSubmitting={isSubmitting}

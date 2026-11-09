@@ -48,6 +48,9 @@ export class PostcardMediaResponseDto {
 export class PostcardAuthorSummaryDto {
   @ApiProperty({ description: "작성자 닉네임", example: "시네마틱" })
   nickname!: string;
+
+  @ApiPropertyOptional({ description: "작성자 프로필 사진", type: String, nullable: true })
+  profileImageUrl?: string | null;
 }
 
 export class PostcardResponseDto {

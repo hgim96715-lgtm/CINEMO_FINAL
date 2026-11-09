@@ -47,7 +47,7 @@ const navigationTheme = {
 };
 
 export default function RootLayout() {
-  const openedRecommendation = useRef<string | null>(null);
+  const openedMovieNotification = useRef<string | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const segments = useSegments();
@@ -117,25 +117,27 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!isAuthReady || Platform.OS === "web") return;
-    function openRecommendation(response: Notifications.NotificationResponse) {
+    function openMovieNotification(response: Notifications.NotificationResponse) {
       const { identifier, content } = response.notification.request;
-      const { type, movieId } = content.data ?? {};
-      if (type !== "daily-movie" || typeof movieId !== "string" ||
+      const { type, movieId, route } = content.data ?? {};
+      const isMovieNotification = type === "daily-movie" || type === "movie-release" ||
+        (typeof movieId === "string" && route === `/movies/${movieId}`);
+      if (!isMovieNotification || typeof movieId !== "string" ||
           !/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(movieId) ||
-          identifier === openedRecommendation.current) return;
+          identifier === openedMovieNotification.current) return;
 
-      openedRecommendation.current = identifier;
+      openedMovieNotification.current = identifier;
       router.push({ pathname: "/movies/[id]", params: { id: movieId } });
       Notifications.clearLastNotificationResponse();
     }
-    const subscription = Notifications.addNotificationResponseReceivedListener(openRecommendation);
+    const subscription = Notifications.addNotificationResponseReceivedListener(openMovieNotification);
     const lastResponse = Notifications.getLastNotificationResponse();
-    if (lastResponse) openRecommendation(lastResponse);
+    if (lastResponse) openMovieNotification(lastResponse);
     return () => subscription.remove();
   }, [isAuthReady]);
 
   useEffect(() => {
-    if (!isAuthReady || !hasActiveSession) {
+    if (!isAuthReady || !hasActiveSession || !getMobileAccessToken()) {
       return;
     }
 
@@ -144,7 +146,7 @@ export default function RootLayout() {
         await registerDevicePushToken();
         console.log("[푸시 토큰 서버 등록 완료]");
       } catch (error) {
-        console.warn("[푸시 토큰 등록 실패]", error);
+        if (getMobileAccessToken()) console.warn("[푸시 토큰 등록 실패]", error);
       }
     }
     void registertoken();

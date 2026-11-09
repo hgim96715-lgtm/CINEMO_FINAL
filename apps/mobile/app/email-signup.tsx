@@ -14,7 +14,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { CINEMO_COLORS } from "@cinemo/shared";
+import { LegalDocumentModal } from "@/components/auth/LegalDocumentModal";
+import { CINEMO_COLORS, type CinemoLegalDocument } from "@cinemo/shared";
 import { registerEmailMobile } from "@/lib/api/auth";
 import {
   emailSignupSchema,
@@ -22,6 +23,7 @@ import {
 } from "@/schemas/email-signup.schema";
 
 export default function EmailSignupScreen() {
+  const [activeTerms, setActiveTerms] = useState<CinemoLegalDocument | null>(null);
   const params = useLocalSearchParams<{ email?: string | string[] }>();
   const email = Array.isArray(params.email) ? params.email[0] : params.email;
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -37,9 +39,8 @@ export default function EmailSignupScreen() {
       nickname: "",
       password: "",
       passwordConfirm: "",
-      service: true,
-      privacy: true,
-      marketing: false,
+      service: false,
+      privacy: false,
     },
   });
 
@@ -54,7 +55,7 @@ export default function EmailSignupScreen() {
         terms: {
           service: true,
           privacy: true,
-          marketing: values.marketing,
+          marketing: false,
         },
       });
 
@@ -140,23 +141,30 @@ export default function EmailSignupScreen() {
             {renderInput("password", "비밀번호", true)}
             {renderInput("passwordConfirm", "비밀번호 확인", true)}
 
-            <Controller
-              control={control}
-              name="marketing"
-              render={({ field: { value, onChange } }) => (
-                <Pressable
-                  className="flex-row items-center gap-3"
-                  onPress={() => onChange(!value)}
-                >
-                  <Text className="text-lg text-cinemo-gold">
-                    {value ? "☑" : "□"}
-                  </Text>
-                  <Text className="text-sm text-cinemo-muted">
-                    마케팅 정보 수신 동의 (선택)
-                  </Text>
-                </Pressable>
-              )}
-            />
+            {(["service", "privacy"] as const).map((name) => (
+              <Controller
+                key={name}
+                control={control}
+                name={name}
+                render={({ field: { value, onChange }, fieldState: { error } }) => (
+                  <View className="gap-2">
+                    <View className="flex-row items-center gap-3">
+                      <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: value }}
+                        onPress={() => onChange(!value)} className="flex-1 flex-row items-center gap-3">
+                        <Text className="text-lg text-cinemo-gold">{value ? "☑" : "□"}</Text>
+                        <Text className="flex-1 text-sm text-cinemo-muted">
+                          {name === "service" ? "서비스 이용약관 동의 (필수)" : "개인정보 수집·이용 동의 (필수)"}
+                        </Text>
+                      </Pressable>
+                      <Pressable accessibilityRole="button" onPress={() => setActiveTerms(name)} hitSlop={8}>
+                        <Text className="text-xs text-cinemo-gold underline">자세히 보기</Text>
+                      </Pressable>
+                    </View>
+                    {error && <Text className="text-sm text-cinemo-danger">{error.message}</Text>}
+                  </View>
+                )}
+              />
+            ))}
           </View>
 
           {submitError && (
@@ -180,6 +188,7 @@ export default function EmailSignupScreen() {
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
+      <LegalDocumentModal document={activeTerms} onClose={() => setActiveTerms(null)} />
     </SafeAreaView>
   );
 }

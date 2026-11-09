@@ -86,7 +86,12 @@ export const toPostcard = (
   author: "author" in record
     ? (record.author as Postcard["author"])
     : "user" in record
-      ? {nickname: (record.user as {nickname: string}).nickname}
+      ? {
+          nickname: record.user.nickname,
+          ...("profileImageUrl" in record.user && {
+            profileImageUrl: typeof record.user.profileImageUrl === "string" ? record.user.profileImageUrl : null,
+          }),
+        }
       : null,
   media: "media" in record
     ? record.media.map((media) => ({

@@ -2,6 +2,8 @@ import { apiClient, getMobileAccessToken } from "./apiClient";
 
 export type DailyMovie = {
   day: string;
+  headline?: string;
+  weatherSource?: string | null;
   movie: { id: string; title: string; posterUrl: string; genres: string[] };
   copy: string;
   reason?: string;

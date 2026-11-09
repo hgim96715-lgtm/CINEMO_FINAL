@@ -1,9 +1,11 @@
+import { DEFAULT_DAILY_MOVIE_PUSH, formatDailyMoviePush, type DailyMovieWeatherGrid, type DailyMoviePushSettings } from "@cinemo/shared/daily-movie-push";
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
 import { MoviesService } from "@/modules/movies/movies.service";
 import { ExpoPushService } from "@/modules/notifications/expo-push.service";
 import { PrismaService } from "@/prisma/prisma.service";
+import { dailyMovieContext } from "./daily-movie-context";
 
 const seoulDate = new Intl.DateTimeFormat("sv-SE", {
   timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
@@ -57,18 +59,11 @@ export class DailyMoviesService {
     private readonly push: ExpoPushService,
   ) {}
 
-  private async publicPick(now: Date, userId?: string) {
+  private async publicPick(now: Date, userId?: string, preferredGenres: string[] = []) {
     const filter: Prisma.MovieWhereInput = userId
       ? { ...movieFilter, userMovieRecords: { none: { userId, isWatched: true } } }
       : movieFilter;
     const day = seoulDate.format(now);
-    const stored = await this.prisma.dailyMoviePick.findFirst({
-      where: { day, movie: filter },
-      select: { copy: true, movie: { select: movieSelect } },
-    });
-    const storedMovie = stored && movieCard(stored.movie);
-    if (storedMovie && stored) return { movie: storedMovie, copy: stored.copy, reason: this.discoveryReason(storedMovie.genres, userId), prepared: true };
-
     const popular = await this.movies.getPopularMovies(1, 20);
     const ids = popular.items.filter((movie) => movie.title && movie.posterUrl && !movie.isAdultOnly)
       .map((movie) => movie.id);
@@ -82,7 +77,9 @@ export class DailyMoviesService {
       return movie ? [movie] : [];
     });
     const seed = Math.floor(Date.parse(day) / 86_400_000);
-    let movie = eligible[seed % eligible.length];
+    const matching = eligible.filter((item) => item.genres.some((genre) => preferredGenres.includes(genre)));
+    const candidates = matching.length ? matching : eligible;
+    let movie = candidates[seed % candidates.length];
     if (!movie) {
       const fallback = await this.prisma.movie.findFirst({
         where: { ...filter, titles: { some: {} } },
@@ -112,17 +109,18 @@ export class DailyMoviesService {
     return category ? `오늘 살펴볼 ${category} 작품이에요.` : "개봉한 작품 중에서 골랐어요.";
   }
 
-  private async personalPick(userId: string) {
+  private async personalPick(userId: string, dayIndex: number) {
     const saved = await this.prisma.userMovieRecord.findMany({
       where: { userId, isFavorite: true, isWatched: false, movie: movieFilter },
       orderBy: [{ updatedAt: "desc" }, { movieId: "asc" }],
       select: { movie: { select: movieSelect } },
       take: 5,
     });
-    for (const record of saved) {
-      const movie = movieCard(record.movie);
-      if (movie) return { movie, copy: "저장해 둔 이 영화, 오늘 볼까요?", reason: "저장해 두고 아직 보지 않은 영화예요." };
-    }
+    const savedMovies = saved.map(({ movie }) => movieCard(movie)).filter((movie) => movie !== null);
+    const savedPick = (movie: (typeof savedMovies)[number]) => ({
+      movie, copy: "저장해 둔 이 영화, 오늘 볼까요?", reason: "찜해 둔 영화, 오늘 한 편 볼까요?",
+    });
+    if (savedMovies.length > 1) return savedPick(savedMovies[dayIndex % savedMovies.length]);
 
     const watched = await this.prisma.userMovieRecord.findMany({
       where: { userId, isWatched: true },
@@ -137,25 +135,67 @@ export class DailyMoviesService {
       }
     }
     const genre = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
-    if (!genre) return null;
-
-    const candidate = await this.prisma.movie.findFirst({
+    const alternatives = await this.prisma.movie.findMany({
       where: {
-        AND: [movieFilter, { movieGenres: { some: { name: genre } } }],
+        ...movieFilter,
+        titles: { some: {} },
+        ...(genre && { movieGenres: { some: { name: genre } } }),
+        ...(savedMovies[0] && { id: { not: savedMovies[0].id } }),
         userMovieRecords: { none: { userId, isWatched: true } },
       },
       orderBy: [{ tmdbVoteCount: { sort: "desc", nulls: "last" } }, { id: "asc" }],
       select: movieSelect,
+      take: 20,
     });
-    const movie = candidate && movieCard(candidate);
-    return movie ? { movie, copy: `자주 본 ${genre} 장르에서 골랐어요.`, reason: `자주 본 ${genre} 장르의 미관람 영화예요.` } : null;
+    const candidates = alternatives.map(movieCard).filter((movie) => movie !== null);
+    if (candidates.length + savedMovies.length < 2 && genre) {
+      const fallback = await this.prisma.movie.findFirst({
+        where: {
+          ...movieFilter,
+          titles: { some: {} },
+          id: { notIn: [...savedMovies, ...candidates].map(({ id }) => id) },
+          userMovieRecords: { none: { userId, isWatched: true } },
+        },
+        orderBy: [{ tmdbVoteCount: { sort: "desc", nulls: "last" } }, { id: "asc" }],
+        select: movieSelect,
+      });
+      const card = fallback && movieCard(fallback);
+      if (card) candidates.push(card);
+    }
+
+    const pool = [...savedMovies, ...candidates];
+    const movie = pool[dayIndex % pool.length];
+    if (!movie) return null;
+    if (movie.id === savedMovies[0]?.id) return savedPick(movie);
+    const matchesTaste = genre && movie.genres.includes(genre);
+    return {
+      movie,
+      copy: matchesTaste ? `자주 본 ${genre} 장르에서 골랐어요.` : "오늘 이 영화 한 편 어때요?",
+      reason: matchesTaste ? `즐겨 보는 ${genre} 장르에서 아직 안 본 작품을 골랐어요.` : this.discoveryReason(movie.genres, userId),
+    };
   }
 
   async today(userId?: string, now = new Date()) {
     const day = seoulDate.format(now);
-    const pick = (userId && await this.personalPick(userId)) || await this.publicPick(now, userId);
+    const context = await dailyMovieContext(now, userId ? await this.weatherRegion(userId) ?? undefined : undefined);
+    const stored = await this.prisma.dailyMoviePick.findFirst({
+      where: {
+        day,
+        movie: userId
+          ? { ...movieFilter, userMovieRecords: { none: { userId, isWatched: true } } }
+          : movieFilter,
+      },
+      select: { copy: true, movie: { select: movieSelect } },
+    });
+    const featured = stored && movieCard(stored.movie);
+    const useFeatured = featured && (!context.weather || featured.genres.some((genre) => context.genres.includes(genre)));
+    const pick = useFeatured && stored
+      ? { movie: featured, copy: stored.copy, reason: stored.copy, prepared: true }
+      : (userId && await this.personalPick(userId, Math.floor(Date.parse(day) / 86_400_000))) || await this.publicPick(now, userId, context.genres);
     return pick ? {
       day,
+      headline: context.headline,
+      weatherSource: context.weather ? "기상청 · 설정한 지역 기준" : null,
       movie: pick.movie,
       copy: pick.copy,
       reason: pick.reason,
@@ -163,16 +203,88 @@ export class DailyMoviesService {
     } : null;
   }
 
-  async prepareCopy(generate: (movie: { title: string; genres: string[] }) => Promise<string>, now = new Date()) {
-    const pick = await this.publicPick(now);
-    if (!pick || pick.prepared) return;
-
-    const copy = (await generate(pick.movie)).replace(/\s+/g, " ").trim().slice(0, 160);
-    if (!copy) return;
+  async prepareHiddenGem(
+    choose: (input: { mood: string; movies: { id: string; title: string; genres: string[]; overview: string }[] }) =>
+      Promise<{ movieId: string; reason: string }>,
+    now = new Date(),
+  ) {
+    const day = seoulDate.format(now);
+    const existing = await this.prisma.dailyMoviePick.findUnique({ where: { day }, select: { day: true } });
+    if (existing) return;
+    const settings = await this.pushSettings();
+    const evening = new Date(`${day}T${String(settings.hour).padStart(2, "0")}:00:00+09:00`);
+    const context = await dailyMovieContext(evening);
+    const recent = await this.prisma.dailyMoviePick.findMany({
+      orderBy: { day: "desc" }, take: 7, select: { movieId: true },
+    });
+    const pool = await this.prisma.movie.findMany({
+      where: {
+        ...movieFilter,
+        id: { notIn: recent.map(({ movieId }) => movieId) },
+        overview: { not: null },
+        tmdbVoteCount: { gte: 50, lte: 2500 },
+        tmdbVoteAverage: { gte: 7 },
+        movieGenres: { some: { name: { in: context.genres } } },
+      },
+      orderBy: [{ tmdbVoteAverage: "desc" }, { tmdbVoteCount: "desc" }, { id: "asc" }],
+      select: { ...movieSelect, overview: true },
+      take: 16,
+    });
+    const movies = pool.flatMap((candidate) => {
+      const movie = movieCard(candidate);
+      const overview = candidate.overview?.trim().slice(0, 420);
+      return movie && overview ? [{ id: movie.id, title: movie.title, genres: movie.genres, overview }] : [];
+    });
+    if (!movies.length) return;
+    const result = await choose({ mood: context.headline, movies });
+    const copy = typeof result?.reason === "string" ? result.reason.replace(/\s+/g, " ").trim().slice(0, 160) : "";
+    if (!copy || !movies.some(({ id }) => id === result.movieId)) return;
     await this.prisma.dailyMoviePick.createMany({
-      data: { day: seoulDate.format(now), movieId: pick.movie.id, copy },
+      data: { day, movieId: result.movieId, copy },
       skipDuplicates: true,
     });
+  }
+
+  async weatherRegion(userId: string): Promise<DailyMovieWeatherGrid | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { dailyMovieWeatherNx: true, dailyMovieWeatherNy: true },
+    });
+    if (user?.dailyMovieWeatherNx == null || user.dailyMovieWeatherNy == null) return null;
+    return { nx: user.dailyMovieWeatherNx, ny: user.dailyMovieWeatherNy };
+  }
+
+  async setWeatherRegion(userId: string, grid: DailyMovieWeatherGrid | null) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { dailyMovieWeatherNx: grid?.nx ?? null, dailyMovieWeatherNy: grid?.ny ?? null },
+    });
+    return grid;
+  }
+
+  async pushSettings(): Promise<DailyMoviePushSettings> {
+    const saved = await this.prisma.dailyMoviePushSettings.findUnique({
+      where: { id: 1 },
+      select: { enabled: true, weekdays: true, hour: true, title: true, body: true },
+    });
+    if (!saved) return DEFAULT_DAILY_MOVIE_PUSH;
+    if (saved.title === "🎬 오늘의 영화" && saved.body === "{movie}\n{reason}") {
+      return { ...saved, title: DEFAULT_DAILY_MOVIE_PUSH.title, body: DEFAULT_DAILY_MOVIE_PUSH.body };
+    }
+    return saved;
+  }
+
+  async updatePushSettings(input: DailyMoviePushSettings) {
+    const title = input.title.trim();
+    const body = input.body.trim();
+    if (!title || !body || !`${title} ${body}`.includes("{movie}")) {
+      throw new BadRequestException("제목과 본문을 입력하고, 영화 제목 변수 {movie}를 넣어 주세요.");
+    }
+    const data = { ...input, weekdays: [...input.weekdays].sort((a, b) => a - b), title, body };
+    await this.prisma.dailyMoviePushSettings.upsert({
+      where: { id: 1 }, create: { id: 1, ...data }, update: data,
+    });
+    return data;
   }
 
   async preference(userId: string) {
@@ -214,7 +326,9 @@ export class DailyMoviesService {
     const day = seoulDate.format(now);
     const start = new Date(`${day}T00:00:00+09:00`);
     const weekday = new Date(`${day}T00:00:00Z`).getUTCDay();
-    if (![2, 5].includes(weekday) || seoulHour.format(now) !== "20") return 0;
+    const settings = await this.pushSettings();
+    if (!settings.enabled || !settings.weekdays.includes(weekday) ||
+        Number(seoulHour.format(now)) !== settings.hour) return 0;
 
     const eligible: Prisma.DailyMoviePreferenceWhereInput = {
       lastVisitAt: { lt: start },
@@ -258,8 +372,7 @@ export class DailyMoviesService {
 
           const tickets = await this.push.send([{
             to: token,
-            title: "오늘의 영화",
-            body: `${pick.movie.title} · ${pick.reason}`.slice(0, 160),
+            ...formatDailyMoviePush(settings, pick.movie.title, pick.reason, pick.headline),
             data: { type: "daily-movie", movieId: pick.movie.id },
           }]);
           if (tickets.some((ticket) => ticket.status === "ok")) sent++;

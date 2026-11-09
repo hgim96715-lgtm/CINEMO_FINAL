@@ -1,9 +1,11 @@
+import { Ionicons } from "@expo/vector-icons";
+import { CINEMO_COLORS } from "@cinemo/shared";
 import { isAxiosError } from "axios";
 import type { ImagePickerAsset } from "expo-image-picker";
 import { requireOptionalNativeModule } from "expo";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Image, Modal, Pressable, Text, TextInput, View } from "react-native";
+import { useRef, useState } from "react";
+import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
 
 import type { MobileLoginResponse } from "@/lib/api/auth";
 import { apiClient } from "@/lib/api/apiClient";
@@ -13,7 +15,9 @@ export function ProfileEditor({ user }: { user: MobileLoginResponse["user"] }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [nickname, setNickname] = useState(user.nickname);
+  const [removePhoto, setRemovePhoto] = useState(false);
   const [photo, setPhoto] = useState<ImagePickerAsset>();
+  const pickerInFlight = useRef(false);
   const [picking, setPicking] = useState(false);
   const [photoError, setPhotoError] = useState("");
 
@@ -21,6 +25,7 @@ export function ProfileEditor({ user }: { user: MobileLoginResponse["user"] }) {
     mutationFn: async () => {
       const form = new FormData();
       form.append("nickname", nickname.trim());
+      if (removePhoto) form.append("removeImage", "true");
       if (photo) {
         const file = photo.file ?? {
           uri: photo.uri,
@@ -43,6 +48,9 @@ export function ProfileEditor({ user }: { user: MobileLoginResponse["user"] }) {
   });
 
   async function choosePhoto() {
+    if (pickerInFlight.current || save.isPending) return;
+    pickerInFlight.current = true;
+    Keyboard.dismiss();
     setPicking(true);
     setPhotoError("");
     save.reset();
@@ -66,16 +74,18 @@ export function ProfileEditor({ user }: { user: MobileLoginResponse["user"] }) {
         setPhotoError("8MB 이하의 사진을 선택해주세요.");
         return;
       }
+      setRemovePhoto(false);
       setPhoto(asset);
     } catch {
       setPhotoError("사진 보관함을 열 수 없어요.");
     } finally {
+      pickerInFlight.current = false;
       setPicking(false);
     }
   }
 
   const busy = save.isPending || picking;
-  const preview = photo?.uri ?? user.profileImageUrl;
+  const preview = photo?.uri ?? (removePhoto ? null : user.profileImageUrl);
   const response = isAxiosError(save.error) ? save.error.response : undefined;
   const serverMessage = response?.data?.message;
   const saveErrorMessage = response?.status === 404
@@ -92,6 +102,7 @@ export function ProfileEditor({ user }: { user: MobileLoginResponse["user"] }) {
         onPress={() => {
           setNickname(user.nickname);
           setPhoto(undefined);
+          setRemovePhoto(false);
           setPhotoError("");
           save.reset();
           setOpen(true);
@@ -105,21 +116,51 @@ export function ProfileEditor({ user }: { user: MobileLoginResponse["user"] }) {
         animationType="fade"
         onRequestClose={() => { if (!busy) setOpen(false); }}
       >
-        <View className="flex-1 items-center justify-center bg-black/70 p-6">
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} className="flex-1 items-center justify-center bg-black/70 p-5">
           <View className="w-full max-w-sm gap-4 rounded-3xl bg-cinemo-bg p-6">
             <Text className="text-xl font-bold text-cinemo-text">프로필 편집</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="프로필 사진 선택"
+              accessibilityLabel={preview ? "프로필 사진 변경" : "프로필 사진 추가"}
+              accessibilityState={{ disabled: busy, busy: picking }}
               disabled={busy}
               onPress={() => void choosePhoto()}
-              className="items-center gap-2 py-2"
+              className="min-h-20 flex-row items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 active:bg-white/10"
             >
-              {preview && <Image source={{ uri: preview }} className="h-20 w-20 rounded-full" />}
-              <Text className="font-semibold text-cinemo-gold-light">
-                {preview ? "사진 변경" : "사진 추가"}
-              </Text>
+              <View className="size-14 items-center justify-center overflow-hidden rounded-full bg-white/10">
+                {preview ? (
+                  <Image source={{ uri: preview }} className="size-full" resizeMode="cover" />
+                ) : (
+                  <Ionicons name="person-outline" size={24} color={CINEMO_COLORS.textSecondary} />
+                )}
+              </View>
+              <View className="flex-1 gap-1">
+                <Text className="font-semibold text-cinemo-gold-light">
+                  {picking ? "사진 보관함 여는 중…" : preview ? "사진 변경" : "사진 추가"}
+                </Text>
+                <Text className="text-xs text-cinemo-muted">사진 보관함에서 한 장 선택</Text>
+              </View>
+              {picking ? (
+                <ActivityIndicator size="small" color={CINEMO_COLORS.accentLight} />
+              ) : (
+                <Ionicons name="images-outline" size={20} color={CINEMO_COLORS.accentLight} />
+              )}
             </Pressable>
+            {preview && (
+              <Pressable
+                accessibilityRole="button"
+                disabled={busy}
+                onPress={() => {
+                  setPhoto(undefined);
+                  setRemovePhoto(Boolean(user.profileImageUrl));
+                  setPhotoError("");
+                  save.reset();
+                }}
+                className="min-h-11 self-start justify-center px-2"
+              >
+                <Text className="text-sm text-cinemo-muted">기본 프로필 사용</Text>
+              </Pressable>
+            )}
             <Text className="text-cinemo-text">닉네임</Text>
             <TextInput
               accessibilityLabel="닉네임"
@@ -136,23 +177,23 @@ export function ProfileEditor({ user }: { user: MobileLoginResponse["user"] }) {
                 {photoError || saveErrorMessage}
               </Text>
             )}
-            <View className="flex-row justify-end gap-4">
-              <Pressable accessibilityRole="button" disabled={busy} onPress={() => setOpen(false)} className="p-2">
+            <View className="flex-row gap-2">
+              <Pressable accessibilityRole="button" disabled={busy} onPress={() => setOpen(false)} className="min-h-11 flex-1 items-center justify-center rounded-xl border border-white/10">
                 <Text className="text-cinemo-muted">취소</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                disabled={busy || nickname.trim().length < 2 || (!photo && nickname.trim() === user.nickname)}
+                disabled={busy || nickname.trim().length < 2 || (!photo && !removePhoto && nickname.trim() === user.nickname)}
                 onPress={() => save.mutate()}
-                className="p-2"
+                className="min-h-11 flex-1 items-center justify-center rounded-xl bg-cinemo-gold disabled:opacity-40"
               >
-                <Text className="font-semibold text-cinemo-gold-light">
+                <Text className="font-semibold text-cinemo-bg">
                   {save.isPending ? "저장 중" : "저장"}
                 </Text>
               </Pressable>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );

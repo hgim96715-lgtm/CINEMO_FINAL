@@ -1,3 +1,5 @@
+import { LegalDocumentModal } from "@/components/auth/LegalDocumentModal";
+import type { CinemoLegalDocument } from "@cinemo/shared";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CINEMO_COLORS } from "@cinemo/shared";
@@ -11,6 +13,7 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  Switch,
   Text,
   View,
 } from "react-native";
@@ -19,6 +22,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BookmarkedPeopleList } from "@/components/my-cinema/BookmarkedPeopleList";
 import { MyCinemaTabBar } from "@/components/my-cinema/MyCinemaTabBar";
 import { MyMoviesSection } from "@/components/my-cinema/MyMoviesSection";
+import { getMobileAccessToken } from "@/lib/api/apiClient";
+import { useCinemoPermissions } from "@/components/my-cinema/DailyMovieWeatherSetting";
 import { MyNotificationsSection } from "@/components/my-cinema/MyNotificationsSection";
 import { ProfileEditor } from "@/components/my-cinema/ProfileEditor";
 import { MyPostcardsList } from "@/components/my-cinema/MyPostcardsList";
@@ -582,6 +587,8 @@ export default function MyCinemaScreen() {
   const [editingMovie, setEditingMovie] = useState<MyMovie | null>(null);
 
   const userQuery = useQuery(currentUserQueryOptions());
+  const [legalDocument, setLegalDocument] = useState<CinemoLegalDocument | null>(null);
+  const openCinemoPermissions = useCinemoPermissions(userQuery.data?.id);
   const moviesQuery = useQuery(myMoviesQueryOptions(userQuery.isSuccess));
   const notificationsQuery = useQuery(
     myMovieNotificationsQueryOptions(userQuery.isSuccess),
@@ -675,7 +682,18 @@ export default function MyCinemaScreen() {
     );
   }
 
-  if (userQuery.isError || !userQuery.data) {
+  if (userQuery.isError && !userQuery.data && getMobileAccessToken()) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center gap-4 bg-cinemo-bg px-5">
+        <Text className="text-cinemo-muted">내 시네마 정보를 불러오지 못했어요.</Text>
+        <Pressable accessibilityRole="button" onPress={() => void userQuery.refetch()}>
+          <Text className="font-semibold text-cinemo-gold-light">다시 시도</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
+  if (!userQuery.data) {
     return (
       <Redirect
         href={{
@@ -832,35 +850,27 @@ export default function MyCinemaScreen() {
           {activeTab === "settings" && (
             <View className="mt-6 gap-5">
               <SettingsGroup title="앱 설정">
-                <SettingsRow icon="notifications-outline" title="알림 권한" detail="기기 설정에서 알림 허용 여부 변경" onPress={() => {
-                  void Linking.openSettings().catch(() =>
-                    Alert.alert("알림 권한", "기기 설정에서 CINEMO 알림 권한을 변경해 주세요."),
-                  );
-                }} />
+                <SettingsRow icon="settings-outline" title="CINEMO 권한" detail="기기 설정에서 알림·위치·사진 권한 관리" onPress={() => void openCinemoPermissions()} />
               </SettingsGroup>
 
               <SettingsGroup title="영화 추천 알림">
                 {dailyMoviePreference.data ? (
-                  <SettingsRow
-                    icon="sparkles-outline"
-                    title={dailyMoviePreference.data.enabled ? "오늘의 영화 알림 끄기" : "오늘의 영화 알림 켜기"}
-                    detail="앱을 열지 않은 화·금 저녁 8시 · 한국 시간"
-                    disabled={updateDailyMoviePreference.isPending}
-                    onPress={() => {
-                      if (dailyMoviePreference.data?.enabled) {
-                        updateDailyMoviePreference.mutate(false);
-                        return;
-                      }
-                      Alert.alert(
-                        "오늘의 영화 알림",
-                        "앱을 열지 않은 화요일과 금요일 저녁 8시에 영화 한 편을 추천해요. 이 화면에서 언제든 끌 수 있어요.",
-                        [
-                          { text: "취소", style: "cancel" },
-                          { text: "알림 받기", onPress: () => updateDailyMoviePreference.mutate(true) },
-                        ],
-                      );
-                    }}
-                  />
+                  <View className="flex-row items-center gap-3 px-1 py-3">
+                    <View className="h-9 w-9 items-center justify-center rounded-xl bg-white/5">
+                      <Ionicons name="sparkles-outline" size={18} color={CINEMO_COLORS.accentLight} />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="font-medium text-cinemo-text">오늘의 영화 알림</Text>
+                      <Text className="mt-1 text-xs text-cinemo-muted">앱을 열지 않은 날에 영화 한 편을 추천해요.</Text>
+                    </View>
+                    <Switch
+                      accessibilityLabel="오늘의 영화 알림"
+                      trackColor={{ true: CINEMO_COLORS.teal }}
+                      value={dailyMoviePreference.data.enabled}
+                      disabled={updateDailyMoviePreference.isPending}
+                      onValueChange={(enabled) => updateDailyMoviePreference.mutate(enabled)}
+                    />
+                  </View>
                 ) : (
                   <SettingsRow
                     icon="refresh-outline"
@@ -876,10 +886,10 @@ export default function MyCinemaScreen() {
                   void openSettingsLink("mailto:hello_cinemo@icloud.com", "고객센터 문의")
                 } />
                 <SettingsRow icon="document-text-outline" title="서비스 이용약관" onPress={() =>
-                  void openSettingsLink(process.env.EXPO_PUBLIC_TERMS_URL, "서비스 이용약관")
+                  setLegalDocument("service")
                 } />
                 <SettingsRow icon="shield-checkmark-outline" title="개인정보 처리방침" onPress={() =>
-                  void openSettingsLink(process.env.EXPO_PUBLIC_PRIVACY_URL, "개인정보 처리방침")
+                  setLegalDocument("privacy")
                 } />
               </SettingsGroup>
 
@@ -1000,6 +1010,7 @@ export default function MyCinemaScreen() {
         movie={editingMovie}
         onClose={() => setEditingMovie(null)}
       />
+      <LegalDocumentModal document={legalDocument} onClose={() => setLegalDocument(null)} />
     </SafeAreaView>
   );
 }

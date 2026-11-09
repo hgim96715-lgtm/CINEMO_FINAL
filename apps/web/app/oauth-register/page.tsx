@@ -80,7 +80,7 @@ export default function OauthRegisterPage() {
         terms: {
           service: true,
           privacy: true,
-          marketing: values.terms.marketing,
+          marketing: false,
         },
       });
 
@@ -161,6 +161,7 @@ export default function OauthRegisterPage() {
                 className="mt-0.5 accent-cinemo-gold"
               />
               <span>서비스 이용약관에 동의합니다. (필수)</span>
+              <a href="/terms" target="_blank" rel="noopener" className="ml-auto shrink-0 text-xs text-cinemo-gold-light underline">자세히 보기</a>
             </label>
             {errors.terms?.service && (
               <p className="text-sm text-red-200/75">
@@ -174,7 +175,8 @@ export default function OauthRegisterPage() {
                 {...register("terms.privacy")}
                 className="mt-0.5 accent-cinemo-gold"
               />
-              <span>개인정보 처리방침에 동의합니다. (필수)</span>
+              <span>개인정보 수집·이용에 동의합니다. (필수)</span>
+              <a href="/privacy" target="_blank" rel="noopener" className="ml-auto shrink-0 text-xs text-cinemo-gold-light underline">자세히 보기</a>
             </label>
             {errors.terms?.privacy && (
               <p className="text-sm text-red-200/75">
@@ -182,14 +184,7 @@ export default function OauthRegisterPage() {
               </p>
             )}
 
-            <label className="flex items-start gap-3 text-sm text-cinemo-muted">
-              <input
-                type="checkbox"
-                {...register("terms.marketing")}
-                className="mt-0.5 accent-cinemo-gold"
-              />
-              <span>마케팅 정보 수신에 동의합니다. (선택)</span>
-            </label>
+
           </fieldset>
 
           {apiError && (

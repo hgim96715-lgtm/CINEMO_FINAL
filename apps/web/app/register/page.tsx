@@ -9,7 +9,6 @@ import {
   LoaderCircle,
   LockKeyhole,
   Mail,
-  X,
   UserRound,
   Eye,
   EyeOff,
@@ -28,29 +27,8 @@ import {
   type RegisterFormValues,
 } from "@/schemas/register.schema";
 
-type TermsType = "service" | "privacy" | "marketing";
-
-const termsDetails: Record<TermsType, { title: string; content: string }> = {
-  service: {
-    title: "서비스 이용약관",
-    content:
-      "CINEMO의 영화 정보와 개인 영화 기록 서비스를 이용하기 위한 기본 약관입니다.",
-  },
-  privacy: {
-    title: "개인정보 처리방침",
-    content:
-      "회원가입과 서비스 이용에 필요한 개인정보의 수집·이용·보관 기준을 안내합니다.",
-  },
-  marketing: {
-    title: "마케팅 정보 수신 동의",
-    content:
-      "CINEMO의 새로운 기능과 영화 관련 소식을 이메일로 받아보는 선택 동의 항목입니다.",
-  },
-};
-
 export default function RegisterPage() {
   const [apiError, setApiError] = useState("");
-  const [activeTerms, setActiveTerms] = useState<TermsType | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -224,7 +202,7 @@ export default function RegisterPage() {
         terms: {
           service: true,
           privacy: true,
-          marketing: values.terms.marketing,
+          marketing: false,
         },
       });
 
@@ -479,13 +457,7 @@ export default function RegisterPage() {
               />
               <span className="flex flex-1 items-center justify-between gap-3">
                 <span>서비스 이용약관에 동의합니다. (필수)</span>
-                <button
-                  type="button"
-                  onClick={() => setActiveTerms("service")}
-                  className="shrink-0 text-xs text-cinemo-gold-light underline underline-offset-4 transition hover:text-cinemo-gold"
-                >
-                  자세히 보기
-                </button>
+                <a href="/terms" target="_blank" rel="noopener" className="shrink-0 text-xs text-cinemo-gold-light underline">자세히 보기</a>
               </span>
             </label>
             {errors.terms?.service && (
@@ -501,14 +473,8 @@ export default function RegisterPage() {
                 className="mt-0.5 accent-cinemo-gold"
               />
               <span className="flex flex-1 items-center justify-between gap-3">
-                <span>개인정보 처리방침에 동의합니다. (필수)</span>
-                <button
-                  type="button"
-                  onClick={() => setActiveTerms("privacy")}
-                  className="shrink-0 text-xs text-cinemo-gold-light underline underline-offset-4 transition hover:text-cinemo-gold"
-                >
-                  자세히 보기
-                </button>
+                <span>개인정보 수집·이용에 동의합니다. (필수)</span>
+                <a href="/privacy" target="_blank" rel="noopener" className="shrink-0 text-xs text-cinemo-gold-light underline">자세히 보기</a>
               </span>
             </label>
             {errors.terms?.privacy && (
@@ -517,60 +483,8 @@ export default function RegisterPage() {
               </p>
             )}
 
-            <label className="flex items-start gap-3 text-sm text-cinemo-muted">
-              <input
-                type="checkbox"
-                {...register("terms.marketing")}
-                className="mt-0.5 accent-cinemo-gold"
-              />
-              <span className="flex flex-1 items-center justify-between gap-3">
-                <span>마케팅 정보 수신에 동의합니다. (선택)</span>
-                <button
-                  type="button"
-                  onClick={() => setActiveTerms("marketing")}
-                  className="shrink-0 text-xs text-cinemo-gold-light underline underline-offset-4 transition hover:text-cinemo-gold"
-                >
-                  자세히 보기
-                </button>
-              </span>
-            </label>
+
           </fieldset>
-
-          {activeTerms && (
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="terms-dialog-title"
-              className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-              onClick={() => setActiveTerms(null)}
-            >
-              <section
-                className="w-full max-w-lg rounded-3xl border border-white/15 bg-cinemo-bg p-6 shadow-2xl"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <h2
-                    id="terms-dialog-title"
-                    className="text-xl font-bold text-cinemo-text"
-                  >
-                    {termsDetails[activeTerms].title}
-                  </h2>
-                  <button
-                    type="button"
-                    aria-label="약관 자세히 보기 닫기"
-                    onClick={() => setActiveTerms(null)}
-                    className="flex size-9 items-center justify-center rounded-full text-cinemo-muted transition hover:bg-white/10 hover:text-cinemo-text"
-                  >
-                    <X className="size-5" />
-                  </button>
-                </div>
-
-                <p className="mt-5 text-sm leading-7 text-cinemo-muted">
-                  {termsDetails[activeTerms].content}
-                </p>
-              </section>
-            </div>
-          )}
 
           {apiError && (
             <p

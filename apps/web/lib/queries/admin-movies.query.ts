@@ -2,12 +2,12 @@ import { queryOptions } from "@tanstack/react-query";
 
 import {
   searchAdminMovies,
-  type AdminMovieVisibility,
+  type AdminMovieVisibilityFilter,
 } from "@/lib/api/admin-movies";
 
 export const adminMoviesQueryOptions = (params: {
   query: string;
-  visibility: AdminMovieVisibility;
+  visibility: AdminMovieVisibilityFilter;
 }) =>
   queryOptions({
     queryKey: ["admin", "movies", params.visibility, params.query],

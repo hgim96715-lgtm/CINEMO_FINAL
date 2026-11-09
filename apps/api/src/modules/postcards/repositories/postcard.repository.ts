@@ -182,7 +182,7 @@ export class PostcardRepository {
             select: { userId: true },
           })
         : postcard;
-      if (!author || author.userId === userId) return false;
+      if (!author?.userId || author.userId === userId) return false;
 
       await tx.postcardUserBlock.createMany({
         data: { blockerId: userId, blockedId: author.userId },
@@ -322,7 +322,10 @@ export class PostcardRepository {
 
   async findById(id: string, userId?: string): Promise<DomainPostcard | null> {
     const record = await this.prisma.postcard.findFirst({
-      include: postcardWithMovieArgs.include,
+      include: {
+        ...postcardWithMovieArgs.include,
+        user: { select: { nickname: true, profileImageUrl: true } },
+      },
       where: {
         user: this.visibleAuthor(userId),
         id,
@@ -627,7 +630,7 @@ export class PostcardRepository {
         return null;
       }
 
-      let parentComment: { id: string; userId: string } | null = null;
+      let parentComment: { id: string; userId: string | null } | null = null;
       if (input.parentId) {
         parentComment = await tx.postcardComment.findFirst({
           where: {
@@ -639,7 +642,7 @@ export class PostcardRepository {
           select: { id: true, userId: true },
         });
 
-        if (!parentComment) {
+        if (!parentComment?.userId) {
           return null;
         }
       }
@@ -1143,7 +1146,7 @@ export class PostcardRepository {
     const comments = await this.prisma.postcardComment.findMany({
       where: {
         postcardId,
-        user: this.visibleAuthor(userId),
+        ...(userId && { AND: [{ OR: [{ userId: null }, { user: this.visibleAuthor(userId) }] }] }),
         OR: [
           { status: PostcardCommentStatus.PUBLISHED },
           {

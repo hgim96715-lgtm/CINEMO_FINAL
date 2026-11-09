@@ -251,12 +251,43 @@ export class AuthRepository {
 
   async deleteAccount(userId: string) {
     return this.prisma.$transaction(async (tx) => {
+      const identities = await tx.userIdentity.findMany({
+        where: { userId },
+        select: { provider: true, providerUserId: true },
+      });
+      if (identities.length > 0) {
+        await tx.oauthSignupTicket.deleteMany({ where: { OR: identities } });
+      }
+      const tombstones = await tx.postcardComment.updateManyAndReturn({
+        where: {
+          userId,
+          postcard: { userId: { not: userId } },
+          replies: { some: { status: "PUBLISHED", userId: { not: userId } } },
+        },
+        data: {
+          userId: null,
+          content: "탈퇴한 사용자의 댓글입니다.",
+          status: "DELETED",
+          deletedAt: new Date(),
+        },
+        select: { id: true },
+      });
       await tx.authSession.deleteMany({ where: { userId } });
       await tx.user.delete({ where: { id: userId } });
+      if (tombstones.length > 0) {
+        await tx.$executeRaw`
+          UPDATE "postcard_comments" AS parent
+          SET "replyCount" = (
+            SELECT COUNT(*) FROM "postcard_comments" AS reply
+            WHERE reply."parentId" = parent.id AND reply.status = 'PUBLISHED'
+          )
+          WHERE parent.id IN (${Prisma.join(tombstones.map(({ id }) => Prisma.sql`${id}::uuid`))})
+        `;
+      }
     });
   }
 
-  async updateProfile(userId: string, nickname: string, profileImageUrl?: string) {
+  async updateProfile(userId: string, nickname: string, profileImageUrl?: string | null) {
     try {
       return await this.prisma.user.update({
         where: { id: userId },

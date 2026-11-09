@@ -44,7 +44,7 @@ export function TodayMovieHero() {
     <View className="mx-5 mt-4 overflow-hidden rounded-3xl border border-cinemo-gold/25 bg-cinemo-surface px-4 py-4">
       <View className="flex-row items-center gap-2">
         <Sparkles size={16} color={CINEMO_COLORS.accentLight} />
-        <Text className="text-xs font-semibold text-cinemo-gold-light">오늘의 영화</Text>
+        <Text className="text-xs font-semibold text-cinemo-gold-light">{eligibleToday?.headline ?? "오늘의 영화"}</Text>
       </View>
 
       {movie ? (
@@ -65,7 +65,7 @@ export function TodayMovieHero() {
               <Text className="text-xs font-semibold text-cinemo-gold-light">추천 이유</Text>
               <Text className="text-sm leading-5 text-cinemo-text">{reason}</Text>
             </View>
-            {eligibleToday?.hasPreparedCopy && (
+            {eligibleToday?.hasPreparedCopy && eligibleToday.copy !== reason && (
               <Text className="text-xs leading-4 text-cinemo-muted">{eligibleToday.copy}</Text>
             )}
             <View className="mt-1 flex-row items-center gap-1">

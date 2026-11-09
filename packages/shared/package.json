@@ -5,6 +5,7 @@
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./daily-movie-push": "./src/daily-movie-push.ts",
     "./maps/korea-provinces.json": "./assets/maps/korea-provinces.json"
   },
   "scripts": {

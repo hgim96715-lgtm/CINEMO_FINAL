@@ -73,7 +73,7 @@ async function registerPushTokenAfterLogin(): Promise<void> {
     await registerDevicePushToken();
   } catch (error) {
     // 로그인 자체는 성공했으므로 푸시 권한 거부나 시뮬레이터 실행으로 막히지 않게 함
-    console.warn("[푸시 토큰 등록 실패]", error);
+    if (getMobileAccessToken()) console.warn("[푸시 토큰 등록 실패]", error);
   }
 }
 

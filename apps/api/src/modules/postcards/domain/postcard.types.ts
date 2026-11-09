@@ -18,6 +18,7 @@ export type PostcardMovieSummary = {
 
 export type PostcardAuthorSummary = {
   nickname: string;
+  profileImageUrl?: string | null;
 };
 
 export type PostcardMediaSummary = {

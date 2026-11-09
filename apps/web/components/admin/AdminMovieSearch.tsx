@@ -3,13 +3,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { FormEvent, useState } from "react";
-import { Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 
 import { AdminNavigation } from "@/components/admin/AdminNavigation";
 import {
   updateAdminMovieVisibility,
   type AdminMovie,
   type AdminMovieVisibility,
+  type AdminMovieVisibilityFilter,
 } from "@/lib/api/admin-movies";
 import { adminMoviesQueryOptions } from "@/lib/queries/admin-movies.query";
 
@@ -26,7 +27,7 @@ export function AdminMovieSearch() {
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [visibility, setVisibility] =
-    useState<AdminMovieVisibility>("PUBLIC");
+    useState<AdminMovieVisibilityFilter>("ALL");
   const queryClient = useQueryClient();
 
   const moviesQuery = useQuery(
@@ -64,31 +65,26 @@ export function AdminMovieSearch() {
         </p>
       </header>
 
-      <form onSubmit={handleSubmit} className="flex max-w-4xl flex-wrap gap-3">
-        <label className="relative block min-w-[16rem] flex-1">
+      <form onSubmit={handleSubmit} className="flex max-w-4xl flex-wrap items-center gap-3">
+        <label className="relative block min-w-0 flex-1">
           <span className="sr-only">영화 제목 또는 UUID</span>
           <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-cinemo-muted" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="영화 제목 또는 UUID를 입력하세요"
+            placeholder="제목 일부 또는 UUID 입력"
             className="h-12 w-full rounded-xl border border-white/10 bg-[#101f21] pl-12 pr-4 text-sm text-cinemo-text outline-none transition placeholder:text-cinemo-muted focus:border-cinemo-gold/60"
           />
         </label>
-        <select
-          value={visibility}
-          onChange={(event) =>
-            setVisibility(event.target.value as AdminMovieVisibility)
-          }
-          className="h-12 rounded-xl border border-white/10 bg-[#101f21] px-4 text-sm text-cinemo-text outline-none focus:border-cinemo-gold/60"
-          aria-label="공개 상태"
-        >
-          {VISIBILITY_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
+        <div role="group" aria-label="공개 상태 필터" className="order-last flex w-full flex-wrap gap-2">
+          {([{ value: "ALL", label: "전체" }, ...VISIBILITY_OPTIONS] satisfies { value: AdminMovieVisibilityFilter; label: string }[]).map((option) => (
+            <button key={option.value} type="button" aria-pressed={visibility === option.value}
+              onClick={() => setVisibility(option.value)}
+              className="rounded-full border border-white/10 px-4 py-2 text-sm text-cinemo-muted aria-pressed:border-cinemo-gold/50 aria-pressed:bg-cinemo-gold/10 aria-pressed:text-cinemo-gold-light">
               {option.label}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
         <button
           type="submit"
           className="h-12 rounded-xl bg-cinemo-gold px-5 text-sm font-semibold text-cinemo-dark transition hover:bg-cinemo-gold-light"
@@ -133,10 +129,7 @@ export function AdminMovieSearch() {
                     visibilityMutation.mutate({
                       movieId: movie.id,
                       visibility: nextVisibility,
-                      moderationReason:
-                        nextVisibility === "HIDDEN"
-                          ? "관리자 검토: 한국어 제목 없음"
-                          : null,
+                      moderationReason: nextVisibility === "HIDDEN" ? "관리자 검토로 숨김" : null,
                     })
                   }
                 />
@@ -184,9 +177,12 @@ function AdminMovieSearchItem({
         <h3 className="break-words font-semibold text-cinemo-text">
           {movie.title || "제목 없음"}
         </h3>
-        <p className="mt-1 text-xs text-cinemo-muted">
-          {movie.releaseDate ?? "개봉일 미정"} · {movie.visibility}
-        </p>
+        <div className="mt-1 flex items-center gap-2 text-xs text-cinemo-muted">
+          <span>{movie.releaseDate?.slice(0, 10) ?? "개봉일 미정"}</span>
+          <span className="rounded-full bg-white/10 px-2 py-1">
+            {VISIBILITY_OPTIONS.find(({ value }) => value === movie.visibility)?.label}
+          </span>
+        </div>
         <p className="mt-3 break-all font-mono text-xs text-cinemo-gold-light">
           {movie.id}
         </p>
@@ -200,21 +196,25 @@ function AdminMovieSearchItem({
         >
           UUID 복사
         </button>
-        <select
-          value={movie.visibility}
-          disabled={isUpdating}
-          onChange={(event) =>
-            onVisibilityChange(event.target.value as AdminMovieVisibility)
-          }
-          className="rounded-lg border border-white/10 bg-[#0a191a] px-3 py-2 text-xs text-cinemo-text outline-none focus:border-cinemo-gold/60 disabled:opacity-50"
-          aria-label={`${movie.title} 공개 상태`}
-        >
-          {VISIBILITY_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <label className="relative">
+          <span className="sr-only">공개 상태 변경</span>
+          <ChevronDown aria-hidden className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-cinemo-muted" />
+          <select
+            value={movie.visibility}
+            disabled={isUpdating}
+            onChange={(event) =>
+              onVisibilityChange(event.target.value as AdminMovieVisibility)
+            }
+            className="h-full appearance-none rounded-lg border border-white/10 bg-[#0a191a] py-2 pl-3 pr-8 text-xs text-cinemo-text outline-none focus:border-cinemo-gold/60 disabled:opacity-50"
+            aria-label={`${movie.title} 공개 상태`}
+          >
+            {VISIBILITY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
     </article>
   );

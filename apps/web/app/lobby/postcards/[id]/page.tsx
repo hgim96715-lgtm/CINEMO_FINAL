@@ -82,9 +82,11 @@ export default function PostcardDetailPage() {
                 ? comment.author.nickname
               : "익명",
           avatarUrl:
-            typeof comment.author?.avatarUrl === "string"
-              ? comment.author?.avatarUrl
-              : null,
+            typeof comment.author?.profileImageUrl === "string"
+              ? comment.author.profileImageUrl
+              : typeof comment.author?.avatarUrl === "string"
+                ? comment.author.avatarUrl
+                : null,
         },
       })) ?? [];
 
@@ -191,7 +193,17 @@ export default function PostcardDetailPage() {
                   aria-label={`${postcard.author?.nickname ?? "익명"} 프로필 열기`}
                   className="inline-flex min-w-0 items-center gap-1.5 text-left transition-colors hover:text-cinemo-gold"
                 >
-                  <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
+                  {postcard.author?.profileImageUrl ? (
+                    <Image
+                      src={postcard.author.profileImageUrl}
+                      alt=""
+                      width={24}
+                      height={24}
+                      className="size-6 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <UserRound className="size-3.5 shrink-0" aria-hidden="true" />
+                  )}
                   <span className="truncate">
                     {postcard.author?.nickname ?? "익명"}
                   </span>

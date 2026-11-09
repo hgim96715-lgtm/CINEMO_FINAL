@@ -2,6 +2,8 @@ import { apiClient } from "./apiClient";
 
 export type AdminMovieVisibility = "PUBLIC" | "REVIEW" | "HIDDEN";
 
+export type AdminMovieVisibilityFilter = AdminMovieVisibility | "ALL";
+
 export type AdminMovie = {
   id: string;
   title: string;
@@ -16,12 +18,12 @@ export type AdminMoviesResponse = {
   totalCount: number;
   page: number;
   limit: number;
-  visibility: AdminMovieVisibility;
+  visibility: AdminMovieVisibilityFilter;
 };
 
 export async function searchAdminMovies(params: {
   query: string;
-  visibility: AdminMovieVisibility;
+  visibility: AdminMovieVisibilityFilter;
   page?: number;
   limit?: number;
 }): Promise<AdminMoviesResponse> {

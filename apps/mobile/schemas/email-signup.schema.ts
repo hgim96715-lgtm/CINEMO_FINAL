@@ -24,15 +24,14 @@ export const emailSignupSchema = z
       error: "비밀번호를 다시 입력해주세요.",
     }),
 
-    service: z.literal(true, {
+    service: z.boolean().refine((checked) => checked, {
       error: "서비스 이용약관 동의가 필요합니다.",
     }),
 
-    privacy: z.literal(true, {
+    privacy: z.boolean().refine((checked) => checked, {
       error: "개인정보 처리방침 동의가 필요합니다.",
     }),
 
-    marketing: z.boolean(),
   })
   .refine((values) => values.password === values.passwordConfirm, {
     path: ["passwordConfirm"],

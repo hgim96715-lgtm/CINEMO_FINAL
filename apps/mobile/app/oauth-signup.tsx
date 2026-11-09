@@ -1,9 +1,9 @@
+import { isAxiosError } from "axios";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -17,33 +17,14 @@ import {
   checkNicknameMobile,
   completeMobileOauthSignup,
 } from "@/lib/api/auth";
-import { CINEMO_COLORS } from "@cinemo/shared";
+import { LegalDocumentModal } from "@/components/auth/LegalDocumentModal";
+import { CINEMO_COLORS, type CinemoLegalDocument } from "@cinemo/shared";
 import { Controller, useForm } from "react-hook-form";
 import {
   OauthSignupFormValues,
   oauthSignupSchema,
 } from "@/schemas/oauth-signup.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
-
-type TermsType = "service" | "privacy" | "marketing";
-
-const termsDetails: Record<TermsType, { title: string; content: string }> = {
-  service: {
-    title: "서비스 이용약관",
-    content:
-      "CINEMO의 영화 정보와 개인 영화 기록 서비스를 이용하기 위한 기본 약관입니다.",
-  },
-  privacy: {
-    title: "개인정보 처리방침",
-    content:
-      "회원가입과 서비스 이용에 필요한 개인정보의 수집·이용·보관 기준을 안내합니다.",
-  },
-  marketing: {
-    title: "마케팅 정보 수신 동의",
-    content:
-      "CINEMO의 새로운 기능과 영화 관련 소식을 이메일로 받아보는 선택 동의 항목입니다.",
-  },
-};
 
 type NicknameStatus =
   | "idle"
@@ -61,8 +42,9 @@ export default function OauthSignupScreen() {
     ? params.ticket[0]
     : params.ticket;
 
+  const [needsNewLogin, setNeedsNewLogin] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [activeTerms, setActiveTerms] = useState<TermsType | null>(null);
+  const [activeTerms, setActiveTerms] = useState<CinemoLegalDocument | null>(null);
   const [nicknameStatus, setNicknameStatus] =
     useState<NicknameStatus>("idle");
 
@@ -75,8 +57,8 @@ export default function OauthSignupScreen() {
     resolver: zodResolver(oauthSignupSchema),
     defaultValues: {
       nickname: "",
-      service: true,
-      privacy: true,
+      service: false,
+      privacy: false,
       marketing: false,
     },
   });
@@ -116,7 +98,8 @@ export default function OauthSignupScreen() {
 
   const onSubmit = async (values: OauthSignupFormValues) => {
     if (!ticket) {
-      setSubmitError("소셜 로그인 정보가 없습니다.");
+      setNeedsNewLogin(true);
+      setSubmitError("소셜 로그인 정보가 없어요. 다시 로그인해 주세요.");
       return;
     }
     try {
@@ -135,12 +118,23 @@ export default function OauthSignupScreen() {
         terms: {
           service: true,
           privacy: true,
-          marketing: values.marketing,
+          marketing: false,
         },
       });
       router.replace("/lobby");
-    } catch {
-      setSubmitError("가입 처리 중 오류가 발생했습니다.");
+    } catch (error) {
+      const response = isAxiosError(error) ? error.response : undefined;
+      const message = response?.data?.message;
+      if (response?.status === 400 && typeof message === "string" && message.includes("가입 티켓")) {
+        setNeedsNewLogin(true);
+        setSubmitError("가입 인증이 만료되었거나 이미 사용됐어요. 다시 로그인해 주세요.");
+      } else if (response?.status === 409) {
+        setSubmitError(typeof message === "string" ? message : "이미 사용 중인 계정 또는 닉네임이에요.");
+      } else if (response?.status === 400 && typeof message === "string") {
+        setSubmitError(message);
+      } else {
+        setSubmitError("가입을 완료하지 못했어요. 연결을 확인하고 다시 시도해 주세요.");
+      }
     }
   };
   return (
@@ -273,42 +267,11 @@ export default function OauthSignupScreen() {
                   </Pressable>
 
                   <Text className="flex-1 text-sm text-cinemo-muted">
-                    개인정보 처리방침 동의 (필수)
+                    개인정보 수집·이용 동의 (필수)
                   </Text>
 
                   <Pressable
                     onPress={() => setActiveTerms("privacy")}
-                    hitSlop={8}
-                  >
-                    <Text className="text-xs text-cinemo-gold underline">
-                      자세히 보기
-                    </Text>
-                  </Pressable>
-                </View>
-              )}
-            />
-
-            <Controller
-              control={control}
-              name="marketing"
-              render={({ field: { value, onChange } }) => (
-                <View className="flex-row items-center gap-3">
-                  <Pressable
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: value }}
-                    onPress={() => onChange(!value)}
-                  >
-                    <Text className="text-lg text-cinemo-gold">
-                      {value ? "☑" : "□"}
-                    </Text>
-                  </Pressable>
-
-                  <Text className="flex-1 text-sm text-cinemo-muted">
-                    마케팅 정보 수신 동의 (선택)
-                  </Text>
-
-                  <Pressable
-                    onPress={() => setActiveTerms("marketing")}
                     hitSlop={8}
                   >
                     <Text className="text-xs text-cinemo-gold underline">
@@ -333,7 +296,7 @@ export default function OauthSignupScreen() {
           )}
 
           <Pressable
-            onPress={handleSubmit(onSubmit)}
+            onPress={needsNewLogin ? () => router.replace("/login") : handleSubmit(onSubmit)}
             disabled={isSubmitting}
             className="mt-8 items-center rounded-xl py-4"
             style={{
@@ -345,53 +308,14 @@ export default function OauthSignupScreen() {
               <ActivityIndicator color="#ffffff" />
             ) : (
               <Text className="text-base font-semibold text-white">
-                동의하고 시작하기
+                {needsNewLogin ? "다시 로그인" : "동의하고 시작하기"}
               </Text>
             )}
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <Modal
-        visible={activeTerms !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setActiveTerms(null)}
-      >
-        <Pressable
-          className="flex-1 justify-center bg-black/70 px-5"
-          onPress={() => setActiveTerms(null)}
-        >
-          <Pressable
-            className="rounded-3xl p-6"
-            style={{
-              backgroundColor: CINEMO_COLORS.background,
-              borderColor: "rgba(255,255,255,0.14)",
-              borderWidth: 1,
-            }}
-            onPress={(event) => event.stopPropagation()}
-          >
-            <View className="flex-row items-center justify-between gap-4">
-              <Text className="flex-1 text-xl font-bold text-cinemo-text">
-                {activeTerms ? termsDetails[activeTerms].title : ""}
-              </Text>
-
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="약관 닫기"
-                onPress={() => setActiveTerms(null)}
-                hitSlop={8}
-              >
-                <Text className="text-2xl text-cinemo-muted">×</Text>
-              </Pressable>
-            </View>
-
-            <Text className="mt-5 text-sm leading-6 text-cinemo-muted">
-              {activeTerms ? termsDetails[activeTerms].content : ""}
-            </Text>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <LegalDocumentModal document={activeTerms} onClose={() => setActiveTerms(null)} />
     </SafeAreaView>
   );
 }

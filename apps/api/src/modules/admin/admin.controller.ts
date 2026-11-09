@@ -1,3 +1,5 @@
+import { ArrayMaxSize, ArrayMinSize, ArrayUnique, IsArray, IsBoolean, IsInt, IsString, Max, MaxLength, Min } from "class-validator";
+import { DailyMoviesService } from "@/modules/daily-movies/daily-movies.service";
 import {
   Body,
   Controller,
@@ -23,6 +25,33 @@ import { CreateCurationRequestDto } from "./dto/requests/create-curation.request
 import { UpdateCurationRequestDto } from "./dto/requests/update-curation.request.dto";
 import { CurationResponseDto } from "./dto/responses/curation.response.dto";
 
+class UpdateDailyMoviePushDto {
+  @IsBoolean()
+  enabled!: boolean;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(7)
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(6, { each: true })
+  weekdays!: number[];
+
+  @IsInt()
+  @Min(0)
+  @Max(23)
+  hour!: number;
+
+  @IsString()
+  @MaxLength(60)
+  title!: string;
+
+  @IsString()
+  @MaxLength(180)
+  body!: string;
+}
+
 @ApiTags("Admin")
 @ApiCookieAuth("cinemo_session")
 @UseGuards(AdminGuard)
@@ -30,8 +59,19 @@ import { CurationResponseDto } from "./dto/responses/curation.response.dto";
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
+    private readonly dailyMovies: DailyMoviesService,
     private readonly visits: ServiceVisitsService,
   ) {}
+
+  @Get("daily-movie-push")
+  getDailyMoviePush() {
+    return this.dailyMovies.pushSettings();
+  }
+
+  @Patch("daily-movie-push")
+  updateDailyMoviePush(@Body() input: UpdateDailyMoviePushDto) {
+    return this.dailyMovies.updatePushSettings(input);
+  }
 
   @Get("visits")
   @ApiOperation({ summary: "최근 7일 방문 통계" })

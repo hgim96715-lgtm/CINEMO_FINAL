@@ -145,6 +145,7 @@ export default function PostcardDetailScreen() {
   const [editing, setEditing] = useState<{ id: string; content: string } | null>(null);
   const { bottom } = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
+  const shareInFlight = useRef(false);
 
   const composeInputRef = useRef<TextInput>(null);
   const editInputRef = useRef<TextInput>(null);
@@ -442,24 +443,23 @@ export default function PostcardDetailScreen() {
   };
 
   const shareCurrentPostcard = async () => {
-    if (shareMutation.isPending) return;
+    if (shareInFlight.current || postcardQuery.data?.visibility !== "PUBLIC") return;
+    shareInFlight.current = true;
 
     const title = postcardQuery.data?.movie?.title ?? "CINEMO 엽서";
     const url = `https://www.cinemo.site/lobby/postcards/${postcardId}`;
 
     try {
-      const result = await Share.share({
-        title,
-        message: `${title}\n${url}`,
-        url,
-      });
+      const result = await Share.share(Platform.OS === "ios" ? { url } : { title, message: url });
 
       if (result.action === Share.sharedAction) {
         const data = await shareMutation.mutateAsync("native");
         setShareCount(data.shareCount);
       }
     } catch {
-      // 사용자가 공유 창을 닫은 경우에는 오류를 표시하지 않음
+      // 공유 창이 닫히거나 집계 요청이 실패해도 화면을 유지한다.
+    } finally {
+      shareInFlight.current = false;
     }
   };
 

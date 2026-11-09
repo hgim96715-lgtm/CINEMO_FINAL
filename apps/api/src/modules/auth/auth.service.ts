@@ -21,7 +21,7 @@ const CURRENT_TERMS_VERSION = "1.0.0";
 const EMAIL_VERIFICATION_EXPIRES_IN_MS = 30 * 60 * 1000;
 
 const SESSION_EXPIRES_IN_MS = 24 * 60 * 60 * 1000;
-const OAUTH_SIGNUP_TICKET_EXPIRES_IN_MS = 10 * 60 * 1000;
+const OAUTH_SIGNUP_TICKET_EXPIRES_IN_MS = 30 * 60 * 1000;
 
 const MOBILE_ACCESS_TOKEN_EXPIRES_IN_MS = 15 * 60 * 1000;
 const MOBILE_REFRESH_TOKEN_EXPIRES_IN_MS = 30 * 24 * 60 * 60 * 1000;
@@ -210,11 +210,12 @@ export class AuthService {
     await this.authRepository.deleteAccount(userId);
   }
 
-  async updateProfile(userId: string, nickname: string, image?: Buffer) {
+  async updateProfile(userId: string, nickname: string, image?: Buffer, removeImage = false) {
     const error = validateNickname(nickname);
     if (error) throw new BadRequestException(error);
 
-    let profileImageUrl: string | undefined;
+    if (image && removeImage) throw new BadRequestException("사진 변경과 삭제 중 하나만 선택해 주세요.");
+    let profileImageUrl: string | null | undefined = removeImage ? null : undefined;
     if (image) {
       try {
         const source = sharp(image, { limitInputPixels: 24_000_000 });

@@ -13,11 +13,11 @@ export const oauthSignupSchema = z.object({
       error: "닉네임은 30자 이하로 입력해주세요.",
     }),
 
-  service: z.literal(true, {
+  service: z.boolean().refine((checked) => checked, {
     error: "서비스 이용약관 동의가 필요합니다.",
   }),
 
-  privacy: z.literal(true, {
+  privacy: z.boolean().refine((checked) => checked, {
     error: "개인정보 처리방침 동의가 필요합니다.",
   }),
 

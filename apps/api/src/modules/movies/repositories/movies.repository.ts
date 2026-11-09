@@ -669,31 +669,18 @@ export class MoviesRepository {
   }
 
   async findMoviesForModeration(
-    visibility: MovieVisibility,
+    visibility: MovieVisibility | "ALL",
     page: number,
     limit: number,
     query?: string,
   ) {
     const trimmedQuery = query?.trim();
+    const isUuid = trimmedQuery && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(trimmedQuery);
     const where: Prisma.MovieWhereInput = {
-      visibility,
-      ...(trimmedQuery
-        ? {
-            OR: [
-              { id: trimmedQuery },
-              {
-                titles: {
-                  some: {
-                    title: {
-                      contains: trimmedQuery,
-                      mode: "insensitive",
-                    },
-                  },
-                },
-              },
-            ],
-          }
-        : {}),
+      ...(visibility !== "ALL" && { visibility }),
+      ...(trimmedQuery && (isUuid
+        ? { id: trimmedQuery }
+        : { titles: { some: { title: { contains: trimmedQuery, mode: "insensitive" } } } })),
     };
     const [movies, totalCount] = await Promise.all([
       this.prisma.movie.findMany({

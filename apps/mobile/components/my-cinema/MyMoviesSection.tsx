@@ -74,8 +74,8 @@ export function MyMoviesSection({
         >
           <Text className="text-center text-sm text-cinemo-muted">
             {movieFilter === "watched"
-              ? "아직 관람 기록이 없음"
-              : "저장한 영화가 없음"}
+              ? "아직 관람 기록이 없습니다.영화 한 편 관람 어떠신가요?"
+              : "저장한 영화가 없습니다."}
           </Text>
         </View>
       ) : (

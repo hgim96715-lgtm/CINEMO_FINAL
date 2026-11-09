@@ -2,7 +2,7 @@ import { MovieVisibility } from "@prisma/client";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import {
-  IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -10,6 +10,8 @@ import {
   MaxLength,
   Min,
 } from "class-validator";
+
+const visibilityOptions = [...Object.values(MovieVisibility), "ALL"];
 
 export class GetMovieModerationRequestDto {
   @ApiPropertyOptional({
@@ -21,10 +23,10 @@ export class GetMovieModerationRequestDto {
   @MaxLength(100)
   query?: string;
 
-  @ApiPropertyOptional({ enum: MovieVisibility, default: MovieVisibility.REVIEW })
+  @ApiPropertyOptional({ enum: visibilityOptions, default: MovieVisibility.REVIEW })
   @IsOptional()
-  @IsEnum(MovieVisibility)
-  visibility: MovieVisibility = MovieVisibility.REVIEW;
+  @IsIn(visibilityOptions)
+  visibility: MovieVisibility | "ALL" = MovieVisibility.REVIEW;
 
   @ApiPropertyOptional({ default: 1, type: Number })
   @Type(() => Number)

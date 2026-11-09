@@ -12,3 +12,7 @@ export {
   normalizeCinemaRegionCode,
 } from "./cinema-regions";
 export type { CinemaRegion } from "./cinema-regions";
+export { DEFAULT_DAILY_MOVIE_PUSH, formatDailyMoviePush, formatDailyMovieSchedule } from "./daily-movie-push";
+export type { DailyMoviePushSettings } from "./daily-movie-push";
+export { CINEMO_LEGAL_DOCUMENTS } from "./legal-documents";
+export type { CinemoLegalDocument } from "./legal-documents";

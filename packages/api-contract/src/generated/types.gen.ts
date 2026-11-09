@@ -1557,6 +1557,7 @@ export type PostcardAuthorSummaryDto = {
      * 작성자 닉네임
      */
     nickname: string;
+    profileImageUrl?: string | null;
 };
 
 export type PostcardMediaResponseDto = {

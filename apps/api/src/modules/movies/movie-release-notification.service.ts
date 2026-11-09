@@ -89,13 +89,17 @@ export class MovieReleaseNotificationService {
           const tickets = await this.expoPushService.send(
             pushTokens.map(({ token }) => ({
               to: token,
-              title: timing === "day-before" ? "내일 개봉 알림" : "오늘 개봉 알림",
+              title:
+                timing === "day-before"
+                  ? `📣 ‘${movieTitle}’ 내일 개봉해요!`
+                  : `📣 ‘${movieTitle}’ 드디어 개봉했어요!`,
               body:
                 timing === "day-before"
-                  ? `${movieTitle}이(가) 내일 개봉합니다.`
-                  : `${movieTitle}이(가) 오늘 개봉했습니다.`,
+                  ? "기다리던 영화, 개봉 전에 미리 확인해 볼까요?"
+                  : "기다리던 영화, 오늘 보러 갈까요? 눌러서 영화 정보를 확인해 보세요.",
               sound: "default",
               data: {
+                type: "movie-release",
                 movieId,
                 route: `/movies/${movieId}`,
                 releaseDate: releaseDate.toISOString(),

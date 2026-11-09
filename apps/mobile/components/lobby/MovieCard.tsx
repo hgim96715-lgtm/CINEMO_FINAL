@@ -40,16 +40,17 @@ function RankChange({ value }: { value: number | null }) {
   if (value === null || value === 0) return null;
 
   const isUp = value > 0;
+  const color = isUp ? CINEMO_COLORS.accentLight : CINEMO_COLORS.tealLight;
   const iconName: "trending-up-outline" | "trending-down-outline" = isUp
     ? "trending-up-outline"
     : "trending-down-outline";
   return (
     <View className="flex-row items-center gap-1">
-      <Ionicons name={iconName} size={16} color={CINEMO_COLORS.accentLight} />
+      <Ionicons name={iconName} size={16} color={color} />
 
       <Text
         className="text-sm font-semibold"
-        style={{ color: CINEMO_COLORS.accentLight }}
+        style={{ color }}
       >
         {isUp ? `+${value}` : value}
       </Text>

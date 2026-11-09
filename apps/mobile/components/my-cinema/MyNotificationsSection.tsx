@@ -20,9 +20,7 @@ export function MyNotificationsSection({
 }: MyNotificationsSectionProps) {
   return (
     <View className="mt-5">
-      <Text className="mb-4 text-lg font-bold text-cinemo-text">
-        개봉 알림
-      </Text>
+      <Text className="mb-4 text-lg font-bold text-cinemo-text">개봉 알림</Text>
 
       {notifications.length === 0 ? (
         <View
@@ -30,7 +28,7 @@ export function MyNotificationsSection({
           style={panelStyle}
         >
           <Text className="text-center text-sm text-cinemo-muted">
-            신청한 개봉 알림이 없음
+            신청한 개봉 알림이 없습니다.
           </Text>
         </View>
       ) : (

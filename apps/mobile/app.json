@@ -47,6 +47,14 @@
       "expo-router",
       "expo-apple-authentication",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "현재 지역 날씨에 맞는 영화를 추천하기 위해 앱 사용 중 위치를 한 번 확인해요.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "photosPermission": "CINEMO 프로필 사진을 선택하는 데 사진 보관함을 사용해요.",

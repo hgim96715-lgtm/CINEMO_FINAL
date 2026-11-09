@@ -98,13 +98,13 @@ export class AuthController {
   }
 
   @Patch("me/profile")
-  @UseInterceptors(FileInterceptor("image", { limits: { fileSize: 8 * 1024 * 1024, fields: 1 } }))
+  @UseInterceptors(FileInterceptor("image", { limits: { fileSize: 8 * 1024 * 1024, fields: 2 } }))
   updateProfile(
     @CurrentUser() user: SessionUser,
     @Body() input: UpdateProfileRequestDto,
     @UploadedFile() image?: { buffer: Buffer },
   ) {
-    return this.authService.updateProfile(user.id, input.nickname, image?.buffer);
+    return this.authService.updateProfile(user.id, input.nickname, image?.buffer, input.removeImage === "true");
   }
 
   @Get("check-nickname")

@@ -7,7 +7,7 @@ type PostcardCommentWithUser = PostcardComment & {
     id: string;
     nickname: string;
     profileImageUrl: string | null;
-  };
+  } | null;
 };
 
 export function toPostcardCommentResponse(
@@ -24,9 +24,9 @@ export function toPostcardCommentResponse(
     createdAt: comment.createdAt.toISOString(),
     updatedAt: comment.updatedAt.toISOString(),
     author: {
-      id: comment.user.id,
-      nickname: comment.user.nickname,
-      profileImageUrl: comment.user.profileImageUrl,
+      id: comment.user?.id ?? comment.id,
+      nickname: comment.user?.nickname ?? "탈퇴한 사용자",
+      profileImageUrl: comment.user?.profileImageUrl ?? null,
     },
   };
 }

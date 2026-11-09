@@ -455,7 +455,7 @@ model PostcardBookmark {
 model PostcardComment {
   id            String                @id @default(uuid(7)) @db.Uuid
   postcardId    String                @db.Uuid
-  userId        String                @db.Uuid
+  userId        String?               @db.Uuid
   parentId      String?               @db.Uuid
   content       String                @db.Text
   status        PostcardCommentStatus @default(PUBLISHED)
@@ -467,7 +467,7 @@ model PostcardComment {
   updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   postcard      Postcard                  @relation(fields: [postcardId], references: [id], onDelete: Cascade)
-  user          User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User?                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent        PostcardComment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
   replies       PostcardComment[]         @relation("CommentReplies")
   reports       PostcardReport[]
@@ -717,6 +717,8 @@ model User {
   postcardNotifications      PostcardNotification[]    @relation("PostcardNotificationRecipient")
   postcardNotificationActors PostcardNotification[]    @relation("PostcardNotificationActor")
   mobileRefreshTokens        MobileRefreshToken[]
+  dailyMovieWeatherNx        Int? @map("daily_movie_weather_nx")
+  dailyMovieWeatherNy        Int? @map("daily_movie_weather_ny")
   dailyMoviePreference       DailyMoviePreference?
   dailyMovieDeliveries       DailyMovieDelivery[]
   pushTokens                 PushToken[] // 사용자의 기기별 푸시 토큰
@@ -1394,4 +1396,15 @@ model DailyMovieDelivery {
 
   @@id([userId, day])
   @@map("daily_movie_deliveries")
+}
+
+model DailyMoviePushSettings {
+  id           Int     @id
+  enabled      Boolean @default(false)
+  weekdays     Int[]
+  hour         Int
+  title        String  @db.VarChar(60)
+  body         String  @db.VarChar(180)
+
+  @@map("daily_movie_push_settings")
 }

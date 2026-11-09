@@ -617,7 +617,7 @@ function UniverseCanvas() {
   };
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#02050d] text-[#f7f1e7]">
+    <main className="flex min-h-dvh flex-col overflow-hidden bg-[#02050d] text-[#f7f1e7]">
       <audio
         ref={audioRef}
         loop
@@ -637,7 +637,7 @@ function UniverseCanvas() {
         ref={viewportRef}
         aria-label="관람 영화 그래프"
         className={
-          "relative h-[calc(100vh-72px)] min-h-[560px] overflow-hidden bg-[radial-gradient(circle_at_50%_40%,rgba(31,58,98,0.3),transparent_45%),linear-gradient(135deg,#030714_0%,#071526_55%,#02050d_100%)] " +
+          "relative min-h-[560px] flex-1 overflow-hidden bg-[radial-gradient(circle_at_50%_40%,rgba(31,58,98,0.3),transparent_45%),linear-gradient(135deg,#030714_0%,#071526_55%,#02050d_100%)] " +
           (isDragging ? "cursor-grabbing" : "cursor-grab")
         }
         style={{ touchAction: "none" }}
