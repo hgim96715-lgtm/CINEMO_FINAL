@@ -3,7 +3,7 @@
     "name": "CINEMO",
     "slug": "cinemo",
     "scheme": "cinemo",
-    "icon": "./assets/icon.png",
+    "icon": "./ios/CINEMO/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png",
     "version": "1.0.0",
     "description": "영화 속으로, 추억의 한 장면으로",
     "orientation": "portrait",
