@@ -1,6 +1,5 @@
 "use client";
 
-import type { MovieSearchItemResponse } from "@cinemo/api-contract";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Check, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
@@ -15,7 +14,7 @@ import { AdminNavigation } from "@/components/admin/AdminNavigation";
 import { AppModal } from "@/components/ui/app-modal";
 import { Calendar } from "@/components/ui/calendar";
 import { formatDateValue } from "@/lib/date-utils";
-import { movieSearchQueryOptions } from "@/lib/queries/movie-search.query";
+import { searchAdminMovies, type AdminMovie } from "@/lib/api/admin-movies";
 import { adminCurationsQueryOptions } from "@/lib/queries/curation.query";
 import {
   useCreateAdminCurationMutation,
@@ -23,7 +22,7 @@ import {
   useUpdateAdminCurationMutation,
 } from "@/lib/queries/curation.mutation";
 
-type SelectedMovie = Pick<MovieSearchItemResponse, "id" | "title" | "posterUrl"> & {
+type SelectedMovie = Pick<AdminMovie, "id" | "title" | "posterUrl" | "releaseDate"> & {
   reason: string;
 };
 
@@ -101,6 +100,7 @@ function toForm(curation: Curation): FormState {
       id: movie.id,
       title: movie.title,
       posterUrl: movie.posterUrl,
+      releaseDate: movie.releaseDate,
       reason: movie.reason ?? "",
     })),
   };
@@ -136,14 +136,22 @@ export function AdminCurations() {
   const [calendarTarget, setCalendarTarget] = useState<"startsAt" | "endsAt" | null>(null);
   const [calendarMonth, setCalendarMonth] = useState<Date>();
 
-  const moviesSearchQuery = useQuery(
-    movieSearchQueryOptions({
-      query: submittedMovieQuery,
-      page: 1,
-      limit: 10,
-      enabled: submittedMovieQuery.length > 0,
-    }),
-  );
+  // 일반 영화 검색은 한국 개봉/시청 가능 조건으로 필터링하므로
+  // 같은 제목의 작품 중 하나가 검색에서 빠질 수 있음. 관리자 큐레이션에서는
+  // 공개 상태와 관계없이 DB의 모든 영화를 ID 기준으로 조회해야 원작·리메이크를
+  // 각각 선택할 수 있음.
+  const moviesSearchQuery = useQuery({
+    queryKey: ["admin", "curation-movie-search", submittedMovieQuery],
+    queryFn: () =>
+      searchAdminMovies({
+        query: submittedMovieQuery,
+        visibility: "ALL",
+        page: 1,
+        limit: 50,
+      }),
+    enabled: submittedMovieQuery.length > 0,
+    retry: false,
+  });
 
   const selectedIds = useMemo(
     () => new Set(form.movies.map((movie) => movie.id)),
@@ -180,14 +188,20 @@ export function AdminCurations() {
     setSubmittedMovieQuery(movieQuery.trim());
   };
 
-  const addMovie = (movie: MovieSearchItemResponse) => {
+  const addMovie = (movie: Pick<AdminMovie, "id" | "title" | "posterUrl" | "releaseDate">) => {
     if (selectedIds.has(movie.id)) return;
 
     setForm((current) => ({
       ...current,
       movies: [
         ...current.movies,
-        { id: movie.id, title: movie.title, posterUrl: movie.posterUrl, reason: "" },
+        {
+          id: movie.id,
+          title: movie.title,
+          posterUrl: movie.posterUrl,
+          releaseDate: movie.releaseDate,
+          reason: "",
+        },
       ],
     }));
   };
@@ -374,7 +388,9 @@ export function AdminCurations() {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-cinemo-text">{movie.title}</span>
-                    <span className="mt-1 block text-xs text-cinemo-muted">{movie.releaseDate ?? "개봉일 미정"}</span>
+                    <span className="mt-1 block text-xs text-cinemo-muted">
+                      {movie.releaseDate ?? "개봉일 미정"} · {movie.visibility === "PUBLIC" ? "공개" : movie.visibility === "REVIEW" ? "검토" : "숨김"}
+                    </span>
                   </span>
                   {selectedIds.has(movie.id) ? <Check className="size-4 text-cinemo-gold" /> : <Plus className="size-4 text-cinemo-muted" />}
                 </button>
@@ -389,7 +405,12 @@ export function AdminCurations() {
                 <span className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-white/5">
                   {movie.posterUrl && <img src={movie.posterUrl} alt="" className="size-full object-cover" />}
                 </span>
-                <span className="min-w-32 flex-1 truncate text-sm font-medium text-cinemo-text">{movie.title}</span>
+                <span className="min-w-32 flex-1 truncate text-sm font-medium text-cinemo-text">
+                  <span className="block truncate">{movie.title}</span>
+                  <span className="mt-1 block text-xs font-normal text-cinemo-muted">
+                    {movie.releaseDate ?? "개봉일 미정"}
+                  </span>
+                </span>
                 <input value={movie.reason} onChange={(event) => updateMovieReason(movie.id, event.target.value)} placeholder="선택 이유(선택)" className={`${inputClass} w-full sm:w-56`} />
                 <button type="button" onClick={() => removeMovie(movie.id)} className="rounded-lg p-2 text-cinemo-muted transition hover:bg-red-400/10 hover:text-red-300" aria-label={`${movie.title} 제거`}><Trash2 className="size-4" /></button>
               </div>
