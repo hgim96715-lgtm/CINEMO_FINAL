@@ -447,15 +447,15 @@ export default function PostcardDetailScreen() {
     shareInFlight.current = true;
 
     const movieTitle = postcardQuery.data?.movie?.title ?? "영화";
-    const title = `${movieTitle} · CINEMO 엽서`;
-    const message = `🎬 ${movieTitle} · CINEMO 엽서\n좋아하는 장면과 감상을 함께 읽어보세요.`;
-    const url = `https://www.cinemo.site/lobby/postcards/${postcardId}`;
+    const title = `${movieTitle}의 여운을 담은 CINEMO 엽서`;
+    // 공유 링크마다 동일한 캐시 키를 써서, 이전에 공유한 카드와 구분한다.
+    const url = `https://www.cinemo.site/lobby/postcards/${postcardId}?ref=share`;
 
     try {
       const result = await Share.share(
         Platform.OS === "ios"
-          ? { title, message, url }
-          : { title, message: `${message}\n${url}` },
+          ? { url }
+          : { title, message: url },
       );
 
       if (result.action === Share.sharedAction) {

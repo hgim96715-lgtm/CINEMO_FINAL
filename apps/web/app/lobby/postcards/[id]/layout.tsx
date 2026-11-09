@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: PostcardLayoutProps): Promise
   const postcard = await getPostcard(id, AbortSignal.timeout(3000)).catch(() => null);
   const publicPostcard = postcard?.visibility === "PUBLIC" && postcard.status === "PUBLISHED" ? postcard : null;
   const movieTitle = publicPostcard?.movie?.title;
-  const title = movieTitle ? `${movieTitle} · CINEMO 엽서` : "CINEMO 엽서";
+  const title = movieTitle ? `${movieTitle}의 여운을 담은 CINEMO 엽서` : "영화의 여운을 담은 CINEMO 엽서";
   const description = publicPostcard?.content.replace(/\s+/g, " ").trim().slice(0, 140) ||
     "영화의 여운을 담은 CINEMO 엽서";
   const image = publicPostcard?.type === "SCENE"

@@ -34,17 +34,20 @@ export function PostcardShareButton({
   }, [message]);
 
   const handleShare = async () => {
-    const url = window.location.href;
-    const message = `🎬 ${title} · CINEMO 엽서\n좋아하는 장면과 감상을 함께 읽어보세요.`;
+    const shareUrl = new URL(window.location.href);
+    // 이미 공유한 링크의 미리보기 캐시와 구분해 새 미리보기를 가져오게 한다.
+    shareUrl.searchParams.set("ref", "share");
+    const url = shareUrl.toString();
 
     try {
       const canNativeShare = typeof navigator.share === "function";
       const channel = canNativeShare ? "native" : "copy_link";
 
       if (canNativeShare) {
-        await navigator.share({ title: `${title} · CINEMO 엽서`, text: message, url });
+        // 공유 앱이 텍스트를 별도 말풍선으로 만들지 않고 링크 카드만 표시하게 한다.
+        await navigator.share({ title: `${title}의 여운을 담은 CINEMO 엽서`, url });
       } else {
-        await navigator.clipboard.writeText(`${message}\n${url}`);
+        await navigator.clipboard.writeText(url);
       }
 
       await shareMutation.mutateAsync({
