@@ -3,16 +3,6 @@ import { Injectable } from "@nestjs/common";
 import { CurationRepository } from "./curation.repository";
 import { toCurationResponseDto } from "./curation.mapper";
 
-function hasKoreanTitle(
-  titles: Array<{ title: string; languageCode: string | null }>,
-) {
-  return titles.some(
-    (title) =>
-      /[가-힣]/.test(title.title) ||
-      title.languageCode?.toLowerCase().startsWith("ko") === true,
-  );
-}
-
 @Injectable()
 export class CurationService {
   constructor(private readonly curationRepository: CurationRepository) {}
@@ -20,15 +10,9 @@ export class CurationService {
   async findActive() {
     const curations = await this.curationRepository.findActive();
 
-    return curations
-      .map((curation) => ({
-        ...curation,
-        movies: curation.movies.filter(
-          (item) =>
-            item.movie.media.length > 0 && hasKoreanTitle(item.movie.titles),
-        ),
-      }))
-      .filter((curation) => curation.movies.length > 0)
-      .map(toCurationResponseDto);
+    // 운영자가 큐레이션에 담은 영화는 메타데이터가 덜 채워져 있어도
+    // 목록에서 제외하지 않는다. 누락된 포스터는 클라이언트의 기본 이미지가
+    // 대신 표시하며, 선택한 작품 자체는 항상 노출한다.
+    return curations.map(toCurationResponseDto);
   }
 }
