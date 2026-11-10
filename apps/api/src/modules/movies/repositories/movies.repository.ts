@@ -717,6 +717,50 @@ export class MoviesRepository {
     });
   }
 
+  async addManualRerelease(movieId: string, releaseDate: Date) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.movie.findUniqueOrThrow({ where: { id: movieId } });
+
+      const status =
+        releaseDate.getTime() > Date.now()
+          ? ReleaseStatus.SCHEDULED
+          : ReleaseStatus.RELEASED;
+      const existingRelease = await tx.movieRelease.findFirst({
+        where: {
+          movieId,
+          countryCode: "KR",
+          releaseDate,
+        },
+      });
+      const release = existingRelease
+        ? await tx.movieRelease.update({
+            where: { id: existingRelease.id },
+            data: { status },
+          })
+        : await tx.movieRelease.create({
+            data: {
+              movieId,
+              releaseDate,
+              releaseType: ReleaseType.RERELEASE,
+              status,
+              countryCode: "KR",
+              isPrimary: true,
+            },
+          });
+
+      await tx.movieRelease.updateMany({
+        where: { movieId, id: { not: release.id } },
+        data: { isPrimary: false },
+      });
+      await tx.movieRelease.update({
+        where: { id: release.id },
+        data: { isPrimary: true },
+      });
+
+      return release;
+    });
+  }
+
   async findMoviesWithKobisAndTmdbLinks() {
     return this.prisma.movie.findMany({
       where: {

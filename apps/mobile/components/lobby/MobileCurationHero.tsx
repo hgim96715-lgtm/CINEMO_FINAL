@@ -105,20 +105,29 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
     })),
   });
 
-  const curation = curationsQuery.data?.[0];
+  const curations = curationsQuery.data ?? [];
   const commemorativeMovies = useMemo(
-    () =>
-      (curation?.movies ?? [])
-        .filter(isValidMovie)
-        .map((movie) => ({
-          id: movie.id,
-          title: movie.title,
-          posterUrl: movie.posterUrl,
-          releaseDate: movie.releaseDate,
-          reason: movie.reason ?? curation?.description ?? null,
-          providers: [],
-        })),
-    [curation],
+    () => {
+      const movieMap = new Map<string, MobileHeroMovie>();
+
+      for (const curation of curations) {
+        for (const movie of curation.movies) {
+          if (!isValidMovie(movie)) continue;
+
+          movieMap.set(movie.id, {
+            id: movie.id,
+            title: movie.title,
+            posterUrl: movie.posterUrl,
+            releaseDate: movie.releaseDate,
+            reason: movie.reason ?? null,
+            providers: [],
+          });
+        }
+      }
+
+      return Array.from(movieMap.values());
+    },
+    [curations],
   );
   const upcomingMovies = useMemo(
     () =>
@@ -190,6 +199,9 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
         ? upcomingQuery.isPending
         : platformQueries.some((query) => query.isPending);
   const movie = movies[selectedIndex] ?? movies[0];
+  const selectedCuration = curations.find((curation) =>
+    curation.movies.some((item) => item.id === movie?.id),
+  );
 
   if (isPending) {
     return <View className="mx-5 mt-5 h-72 rounded-3xl bg-cinemo-surface" />;
@@ -200,16 +212,20 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
   const posterUrl = getImageUrl(movie.posterUrl);
   const eyebrow =
     kind === "commemorative"
-      ? curation?.eyebrow ?? "기념일"
+      ? selectedCuration?.eyebrow?.trim() || "CINEMO CURATION"
       : kind === "upcoming"
         ? "COMING SOON"
         : "WATCH ANYWHERE";
   const heading =
     kind === "commemorative"
-      ? curation?.title ?? "기념일에 함께 보는 영화"
+      ? selectedCuration?.title?.trim() || null
       : kind === "upcoming"
         ? "개봉 예정작"
         : "플랫폼에서 볼 수 있는 영화";
+  const curationDescription =
+    kind === "commemorative"
+      ? selectedCuration?.description?.trim() || null
+      : null;
 
   return (
     <View className="mx-5 mt-5 overflow-hidden rounded-3xl border border-cinemo-gold/20 bg-cinemo-surface px-5 py-6">
@@ -234,9 +250,20 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
         )}
       </View>
 
-      <Text className="mt-3 text-2xl font-bold leading-8 text-cinemo-text">
-        {heading}
-      </Text>
+      {heading && (
+        <Text className="mt-3 text-2xl font-bold leading-8 text-cinemo-text">
+          {heading}
+        </Text>
+      )}
+
+      {curationDescription && (
+        <Text
+          numberOfLines={2}
+          className="mt-3 text-sm leading-6 text-cinemo-muted"
+        >
+          {curationDescription}
+        </Text>
+      )}
 
       <Pressable
         accessibilityRole="button"
@@ -282,7 +309,7 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
 
           {kind === "commemorative" && movie.reason && (
             <Text
-              numberOfLines={5}
+              numberOfLines={4}
               className="mt-4 text-sm leading-6 text-cinemo-muted"
             >
               {movie.reason}

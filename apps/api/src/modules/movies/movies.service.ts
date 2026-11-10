@@ -370,6 +370,13 @@ export class MoviesService {
     );
   }
 
+  addManualRerelease(movieId: string, releaseDate: string) {
+    return this.movieRepository.addManualRerelease(
+      movieId,
+      new Date(`${releaseDate}T00:00:00.000Z`),
+    );
+  }
+
   async getGenreCountsByReleasePeriod(params: {
     startDate: Date;
     endDate: Date;

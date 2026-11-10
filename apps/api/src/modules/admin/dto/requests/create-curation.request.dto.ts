@@ -27,17 +27,24 @@ export class CreateCurationRequestDto {
   })
   slug!: string;
 
-  @ApiProperty({ description: "Hero 상단에 표시할 짧은 문구", example: "11월 3일 학생독립운동 기념일" })
+  @ApiPropertyOptional({
+    description: "Hero 상단에 표시할 짧은 문구. 비우면 CINEMO CURATION으로 표시됩니다.",
+    example: "11월 3일 학생독립운동 기념일",
+  })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(100)
-  eyebrow!: string;
+  eyebrow?: string;
 
-  @ApiProperty({ description: "큐레이션 제목", example: "학생독립운동 기념일에 함께 보는 영화" })
+  @ApiPropertyOptional({
+    description:
+      "Hero에 표시할 큐레이션 제목. 여러 기념일이 겹쳐 문구가 어색하면 비워 둘 수 있습니다.",
+    example: "학생독립운동 기념일에 함께 보는 영화",
+  })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(200)
-  title!: string;
+  title?: string;
 
   @ApiPropertyOptional({ description: "큐레이션 설명", nullable: true })
   @IsOptional()

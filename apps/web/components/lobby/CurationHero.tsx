@@ -91,8 +91,8 @@ export function CurationHero({
     movies: platformMoviesWithProviders,
     isPending: platformMoviesPending,
   } = usePlatformMovies(20);
-  const configuredCuration: Curation | undefined =
-    activeCurationsQuery.data?.[0];
+  const configuredCurations = activeCurationsQuery.data ?? [];
+  const configuredCuration: Curation | undefined = configuredCurations[0];
   const fallbackCuration = getActiveCommemorativeCuration();
   const commemorativeCuration = configuredCuration ?? fallbackCuration;
   const commemorativeQueries = useQueries({
@@ -121,9 +121,17 @@ export function CurationHero({
   );
   const commemorativeMovies = useMemo(() => {
     if (configuredCuration) {
-      return configuredCuration.movies
-        .filter(isPublicHeroMovie)
-        .map(toHeroMovie);
+      const movieMap = new Map<string, MovieSearchItemResponse>();
+
+      for (const curation of configuredCurations) {
+        for (const movie of curation.movies) {
+          if (isPublicHeroMovie(movie)) {
+            movieMap.set(movie.id, toHeroMovie(movie));
+          }
+        }
+      }
+
+      return Array.from(movieMap.values());
     }
 
     const movies = commemorativeQueries.flatMap(
@@ -138,7 +146,7 @@ export function CurationHero({
     }
 
     return Array.from(movieMap.values());
-  }, [configuredCuration, commemorativeQueries]);
+  }, [configuredCuration, configuredCurations, commemorativeQueries]);
 
   const hasCommemorativeMovies = commemorativeMovies.length > 0;
   const hasUpcomingMovies = upcomingMovies.length > 0;
@@ -198,13 +206,20 @@ export function CurationHero({
   }
 
   const isLongTitle = featuredMovie.title.length > 16;
-  const featuredCurationMovie = configuredCuration?.movies.find(
+  const featuredCuration = configuredCurations.find((curation) =>
+    curation.movies.some((movie) => movie.id === featuredMovie.id),
+  );
+  const displayedCommemorativeCuration =
+    featuredCuration ?? commemorativeCuration;
+  const featuredCurationMovie = featuredCuration?.movies.find(
     (movie) => movie.id === featuredMovie.id,
   );
   const commemorativeMovieReason = isCommemorative
     ? featuredCurationMovie?.reason ||
-      getCommemorativeMovieReason(fallbackCuration, featuredMovie.title) ||
-      commemorativeCuration?.description
+      getCommemorativeMovieReason(fallbackCuration, featuredMovie.title)
+    : null;
+  const commemorativeCurationDescription = isCommemorative
+    ? displayedCommemorativeCuration?.description?.trim() || null
     : null;
   const platformMovieProviders = platformMoviesWithProviders.find(
     ({ movie }) => movie.id === featuredMovie.id,
@@ -306,15 +321,21 @@ export function CurationHero({
 
         <div className="grid flex-1 items-center gap-8 pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,20rem)] lg:gap-16 lg:pt-3">
           <div className="max-w-2xl">
-            {isCommemorative && commemorativeCuration?.eyebrow && (
+            {isCommemorative && displayedCommemorativeCuration?.eyebrow?.trim() && (
               <p className="mb-4 text-sm font-medium text-cinemo-gold">
-                {commemorativeCuration.eyebrow}
+                {displayedCommemorativeCuration.eyebrow}
               </p>
             )}
 
-            {isCommemorative && commemorativeCuration?.title && (
+            {isCommemorative && displayedCommemorativeCuration?.title && (
               <p className="mb-5 max-w-2xl text-[clamp(1.35rem,2.7vw,2.5rem)] font-serif leading-tight tracking-[-0.03em] text-cinemo-text/90">
-                {commemorativeCuration.title}
+                {displayedCommemorativeCuration.title}
+              </p>
+            )}
+
+            {commemorativeCurationDescription && (
+              <p className="mb-5 max-w-xl text-sm leading-7 text-cinemo-muted sm:text-base">
+                {commemorativeCurationDescription}
               </p>
             )}
 
@@ -336,7 +357,7 @@ export function CurationHero({
                   {featuredMovie.releaseDate ?? "개봉일 미정"} 개봉 예정
                 </span>
               </div>
-            ) : isCommemorative ? (
+            ) : isCommemorative && commemorativeMovieReason ? (
               <div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
                 <span className="max-w-xl text-sm leading-7 text-cinemo-muted sm:text-base">
                   {commemorativeMovieReason}

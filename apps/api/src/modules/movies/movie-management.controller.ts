@@ -6,15 +6,18 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from "@nestjs/common";
 import { ApiCookieAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 
 import { GetMovieRequestDto } from "./dto/requests/get-movie.request.dto";
 import { GetMovieModerationRequestDto } from "./dto/requests/get-movie-moderation.request.dto";
 import { UpdateMovieVisibilityRequestDto } from "./dto/requests/update-movie-visibility.request.dto";
+import { CreateManualRereleaseRequestDto } from "./dto/requests/create-manual-rerelease.request.dto";
 import { MoviesService } from "./movies.service";
 import { KobisMovieBatchImportService } from "./kobis-movie-batch-import.service";
 import { Public } from "../auth/decorators/public.decorator";
+import { AdminGuard } from "../admin/admin.guard";
 
 @ApiTags("Admin Movies")
 // @ApiCookieAuth("cinemo_session")
@@ -68,6 +71,22 @@ export class MovieManagementController {
       params.movieId,
       body.visibility,
       body.moderationReason,
+    );
+  }
+
+  @Post(":movieId/rereleases")
+  @UseGuards(AdminGuard)
+  @ApiOperation({
+    summary: "관리자 직접 재개봉일 등록",
+    description: "KOBIS·KMDB에 아직 없는 국내 재개봉일을 직접 등록하고 대표 개봉일로 설정함",
+  })
+  addManualRerelease(
+    @Param() params: GetMovieRequestDto,
+    @Body() body: CreateManualRereleaseRequestDto,
+  ) {
+    return this.moviesService.addManualRerelease(
+      params.movieId,
+      body.releaseDate,
     );
   }
 }

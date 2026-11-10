@@ -55,3 +55,13 @@ export async function updateAdminMovieVisibility(input: {
     },
   );
 }
+
+export async function createAdminMovieRerelease(input: {
+  movieId: string;
+  releaseDate: string;
+}) {
+  await apiClient.post(
+    `/admin/movies/${encodeURIComponent(input.movieId)}/rereleases`,
+    { releaseDate: input.releaseDate },
+  );
+}

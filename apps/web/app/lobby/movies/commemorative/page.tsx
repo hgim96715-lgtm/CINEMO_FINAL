@@ -9,9 +9,14 @@ import { activeCurationsQueryOptions } from "@/lib/queries/curation.query";
 
 export default function CommemorativeMoviesPage() {
   const curationsQuery = useQuery(activeCurationsQueryOptions());
-  const curation = curationsQuery.data?.[0];
-  const movies = (curation?.movies ?? []).filter(
-    (movie) => Boolean(movie.title && movie.posterUrl),
+  const curations = curationsQuery.data ?? [];
+  const movies = Array.from(
+    new Map(
+      curations
+        .flatMap((curation) => curation.movies)
+        .filter((movie) => Boolean(movie.title && movie.posterUrl))
+        .map((movie) => [movie.id, movie]),
+    ).values(),
   );
 
   return (
@@ -31,9 +36,14 @@ export default function CommemorativeMoviesPage() {
         <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">
           기념일
         </h1>
-        {curation?.title && (
+        {curations[0]?.title && (
           <p className="mt-3 max-w-2xl text-muted-foreground">
-            {curation.title}
+            {curations[0].title}
+          </p>
+        )}
+        {curations.length === 1 && curations[0]?.description?.trim() && (
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            {curations[0].description}
           </p>
         )}
       </div>

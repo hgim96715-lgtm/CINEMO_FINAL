@@ -24,9 +24,16 @@ export default function CommemorativeMoviesScreen() {
   const cardWidth =
     (screenWidth - GRID_HORIZONTAL_PADDING * 2 - GRID_GAP) / 2;
   const curationsQuery = useQuery(activeCurationsQueryOptions());
-  const curation = curationsQuery.data?.[0];
-  const movies = (curation?.movies ?? []).filter(
-    (movie) => Boolean(movie.title && movie.posterUrl),
+  const curations = curationsQuery.data ?? [];
+  const curationDescription =
+    curations.length === 1 ? curations[0]?.description?.trim() || null : null;
+  const movies = Array.from(
+    new Map(
+      curations
+        .flatMap((curation) => curation.movies)
+        .filter((movie) => Boolean(movie.title && movie.posterUrl))
+        .map((movie) => [movie.id, movie]),
+    ).values(),
   );
 
   return (
@@ -45,6 +52,14 @@ export default function CommemorativeMoviesScreen() {
         >
           기념일
         </Text>
+        {curationDescription && (
+          <Text
+            className="mt-3 text-sm leading-6"
+            style={{ color: CINEMO_COLORS.textSecondary }}
+          >
+            {curationDescription}
+          </Text>
+        )}
       </View>
 
       {curationsQuery.isPending ? (

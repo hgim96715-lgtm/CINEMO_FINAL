@@ -39,6 +39,7 @@ import { MovieReleaseNotificationService } from "@/modules/movies/movie-release-
 import { MailService } from "@/modules/auth/mail.service";
 import { NotificationsModule } from "@/modules/notifications/notifications.module";
 import { ActivityModule } from "@/modules/activity/activity.module";
+import { AdminGuard } from "@/modules/admin/admin.guard";
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { ActivityModule } from "@/modules/activity/activity.module";
     UserMovieNotificationService,
     MovieReleaseNotificationService,
     MailService,
+    AdminGuard,
   ],
   exports: [
     MoviesRepository,

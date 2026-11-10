@@ -3,11 +3,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import { FormEvent, useState } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { CalendarPlus, ChevronDown, Search } from "lucide-react";
 
 import { AdminNavigation } from "@/components/admin/AdminNavigation";
 import {
   updateAdminMovieVisibility,
+  createAdminMovieRerelease,
   type AdminMovie,
   type AdminMovieVisibility,
   type AdminMovieVisibilityFilter,
@@ -39,6 +40,12 @@ export function AdminMovieSearch() {
 
   const visibilityMutation = useMutation({
     mutationFn: updateAdminMovieVisibility,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "movies"] });
+    },
+  });
+  const rereleaseMutation = useMutation({
+    mutationFn: createAdminMovieRerelease,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "movies"] });
     },
@@ -125,12 +132,16 @@ export function AdminMovieSearch() {
                   key={movie.id}
                   movie={movie}
                   isUpdating={visibilityMutation.isPending}
+                  isSavingRerelease={rereleaseMutation.isPending}
                   onVisibilityChange={(nextVisibility) =>
                     visibilityMutation.mutate({
                       movieId: movie.id,
                       visibility: nextVisibility,
                       moderationReason: nextVisibility === "HIDDEN" ? "관리자 검토로 숨김" : null,
                     })
+                  }
+                  onRerelease={(releaseDate) =>
+                    rereleaseMutation.mutate({ movieId: movie.id, releaseDate })
                   }
                 />
               ))}
@@ -145,14 +156,26 @@ export function AdminMovieSearch() {
 function AdminMovieSearchItem({
   movie,
   isUpdating,
+  isSavingRerelease,
   onVisibilityChange,
+  onRerelease,
 }: {
   movie: AdminMovie;
   isUpdating: boolean;
+  isSavingRerelease: boolean;
   onVisibilityChange: (visibility: AdminMovieVisibility) => void;
+  onRerelease: (releaseDate: string) => void;
 }) {
+  const [isRereleaseFormOpen, setIsRereleaseFormOpen] = useState(false);
+  const [rereleaseDate, setRereleaseDate] = useState("");
   const handleCopy = async () => {
     await navigator.clipboard.writeText(movie.id);
+  };
+  const submitRerelease = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!rereleaseDate) return;
+    onRerelease(rereleaseDate);
+    setIsRereleaseFormOpen(false);
   };
 
   return (
@@ -215,7 +238,43 @@ function AdminMovieSearchItem({
             ))}
           </select>
         </label>
+        <button
+          type="button"
+          onClick={() => setIsRereleaseFormOpen((open) => !open)}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-cinemo-gold/25 px-3 py-2 text-xs text-cinemo-gold-light transition hover:bg-cinemo-gold/10"
+        >
+          <CalendarPlus className="size-3.5" />
+          재개봉 등록
+        </button>
       </div>
+
+      {isRereleaseFormOpen && (
+        <form
+          onSubmit={submitRerelease}
+          className="flex w-full flex-wrap items-end gap-3 border-t border-white/10 pt-4"
+        >
+          <label className="grid gap-1.5 text-xs font-medium text-cinemo-muted">
+            직접 확인한 국내 재개봉일
+            <input
+              type="date"
+              required
+              value={rereleaseDate}
+              onChange={(event) => setRereleaseDate(event.target.value)}
+              className="h-10 rounded-lg border border-white/10 bg-[#0a191a] px-3 text-sm text-cinemo-text outline-none focus:border-cinemo-gold/60"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={isSavingRerelease || !rereleaseDate}
+            className="h-10 rounded-lg bg-cinemo-gold px-4 text-sm font-semibold text-cinemo-dark disabled:opacity-50"
+          >
+            {isSavingRerelease ? "등록 중..." : "재개봉일 저장"}
+          </button>
+          <p className="basis-full text-xs leading-5 text-cinemo-muted">
+            KOBIS·KMDB에 아직 없는 재개봉도 저장할 수 있음. 저장하면 이 날짜가 대표 개봉일로 사용됨.
+          </p>
+        </form>
+      )}
     </article>
   );
 }

@@ -98,16 +98,10 @@ export class CurationRepository {
       ...curationInclude,
     });
 
-    return curations
-      .map((curation) => ({
-        ...curation,
-        movies: curation.movies.filter(
-          (item) =>
-            item.movie.releases.some((release) => release.countryCode === "KR") ||
-            item.movie.watchOptions.length > 0,
-        ),
-      }))
-      .filter((curation) => curation.movies.length > 0);
+    // 큐레이션은 운영자가 직접 고른 목록이다. 국내 개봉·플랫폼 정보의 유무로
+    // 다시 거르면 원작, 재개봉작처럼 메타데이터가 덜 채워진 작품이 로비에서
+    // 사라지므로 선택한 영화는 그대로 반환한다.
+    return curations;
   }
 
   create(input: CreateCurationInput): Promise<CurationWithMovies> {

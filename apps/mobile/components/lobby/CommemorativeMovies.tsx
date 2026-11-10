@@ -10,9 +10,14 @@ import { SectionHeader } from "@/components/lobby/SectionHeader";
 
 export function CommemorativeMovies() {
   const curationsQuery = useQuery(activeCurationsQueryOptions());
-  const movies = (curationsQuery.data?.[0]?.movies ?? [])
-    .filter((movie) => Boolean(movie.title && movie.posterUrl))
-    .slice(0, 10);
+  const movies = Array.from(
+    new Map(
+      (curationsQuery.data ?? [])
+        .flatMap((curation) => curation.movies)
+        .filter((movie) => Boolean(movie.title && movie.posterUrl))
+        .map((movie) => [movie.id, movie]),
+    ).values(),
+  );
 
   if (curationsQuery.isPending || curationsQuery.isError || movies.length === 0) {
     return null;

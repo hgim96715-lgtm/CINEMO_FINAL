@@ -30,7 +30,8 @@ export class AdminService {
   async createCuration(input: CreateCurationRequestDto) {
     const curation = await this.curationRepository.create({
       ...input,
-      eyebrow: input.eyebrow,
+      eyebrow: input.eyebrow?.trim() ?? "",
+      title: input.title?.trim() ?? "",
       description: input.description ?? null,
       status: input.status ?? CurationStatus.DRAFT,
       startsAt: input.startsAt ? new Date(input.startsAt) : null,
@@ -44,6 +45,11 @@ export class AdminService {
   async updateCuration(id: string, input: UpdateCurationRequestDto) {
     const curation = await this.curationRepository.update(id, {
       ...input,
+      eyebrow:
+        input.eyebrow === undefined ? undefined : input.eyebrow.trim(),
+      title: input.title === undefined ? undefined : input.title.trim(),
+      description:
+        input.description === undefined ? undefined : input.description?.trim() || null,
       startsAt:
         input.startsAt === undefined
           ? undefined

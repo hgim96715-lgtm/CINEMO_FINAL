@@ -40,7 +40,7 @@ type FormState = {
 
 const emptyForm: FormState = {
   slug: "",
-  eyebrow: "CINEMO CURATION",
+  eyebrow: "",
   title: "",
   description: "",
   status: "PUBLISHED",
@@ -319,11 +319,11 @@ export function AdminCurations() {
           <Field label="식별자(slug)">
             <input required value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} placeholder="halloween-movies" className={inputClass} />
           </Field>
-          <Field label="Hero 상단 문구">
-            <input required value={form.eyebrow} onChange={(event) => setForm({ ...form, eyebrow: event.target.value })} placeholder="11월 3일 학생독립운동 기념일" className={inputClass} />
+          <Field label="Hero 상단 문구 (선택)">
+            <input value={form.eyebrow} onChange={(event) => setForm({ ...form, eyebrow: event.target.value })} placeholder="비워 두면 CINEMO CURATION으로 표시" className={inputClass} />
           </Field>
-          <Field label="큐레이션 제목">
-            <input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="이번 주에 기억할 영화" className={inputClass} />
+          <Field label="Hero 제목 (선택)">
+            <input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="여러 기념일이 겹치면 비워 둘 수 있음" className={inputClass} />
           </Field>
           <Field label="상태">
             <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="큐레이션 상태">
@@ -454,7 +454,7 @@ function Field({ label, className, children }: { label: string; className?: stri
 function CurationCard({ curation, onEdit, onDelete }: { curation: Curation; onEdit: (curation: Curation) => void; onDelete: (curation: Curation) => void }) {
   return <article className="rounded-2xl border border-white/10 bg-[#101f21] p-5">
     <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0"><p className="text-xs tracking-[0.2em] text-cinemo-gold">{curation.eyebrow}</p><h3 className="mt-2 truncate text-lg font-semibold text-cinemo-text">{curation.title}</h3><p className="mt-1 text-xs text-cinemo-muted">{curation.slug}</p></div>
+      <div className="min-w-0"><p className="text-xs tracking-[0.2em] text-cinemo-gold">{curation.eyebrow || "CINEMO CURATION"}</p><h3 className="mt-2 truncate text-lg font-semibold text-cinemo-text">{curation.title || "제목 없는 큐레이션"}</h3><p className="mt-1 text-xs text-cinemo-muted">{curation.slug}</p></div>
       <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs ${curation.status === "PUBLISHED" ? "bg-emerald-400/10 text-emerald-300" : "bg-white/8 text-cinemo-muted"}`}>{statusLabels[curation.status]}</span>
     </div>
     <div className="mt-4 flex items-center gap-2 text-xs text-cinemo-muted"><CalendarDays className="size-4" />{toInputDate(curation.startsAt) || "시작일 없음"} ~ {toInputDate(curation.endsAt) || "종료일 없음"}</div>
