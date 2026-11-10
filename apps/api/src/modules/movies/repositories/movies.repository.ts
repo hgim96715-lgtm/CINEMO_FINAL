@@ -727,7 +727,6 @@ export class MoviesRepository {
   async addManualRerelease(
     movieId: string,
     releaseDate: Date,
-    theaterExclusive?: TheaterExclusive | null,
   ) {
     return this.prisma.$transaction(async (tx) => {
       await tx.movie.findUniqueOrThrow({ where: { id: movieId } });
@@ -747,7 +746,7 @@ export class MoviesRepository {
       const release = existingRelease
         ? await tx.movieRelease.update({
             where: { id: existingRelease.id },
-            data: { status, theaterExclusive: theaterExclusive ?? null },
+            data: { status },
           })
         : await tx.movieRelease.create({
             data: {
@@ -756,7 +755,7 @@ export class MoviesRepository {
               releaseType: ReleaseType.RERELEASE,
               status,
               countryCode: "KR",
-              theaterExclusive: theaterExclusive ?? null,
+              theaterExclusive: null,
               isPrimary: true,
             },
           });
@@ -771,6 +770,30 @@ export class MoviesRepository {
       });
 
       return release;
+    });
+  }
+
+  async updateManualRereleaseFormat(
+    movieId: string,
+    theaterExclusive?: TheaterExclusive | null,
+  ) {
+    const rerelease = await this.prisma.movieRelease.findFirst({
+      where: {
+        movieId,
+        countryCode: "KR",
+        releaseType: ReleaseType.RERELEASE,
+      },
+      orderBy: [{ isPrimary: "desc" }, { releaseDate: "desc" }],
+      select: { id: true },
+    });
+
+    if (!rerelease) {
+      return null;
+    }
+
+    return this.prisma.movieRelease.update({
+      where: { id: rerelease.id },
+      data: { theaterExclusive: theaterExclusive ?? null },
     });
   }
 

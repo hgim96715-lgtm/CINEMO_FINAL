@@ -14,6 +14,7 @@ import { GetMovieRequestDto } from "./dto/requests/get-movie.request.dto";
 import { GetMovieModerationRequestDto } from "./dto/requests/get-movie-moderation.request.dto";
 import { UpdateMovieVisibilityRequestDto } from "./dto/requests/update-movie-visibility.request.dto";
 import { CreateManualRereleaseRequestDto } from "./dto/requests/create-manual-rerelease.request.dto";
+import { UpdateManualRereleaseFormatRequestDto } from "./dto/requests/update-manual-rerelease-format.request.dto";
 import { MoviesService } from "./movies.service";
 import { KobisMovieBatchImportService } from "./kobis-movie-batch-import.service";
 import { Public } from "../auth/decorators/public.decorator";
@@ -88,6 +89,21 @@ export class MovieManagementController {
     return this.moviesService.addManualRerelease(
       params.movieId,
       body.releaseDate,
+    );
+  }
+
+  @Patch(":movieId/rereleases/format")
+  @UseGuards(AdminGuard)
+  @ApiOperation({
+    summary: "관리자 직접 재개봉 개봉 형태 변경",
+    description: "등록된 국내 재개봉의 개봉 형태만 변경하며 재개봉일은 유지함",
+  })
+  updateManualRereleaseFormat(
+    @Param() params: GetMovieRequestDto,
+    @Body() body: UpdateManualRereleaseFormatRequestDto,
+  ) {
+    return this.moviesService.updateManualRereleaseFormat(
+      params.movieId,
       body.theaterExclusive,
     );
   }

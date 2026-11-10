@@ -12,6 +12,8 @@ export type AdminMovie = {
   moderationReason: string | null;
   releaseDate: string | null;
   theaterExclusive: TheaterExclusive | null;
+  rereleaseDate: string | null;
+  rereleaseTheaterExclusive: TheaterExclusive | null;
   posterUrl: string | null;
 };
 
@@ -61,13 +63,23 @@ export async function updateAdminMovieVisibility(input: {
 export async function createAdminMovieRerelease(input: {
   movieId: string;
   releaseDate: string;
-  theaterExclusive?: TheaterExclusive | null;
 }) {
   await apiClient.post(
     `/admin/movies/${encodeURIComponent(input.movieId)}/rereleases`,
     {
       releaseDate: input.releaseDate,
-      theaterExclusive: input.theaterExclusive ?? null,
+    },
+  );
+}
+
+export async function updateAdminMovieRereleaseFormat(input: {
+  movieId: string;
+  theaterExclusive: TheaterExclusive | null;
+}) {
+  await apiClient.patch(
+    `/admin/movies/${encodeURIComponent(input.movieId)}/rereleases/format`,
+    {
+      theaterExclusive: input.theaterExclusive,
     },
   );
 }

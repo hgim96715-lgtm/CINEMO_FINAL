@@ -2,13 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import { FormEvent, useState } from "react";
-import { CalendarPlus, ChevronDown, Search } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
+import { Building2, CalendarPlus, ChevronDown, Search } from "lucide-react";
 
 import { AdminNavigation } from "@/components/admin/AdminNavigation";
 import {
   updateAdminMovieVisibility,
   createAdminMovieRerelease,
+  updateAdminMovieRereleaseFormat,
   type AdminMovie,
   type AdminMovieVisibility,
   type AdminMovieVisibilityFilter,
@@ -64,6 +65,12 @@ export function AdminMovieSearch() {
   });
   const rereleaseMutation = useMutation({
     mutationFn: createAdminMovieRerelease,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "movies"] });
+    },
+  });
+  const rereleaseFormatMutation = useMutation({
+    mutationFn: updateAdminMovieRereleaseFormat,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "movies"] });
     },
@@ -167,6 +174,7 @@ export function AdminMovieSearch() {
                   movie={movie}
                   isUpdating={visibilityMutation.isPending}
                   isSavingRerelease={rereleaseMutation.isPending}
+                  isSavingRereleaseFormat={rereleaseFormatMutation.isPending}
                   onVisibilityChange={(nextVisibility) =>
                     visibilityMutation.mutate({
                       movieId: movie.id,
@@ -177,8 +185,14 @@ export function AdminMovieSearch() {
                           : null,
                     })
                   }
-                  onRerelease={(input) =>
-                    rereleaseMutation.mutate({ movieId: movie.id, ...input })
+                  onRerelease={(releaseDate) =>
+                    rereleaseMutation.mutate({ movieId: movie.id, releaseDate })
+                  }
+                  onRereleaseFormatChange={(theaterExclusive) =>
+                    rereleaseFormatMutation.mutate({
+                      movieId: movie.id,
+                      theaterExclusive,
+                    })
                   }
                 />
               ))}
@@ -194,34 +208,41 @@ function AdminMovieSearchItem({
   movie,
   isUpdating,
   isSavingRerelease,
+  isSavingRereleaseFormat,
   onVisibilityChange,
   onRerelease,
+  onRereleaseFormatChange,
 }: {
   movie: AdminMovie;
   isUpdating: boolean;
   isSavingRerelease: boolean;
+  isSavingRereleaseFormat: boolean;
   onVisibilityChange: (visibility: AdminMovieVisibility) => void;
-  onRerelease: (input: {
-    releaseDate: string;
-    theaterExclusive: TheaterExclusive | null;
-  }) => void;
+  onRerelease: (releaseDate: string) => void;
+  onRereleaseFormatChange: (theaterExclusive: TheaterExclusive | null) => void;
 }) {
   const [isRereleaseFormOpen, setIsRereleaseFormOpen] = useState(false);
   const [rereleaseDate, setRereleaseDate] = useState("");
   const [theaterExclusive, setTheaterExclusive] = useState<
     TheaterExclusive | ""
-  >(movie.theaterExclusive ?? "");
+  >(movie.rereleaseTheaterExclusive ?? "");
+  useEffect(() => {
+    setTheaterExclusive(movie.rereleaseTheaterExclusive ?? "");
+  }, [movie.rereleaseTheaterExclusive]);
   const handleCopy = async () => {
     await navigator.clipboard.writeText(movie.id);
   };
   const submitRerelease = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!rereleaseDate) return;
-    onRerelease({
-      releaseDate: rereleaseDate,
-      theaterExclusive: theaterExclusive || null,
-    });
-    setIsRereleaseFormOpen(false);
+    onRerelease(rereleaseDate);
+    setRereleaseDate("");
+  };
+
+  const submitRereleaseFormat = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!movie.rereleaseDate) return;
+    onRereleaseFormatChange(theaterExclusive || null);
   };
 
   return (
@@ -301,53 +322,87 @@ function AdminMovieSearchItem({
           className="inline-flex items-center gap-1.5 rounded-lg border border-cinemo-gold/25 px-3 py-2 text-xs text-cinemo-gold-light transition hover:bg-cinemo-gold/10"
         >
           <CalendarPlus className="size-3.5" />
-          재개봉 등록
+          재개봉 관리
         </button>
       </div>
 
       {isRereleaseFormOpen && (
-        <form
-          onSubmit={submitRerelease}
-          className="flex w-full flex-wrap items-end gap-3 border-t border-white/10 pt-4"
-        >
-          <label className="grid gap-1.5 text-xs font-medium text-cinemo-muted">
-            직접 확인한 국내 재개봉일
-            <input
-              type="date"
-              required
-              value={rereleaseDate}
-              onChange={(event) => setRereleaseDate(event.target.value)}
-              className="h-10 rounded-lg border border-white/10 bg-[#0a191a] px-3 text-sm text-cinemo-text outline-none focus:border-cinemo-gold/60"
-            />
-          </label>
-          <label className="grid gap-1.5 text-xs font-medium text-cinemo-muted">
-            개봉 형태
-            <select
-              value={theaterExclusive}
-              onChange={(event) =>
-                setTheaterExclusive(event.target.value as TheaterExclusive | "")
-              }
-              className="h-10 rounded-lg border border-white/10 bg-[#0a191a] px-3 text-sm text-cinemo-text outline-none focus:border-cinemo-gold/60"
-            >
-              {THEATER_EXCLUSIVE_OPTIONS.map((option) => (
-                <option key={option.value || "GENERAL"} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="submit"
-            disabled={isSavingRerelease || !rereleaseDate}
-            className="h-10 rounded-lg bg-cinemo-gold px-4 text-sm font-semibold text-cinemo-dark disabled:opacity-50"
-          >
-            {isSavingRerelease ? "등록 중..." : "재개봉일 저장"}
-          </button>
-          <p className="basis-full text-xs leading-5 text-cinemo-muted">
-            KOBIS·KMDB에 아직 없는 재개봉도 저장할 수 있음. 대표 개봉일은
-            재개봉일로 쓰되 최초 개봉일은 변경하지 않음.
-          </p>
-        </form>
+        <div className="grid w-full gap-3 border-t border-white/10 pt-4 lg:grid-cols-2">
+          <section className="rounded-xl border border-white/10 bg-[#0a191a]/70 p-4">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-cinemo-gold/10 text-cinemo-gold-light">
+                <CalendarPlus className="size-4" />
+              </span>
+              <div>
+                <h4 className="text-sm font-semibold text-cinemo-text">재개봉일</h4>
+                <p className="mt-1 text-xs leading-5 text-cinemo-muted">
+                  최초 개봉일은 그대로 두고 국내 재개봉 날짜만 저장
+                </p>
+              </div>
+            </div>
+            <form onSubmit={submitRerelease} className="mt-4 flex flex-wrap items-end gap-2">
+              <label className="grid min-w-0 flex-1 gap-1.5 text-xs font-medium text-cinemo-muted">
+                직접 확인한 재개봉일
+                <input
+                  type="date"
+                  required
+                  value={rereleaseDate}
+                  onChange={(event) => setRereleaseDate(event.target.value)}
+                  className="h-10 w-full rounded-lg border border-white/10 bg-[#101f21] px-3 text-sm text-cinemo-text outline-none focus:border-cinemo-gold/60"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={isSavingRerelease || !rereleaseDate}
+                className="h-10 rounded-lg bg-cinemo-gold px-4 text-sm font-semibold text-cinemo-dark disabled:opacity-50"
+              >
+                {isSavingRerelease ? "저장 중..." : "날짜 저장"}
+              </button>
+            </form>
+          </section>
+
+          <section className="rounded-xl border border-white/10 bg-[#0a191a]/70 p-4">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-cinemo-gold/10 text-cinemo-gold-light">
+                <Building2 className="size-4" />
+              </span>
+              <div>
+                <h4 className="text-sm font-semibold text-cinemo-text">개봉 형태</h4>
+                <p className="mt-1 text-xs leading-5 text-cinemo-muted">
+                  {movie.rereleaseDate
+                    ? `${movie.rereleaseDate.slice(0, 10)} 재개봉의 상영 형태를 변경`
+                    : "재개봉일을 저장한 뒤 개봉 형태를 선택"}
+                </p>
+              </div>
+            </div>
+            <form onSubmit={submitRereleaseFormat} className="mt-4 flex flex-wrap items-end gap-2">
+              <label className="grid min-w-0 flex-1 gap-1.5 text-xs font-medium text-cinemo-muted">
+                재개봉 개봉 형태
+                <select
+                  value={theaterExclusive}
+                  disabled={!movie.rereleaseDate || isSavingRereleaseFormat}
+                  onChange={(event) =>
+                    setTheaterExclusive(event.target.value as TheaterExclusive | "")
+                  }
+                  className="h-10 w-full rounded-lg border border-white/10 bg-[#101f21] px-3 text-sm text-cinemo-text outline-none focus:border-cinemo-gold/60 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {THEATER_EXCLUSIVE_OPTIONS.map((option) => (
+                    <option key={option.value || "GENERAL"} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="submit"
+                disabled={!movie.rereleaseDate || isSavingRereleaseFormat}
+                className="h-10 rounded-lg border border-cinemo-gold/30 px-4 text-sm font-semibold text-cinemo-gold-light transition hover:bg-cinemo-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSavingRereleaseFormat ? "저장 중..." : "형태 저장"}
+              </button>
+            </form>
+          </section>
+        </div>
       )}
     </article>
   );

@@ -373,13 +373,29 @@ export class MoviesService {
   addManualRerelease(
     movieId: string,
     releaseDate: string,
-    theaterExclusive?: "CGV" | "MEGABOX" | "LOTTE_CINEMA" | null,
   ) {
     return this.movieRepository.addManualRerelease(
       movieId,
       new Date(`${releaseDate}T00:00:00.000Z`),
+    );
+  }
+
+  async updateManualRereleaseFormat(
+    movieId: string,
+    theaterExclusive?: "CGV" | "MEGABOX" | "LOTTE_CINEMA" | null,
+  ) {
+    const release = await this.movieRepository.updateManualRereleaseFormat(
+      movieId,
       theaterExclusive,
     );
+
+    if (!release) {
+      throw new BadRequestException(
+        "개봉 형태를 설정할 국내 재개봉 정보가 없습니다.",
+      );
+    }
+
+    return release;
   }
 
   async getGenreCountsByReleasePeriod(params: {
