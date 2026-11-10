@@ -83,3 +83,15 @@ export async function updateAdminMovieRereleaseFormat(input: {
     },
   );
 }
+
+export async function updateAdminMovieInitialReleaseFormat(input: {
+  movieId: string;
+  theaterExclusive: TheaterExclusive | null;
+}) {
+  await apiClient.patch(
+    `/admin/movies/${encodeURIComponent(input.movieId)}/releases/initial/format`,
+    {
+      theaterExclusive: input.theaterExclusive,
+    },
+  );
+}

@@ -9,6 +9,7 @@ import { AdminNavigation } from "@/components/admin/AdminNavigation";
 import {
   updateAdminMovieVisibility,
   createAdminMovieRerelease,
+  updateAdminMovieInitialReleaseFormat,
   updateAdminMovieRereleaseFormat,
   type AdminMovie,
   type AdminMovieVisibility,
@@ -71,6 +72,12 @@ export function AdminMovieSearch() {
   });
   const rereleaseFormatMutation = useMutation({
     mutationFn: updateAdminMovieRereleaseFormat,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "movies"] });
+    },
+  });
+  const initialReleaseFormatMutation = useMutation({
+    mutationFn: updateAdminMovieInitialReleaseFormat,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "movies"] });
     },
@@ -174,6 +181,7 @@ export function AdminMovieSearch() {
                   movie={movie}
                   isUpdating={visibilityMutation.isPending}
                   isSavingRerelease={rereleaseMutation.isPending}
+                  isSavingInitialReleaseFormat={initialReleaseFormatMutation.isPending}
                   isSavingRereleaseFormat={rereleaseFormatMutation.isPending}
                   onVisibilityChange={(nextVisibility) =>
                     visibilityMutation.mutate({
@@ -194,6 +202,12 @@ export function AdminMovieSearch() {
                       theaterExclusive,
                     })
                   }
+                  onInitialReleaseFormatChange={(theaterExclusive) =>
+                    initialReleaseFormatMutation.mutate({
+                      movieId: movie.id,
+                      theaterExclusive,
+                    })
+                  }
                 />
               ))}
             </div>
@@ -208,17 +222,21 @@ function AdminMovieSearchItem({
   movie,
   isUpdating,
   isSavingRerelease,
+  isSavingInitialReleaseFormat,
   isSavingRereleaseFormat,
   onVisibilityChange,
   onRerelease,
+  onInitialReleaseFormatChange,
   onRereleaseFormatChange,
 }: {
   movie: AdminMovie;
   isUpdating: boolean;
   isSavingRerelease: boolean;
+  isSavingInitialReleaseFormat: boolean;
   isSavingRereleaseFormat: boolean;
   onVisibilityChange: (visibility: AdminMovieVisibility) => void;
   onRerelease: (releaseDate: string) => void;
+  onInitialReleaseFormatChange: (theaterExclusive: TheaterExclusive | null) => void;
   onRereleaseFormatChange: (theaterExclusive: TheaterExclusive | null) => void;
 }) {
   const [isRereleaseFormOpen, setIsRereleaseFormOpen] = useState(false);
@@ -226,9 +244,15 @@ function AdminMovieSearchItem({
   const [theaterExclusive, setTheaterExclusive] = useState<
     TheaterExclusive | ""
   >(movie.rereleaseTheaterExclusive ?? "");
+  const [initialTheaterExclusive, setInitialTheaterExclusive] = useState<
+    TheaterExclusive | ""
+  >(movie.theaterExclusive ?? "");
   useEffect(() => {
     setTheaterExclusive(movie.rereleaseTheaterExclusive ?? "");
   }, [movie.rereleaseTheaterExclusive]);
+  useEffect(() => {
+    setInitialTheaterExclusive(movie.theaterExclusive ?? "");
+  }, [movie.theaterExclusive]);
   const handleCopy = async () => {
     await navigator.clipboard.writeText(movie.id);
   };
@@ -243,6 +267,11 @@ function AdminMovieSearchItem({
     event.preventDefault();
     if (!movie.rereleaseDate) return;
     onRereleaseFormatChange(theaterExclusive || null);
+  };
+
+  const submitInitialReleaseFormat = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onInitialReleaseFormatChange(initialTheaterExclusive || null);
   };
 
   return (
@@ -322,12 +351,43 @@ function AdminMovieSearchItem({
           className="inline-flex items-center gap-1.5 rounded-lg border border-cinemo-gold/25 px-3 py-2 text-xs text-cinemo-gold-light transition hover:bg-cinemo-gold/10"
         >
           <CalendarPlus className="size-3.5" />
-          재개봉 관리
+          개봉 관리
         </button>
       </div>
 
       {isRereleaseFormOpen && (
-        <div className="grid w-full gap-3 border-t border-white/10 pt-4 lg:grid-cols-2">
+        <div className="grid w-full gap-3 border-t border-white/10 pt-4 xl:grid-cols-3">
+          <section className="rounded-xl border border-white/10 bg-[#0a191a]/70 p-4">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-cinemo-gold/10 text-cinemo-gold-light">
+                <Building2 className="size-4" />
+              </span>
+              <div>
+                <h4 className="text-sm font-semibold text-cinemo-text">최초 개봉 형태</h4>
+                <p className="mt-1 text-xs leading-5 text-cinemo-muted">
+                  {movie.releaseDate
+                    ? `${movie.releaseDate.slice(0, 10)} 국내 최초 개봉의 상영 형태`
+                    : "국내 최초 개봉일 정보가 필요"}
+                </p>
+              </div>
+            </div>
+            <form onSubmit={submitInitialReleaseFormat} className="mt-4 space-y-3">
+              <ReleaseFormatOptions
+                value={initialTheaterExclusive}
+                disabled={!movie.releaseDate || isSavingInitialReleaseFormat}
+                onChange={setInitialTheaterExclusive}
+                ariaLabel="최초 개봉 형태"
+              />
+              <button
+                type="submit"
+                disabled={!movie.releaseDate || isSavingInitialReleaseFormat}
+                className="h-10 w-full rounded-lg border border-cinemo-gold/30 px-4 text-sm font-semibold text-cinemo-gold-light transition hover:bg-cinemo-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSavingInitialReleaseFormat ? "저장 중..." : "최초 개봉 형태 저장"}
+              </button>
+            </form>
+          </section>
+
           <section className="rounded-xl border border-white/10 bg-[#0a191a]/70 p-4">
             <div className="flex items-start gap-3">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-cinemo-gold/10 text-cinemo-gold-light">
@@ -375,28 +435,17 @@ function AdminMovieSearchItem({
                 </p>
               </div>
             </div>
-            <form onSubmit={submitRereleaseFormat} className="mt-4 flex flex-wrap items-end gap-2">
-              <label className="grid min-w-0 flex-1 gap-1.5 text-xs font-medium text-cinemo-muted">
-                재개봉 개봉 형태
-                <select
-                  value={theaterExclusive}
-                  disabled={!movie.rereleaseDate || isSavingRereleaseFormat}
-                  onChange={(event) =>
-                    setTheaterExclusive(event.target.value as TheaterExclusive | "")
-                  }
-                  className="h-10 w-full rounded-lg border border-white/10 bg-[#101f21] px-3 text-sm text-cinemo-text outline-none focus:border-cinemo-gold/60 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {THEATER_EXCLUSIVE_OPTIONS.map((option) => (
-                    <option key={option.value || "GENERAL"} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            <form onSubmit={submitRereleaseFormat} className="mt-4 space-y-3">
+              <ReleaseFormatOptions
+                value={theaterExclusive}
+                disabled={!movie.rereleaseDate || isSavingRereleaseFormat}
+                onChange={setTheaterExclusive}
+                ariaLabel="재개봉 개봉 형태"
+              />
               <button
                 type="submit"
                 disabled={!movie.rereleaseDate || isSavingRereleaseFormat}
-                className="h-10 rounded-lg border border-cinemo-gold/30 px-4 text-sm font-semibold text-cinemo-gold-light transition hover:bg-cinemo-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-10 w-full rounded-lg border border-cinemo-gold/30 px-4 text-sm font-semibold text-cinemo-gold-light transition hover:bg-cinemo-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSavingRereleaseFormat ? "저장 중..." : "형태 저장"}
               </button>
@@ -405,5 +454,37 @@ function AdminMovieSearchItem({
         </div>
       )}
     </article>
+  );
+}
+
+function ReleaseFormatOptions({
+  value,
+  disabled,
+  onChange,
+  ariaLabel,
+}: {
+  value: TheaterExclusive | "";
+  disabled: boolean;
+  onChange: (value: TheaterExclusive | "") => void;
+  ariaLabel: string;
+}) {
+  return (
+    <div role="group" aria-label={ariaLabel} className="grid grid-cols-2 gap-2">
+      {THEATER_EXCLUSIVE_OPTIONS.map((option) => {
+        const selected = value === option.value;
+        return (
+          <button
+            key={option.value || "GENERAL"}
+            type="button"
+            disabled={disabled}
+            aria-pressed={selected}
+            onClick={() => onChange(option.value)}
+            className="min-h-10 rounded-lg border border-white/10 bg-[#101f21] px-3 py-2 text-left text-xs font-medium text-cinemo-muted transition hover:border-cinemo-gold/40 hover:text-cinemo-text aria-pressed:border-cinemo-gold/70 aria-pressed:bg-cinemo-gold/15 aria-pressed:text-cinemo-gold-light disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }

@@ -797,6 +797,30 @@ export class MoviesRepository {
     });
   }
 
+  async updateInitialReleaseFormat(
+    movieId: string,
+    theaterExclusive?: TheaterExclusive | null,
+  ) {
+    const initialRelease = await this.prisma.movieRelease.findFirst({
+      where: {
+        movieId,
+        countryCode: "KR",
+        releaseType: ReleaseType.INITIAL,
+      },
+      orderBy: [{ isPrimary: "desc" }, { releaseDate: "asc" }],
+      select: { id: true },
+    });
+
+    if (!initialRelease) {
+      return null;
+    }
+
+    return this.prisma.movieRelease.update({
+      where: { id: initialRelease.id },
+      data: { theaterExclusive: theaterExclusive ?? null },
+    });
+  }
+
   async findMoviesWithKobisAndTmdbLinks() {
     return this.prisma.movie.findMany({
       where: {

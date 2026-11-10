@@ -398,6 +398,24 @@ export class MoviesService {
     return release;
   }
 
+  async updateInitialReleaseFormat(
+    movieId: string,
+    theaterExclusive?: "CGV" | "MEGABOX" | "LOTTE_CINEMA" | null,
+  ) {
+    const release = await this.movieRepository.updateInitialReleaseFormat(
+      movieId,
+      theaterExclusive,
+    );
+
+    if (!release) {
+      throw new BadRequestException(
+        "개봉 형태를 설정할 국내 최초 개봉 정보가 없습니다.",
+      );
+    }
+
+    return release;
+  }
+
   async getGenreCountsByReleasePeriod(params: {
     startDate: Date;
     endDate: Date;

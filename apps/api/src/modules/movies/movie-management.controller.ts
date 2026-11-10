@@ -14,7 +14,7 @@ import { GetMovieRequestDto } from "./dto/requests/get-movie.request.dto";
 import { GetMovieModerationRequestDto } from "./dto/requests/get-movie-moderation.request.dto";
 import { UpdateMovieVisibilityRequestDto } from "./dto/requests/update-movie-visibility.request.dto";
 import { CreateManualRereleaseRequestDto } from "./dto/requests/create-manual-rerelease.request.dto";
-import { UpdateManualRereleaseFormatRequestDto } from "./dto/requests/update-manual-rerelease-format.request.dto";
+import { UpdateMovieReleaseFormatRequestDto } from "./dto/requests/update-movie-release-format.request.dto";
 import { MoviesService } from "./movies.service";
 import { KobisMovieBatchImportService } from "./kobis-movie-batch-import.service";
 import { Public } from "../auth/decorators/public.decorator";
@@ -92,6 +92,22 @@ export class MovieManagementController {
     );
   }
 
+  @Patch(":movieId/releases/initial/format")
+  @UseGuards(AdminGuard)
+  @ApiOperation({
+    summary: "관리자 직접 최초 개봉 형태 변경",
+    description: "국내 최초 개봉의 개봉 형태만 변경하며 최초 개봉일은 유지함",
+  })
+  updateInitialReleaseFormat(
+    @Param() params: GetMovieRequestDto,
+    @Body() body: UpdateMovieReleaseFormatRequestDto,
+  ) {
+    return this.moviesService.updateInitialReleaseFormat(
+      params.movieId,
+      body.theaterExclusive,
+    );
+  }
+
   @Patch(":movieId/rereleases/format")
   @UseGuards(AdminGuard)
   @ApiOperation({
@@ -100,7 +116,7 @@ export class MovieManagementController {
   })
   updateManualRereleaseFormat(
     @Param() params: GetMovieRequestDto,
-    @Body() body: UpdateManualRereleaseFormatRequestDto,
+    @Body() body: UpdateMovieReleaseFormatRequestDto,
   ) {
     return this.moviesService.updateManualRereleaseFormat(
       params.movieId,

@@ -8,6 +8,10 @@ type ManagementMovie = Pick<
 >;
 
 export const toMovieManagementItem = (movie: ManagementMovie) => {
+  const koreanInitialRelease = movie.releases.find(
+    (release) =>
+      release.countryCode === "KR" && release.releaseType === "INITIAL",
+  );
   const latestKoreanRerelease = movie.releases.find(
     (release) =>
       release.countryCode === "KR" && release.releaseType === "RERELEASE",
@@ -22,8 +26,8 @@ export const toMovieManagementItem = (movie: ManagementMovie) => {
       "",
     visibility: movie.visibility,
     moderationReason: movie.moderationReason,
-    releaseDate: movie.releases[0]?.releaseDate ?? null,
-    theaterExclusive: movie.releases[0]?.theaterExclusive ?? null,
+    releaseDate: koreanInitialRelease?.releaseDate ?? null,
+    theaterExclusive: koreanInitialRelease?.theaterExclusive ?? null,
     rereleaseDate: latestKoreanRerelease?.releaseDate ?? null,
     rereleaseTheaterExclusive:
       latestKoreanRerelease?.theaterExclusive ?? null,
