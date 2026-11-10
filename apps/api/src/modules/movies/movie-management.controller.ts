@@ -78,7 +78,8 @@ export class MovieManagementController {
   @UseGuards(AdminGuard)
   @ApiOperation({
     summary: "관리자 직접 재개봉일 등록",
-    description: "KOBIS·KMDB에 아직 없는 국내 재개봉일을 직접 등록하고 대표 개봉일로 설정함",
+    description:
+      "KOBIS·KMDB에 아직 없는 국내 재개봉일을 직접 등록하고 대표 개봉일로 설정함",
   })
   addManualRerelease(
     @Param() params: GetMovieRequestDto,
@@ -87,6 +88,7 @@ export class MovieManagementController {
     return this.moviesService.addManualRerelease(
       params.movieId,
       body.releaseDate,
+      body.theaterExclusive,
     );
   }
 }

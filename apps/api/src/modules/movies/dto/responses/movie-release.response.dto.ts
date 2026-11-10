@@ -26,6 +26,14 @@ export class MovieReleaseResponseDto {
   })
   countryCode!: string | null;
 
+  @ApiProperty({
+    description: "단독 개봉 극장. 일반 개봉이면 null",
+    type: String,
+    nullable: true,
+    enum: ["CGV", "MEGABOX", "LOTTE_CINEMA"],
+  })
+  theaterExclusive!: string | null;
+
   @ApiProperty({ description: "대표 개봉 정보 여부" })
   isPrimary!: boolean;
 }

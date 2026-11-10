@@ -1,13 +1,13 @@
-import {notFound} from "next/navigation";
+import { notFound } from "next/navigation";
 
-import {MovieTrailerButton} from "@/components/movies/MovieTrailerButton";
-import {MovieRecordActions} from "@/components/movies/MovieRecordActions";
-import {MovieNotificationButton} from "@/components/movies/MovieNotificationButton";
-import {getCachedMovie} from "@/lib/api/server-movies";
+import { MovieTrailerButton } from "@/components/movies/MovieTrailerButton";
+import { MovieRecordActions } from "@/components/movies/MovieRecordActions";
+import { MovieNotificationButton } from "@/components/movies/MovieNotificationButton";
+import { getCachedMovie } from "@/lib/api/server-movies";
 import Link from "next/link";
-import {MovieWatchOptions} from "@/components/movies/MovieWatchOptions";
-import {MovieSyncRefresh} from "@/components/movies/MovieSyncRefresh";
-import {getPreferredMovieTitle} from "@/lib/movies/title";
+import { MovieWatchOptions } from "@/components/movies/MovieWatchOptions";
+import { MovieSyncRefresh } from "@/components/movies/MovieSyncRefresh";
+import { getPreferredMovieTitle } from "@/lib/movies/title";
 
 type MoviePageProps = {
   params: Promise<{
@@ -52,7 +52,6 @@ export default async function MoviePage({
       (release) =>
         release.releaseType === "INITIAL" && release.countryCode === "KR",
     ) ??
-    activeReleases.find((release) => release.isPrimary) ??
     activeReleases
       .filter((release) => release.releaseType === "INITIAL")
       .sort((a, b) => a.releaseDate!.localeCompare(b.releaseDate!))[0];
@@ -73,6 +72,15 @@ export default async function MoviePage({
 
   const formatReleaseDate = (date: string | null) =>
     date ? date.replaceAll("-", ".") : "개봉일 미정";
+
+  const theaterExclusiveLabel =
+    latestRerelease?.theaterExclusive === "CGV"
+      ? "CGV 단독 개봉"
+      : latestRerelease?.theaterExclusive === "MEGABOX"
+        ? "메가박스 단독 개봉"
+        : latestRerelease?.theaterExclusive === "LOTTE_CINEMA"
+          ? "롯데시네마 단독 개봉"
+          : null;
 
   const regionNames = new Intl.DisplayNames(["ko-KR"], { type: "region" });
   const productionCountries = movie.productionCountryCodes
@@ -204,7 +212,6 @@ export default async function MoviePage({
 
               <MovieRecordActions movieId={id} />
             </div>
-
           </div>
         </div>
       </section>
@@ -315,6 +322,15 @@ export default async function MoviePage({
                   </div>
                 )}
 
+                {theaterExclusiveLabel && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-white/45">개봉 형태</span>
+                    <span className="text-cinemo-gold-light">
+                      {theaterExclusiveLabel}
+                    </span>
+                  </div>
+                )}
+
                 {!initialRelease?.releaseDate && !latestRerelease && (
                   <div className="flex justify-between gap-4">
                     <span className="text-white/45">최초 개봉</span>
@@ -335,7 +351,6 @@ export default async function MoviePage({
           </dl>
         </aside>
       </section>
-
     </main>
   );
 }

@@ -10,6 +10,7 @@ import {
   ReleaseStatus,
   ReleaseType,
   SourceProvider,
+  TheaterExclusive,
   TitleType,
   WatchProvider,
 } from "@prisma/client";
@@ -398,10 +399,7 @@ export class MoviesRepository {
     ]);
 
     const exactSkip = Math.min(offset, exactCount);
-    const exactTake = Math.max(
-      0,
-      Math.min(limit, exactCount - exactSkip),
-    );
+    const exactTake = Math.max(0, Math.min(limit, exactCount - exactSkip));
     const remainingTake = limit - exactTake;
     const remainingSkip = Math.max(0, offset - exactCount);
 
@@ -675,12 +673,21 @@ export class MoviesRepository {
     query?: string,
   ) {
     const trimmedQuery = query?.trim();
-    const isUuid = trimmedQuery && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(trimmedQuery);
+    const isUuid =
+      trimmedQuery &&
+      /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(trimmedQuery);
     const where: Prisma.MovieWhereInput = {
       ...(visibility !== "ALL" && { visibility }),
-      ...(trimmedQuery && (isUuid
-        ? { id: trimmedQuery }
-        : { titles: { some: { title: { contains: trimmedQuery, mode: "insensitive" } } } })),
+      ...(trimmedQuery &&
+        (isUuid
+          ? { id: trimmedQuery }
+          : {
+              titles: {
+                some: {
+                  title: { contains: trimmedQuery, mode: "insensitive" },
+                },
+              },
+            })),
     };
     const [movies, totalCount] = await Promise.all([
       this.prisma.movie.findMany({
@@ -717,7 +724,11 @@ export class MoviesRepository {
     });
   }
 
-  async addManualRerelease(movieId: string, releaseDate: Date) {
+  async addManualRerelease(
+    movieId: string,
+    releaseDate: Date,
+    theaterExclusive?: TheaterExclusive | null,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       await tx.movie.findUniqueOrThrow({ where: { id: movieId } });
 
@@ -730,12 +741,13 @@ export class MoviesRepository {
           movieId,
           countryCode: "KR",
           releaseDate,
+          releaseType: ReleaseType.RERELEASE,
         },
       });
       const release = existingRelease
         ? await tx.movieRelease.update({
             where: { id: existingRelease.id },
-            data: { status },
+            data: { status, theaterExclusive: theaterExclusive ?? null },
           })
         : await tx.movieRelease.create({
             data: {
@@ -744,6 +756,7 @@ export class MoviesRepository {
               releaseType: ReleaseType.RERELEASE,
               status,
               countryCode: "KR",
+              theaterExclusive: theaterExclusive ?? null,
               isPrimary: true,
             },
           });

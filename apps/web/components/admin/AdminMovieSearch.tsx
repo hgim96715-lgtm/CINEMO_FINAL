@@ -12,6 +12,7 @@ import {
   type AdminMovie,
   type AdminMovieVisibility,
   type AdminMovieVisibilityFilter,
+  type TheaterExclusive,
 } from "@/lib/api/admin-movies";
 import { adminMoviesQueryOptions } from "@/lib/queries/admin-movies.query";
 
@@ -23,6 +24,23 @@ const VISIBILITY_OPTIONS: Array<{
   { value: "REVIEW", label: "검토" },
   { value: "HIDDEN", label: "숨김" },
 ];
+
+const THEATER_EXCLUSIVE_OPTIONS: Array<{
+  value: TheaterExclusive | "";
+  label: string;
+}> = [
+  { value: "", label: "일반 개봉" },
+  { value: "CGV", label: "CGV 단독 개봉" },
+  { value: "MEGABOX", label: "메가박스 단독 개봉" },
+  { value: "LOTTE_CINEMA", label: "롯데시네마 단독 개봉" },
+];
+
+function getTheaterExclusiveLabel(value: TheaterExclusive | null) {
+  return (
+    THEATER_EXCLUSIVE_OPTIONS.find((option) => option.value === value)?.label ??
+    null
+  );
+}
 
 export function AdminMovieSearch() {
   const [query, setQuery] = useState("");
@@ -72,7 +90,10 @@ export function AdminMovieSearch() {
         </p>
       </header>
 
-      <form onSubmit={handleSubmit} className="flex max-w-4xl flex-wrap items-center gap-3">
+      <form
+        onSubmit={handleSubmit}
+        className="flex max-w-4xl flex-wrap items-center gap-3"
+      >
         <label className="relative block min-w-0 flex-1">
           <span className="sr-only">영화 제목 또는 UUID</span>
           <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-cinemo-muted" />
@@ -83,11 +104,24 @@ export function AdminMovieSearch() {
             className="h-12 w-full rounded-xl border border-white/10 bg-[#101f21] pl-12 pr-4 text-sm text-cinemo-text outline-none transition placeholder:text-cinemo-muted focus:border-cinemo-gold/60"
           />
         </label>
-        <div role="group" aria-label="공개 상태 필터" className="order-last flex w-full flex-wrap gap-2">
-          {([{ value: "ALL", label: "전체" }, ...VISIBILITY_OPTIONS] satisfies { value: AdminMovieVisibilityFilter; label: string }[]).map((option) => (
-            <button key={option.value} type="button" aria-pressed={visibility === option.value}
+        <div
+          role="group"
+          aria-label="공개 상태 필터"
+          className="order-last flex w-full flex-wrap gap-2"
+        >
+          {(
+            [{ value: "ALL", label: "전체" }, ...VISIBILITY_OPTIONS] satisfies {
+              value: AdminMovieVisibilityFilter;
+              label: string;
+            }[]
+          ).map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={visibility === option.value}
               onClick={() => setVisibility(option.value)}
-              className="rounded-full border border-white/10 px-4 py-2 text-sm text-cinemo-muted aria-pressed:border-cinemo-gold/50 aria-pressed:bg-cinemo-gold/10 aria-pressed:text-cinemo-gold-light">
+              className="rounded-full border border-white/10 px-4 py-2 text-sm text-cinemo-muted aria-pressed:border-cinemo-gold/50 aria-pressed:bg-cinemo-gold/10 aria-pressed:text-cinemo-gold-light"
+            >
               {option.label}
             </button>
           ))}
@@ -137,11 +171,14 @@ export function AdminMovieSearch() {
                     visibilityMutation.mutate({
                       movieId: movie.id,
                       visibility: nextVisibility,
-                      moderationReason: nextVisibility === "HIDDEN" ? "관리자 검토로 숨김" : null,
+                      moderationReason:
+                        nextVisibility === "HIDDEN"
+                          ? "관리자 검토로 숨김"
+                          : null,
                     })
                   }
-                  onRerelease={(releaseDate) =>
-                    rereleaseMutation.mutate({ movieId: movie.id, releaseDate })
+                  onRerelease={(input) =>
+                    rereleaseMutation.mutate({ movieId: movie.id, ...input })
                   }
                 />
               ))}
@@ -164,17 +201,26 @@ function AdminMovieSearchItem({
   isUpdating: boolean;
   isSavingRerelease: boolean;
   onVisibilityChange: (visibility: AdminMovieVisibility) => void;
-  onRerelease: (releaseDate: string) => void;
+  onRerelease: (input: {
+    releaseDate: string;
+    theaterExclusive: TheaterExclusive | null;
+  }) => void;
 }) {
   const [isRereleaseFormOpen, setIsRereleaseFormOpen] = useState(false);
   const [rereleaseDate, setRereleaseDate] = useState("");
+  const [theaterExclusive, setTheaterExclusive] = useState<
+    TheaterExclusive | ""
+  >(movie.theaterExclusive ?? "");
   const handleCopy = async () => {
     await navigator.clipboard.writeText(movie.id);
   };
   const submitRerelease = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!rereleaseDate) return;
-    onRerelease(rereleaseDate);
+    onRerelease({
+      releaseDate: rereleaseDate,
+      theaterExclusive: theaterExclusive || null,
+    });
     setIsRereleaseFormOpen(false);
   };
 
@@ -203,8 +249,16 @@ function AdminMovieSearchItem({
         <div className="mt-1 flex items-center gap-2 text-xs text-cinemo-muted">
           <span>{movie.releaseDate?.slice(0, 10) ?? "개봉일 미정"}</span>
           <span className="rounded-full bg-white/10 px-2 py-1">
-            {VISIBILITY_OPTIONS.find(({ value }) => value === movie.visibility)?.label}
+            {
+              VISIBILITY_OPTIONS.find(({ value }) => value === movie.visibility)
+                ?.label
+            }
           </span>
+          {getTheaterExclusiveLabel(movie.theaterExclusive) && (
+            <span className="rounded-full bg-cinemo-gold/10 px-2 py-1 text-cinemo-gold-light">
+              {getTheaterExclusiveLabel(movie.theaterExclusive)}
+            </span>
+          )}
         </div>
         <p className="mt-3 break-all font-mono text-xs text-cinemo-gold-light">
           {movie.id}
@@ -221,7 +275,10 @@ function AdminMovieSearchItem({
         </button>
         <label className="relative">
           <span className="sr-only">공개 상태 변경</span>
-          <ChevronDown aria-hidden className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-cinemo-muted" />
+          <ChevronDown
+            aria-hidden
+            className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-cinemo-muted"
+          />
           <select
             value={movie.visibility}
             disabled={isUpdating}
@@ -263,6 +320,22 @@ function AdminMovieSearchItem({
               className="h-10 rounded-lg border border-white/10 bg-[#0a191a] px-3 text-sm text-cinemo-text outline-none focus:border-cinemo-gold/60"
             />
           </label>
+          <label className="grid gap-1.5 text-xs font-medium text-cinemo-muted">
+            개봉 형태
+            <select
+              value={theaterExclusive}
+              onChange={(event) =>
+                setTheaterExclusive(event.target.value as TheaterExclusive | "")
+              }
+              className="h-10 rounded-lg border border-white/10 bg-[#0a191a] px-3 text-sm text-cinemo-text outline-none focus:border-cinemo-gold/60"
+            >
+              {THEATER_EXCLUSIVE_OPTIONS.map((option) => (
+                <option key={option.value || "GENERAL"} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="submit"
             disabled={isSavingRerelease || !rereleaseDate}
@@ -271,7 +344,8 @@ function AdminMovieSearchItem({
             {isSavingRerelease ? "등록 중..." : "재개봉일 저장"}
           </button>
           <p className="basis-full text-xs leading-5 text-cinemo-muted">
-            KOBIS·KMDB에 아직 없는 재개봉도 저장할 수 있음. 저장하면 이 날짜가 대표 개봉일로 사용됨.
+            KOBIS·KMDB에 아직 없는 재개봉도 저장할 수 있음. 대표 개봉일은
+            재개봉일로 쓰되 최초 개봉일은 변경하지 않음.
           </p>
         </form>
       )}

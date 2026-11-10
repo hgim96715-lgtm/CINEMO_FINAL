@@ -370,10 +370,15 @@ export class MoviesService {
     );
   }
 
-  addManualRerelease(movieId: string, releaseDate: string) {
+  addManualRerelease(
+    movieId: string,
+    releaseDate: string,
+    theaterExclusive?: "CGV" | "MEGABOX" | "LOTTE_CINEMA" | null,
+  ) {
     return this.movieRepository.addManualRerelease(
       movieId,
       new Date(`${releaseDate}T00:00:00.000Z`),
+      theaterExclusive,
     );
   }
 

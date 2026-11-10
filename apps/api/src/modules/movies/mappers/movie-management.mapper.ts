@@ -1,8 +1,6 @@
 import { MediaType, TitleType } from "@prisma/client";
 
-import type {
-  MovieSearchWithDetails,
-} from "../repositories/movies.repository";
+import type { MovieSearchWithDetails } from "../repositories/movies.repository";
 
 type ManagementMovie = Pick<
   MovieSearchWithDetails,
@@ -12,12 +10,14 @@ type ManagementMovie = Pick<
 export const toMovieManagementItem = (movie: ManagementMovie) => ({
   id: movie.id,
   title:
-    movie.titles.find((title) => title.titleType === TitleType.PRIMARY)?.title ??
+    movie.titles.find((title) => title.titleType === TitleType.PRIMARY)
+      ?.title ??
     movie.titles[0]?.title ??
     "",
   visibility: movie.visibility,
   moderationReason: movie.moderationReason,
   releaseDate: movie.releases[0]?.releaseDate ?? null,
+  theaterExclusive: movie.releases[0]?.theaterExclusive ?? null,
   posterUrl:
     movie.media.find((media) => media.mediaType === MediaType.POSTER)?.url ??
     null,

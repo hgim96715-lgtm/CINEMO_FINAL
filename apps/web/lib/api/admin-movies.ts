@@ -1,6 +1,7 @@
 import { apiClient } from "./apiClient";
 
 export type AdminMovieVisibility = "PUBLIC" | "REVIEW" | "HIDDEN";
+export type TheaterExclusive = "CGV" | "MEGABOX" | "LOTTE_CINEMA";
 
 export type AdminMovieVisibilityFilter = AdminMovieVisibility | "ALL";
 
@@ -10,6 +11,7 @@ export type AdminMovie = {
   visibility: AdminMovieVisibility;
   moderationReason: string | null;
   releaseDate: string | null;
+  theaterExclusive: TheaterExclusive | null;
   posterUrl: string | null;
 };
 
@@ -59,9 +61,13 @@ export async function updateAdminMovieVisibility(input: {
 export async function createAdminMovieRerelease(input: {
   movieId: string;
   releaseDate: string;
+  theaterExclusive?: TheaterExclusive | null;
 }) {
   await apiClient.post(
     `/admin/movies/${encodeURIComponent(input.movieId)}/rereleases`,
-    { releaseDate: input.releaseDate },
+    {
+      releaseDate: input.releaseDate,
+      theaterExclusive: input.theaterExclusive ?? null,
+    },
   );
 }

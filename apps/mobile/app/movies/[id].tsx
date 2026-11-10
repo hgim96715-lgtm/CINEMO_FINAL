@@ -2,10 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import type { MovieResponse } from "@cinemo/api-contract";
 import { movieDetailQueryOptions } from "@/lib/queries/movie-detail.query";
-import {
-  enrichMovieFromKmdb,
-  enrichMovieFromTmdb,
-} from "@/lib/api/movies";
+import { enrichMovieFromKmdb, enrichMovieFromTmdb } from "@/lib/api/movies";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ActivityIndicator,
@@ -106,9 +103,9 @@ export default function MovieDetailScreen() {
 
   const waitingForEnrichment = Boolean(
     movie &&
-      movieId &&
-      needsMovieEnrichment(movie) &&
-      enrichmentAttemptedRef.current !== movieId,
+    movieId &&
+    needsMovieEnrichment(movie) &&
+    enrichmentAttemptedRef.current !== movieId,
   );
 
   if (movieQuery.isPending || isEnriching || waitingForEnrichment) {
@@ -181,6 +178,33 @@ export default function MovieDetailScreen() {
 
   const primaryRelease =
     activeReleases.find((release) => release.isPrimary) ?? activeReleases[0];
+
+  const initialRelease =
+    activeReleases.find(
+      (release) =>
+        release.releaseType === "INITIAL" && release.countryCode === "KR",
+    ) ??
+    activeReleases
+      .filter((release) => release.releaseType === "INITIAL")
+      .sort((a, b) => a.releaseDate!.localeCompare(b.releaseDate!))[0] ??
+    null;
+
+  const latestRerelease =
+    activeReleases
+      .filter((release) => release.releaseType === "RERELEASE")
+      .sort((a, b) => b.releaseDate!.localeCompare(a.releaseDate!))[0] ?? null;
+
+  const theaterExclusiveLabel =
+    latestRerelease?.theaterExclusive === "CGV"
+      ? "CGV 단독 개봉"
+      : latestRerelease?.theaterExclusive === "MEGABOX"
+        ? "메가박스 단독 개봉"
+        : latestRerelease?.theaterExclusive === "LOTTE_CINEMA"
+          ? "롯데시네마 단독 개봉"
+          : null;
+
+  const primaryReleaseLabel =
+    latestRerelease?.id === primaryRelease?.id ? "재개봉" : "개봉";
 
   const poster =
     movie.media.find(
@@ -297,6 +321,22 @@ export default function MovieDetailScreen() {
                   </Text>
                 </View>
               ))}
+              {latestRerelease?.id === primaryRelease?.id && (
+                <View
+                  className="rounded-full border px-3 py-1"
+                  style={{
+                    borderColor: "rgba(212, 166, 76, 0.65)",
+                    backgroundColor: "rgba(212, 166, 76, 0.16)",
+                  }}
+                >
+                  <Text
+                    className="text-xs font-semibold"
+                    style={{ color: CINEMO_COLORS.accentLight }}
+                  >
+                    재개봉
+                  </Text>
+                </View>
+              )}
             </View>
 
             <Text
@@ -336,6 +376,7 @@ export default function MovieDetailScreen() {
             <View className="flex-row items-center gap-1">
               <CalendarDays size={15} color={CINEMO_COLORS.textSecondary} />
               <Text style={{ color: CINEMO_COLORS.textSecondary }}>
+                {primaryReleaseLabel}{" "}
                 {formatReleaseDate(primaryRelease?.releaseDate ?? null)}
               </Text>
             </View>
@@ -356,6 +397,57 @@ export default function MovieDetailScreen() {
               </View>
             )}
           </View>
+
+          {(initialRelease?.releaseDate ||
+            latestRerelease ||
+            theaterExclusiveLabel) && (
+            <View
+              className="rounded-2xl border p-4"
+              style={{
+                borderColor: "rgba(255, 255, 255, 0.10)",
+                backgroundColor: CINEMO_COLORS.surface,
+              }}
+            >
+              <Text
+                className="text-base font-bold"
+                style={{ color: CINEMO_COLORS.textPrimary }}
+              >
+                개봉 정보
+              </Text>
+              <View className="mt-3 gap-2">
+                {initialRelease?.releaseDate && (
+                  <View className="flex-row items-center justify-between gap-4">
+                    <Text style={{ color: CINEMO_COLORS.textSecondary }}>
+                      최초 개봉
+                    </Text>
+                    <Text style={{ color: CINEMO_COLORS.textPrimary }}>
+                      {formatReleaseDate(initialRelease.releaseDate)}
+                    </Text>
+                  </View>
+                )}
+                {latestRerelease?.releaseDate && (
+                  <View className="flex-row items-center justify-between gap-4">
+                    <Text style={{ color: CINEMO_COLORS.textSecondary }}>
+                      재개봉
+                    </Text>
+                    <Text style={{ color: CINEMO_COLORS.textPrimary }}>
+                      {formatReleaseDate(latestRerelease.releaseDate)}
+                    </Text>
+                  </View>
+                )}
+                {theaterExclusiveLabel && (
+                  <View className="flex-row items-center justify-between gap-4">
+                    <Text style={{ color: CINEMO_COLORS.textSecondary }}>
+                      개봉 형태
+                    </Text>
+                    <Text style={{ color: CINEMO_COLORS.accentLight }}>
+                      {theaterExclusiveLabel}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
 
           {providers.length > 0 && (
             <View>

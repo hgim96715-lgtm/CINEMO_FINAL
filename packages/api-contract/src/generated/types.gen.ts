@@ -280,6 +280,10 @@ export type MovieReleaseResponseDto = {
      */
     countryCode: string | null;
     /**
+     * 단독 개봉 극장. 일반 개봉이면 null
+     */
+    theaterExclusive: string | null;
+    /**
      * 대표 개봉 정보 여부
      */
     isPrimary: boolean;

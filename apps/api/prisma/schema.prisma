@@ -25,6 +25,12 @@ enum ReleaseStatus {
   CANCELLED
 }
 
+enum TheaterExclusive {
+  CGV
+  MEGABOX
+  LOTTE_CINEMA
+}
+
 enum SourceProvider {
   KOBIS
   TMDB
@@ -1044,15 +1050,16 @@ model MovieTitle {
 }
 
 model MovieRelease {
-  id          String        @id @default(uuid(7)) @db.Uuid
-  movieId     String        @db.Uuid
-  releaseDate DateTime?     @db.Date
-  releaseType ReleaseType
-  status      ReleaseStatus
-  countryCode String?       @db.Char(2)
-  isPrimary   Boolean       @default(false)
-  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
+  id               String            @id @default(uuid(7)) @db.Uuid
+  movieId          String            @db.Uuid
+  releaseDate      DateTime?         @db.Date
+  releaseType      ReleaseType
+  status           ReleaseStatus
+  countryCode      String?           @db.Char(2)
+  theaterExclusive TheaterExclusive?
+  isPrimary        Boolean           @default(false)
+  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
 
   movie                  Movie                   @relation(fields: [movieId], references: [id], onDelete: Cascade)
   titles                 MovieTitle[]
