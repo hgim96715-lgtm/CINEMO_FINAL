@@ -8,6 +8,7 @@ import { CINEMO_COLORS } from "@cinemo/shared";
 import { router } from "expo-router";
 import { SectionHeader } from "@/components/lobby/SectionHeader";
 import { CalendarDays } from "lucide-react-native";
+import { MovieCollectionSkeleton } from "./LobbySkeleton";
 
 function formatReleaseDate(releaseDate: string | null) {
   if (!releaseDate) return "개봉일 미정";
@@ -28,7 +29,10 @@ export function ReleasedMovies() {
       limit: 10,
     }),
   );
-  if (releasedQuery.isPending || releasedQuery.isError) {
+  if (releasedQuery.isPending) {
+    return <MovieCollectionSkeleton eyebrow="RELEASED THIS YEAR" title="올해 개봉·공개한 영화" showMeta />;
+  }
+  if (releasedQuery.isError) {
     return null;
   }
   const movies = releasedQuery.data.items;

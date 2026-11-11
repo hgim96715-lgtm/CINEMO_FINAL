@@ -12,6 +12,7 @@ import { moviePlatformQueryOptions, MOBILE_PLATFORM_PROVIDERS } from "@/lib/quer
 import { movieUpcomingQueryOptions } from "@/lib/queries/movie-upcoming.query";
 import { getImageUrl } from "@/lib/utils";
 import { PlatformLogo } from "@/components/common/PlatformLogo";
+import { MobileCurationHeroSkeleton } from "./LobbySkeleton";
 
 export type MobileHeroKind = "commemorative" | "upcoming" | "platform";
 
@@ -204,7 +205,7 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
   );
 
   if (isPending) {
-    return <View className="mx-5 mt-5 h-72 rounded-3xl bg-cinemo-surface" />;
+    return <MobileCurationHeroSkeleton kind={kind} />;
   }
 
   if (!movie) return null;

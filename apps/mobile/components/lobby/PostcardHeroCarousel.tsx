@@ -2,7 +2,6 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Image,
   Pressable,
   StyleSheet,
@@ -15,6 +14,7 @@ import type { Postcard, PostcardMetadata } from "@/lib/api/postcards";
 import { postcardFeedQueryOptions } from "@/lib/queries/postcard-feed.query";
 import { getImageUrl } from "@/lib/utils";
 import { ArrowUpRight } from "lucide-react-native";
+import { PostcardHeroSkeleton } from "./LobbySkeleton";
 
 const AUTO_PLAY_INTERVAL = 6000;
 
@@ -85,11 +85,7 @@ export function PostcardHeroCarousel() {
   }, [visiblePostcards.length]);
 
   if (postcardsQuery.isPending) {
-    return (
-      <View className="mx-5 mt-5 h-64 items-center justify-center rounded-3xl border border-white/10 bg-white/[0.04]">
-        <ActivityIndicator color={CINEMO_COLORS.accent} />
-      </View>
-    );
+    return <PostcardHeroSkeleton />;
   }
 
   if (postcardsQuery.isError || !activePostcard) {

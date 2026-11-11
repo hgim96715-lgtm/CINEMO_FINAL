@@ -6,6 +6,7 @@ import { Pressable, Text, View } from "react-native";
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { activeCurationsQueryOptions } from "@/lib/queries/curation.query";
 import { getImageUrl } from "@/lib/utils";
+import { MobileCurationHeroSkeleton } from "./LobbySkeleton";
 
 export function CurationHero() {
   const curationsQuery = useQuery(activeCurationsQueryOptions());
@@ -13,7 +14,7 @@ export function CurationHero() {
   const movie = curation?.movies[0];
 
   if (curationsQuery.isPending) {
-    return <View className="mx-5 mt-5 h-80" />;
+    return <MobileCurationHeroSkeleton />;
   }
 
   if (curationsQuery.isError || !curation || !movie) {

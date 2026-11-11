@@ -12,6 +12,7 @@ import {
 } from "@/lib/queries/movie-platform.query";
 import { SectionHeader } from "@/components/lobby/SectionHeader";
 import { PlatformLogo } from "@/components/common/PlatformLogo";
+import { MovieCollectionSkeleton } from "./LobbySkeleton";
 
 type PlatformMovie = {
   movie: MovieSearchItemResponse;
@@ -107,7 +108,19 @@ export function PlatformMovies() {
   const items = Array.from(movies.values()).slice(0, 12);
   const isPending = providerQueries.some((query) => query.isPending);
 
-  if (isPending || items.length === 0) return null;
+  if (isPending) {
+    return (
+      <MovieCollectionSkeleton
+        eyebrow="WATCH ANYWHERE"
+        title="플랫폼에서 볼 수 있는 영화"
+        cardWidth={132}
+        cardHeight={198}
+        showMeta
+      />
+    );
+  }
+
+  if (items.length === 0) return null;
 
   return (
     <View className="mt-8">

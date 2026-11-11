@@ -2,12 +2,14 @@ import { CINEMO_COLORS } from "@cinemo/shared";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { ArrowUpRight, Sparkles } from "lucide-react-native";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { CachedImage } from "@/components/common/CachedImage";
 import { getDailyMovie, getDailyMovieDay } from "@/lib/api/daily-movie";
 import { currentUserQueryOptions, myMoviesQueryOptions } from "@/lib/queries/my-cinema.query";
 import { popularMoviesQueryOptions } from "@/lib/queries/movie-popular.query";
+
+import { TodayMovieSkeleton } from "./LobbySkeleton";
 
 export function TodayMovieHero() {
   const viewer = useQuery(currentUserQueryOptions());
@@ -39,6 +41,12 @@ export function TodayMovieHero() {
   const reason = eligibleToday?.reason ?? (personal
     ? genres ? `아직 관람 기록이 없는 ${genres} 작품이에요.` : "관람 기록이 없는 작품에서 골랐어요."
     : genres ? `오늘 살펴볼 ${genres} 작품이에요.` : "개봉한 작품 중에서 골랐어요.");
+
+  const isLoading = viewer.isPending || (personal && records.isPending) || today.isFetching || fallback.isFetching;
+
+  if (!movie && isLoading) {
+    return <TodayMovieSkeleton />;
+  }
 
   return (
     <View className="mx-5 mt-4 overflow-hidden rounded-3xl border border-cinemo-gold/25 bg-cinemo-surface px-4 py-4">
@@ -74,10 +82,6 @@ export function TodayMovieHero() {
             </View>
           </View>
         </Pressable>
-      ) : (viewer.isPending || (personal && records.isPending) || today.isFetching || fallback.isFetching) ? (
-        <View className="h-32 items-center justify-center">
-          <ActivityIndicator color={CINEMO_COLORS.accentLight} />
-        </View>
       ) : (
         <Text className="mt-4 text-sm text-cinemo-muted">{viewer.isError || (personal && records.isError) ? "관람 기록을 확인하지 못했어요." : "아직 보지 않은 추천 영화를 찾지 못했어요."}</Text>
       )}

@@ -7,6 +7,7 @@ import { CINEMO_COLORS } from "@cinemo/shared";
 import { activeCurationsQueryOptions } from "@/lib/queries/curation.query";
 import { getImageUrl } from "@/lib/utils";
 import { SectionHeader } from "@/components/lobby/SectionHeader";
+import { MovieCollectionSkeleton } from "./LobbySkeleton";
 
 export function CommemorativeMovies() {
   const curationsQuery = useQuery(activeCurationsQueryOptions());
@@ -19,7 +20,11 @@ export function CommemorativeMovies() {
     ).values(),
   );
 
-  if (curationsQuery.isPending || curationsQuery.isError || movies.length === 0) {
+  if (curationsQuery.isPending) {
+    return <MovieCollectionSkeleton eyebrow="ANNIVERSARY" title="기념일" />;
+  }
+
+  if (curationsQuery.isError || movies.length === 0) {
     return null;
   }
 

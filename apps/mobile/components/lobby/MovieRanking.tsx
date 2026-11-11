@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { router } from "expo-router";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 
 import { movieRankingQueryOptions } from "@/lib/queries/movie-ranking.query";
 
 import { MovieCard } from "./MovieCard";
+import { MovieCollectionSkeleton } from "./LobbySkeleton";
 
 export function MovieRanking() {
   const rankingQuery = useQuery(
@@ -16,11 +17,7 @@ export function MovieRanking() {
   );
 
   if (rankingQuery.isPending) {
-    return (
-      <View className="items-center py-8">
-        <ActivityIndicator color={CINEMO_COLORS.accent} />
-      </View>
-    );
+    return <MovieCollectionSkeleton eyebrow="CINEMO RANKING" title="오늘의 영화 순위" showMeta />;
   }
 
   if (rankingQuery.isError) {

@@ -8,6 +8,7 @@ import { Pressable, FlatList, Text, View } from "react-native";
 import { router } from "expo-router";
 import { SectionHeader } from "@/components/lobby/SectionHeader";
 import { CalendarDays } from "lucide-react-native";
+import { MovieCollectionSkeleton } from "./LobbySkeleton";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -38,7 +39,9 @@ export function UpcomingMovies() {
     movieUpcomingQueryOptions({ page: 1, limit: 10 }),
   );
 
-  if (upcomingQuery.isPending) return null;
+  if (upcomingQuery.isPending) {
+    return <MovieCollectionSkeleton eyebrow="COMING SOON" title="개봉 예정작" showMeta />;
+  }
   if (upcomingQuery.isError) return null;
 
   const movies = [...upcomingQuery.data.items].sort((a, b) =>
