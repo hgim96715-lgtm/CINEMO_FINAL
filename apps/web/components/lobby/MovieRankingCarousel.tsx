@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { movieRankingQueryOptions } from "@/lib/queries/movie-search.query";
+import { LobbyCollectionSkeleton } from "./LobbyCollectionSkeleton";
 
 export function MovieRankingCarousel() {
   const rankingQuery = useQuery(
@@ -112,7 +113,11 @@ export function MovieRankingCarousel() {
     list.scrollLeft = targetLeft;
   };
 
-  if (rankingQuery.isPending || rankingQuery.isError || movies.length === 0) {
+  if (rankingQuery.isPending) {
+    return <LobbyCollectionSkeleton eyebrow="CINEMO RANKING" title="오늘의 영화 순위" />;
+  }
+
+  if (rankingQuery.isError || movies.length === 0) {
     return null;
   }
 

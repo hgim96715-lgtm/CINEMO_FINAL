@@ -71,6 +71,40 @@ type CurationHeroProps = {
   embedded?: boolean;
 };
 
+function CurationHeroSkeleton({ embedded }: Pick<CurationHeroProps, "embedded">) {
+  return (
+    <section
+      aria-busy="true"
+      aria-label="CINEMO 큐레이션 불러오는 중"
+      className={`relative isolate min-h-[clamp(30rem,42vw,36rem)] overflow-hidden bg-[#081918] text-cinemo-text ${
+        embedded
+          ? ""
+          : "rounded-[2rem] border border-cinemo-gold/25 shadow-[0_2rem_5rem_rgb(0_0_0_/28%),inset_0_1px_0_rgb(255_255_255_/10%)]"
+      }`}
+    >
+      <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_76%_30%,rgb(199_161_75_/12%),transparent_30%),linear-gradient(135deg,rgb(5_20_19_/100%),rgb(8_25_24_/96%))]" />
+      <div className="relative flex min-h-[clamp(30rem,42vw,36rem)] flex-col p-5 sm:p-8 lg:p-12">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium tracking-[0.32em] text-cinemo-gold sm:text-sm">CINEMO CURATION</p>
+          <div className="cinemo-loading-orbit size-8 rounded-full border-2 border-cinemo-gold/25 border-t-cinemo-gold" />
+        </div>
+        <div className="grid flex-1 items-center gap-8 pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,20rem)] lg:gap-16 lg:pt-3">
+          <div className="space-y-4">
+            <div className="cinemo-skeleton h-4 w-36 rounded-full" />
+            <div className="cinemo-skeleton h-12 w-[min(31rem,86%)] rounded-2xl sm:h-16" />
+            <div className="space-y-2 pt-2">
+              <div className="cinemo-skeleton h-4 w-[min(27rem,78%)] rounded-full" />
+              <div className="cinemo-skeleton h-4 w-[min(21rem,64%)] rounded-full" />
+            </div>
+          </div>
+          <div className="cinemo-skeleton mx-auto aspect-[2/3] w-full max-w-[11rem] rounded-[1.35rem] sm:max-w-[16rem] lg:max-w-[20rem]" />
+        </div>
+      </div>
+      <span className="sr-only">오늘의 큐레이션을 준비하는 중</span>
+    </section>
+  );
+}
+
 export function CurationHero({
   activeKind: controlledKind,
   showKindTabs = true,
@@ -196,13 +230,21 @@ export function CurationHero({
     enabled: isCommemorative && Boolean(featuredMovie?.id),
   });
 
-  if ((upcomingQuery.isPending && platformMoviesPending) || !featuredMovie) {
-    return (
-      <section
-        aria-busy="true"
-        className="min-h-[clamp(30rem,42vw,36rem)] bg-transparent"
-      />
-    );
+  const isCommemorativePending = activeCurationsQuery.isPending ||
+    (!configuredCuration && commemorativeQueries.some((query) => query.isPending));
+  const isCurrentKindPending =
+    (activeKind === "commemorative" && isCommemorativePending) ||
+    (activeKind === "upcoming" && upcomingQuery.isPending) ||
+    (activeKind === "platform" && platformMoviesPending);
+
+  if (isCurrentKindPending) {
+    return <CurationHeroSkeleton embedded={embedded} />;
+  }
+
+  // 로딩이 끝났는데 후보가 없으면 빈 큰 영역을 남기지 않음.
+  // 스켈레톤은 네트워크 대기 중에만 보여 주어 화면 높이가 갑자기 바뀌는 것을 막음.
+  if (!featuredMovie) {
+    return null;
   }
 
   const isLongTitle = featuredMovie.title.length > 16;

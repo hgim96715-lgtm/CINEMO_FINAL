@@ -7,6 +7,7 @@ import Link from "next/link";
 
 import { UpcomingMovieActions } from "@/components/lobby/UpcomingMovieActions";
 import { upcomingMoviesQueryOptions } from "@/lib/queries/movie-search.query";
+import { LobbyCollectionSkeleton } from "./LobbyCollectionSkeleton";
 
 const CINEMO_TIME_ZONE = "Asia/Seoul";
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -58,7 +59,11 @@ export function UpcomingMovieCarousel() {
     ),
   );
 
-  if (upcomingQuery.isPending || upcomingQuery.isError || movies.length === 0) {
+  if (upcomingQuery.isPending) {
+    return <LobbyCollectionSkeleton eyebrow="COMING SOON" title="개봉 예정작" showDate />;
+  }
+
+  if (upcomingQuery.isError || movies.length === 0) {
     return null;
   }
 

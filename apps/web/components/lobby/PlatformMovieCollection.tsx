@@ -13,6 +13,7 @@ import {
   TMDB_IMAGE_BASE_URL,
   getPlatformLogoSrc,
 } from "@/lib/platform-logo";
+import { LobbyCollectionSkeleton } from "./LobbyCollectionSkeleton";
 
 export const PLATFORM_PROVIDERS = [
   { provider: "NETFLIX", label: "Netflix" },
@@ -178,7 +179,17 @@ export function usePlatformMovies(
 export function PlatformMovieCollection() {
   const { movies, isPending } = usePlatformMovies();
 
-  if (isPending || movies.length === 0) {
+  if (isPending) {
+    return (
+      <LobbyCollectionSkeleton
+        eyebrow="WATCH ANYWHERE"
+        title="플랫폼에서 볼 수 있는 영화"
+        posterWidthClassName="w-32 sm:w-40 max-sm:w-[34vw]"
+      />
+    );
+  }
+
+  if (movies.length === 0) {
     return null;
   }
 

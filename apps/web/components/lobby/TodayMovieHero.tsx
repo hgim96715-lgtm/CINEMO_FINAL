@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -63,9 +63,27 @@ export function TodayMovieHero() {
         </div>
       </Link>}
       {!movie && (
-        <div className={`${recommendationCardClass} text-sm text-cinemo-muted`} role="status">
-          <div aria-hidden="true" className={`${recommendationPosterClass} bg-white/10`} />
-          {recommendation.isPending ? "오늘의 영화를 고르는 중이에요." : recommendation.isError ? (
+        <div className={`${recommendationCardClass} relative overflow-hidden text-sm text-cinemo-muted`} role="status">
+          {recommendation.isPending && <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_74%_42%,rgb(212_181_106_/10%),transparent_30%)]" />}
+          <div aria-hidden="true" className={`${recommendationPosterClass} cinemo-skeleton relative flex items-center justify-center overflow-hidden border border-white/8`}>
+            {recommendation.isPending && (
+              <div className="cinemo-loading-orbit size-9 rounded-full border-2 border-cinemo-gold/25 border-t-cinemo-gold" />
+            )}
+          </div>
+          {recommendation.isPending ? (
+            <div className="relative min-w-0 space-y-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-cinemo-gold-light">
+                <Sparkles className="size-4" aria-hidden />
+                오늘의 장면을 고르는 중
+              </div>
+              <div aria-hidden className="cinemo-skeleton h-8 w-44 max-w-full rounded-full sm:h-10 sm:w-64" />
+              <div aria-hidden className="space-y-2">
+                <div className="cinemo-skeleton h-3 w-52 max-w-full rounded-full" />
+                <div className="cinemo-skeleton h-3 w-36 rounded-full" />
+              </div>
+              <p className="text-xs text-cinemo-muted">오늘의 분위기와 영화 기록을 바탕으로 한 편을 준비하고 있어요.</p>
+            </div>
+          ) : recommendation.isError ? (
             <div>
               추천을 불러오지 못했어요.
               <button type="button" className="ml-3 font-semibold text-cinemo-gold-light" onClick={() => void recommendation.refetch()}>

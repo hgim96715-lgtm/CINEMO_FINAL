@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { activeCurationsQueryOptions } from "@/lib/queries/curation.query";
+import { LobbyCollectionSkeleton } from "./LobbyCollectionSkeleton";
 
 export function CommemorativeMovieCollection() {
   const curationsQuery = useQuery(activeCurationsQueryOptions());
@@ -18,7 +19,11 @@ export function CommemorativeMovieCollection() {
     ).values(),
   );
 
-  if (curationsQuery.isPending || curationsQuery.isError || movies.length === 0) {
+  if (curationsQuery.isPending) {
+    return <LobbyCollectionSkeleton eyebrow="ANNIVERSARY" title="기념일" />;
+  }
+
+  if (curationsQuery.isError || movies.length === 0) {
     return null;
   }
 

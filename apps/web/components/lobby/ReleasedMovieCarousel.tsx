@@ -15,6 +15,7 @@ import {
   getCurrentYearAndMonth,
   sortMoviesForToday,
 } from "@/lib/released-movies";
+import { LobbyCollectionSkeleton } from "./LobbyCollectionSkeleton";
 
 export function ReleasedMovieCarousel() {
   const releasedQuery = useQuery(
@@ -50,9 +51,11 @@ export function ReleasedMovieCarousel() {
     return sortMoviesForToday(candidates).slice(0, 10);
   }, [releasedQuery.data, rankingQuery.data]);
 
+  if (releasedQuery.isPending || rankingQuery.isPending) {
+    return <LobbyCollectionSkeleton eyebrow="THIS YEAR" title="올해 개봉·공개한 영화" showDate />;
+  }
+
   if (
-    releasedQuery.isPending ||
-    rankingQuery.isPending ||
     releasedQuery.isError ||
     rankingQuery.isError ||
     movies.length === 0

@@ -64,10 +64,24 @@ export function HeroCarousel({ embedded = false }: { embedded?: boolean }) {
   if (isPending) {
     return (
       <section
-        className={`min-h-[clamp(22rem,42vw,28rem)] bg-cinemo-surface/70 ${
+        aria-busy="true"
+        aria-label="CINEMO 엽서 불러오는 중"
+        className={`relative isolate min-h-[clamp(22rem,42vw,28rem)] overflow-hidden bg-cinemo-surface/70 ${
           embedded ? "" : "rounded-[2rem]"
         }`}
-      />
+      >
+        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_72%_35%,rgb(212_181_106_/11%),transparent_28%)]" />
+        <div className="relative grid min-h-[clamp(22rem,42vw,28rem)] items-center gap-8 p-5 sm:grid-cols-[minmax(0,1fr)_minmax(15rem,0.8fr)] sm:p-10">
+          <div className="space-y-4">
+            <p className="text-xs tracking-[0.28em] text-cinemo-gold">CINEMO POSTCARD</p>
+            <div className="cinemo-skeleton h-11 w-4/5 rounded-2xl sm:h-14" />
+            <div className="cinemo-skeleton h-4 w-3/5 rounded-full" />
+            <div className="cinemo-skeleton h-4 w-2/5 rounded-full" />
+          </div>
+          <div className="cinemo-skeleton mx-auto hidden aspect-[2/3] h-[clamp(15rem,30vw,25rem)] rounded-[1.75rem] sm:block" />
+        </div>
+        <span className="sr-only">CINEMO 엽서를 불러오는 중</span>
+      </section>
     );
   }
 
