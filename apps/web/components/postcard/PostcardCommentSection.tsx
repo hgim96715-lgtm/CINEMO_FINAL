@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { MoreHorizontal, Send, UserRound } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -183,6 +184,7 @@ export function PostcardCommentSection({
   isSubmitting = false,
   onSubmit,
 }: PostcardCommentSectionProps) {
+  const router = useRouter();
   const [expandedCommentIds, setExpandedCommentIds] = useState<Set<string>>(
     new Set(),
   );
@@ -193,6 +195,7 @@ export function PostcardCommentSection({
   const [deleteTargetCommentId, setDeleteTargetCommentId] = useState<
     string | null
   >(null);
+  const [commentLoginRequired, setCommentLoginRequired] = useState(false);
   const openCommentMenuRef = useRef<HTMLDivElement | null>(null);
   const [replyingToCommentId, setReplyingToCommentId] = useState<string | null>(
     null,
@@ -343,7 +346,14 @@ export function PostcardCommentSection({
       </h2>
 
       <form
-        onSubmit={handleSubmit(handleFormSubmit)}
+        onSubmit={
+          currentUser
+            ? handleSubmit(handleFormSubmit)
+            : (event) => {
+                event.preventDefault();
+                setCommentLoginRequired(true);
+              }
+        }
         className="mt-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#102322]/90 p-3 shadow-[0_1rem_3rem_rgb(0_0_0_/24%)] backdrop-blur-xl transition-colors focus-within:border-cinemo-gold/50"
       >
         {currentUser ? (
@@ -360,9 +370,22 @@ export function PostcardCommentSection({
         <div className="min-w-0 flex-1">
           <textarea
             {...register("content")}
-            disabled={!currentUser || isSubmitting}
+            readOnly={!currentUser}
+            disabled={isSubmitting}
             rows={1}
+            onFocus={(event) => {
+              if (!currentUser) {
+                event.currentTarget.blur();
+                setCommentLoginRequired(true);
+              }
+            }}
             onKeyDown={(event) => {
+              if (!currentUser) {
+                event.preventDefault();
+                setCommentLoginRequired(true);
+                return;
+              }
+
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
                 void handleSubmit(handleFormSubmit)();
@@ -376,9 +399,9 @@ export function PostcardCommentSection({
             placeholder={
               currentUser
                 ? "댓글을 남겨보세요"
-                : "로그인 후 댓글을 남길 수 있습니다."
+                : "로그인하고 감상을 남겨보세요"
             }
-            className="min-h-8 w-full resize-none overflow-hidden bg-transparent py-1.5 text-sm leading-6 text-white outline-none placeholder:text-white/35 disabled:cursor-not-allowed"
+            className="min-h-8 w-full resize-none overflow-hidden bg-transparent py-1.5 text-sm leading-6 text-white outline-none placeholder:text-white/35 read-only:cursor-pointer disabled:cursor-not-allowed"
           />
 
           {errors.content?.type === "too_big" && (
@@ -390,7 +413,7 @@ export function PostcardCommentSection({
 
         <button
           type="submit"
-          disabled={!currentUser || isSubmitting}
+          disabled={isSubmitting}
           aria-label="댓글 등록"
           className="flex size-8 shrink-0 items-center justify-center rounded-full text-cinemo-gold transition-colors hover:bg-cinemo-gold/10 disabled:opacity-30"
         >
@@ -600,6 +623,22 @@ export function PostcardCommentSection({
           </p>
         )}
       </div>
+
+      <AppModal
+        open={commentLoginRequired}
+        onOpenChange={setCommentLoginRequired}
+        title="감상을 남기려면 로그인이 필요합니다"
+        description="로그인하면 댓글과 답글을 남기고, 내 기록도 함께 이어갈 수 있습니다."
+        footer={
+          <button
+            type="button"
+            onClick={() => router.push("/login?intent=comment")}
+            className="rounded-lg bg-cinemo-gold px-4 py-2 text-sm font-semibold text-cinemo-bg transition hover:bg-cinemo-gold-light"
+          >
+            로그인하고 댓글 쓰기
+          </button>
+        }
+      />
 
       <AppModal
         open={deleteTargetCommentId !== null}

@@ -26,6 +26,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    ...[
+      "/lobby/movies",
+      "/lobby/movies/upcoming",
+      "/lobby/movies/released",
+      "/lobby/movies/platform",
+      "/lobby/movies/commemorative",
+      "/lobby/postcards",
+      "/lobby/lists",
+      "/lobby/cinemas",
+    ].map((path) => ({
+      url: `${siteUrl}${path}`,
+      changeFrequency: "daily" as const,
+      priority: 0.8,
+    })),
   ];
   const response = await fetch(`${apiUrl}/v1/movies/sitemap`, {
     next: { revalidate: 3600 },

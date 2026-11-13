@@ -60,6 +60,25 @@ const parseDateValue = (dateValue: string) => {
 };
 
 type ViewingPlaceSelection = "HOME" | "VENUE";
+type LoginIntent = "favorite" | "watched" | "rating";
+
+const loginIntentCopy: Record<
+  LoginIntent,
+  { title: string; description: string }
+> = {
+  favorite: {
+    title: "찜한 영화를 모아볼까요?",
+    description: "로그인하면 보고 싶은 영화를 내 시네마에 저장할 수 있습니다.",
+  },
+  watched: {
+    title: "오늘 본 영화를 기록할까요?",
+    description: "로그인하면 관람 날짜와 감상을 내 시네마에 남길 수 있습니다.",
+  },
+  rating: {
+    title: "내 평점을 남겨볼까요?",
+    description: "로그인하면 영화마다 나만의 별점과 관람 기록을 저장할 수 있습니다.",
+  },
+};
 
 export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
   const router = useRouter();
@@ -74,6 +93,7 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
   });
   const updateRecord = useUpdateMovieRecord(movieId);
   const [loginRequired, setLoginRequired] = useState(false);
+  const [loginIntent, setLoginIntent] = useState<LoginIntent>("favorite");
   const [ratingOpen, setRatingOpen] = useState(false);
   const [watchedDateOpen, setWatchedDateOpen] = useState(false);
   const [watchedDate, setWatchedDate] = useState("");
@@ -98,12 +118,13 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
     ? Number(record.rating).toFixed(1)
     : null;
 
-  const requireLogin = () => {
+  const requireLogin = (intent: LoginIntent) => {
+    setLoginIntent(intent);
     setLoginRequired(true);
   };
 
   const goToLogin = () => {
-    router.push("/login");
+    router.push(`/login?intent=${loginIntent}`);
   };
 
   const openWatchedDateEditor = () => {
@@ -117,7 +138,7 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
 
   const toggleFavorite = () => {
     if (!user) {
-      requireLogin();
+      requireLogin("favorite");
       return;
     }
 
@@ -128,7 +149,7 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
 
   const toggleWatched = () => {
     if (!user) {
-      requireLogin();
+      requireLogin("watched");
       return;
     }
 
@@ -167,7 +188,7 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
 
   const toggleRatingMenu = () => {
     if (!user) {
-      requireLogin();
+      requireLogin("rating");
       return;
     }
 
@@ -194,15 +215,15 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
       <AppModal
         open={loginRequired}
         onOpenChange={setLoginRequired}
-        title="로그인이 필요합니다"
-        description="찜하기·봤어요·평점은 로그인 후 저장할 수 있습니다."
+        title={loginIntentCopy[loginIntent].title}
+        description={loginIntentCopy[loginIntent].description}
         footer={
           <button
             type="button"
             onClick={goToLogin}
             className="whitespace-nowrap rounded-lg bg-cinemo-gold px-3 py-2 text-sm font-semibold text-cinemo-bg transition hover:bg-cinemo-gold-light"
           >
-            로그인 페이지로 이동
+            로그인하고 계속하기
           </button>
         }
       />

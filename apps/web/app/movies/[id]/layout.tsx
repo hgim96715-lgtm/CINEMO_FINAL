@@ -24,12 +24,16 @@ export async function generateMetadata({
     : undefined;
 
   const title = primaryTitle?.title ?? "영화 상세";
-  const poster = movie?.media.find(
-    (item) => item.mediaType === "POSTER" && item.isPrimary,
-  );
+  const poster =
+    movie?.media.find(
+      (item) => item.mediaType === "POSTER" && item.isPrimary,
+    ) ?? movie?.media.find((item) => item.mediaType === "POSTER");
+  const overview = movie?.overview?.replace(/\s+/g, " ").trim();
 
-  const description = movie
-    ? `${title}의 영화 정보와 출연진, 장르, 개봉 정보를 확인하세요.`
+  const description = overview
+    ? `${overview.slice(0, 157)}${overview.length > 157 ? "…" : ""}`
+    : movie
+      ? `${title}의 영화 정보와 출연진, 장르, 개봉 정보를 확인하세요.`
     : `${CINEMO_BRAND.slogan}. ${CINEMO_BRAND.description}`;
 
   return {
@@ -51,6 +55,12 @@ export async function generateMetadata({
             },
           ]
         : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} | ${CINEMO_BRAND.name}`,
+      description,
+      images: poster ? [poster.url] : undefined,
     },
   };
 }

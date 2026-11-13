@@ -114,6 +114,52 @@ export default async function MoviePage({
     (credit) => credit.creditType.trim().toUpperCase() === "ACTOR",
   );
 
+  const movieJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Movie",
+    name: primaryTitle?.title ?? "제목 없음",
+    ...(originalTitle?.title ? { alternateName: originalTitle.title } : {}),
+    ...(poster?.url ? { image: [poster.url] } : {}),
+    ...(movie.overview ? { description: movie.overview } : {}),
+    ...(initialRelease?.releaseDate || primaryRelease?.releaseDate
+      ? {
+          datePublished:
+            initialRelease?.releaseDate ?? primaryRelease?.releaseDate,
+        }
+      : {}),
+    ...(movie.runtime ? { duration: `PT${movie.runtime}M` } : {}),
+    ...(movie.genres.length > 0
+      ? { genre: movie.genres.map((genre) => genre.name) }
+      : {}),
+    ...(directors.length > 0
+      ? {
+          director: directors.map((credit) => ({
+            "@type": "Person",
+            name: getPersonName(credit.person),
+          })),
+        }
+      : {}),
+    ...(actors.length > 0
+      ? {
+          actor: actors.slice(0, 10).map((credit) => ({
+            "@type": "Person",
+            name: getPersonName(credit.person),
+          })),
+        }
+      : {}),
+    ...(movie.tmdbVoteAverage !== null &&
+    movie.tmdbVoteCount !== null &&
+    movie.tmdbVoteCount > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: movie.tmdbVoteAverage.toFixed(1),
+            ratingCount: movie.tmdbVoteCount,
+          },
+        }
+      : {}),
+  };
+
   const runtimeText =
     movie.runtime !== null && movie.runtime !== undefined
       ? [
@@ -137,6 +183,12 @@ export default async function MoviePage({
 
   return (
     <main className="min-h-screen bg-[#071619] text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(movieJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       {sync === "1" && <MovieSyncRefresh movieId={id} />}
       <section
         className="relative overflow-hidden"
