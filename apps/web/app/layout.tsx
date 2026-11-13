@@ -25,6 +25,10 @@ export const metadata: Metadata = {
 
   description: CINEMO_BRAND.description,
 
+  verification: {
+    google: "E-K_pWyfkRUU6s08dOgwAkNTnJ79Q8srlQ45EqZfSgM",
+  },
+
   alternates: {
     canonical: "/",
   },
