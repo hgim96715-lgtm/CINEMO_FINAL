@@ -1,13 +1,13 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Prisma, UserActivityType } from "@prisma/client";
 
-import { PrismaService } from "@/prisma/prisma.service";
+import { ActivityRepository } from "./activity.repository";
 
 @Injectable()
 export class ActivityService {
   private readonly logger = new Logger(ActivityService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly activityRepository: ActivityRepository) {}
 
   async record(input: {
     userId: string;
@@ -17,15 +17,7 @@ export class ActivityService {
     metadata?: Prisma.InputJsonValue;
   }) {
     try {
-      await this.prisma.userActivityLog.create({
-        data: {
-          userId: input.userId,
-          type: input.type,
-          targetType: input.targetType,
-          targetId: input.targetId,
-          metadata: input.metadata,
-        },
-      });
+      await this.activityRepository.create(input);
     } catch (error) {
       this.logger.error(
         `활동 로그 저장 실패: ${error instanceof Error ? error.message : String(error)}`,

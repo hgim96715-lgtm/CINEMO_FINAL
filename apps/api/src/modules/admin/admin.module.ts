@@ -11,6 +11,7 @@ import { CurationService } from "./curation.service";
 
 import { PostcardReportsController } from "./postcard-reports.controller";
 import { ServiceVisitsController } from "./service-visits.controller";
+import { ServiceVisitsRepository } from "./service-visits.repository";
 import { ServiceVisitsService } from "./service-visits.service";
 
 @Module({
@@ -18,6 +19,7 @@ import { ServiceVisitsService } from "./service-visits.service";
   controllers: [AdminController, CurationController, ServiceVisitsController, PostcardReportsController],
   providers: [
     AdminRepository,
+    ServiceVisitsRepository,
     ServiceVisitsService,
     AdminService,
     AdminGuard,

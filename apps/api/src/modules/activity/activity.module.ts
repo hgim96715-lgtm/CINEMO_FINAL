@@ -1,9 +1,10 @@
 import { Module } from "@nestjs/common";
 
+import { ActivityRepository } from "./activity.repository";
 import { ActivityService } from "./activity.service";
 
 @Module({
-  providers: [ActivityService],
+  providers: [ActivityRepository, ActivityService],
   exports: [ActivityService],
 })
 export class ActivityModule {}

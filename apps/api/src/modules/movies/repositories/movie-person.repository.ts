@@ -1,8 +1,26 @@
 import { Injectable } from "@nestjs/common";
 import { CreditType, Prisma, SourceProvider } from "@prisma/client";
 
+import { PrismaService } from "@/prisma/prisma.service";
+
 @Injectable()
 export class MoviePersonRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  findProviderLinkByExternalId(
+    sourceProvider: SourceProvider,
+    externalId: string,
+  ) {
+    return this.prisma.moviePersonProviderLink.findUnique({
+      where: {
+        sourceProvider_externalId: {
+          sourceProvider,
+          externalId,
+        },
+      },
+    });
+  }
+
   findProviderLink(
     tx: Prisma.TransactionClient,
     sourceProvider: SourceProvider,
@@ -130,5 +148,14 @@ export class MoviePersonRepository {
         tmdbEnrichedAt: new Date(),
       },
     });
+  }
+
+  updateProfileAtomically(
+    personId: string,
+    data: Prisma.MoviePersonUpdateInput,
+  ) {
+    return this.prisma.$transaction((tx) =>
+      this.updateProfile(tx, personId, data),
+    );
   }
 }

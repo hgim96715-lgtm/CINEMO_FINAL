@@ -4,11 +4,9 @@ import {
   Logger,
   NotFoundException,
 } from "@nestjs/common";
-import { Prisma, SourceProvider } from "@prisma/client";
+import { SourceProvider } from "@prisma/client";
 
 import { TmdbService } from "@/integrations/tmdb/tmdb.service";
-import { PrismaService } from "@/prisma/prisma.service";
-
 import { toTmdbPersonProfileUpdate } from "./mappers/tmdb-person.mapper";
 import { TmdbMovieBatchImportService } from "./tmdb-movie-batch-import.service";
 import {
@@ -26,7 +24,6 @@ export class PeopleService {
     private readonly moviePersonRepository: MoviePersonRepository,
     private readonly tmdbService: TmdbService,
     private readonly tmdbMovieBatchImportService: TmdbMovieBatchImportService,
-    private readonly prisma: PrismaService,
   ) {}
 
   async findById(personId: string): Promise<PersonWithDetails> {
@@ -44,14 +41,11 @@ export class PeopleService {
 
     const profileUpdate = toTmdbPersonProfileUpdate(tmdbPerson);
 
-    const providerLink = await this.prisma.moviePersonProviderLink.findUnique({
-      where: {
-        sourceProvider_externalId: {
-          sourceProvider: SourceProvider.TMDB,
-          externalId: String(tmdbPersonId),
-        },
-      },
-    });
+    const providerLink =
+      await this.moviePersonRepository.findProviderLinkByExternalId(
+        SourceProvider.TMDB,
+        String(tmdbPersonId),
+      );
 
     if (!providerLink) {
       throw new NotFoundException("TMDB 인물 연결 정보를 찾을 수 없습니다.");
@@ -63,13 +57,10 @@ export class PeopleService {
       );
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      await this.moviePersonRepository.updateProfile(
-        tx,
-        personId,
-        profileUpdate,
-      );
-    });
+    await this.moviePersonRepository.updateProfileAtomically(
+      personId,
+      profileUpdate,
+    );
 
     const tmdbCredits = await this.tmdbService.getPersonMovieCredits(
       tmdbPersonId,
