@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { SocialLoginButtons } from "@/components/auth/SocialLoginButtons";
@@ -34,7 +35,7 @@ const isLoginIntent = (value: string | null): value is LoginIntent =>
   value === "rating" ||
   value === "comment";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const intent = useSearchParams().get("intent");
   const copy = isLoginIntent(intent)
     ? loginIntentCopy[intent]
@@ -64,5 +65,23 @@ export default function LoginPage() {
         <SocialLoginButtons />
       </section>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-[calc(100vh-11rem)] items-center justify-center px-4 py-16">
+          <section className="w-full max-w-md rounded-3xl border border-white/10 bg-white/6 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
+            <div className="h-4 w-24 animate-pulse rounded bg-white/10" />
+            <div className="mt-6 h-9 w-3/4 animate-pulse rounded bg-white/10" />
+            <div className="mt-4 h-5 w-full animate-pulse rounded bg-white/10" />
+          </section>
+        </main>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }
