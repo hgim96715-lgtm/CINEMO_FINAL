@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { PrismaModule } from "@/prisma/prisma.module";
-import { CinemaVisitController } from "./cinema-visit.controller";
-import { CinemaVisitService } from "./cinema-visit.service";
+import { CinemaVisitController } from "./controllers/cinema-visit.controller";
+import { CinemaVisitService } from "./services/cinema-visit.service";
 import { CinemaVisitRepository } from "./repositories/cinema-visit.repository";
 import { ActivityModule } from "@/modules/activity/activity.module";
 

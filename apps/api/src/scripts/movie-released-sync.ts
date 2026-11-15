@@ -2,7 +2,7 @@ import {Logger} from "@nestjs/common";
 import {NestFactory} from "@nestjs/core";
 
 import {BatchAppModule} from "@/batch-app.module";
-import {KobisMovieBatchImportService} from "@/modules/movies/kobis-movie-batch-import.service";
+import { KobisMovieBatchImportService } from "@/modules/movies/services/kobis-movie-batch-import.service";
 
 const formatDateKey = (date: Date): string => {
   const year = date.getUTCFullYear();

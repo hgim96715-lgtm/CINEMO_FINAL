@@ -34,13 +34,13 @@ import {
 import { CreatePostcardQuoteSuggestionRequestDto } from "@/modules/postcards/dto/requests/create-postcard-quote-suggestion-request.dto";
 import { OpenSubtitlesService } from "@/integrations/opensubtitles/opensubtitles.service";
 import { TmdbService } from "@/integrations/tmdb/tmdb.service";
-import { MoviesService } from "@/modules/movies/movies.service";
+import { MoviesService } from "@/modules/movies/services/movies.service";
 import type {
   OpenSubtitlesSubtitleContent,
   OpenSubtitlesSubtitleSearchItem,
 } from "@/integrations/opensubtitles/opensubtitles.types";
 import { SubdlService } from "@/integrations/subdl/subdl.service";
-import { ActivityService } from "@/modules/activity/activity.service";
+import { ActivityService } from "@/modules/activity/services/activity.service";
 import {
   isSameSubtitleLanguage,
   normalizeSubtitleLanguage,

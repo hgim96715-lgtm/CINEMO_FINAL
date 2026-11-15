@@ -16,7 +16,7 @@ import {
 
 import {PrismaService} from "@/prisma/prisma.service";
 
-import {MoviePersonService} from "../movie-person.service";
+import { MoviePersonResolverRepository } from "./movie-person-resolver.repository";
 
 export type TmdbMovieCreditInput = {
   name: string;
@@ -66,7 +66,7 @@ const normalizeTitle = (title: string): string =>
 export class TmdbMovieSyncRepository {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly moviePersonService: MoviePersonService,
+    private readonly moviePersonResolver: MoviePersonResolverRepository,
   ) {}
 
   syncMovie(movieId: string, input: SaveTmdbMovieInput): Promise<string> {
@@ -248,7 +248,7 @@ export class TmdbMovieSyncRepository {
         }
 
         for (const [index, credit] of input.credits.entries()) {
-          const person = await this.moviePersonService.resolve(tx, {
+          const person = await this.moviePersonResolver.resolve(tx, {
             name: credit.name,
             nameEn: credit.nameEn,
             sourceProvider: SourceProvider.TMDB,

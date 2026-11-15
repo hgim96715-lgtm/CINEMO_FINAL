@@ -14,7 +14,7 @@ import {
 
 import { PrismaService } from "@/prisma/prisma.service";
 
-import { MoviePersonService } from "../movie-person.service";
+import { MoviePersonResolverRepository } from "./movie-person-resolver.repository";
 
 const kmdbMovieLookupArgs = Prisma.validator<Prisma.MovieDefaultArgs>()({
   select: {
@@ -66,7 +66,7 @@ export type SaveKmdbEnrichmentInput = {
 export class KmdbMovieEnrichmentRepository {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly moviePersonService: MoviePersonService,
+    private readonly moviePersonResolver: MoviePersonResolverRepository,
   ) {}
 
   findMovieForEnrichment(movieId: string) {
@@ -344,7 +344,7 @@ export class KmdbMovieEnrichmentRepository {
           : input.credits;
 
         for (const [index, credit] of creditsToSave.entries()) {
-          const person = await this.moviePersonService.resolve(tx, {
+          const person = await this.moviePersonResolver.resolve(tx, {
             name: credit.name,
             nameEn: credit.nameEn,
             sourceProvider: SourceProvider.KMDB,

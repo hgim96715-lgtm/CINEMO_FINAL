@@ -1,6 +1,6 @@
 import {NestFactory} from "@nestjs/core";
 import {BatchAppModule} from "@/batch-app.module";
-import {MovieRankingSyncService} from "@/modules/movies/movie-ranking-sync.service";
+import { MovieRankingSyncService } from "@/modules/movies/services/movie-ranking-sync.service";
 import {Logger} from "@nestjs/common";
 
 const getYesterdaySeoulDate = (): string => {

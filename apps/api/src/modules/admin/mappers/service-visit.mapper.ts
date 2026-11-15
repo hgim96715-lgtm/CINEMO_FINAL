@@ -1,4 +1,4 @@
-import type { ServiceVisitRow } from "../service-visits.repository";
+import type { ServiceVisitRow } from "../repositories/service-visits.repository";
 
 export function toServiceVisitSummary(days: string[], rows: ServiceVisitRow[]) {
   return days.map((day) => ({

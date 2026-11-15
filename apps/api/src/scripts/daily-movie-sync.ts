@@ -3,7 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import OpenAI from "openai";
 
 import { BatchAppModule } from "@/batch-app.module";
-import { DailyMoviesService } from "@/modules/daily-movies/daily-movies.service";
+import { DailyMoviesService } from "@/modules/daily-movies/services/daily-movies.service";
 
 const logger = new Logger("DailyMovieSync");
 

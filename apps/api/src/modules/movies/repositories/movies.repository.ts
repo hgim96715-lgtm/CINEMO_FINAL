@@ -16,7 +16,7 @@ import {
 } from "@prisma/client";
 
 import { PrismaService } from "@/prisma/prisma.service";
-import { MoviePersonService } from "../movie-person.service";
+import { MoviePersonResolverRepository } from "./movie-person-resolver.repository";
 
 const publicMovieWhere: Prisma.MovieWhereInput = {
   visibility: MovieVisibility.PUBLIC,
@@ -195,7 +195,7 @@ export type MovieGenreCount = {
 export class MoviesRepository {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly moviePersonService: MoviePersonService,
+    private readonly moviePersonResolver: MoviePersonResolverRepository,
   ) {}
 
   findById(movieId: string): Prisma.PrismaPromise<MovieWithDetails | null> {
@@ -1269,7 +1269,7 @@ export class MoviesRepository {
         ];
 
         for (const [index, credit] of credits.entries()) {
-          const person = await this.moviePersonService.resolve(tx, {
+          const person = await this.moviePersonResolver.resolve(tx, {
             name: credit.name,
             nameEn: credit.nameEn,
             sourceProvider: SourceProvider.KOBIS,

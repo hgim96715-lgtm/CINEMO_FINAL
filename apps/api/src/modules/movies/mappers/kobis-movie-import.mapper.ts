@@ -3,7 +3,7 @@ import { MovieVisibility } from "@prisma/client";
 import type { KobisMovieInfoResponseDto } from "@/integrations/kobis/dto/responses/kobis-movie-info.response.dto";
 
 import type { KobisMovieImportInput } from "../repositories/movies.repository";
-import { getKobisMovieVisibility } from "../movie-content-policy";
+import { getKobisMovieVisibility } from "../policies/movie-content-policy";
 
 const parseKobisDate = (value: string | null): Date | null => {
   if (!value) {

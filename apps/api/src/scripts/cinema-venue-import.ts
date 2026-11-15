@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 
 import { CinemaBatchAppModule } from "@/cinema-batch-app.module";
-import { CinemaVenueImportService } from "@/modules/map/cinema-venue-import.service";
+import { CinemaVenueImportService } from "@/modules/map/services/cinema-venue-import.service";
 
 const logger = new Logger("CinemaVenueImport");
 

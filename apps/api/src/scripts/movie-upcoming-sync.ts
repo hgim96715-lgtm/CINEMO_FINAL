@@ -2,7 +2,7 @@ import { Logger } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
 
 import { BatchAppModule } from "@/batch-app.module";
-import { MovieUpcomingSyncService } from "@/modules/movies/movie-upcoming-sync.service";
+import { MovieUpcomingSyncService } from "@/modules/movies/services/movie-upcoming-sync.service";
 
 const logger = new Logger("MovieUpcomingSync");
 

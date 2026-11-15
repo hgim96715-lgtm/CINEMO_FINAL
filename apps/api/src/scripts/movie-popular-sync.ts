@@ -2,7 +2,7 @@ import {Logger} from "@nestjs/common";
 import {NestFactory} from "@nestjs/core";
 
 import {BatchAppModule} from "@/batch-app.module";
-import {TmdbMovieBatchImportService} from "@/modules/movies/tmdb-movie-batch-import.service";
+import { TmdbMovieBatchImportService } from "@/modules/movies/services/tmdb-movie-batch-import.service";
 
 const logger = new Logger("MoviePopularSync");
 

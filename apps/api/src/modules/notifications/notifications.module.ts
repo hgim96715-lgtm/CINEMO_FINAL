@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
 
-import { NotificationsController } from "./notifications.controller";
+import { NotificationsController } from "./controllers/notifications.controller";
 
-import { PushTokenService } from "./push-token.service";
-import { PushTokenRepository } from "@/modules/notifications/push-token.repository";
-import { ExpoPushService } from "@/modules/notifications/expo-push.service";
+import { PushTokenService } from "./services/push-token.service";
+import { PushTokenRepository } from "./repositories/push-token.repository";
+import { ExpoPushService } from "./services/expo-push.service";
 
 @Module({
   controllers: [NotificationsController],

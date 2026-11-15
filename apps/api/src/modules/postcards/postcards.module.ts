@@ -5,7 +5,7 @@ import {OpenSubtitlesModule} from "@/integrations/opensubtitles/opensubtitles.mo
 import {SubdlModule} from "@/integrations/subdl/subdl.module";
 import {TmdbModule} from "@/integrations/tmdb/tmdb.module";
 import {MoviesModule} from "@/modules/movies/movies.module";
-import {PostcardsController} from "./postcards.controller";
+import {PostcardsController} from "./controllers/postcards.controller";
 import {PostcardRepository} from "./repositories/postcard.repository";
 import {PostcardService} from "./services/postcard.service";
 import {ActivityModule} from "@/modules/activity/activity.module";

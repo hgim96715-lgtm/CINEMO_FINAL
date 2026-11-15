@@ -1,0 +1,171 @@
+import {BadRequestException, Injectable} from "@nestjs/common";
+
+import {MovieNotFoundException} from "@/common/exceptions/movie-not-found.exception";
+
+import { UserMovieRecordRepository } from "../repositories/user-movie-record.repository";
+import { UpdateMovieRecordRequestDto } from "../../auth/dto/requests/update-movie-record.request.dto";
+import {toUserMovieCalendarResponse} from "@/modules/movies/mappers/user-movie-calendar.mapper";
+import {ActivityService} from "@/modules/activity/services/activity.service";
+import {CreditType, UserActivityType} from "@prisma/client";
+
+@Injectable()
+export class UserMovieRecordService {
+  constructor(
+    private readonly userMovieRecordRepository: UserMovieRecordRepository,
+    private readonly activityService: ActivityService,
+  ) {}
+
+  async upsert(
+    userId: string,
+    movieId: string,
+    input: UpdateMovieRecordRequestDto,
+  ) {
+    const hasInput =
+      input.isFavorite !== undefined ||
+      input.isWatched !== undefined ||
+      input.watchedAt !== undefined ||
+      input.rating !== undefined ||
+      input.venueId !== undefined ||
+      input.viewingPlaceType !== undefined||
+      input.viewingPlatform!==undefined ||
+      input.viewingPlatformCustom !== undefined;
+
+    if (!hasInput) {
+      throw new BadRequestException("변경할 영화 기록이 없습니다.");
+    }
+
+    const movie = await this.userMovieRecordRepository.findMovie(movieId);
+
+    if (!movie) {
+      throw new MovieNotFoundException(movieId);
+    }
+
+    const record = await this.userMovieRecordRepository.upsert(
+      userId,
+      movieId,
+      {
+        isFavorite: input.isFavorite,
+
+        isWatched: input.isWatched,
+
+        watchedAt:
+          input.isWatched === undefined
+            ? input.watchedAt === undefined
+              ? undefined
+              : input.watchedAt
+                ? new Date(`${input.watchedAt}T00:00:00.000Z`)
+                : null
+            : input.isWatched
+              ? input.watchedAt
+                ? new Date(`${input.watchedAt}T00:00:00.000Z`)
+                : undefined
+              : null,
+
+        rating: input.rating,
+        venueId: input.venueId,
+        viewingPlaceType: input.viewingPlaceType,
+        viewingPlatform: input.viewingPlatform,
+        viewingPlatformCustom:
+          input.viewingPlatform === "OTHER"
+            ? input.viewingPlatformCustom?.trim() || null
+            : null,
+      },
+    );
+
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.MOVIE_RECORD_UPSERT,
+      targetType: "movie",
+      targetId: movieId,
+      metadata: {
+        isFavorite: input.isFavorite ?? null,
+        isWatched: input.isWatched ?? null,
+      },
+    });
+
+    return {
+      ...record,
+      rating: record.rating?.toString() ?? null,
+      isWatched: record.isWatched,
+      venueId: record.venueId,
+      viewingPlaceType: record.viewingPlaceType,
+      viewingPlatform: record.viewingPlatform,
+      viewingPlatformCustom: record.viewingPlatformCustom,
+      venue: record.venue ?? null,
+    };
+  }
+  async findByUserAndMovie(userId: string, movieId: string) {
+    const movie = await this.userMovieRecordRepository.findMovie(movieId);
+
+    if (!movie) {
+      throw new MovieNotFoundException(movieId);
+    }
+
+    const record = await this.userMovieRecordRepository.findByUserAndMovie(
+      userId,
+      movieId,
+    );
+
+    return {
+      movieId,
+      venueId: record?.venueId ?? null,
+      viewingPlaceType: record?.viewingPlaceType ?? null,
+      viewingPlatform: record?.viewingPlatform ?? null,
+      viewingPlatformCustom: record?.viewingPlatformCustom ?? null,
+      isFavorite: record?.isFavorite ?? false,
+      isWatched: record?.isWatched ?? false,
+      watchedAt: record?.watchedAt ?? null,
+      rating: record?.rating?.toString() ?? null,
+      venue: record?.venue ?? null,
+    };
+  }
+  async findAllByUser(userId: string) {
+    const records = await this.userMovieRecordRepository.findAllByUser(userId);
+
+    return records.map((record) => ({
+      id: record.id,
+      movieId: record.movie.id,
+      venueId: record.venueId,
+      viewingPlaceType: record.viewingPlaceType,
+      viewingPlatform: record.viewingPlatform??null,
+      viewingPlatformCustom: record.viewingPlatformCustom ?? null,
+      venue: record.venue ?? null,
+      title: record.movie.titles[0]?.title ?? "",
+      posterUrl: record.movie.media[0]?.url ?? null,
+      releaseDate: record.movie.releases[0]?.releaseDate ?? null,
+      genres: record.movie.movieGenres.map((genre) => genre.name),
+  directors: record.movie.movieCredits
+    .filter((credit) => credit.creditType === CreditType.DIRECTOR)
+    .map((credit) => credit.person),
+  actors: record.movie.movieCredits
+    .filter((credit) => credit.creditType === CreditType.ACTOR)
+    .map((credit) => credit.person),
+      isFavorite: record.isFavorite,
+      isWatched: record.isWatched,
+      watchedAt: record.watchedAt,
+      rating: record.rating?.toString() ?? null,
+    }));
+  }
+  
+  async delete(userId:string,movieId: string) {
+    const movie=await this.userMovieRecordRepository.findMovie(movieId);
+    if(!movie) {
+      throw new MovieNotFoundException(movieId);
+    }
+    await this.userMovieRecordRepository.deletdByUserAndMovie(userId, movieId);
+    void this.activityService.record({
+      userId,
+      type: UserActivityType.MOVIE_RECORD_DELETE,
+      targetType: "movie",
+      targetId: movieId,
+    });
+    return{
+      movieId
+    }
+  }
+  
+  async findCalendarByUser(userId:string,year:number,month:number) {
+    const records=await this.userMovieRecordRepository.findWatchedbyUserAndMovie(userId, year, month);
+    return toUserMovieCalendarResponse(records);
+  }
+}

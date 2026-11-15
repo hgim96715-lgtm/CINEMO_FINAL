@@ -17,7 +17,7 @@ import { kmdbConfig } from "./config/kmdb.config";
 import { KmdbModule } from "./integrations/kmdb/kmdb.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { APP_GUARD } from "@nestjs/core";
-import { SessionAuthGuard } from "./modules/auth/session-auth.guard";
+import { SessionAuthGuard } from "./modules/auth/guards/session-auth.guard";
 import { mailConfig } from "./config/mail.config";
 import { oauthConfig } from "./config/oauth.config";
 import { mapConfig } from "@/config/map.config";

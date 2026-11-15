@@ -2,7 +2,7 @@ import {Logger} from "@nestjs/common";
 import {NestFactory} from "@nestjs/core";
 
 import {BatchAppModule} from "@/batch-app.module";
-import {MovieReleaseNotificationService} from "@/modules/movies/movie-release-notification.service";
+import { MovieReleaseNotificationService } from "@/modules/movies/services/movie-release-notification.service";
 
 const logger = new Logger("MovieReleaseNotificationSync");
 
