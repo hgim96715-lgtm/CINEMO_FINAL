@@ -5,6 +5,9 @@
   "scripts": {
     "start": "expo start --port 8081",
     "ios": "expo run:ios --port 8081",
+    "ios:check": "pnpm typecheck && expo config --type public",
+    "ios:pods": "cd ios && pod install",
+    "ios:archive": "xcodebuild -workspace ios/CINEMO.xcworkspace -scheme CINEMO -configuration Release -destination 'generic/platform=iOS' -archivePath build/CINEMO.xcarchive archive",
     "android": "expo run:android",
     "typecheck": "tsc --noEmit"
   },

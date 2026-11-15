@@ -16,6 +16,7 @@ import { useAuthStore } from "@/stores/auth.store";
 import { VenueSearch } from "@/components/map/CinemaVenueSearch";
 import { ViewingPlatform } from "@/lib/api/movies";
 import { formatDateValue } from "@/lib/date-utils";
+import { recordServiceEvent } from "@/lib/analytics/service-events";
 
 type MovieRecordActionsProps = {
   movieId: string;
@@ -119,11 +120,13 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
     : null;
 
   const requireLogin = (intent: LoginIntent) => {
+    recordServiceEvent("record_intent");
     setLoginIntent(intent);
     setLoginRequired(true);
   };
 
   const goToLogin = () => {
+    recordServiceEvent("login_intent");
     router.push(`/login?intent=${loginIntent}`);
   };
 
@@ -142,6 +145,8 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
       return;
     }
 
+    recordServiceEvent("record_intent");
+
     updateRecord.mutate({
       isFavorite: !isFavorite,
     });
@@ -152,6 +157,8 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
       requireLogin("watched");
       return;
     }
+
+    recordServiceEvent("record_intent");
 
     if (isWatched) {
       updateRecord.mutate({ isWatched: false });
@@ -192,6 +199,8 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
       return;
     }
 
+    recordServiceEvent("record_intent");
+
     if (!isDisabled) {
       setRatingOpen((open) => !open);
     }
@@ -203,6 +212,7 @@ export function MovieRecordActions({ movieId }: MovieRecordActionsProps) {
   };
 
   const openPostcardCreate = () => {
+    recordServiceEvent("record_intent");
     router.push(
       `/my-cinema/postcards/new?movieId=${encodeURIComponent(movieId)}`,
     );

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Share2 } from "lucide-react";
 
 import { useSharePostcard } from "@/lib/queries/postcard.mutation";
+import { recordServiceEvent } from "@/lib/analytics/service-events";
 
 type PostcardShareButtonProps = {
   postcardId: string;
@@ -34,6 +35,7 @@ export function PostcardShareButton({
   }, [message]);
 
   const handleShare = async () => {
+    recordServiceEvent("postcard_share_intent");
     const shareUrl = new URL(window.location.href);
     // 이미 공유한 링크의 미리보기 캐시와 구분해 새 미리보기를 가져오게 한다.
     shareUrl.searchParams.set("ref", "share");

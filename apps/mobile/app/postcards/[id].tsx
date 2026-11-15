@@ -52,6 +52,7 @@ import {
 import { currentUserQueryOptions } from "@/lib/queries/my-cinema.query";
 import { myPostcardsQueryOptions, postcardFeedQueryOptions } from "@/lib/queries/postcard-feed.query";
 import { getImageUrl } from "@/lib/utils";
+import { recordAppEvent } from "@/lib/api/visits";
 
 function commentErrorMessage(error: unknown) {
   if (isAxiosError<{ message?: string }>(error) &&
@@ -445,6 +446,7 @@ export default function PostcardDetailScreen() {
   const shareCurrentPostcard = async () => {
     if (shareInFlight.current || postcardQuery.data?.visibility !== "PUBLIC") return;
     shareInFlight.current = true;
+    void recordAppEvent("postcard_share_intent");
 
     const movieTitle = postcardQuery.data?.movie?.title ?? "영화";
     const title = `${movieTitle}의 여운을 담은 CINEMO 엽서`;
@@ -509,6 +511,7 @@ export default function PostcardDetailScreen() {
                 <Pressable
                   onPress={() => {
                     setLoginModalVisible(false);
+                    void recordAppEvent("login_intent");
                     router.push("/login");
                   }}
                   className="rounded-xl bg-cinemo-gold px-4 py-3"
@@ -738,7 +741,10 @@ export default function PostcardDetailScreen() {
                 </View>
               ) : (
                 <Pressable
-                  onPress={() => router.push("/login")}
+                  onPress={() => {
+                    void recordAppEvent("login_intent");
+                    router.push("/login");
+                  }}
                   className="mt-4 rounded-2xl border border-white/15 bg-cinemo-surface px-4 py-4"
                 >
                   <Text className="text-center text-sm text-cinemo-muted">

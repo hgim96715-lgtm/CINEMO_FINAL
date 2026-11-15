@@ -1359,6 +1359,19 @@ model ServiceVisit {
   @@map("service_visits")
 }
 
+model ServiceEvent {
+  id            String  @id @db.Char(64)
+  day           String  @db.Char(10)
+  channel       String  @db.VarChar(8)
+  type          String  @db.VarChar(32)
+  visitorKey    String  @map("visitor_key") @db.Char(64)
+  authenticated Boolean
+
+  @@index([day, channel, type])
+  @@index([day, channel, visitorKey])
+  @@map("service_events")
+}
+
 model PostcardUserBlock {
   blockerId String   @db.Uuid
   blockedId String   @db.Uuid

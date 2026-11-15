@@ -4,6 +4,7 @@ const links = [
   { href: "/admin/daily-movie-push", label: "영화 추천 알림" },
   { href: "/admin/postcard-reports", label: "엽서·댓글 신고" },
   { href: "/admin/visits", label: "방문 현황" },
+  { href: "/admin/conversions", label: "유입·전환 현황" },
   { href: "/admin/users", label: "회원·접속 현황" },
   { href: "/admin/movies", label: "영화 검색" },
   { href: "/admin/curations", label: "큐레이션 관리" },

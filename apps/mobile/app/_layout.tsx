@@ -10,7 +10,7 @@ import { mobileQueryClient, QueryProvider } from "@/provider/query-provider";
 import * as Notifications from "expo-notifications";
 import { getMobileAccessToken } from "@/lib/api/apiClient";
 import { getDailyMovieDay, recordDailyMovieVisit } from "@/lib/api/daily-movie";
-import { recordAppVisit } from "@/lib/api/visits";
+import { recordAppEvent, recordAppVisit } from "@/lib/api/visits";
 import { restoreMobileSession } from "@/lib/api/auth";
 import { registerDevicePushToken } from "@/lib/api/notifications";
 import { BottomTabBar } from "@/components/common/BottomTabBar";
@@ -48,10 +48,11 @@ const navigationTheme = {
 
 export default function RootLayout() {
   const openedMovieNotification = useRef<string | null>(null);
+  const openedMovieAnalytics = useRef<string | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const segments = useSegments();
-  const { from } = useGlobalSearchParams<{ from?: string }>();
+  const { from, id } = useGlobalSearchParams<{ from?: string; id?: string | string[] }>();
   const isMovieDetailScreen =
     segments[0] === "movies" && segments.includes("[id]");
   const isPersonDetailScreen =
@@ -90,6 +91,15 @@ export default function RootLayout() {
   useEffect(() => {
     if (isAuthReady && Platform.OS !== "web") void recordAppVisit();
   }, [isAuthReady]);
+
+  useEffect(() => {
+    const movieId = Array.isArray(id) ? id[0] : id;
+    if (!isAuthReady || Platform.OS === "web" || !isMovieDetailScreen || !movieId ||
+        openedMovieAnalytics.current === movieId) return;
+
+    openedMovieAnalytics.current = movieId;
+    void recordAppEvent("movie_detail_open");
+  }, [id, isAuthReady, isMovieDetailScreen]);
 
   useEffect(() => {
     if (!isAuthReady || Platform.OS === "web") return;

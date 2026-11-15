@@ -13,6 +13,7 @@ import { Modal, Pressable, Text, View } from "react-native";
 
 import { CINEMO_COLORS } from "@cinemo/shared";
 import { getRefreshToken } from "@/lib/api/auth";
+import { recordAppEvent } from "@/lib/api/visits";
 import { movieRecordQueryOptions } from "@/lib/queries/movie-record.query";
 import { useUpdateMovieRecord } from "@/lib/queries/movie-record.mutation";
 import { myPostcardsQueryOptions } from "@/lib/queries/postcard-feed.query";
@@ -109,6 +110,7 @@ export function MovieRecordActions({ movieId, openEdit = false }: Props) {
   }, [openEdit, record]);
 
   const requireLogin = () => {
+    void recordAppEvent("record_intent");
     setIsLoginModalVisible(true);
   };
 
@@ -118,6 +120,7 @@ export function MovieRecordActions({ movieId, openEdit = false }: Props) {
       return;
     }
 
+    void recordAppEvent("record_intent");
     updateRecord.mutate({ isFavorite: !(record?.isFavorite ?? false) });
   };
 
@@ -127,6 +130,7 @@ export function MovieRecordActions({ movieId, openEdit = false }: Props) {
       return;
     }
 
+    void recordAppEvent("record_intent");
     setIsEditingWatchedDate(editDate);
     setWatchedDate(getDateValue(record?.watchedAt));
     setIsCalendarVisible(true);
@@ -138,6 +142,7 @@ export function MovieRecordActions({ movieId, openEdit = false }: Props) {
       return;
     }
 
+    void recordAppEvent("record_intent");
     if (record?.isWatched) {
       updateRecord.mutate({
         isWatched: false,
@@ -174,6 +179,7 @@ export function MovieRecordActions({ movieId, openEdit = false }: Props) {
 
   const selectRating = (rating: string | null) => {
     setIsRatingModalVisible(false);
+    void recordAppEvent("record_intent");
     updateRecord.mutate({ rating });
   };
 
@@ -303,6 +309,7 @@ export function MovieRecordActions({ movieId, openEdit = false }: Props) {
               return;
             }
 
+            void recordAppEvent("record_intent");
             router.push(
               `/postcards/new?movieId=${encodeURIComponent(movieId)}`,
             );
@@ -365,6 +372,7 @@ export function MovieRecordActions({ movieId, openEdit = false }: Props) {
                 className="rounded-xl bg-cinemo-gold px-5 py-3"
                 onPress={() => {
                   setIsLoginModalVisible(false);
+                  void recordAppEvent("login_intent");
                   router.push("/login");
                 }}
               >

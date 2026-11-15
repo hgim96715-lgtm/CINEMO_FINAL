@@ -7,6 +7,7 @@ import "./globals.css";
 import { AuthSessionHydrator, QueryProvider } from "@/providers";
 import { Header } from "../components/common/Header";
 import { VisitRecorder } from "@/components/common/VisitRecorder";
+import { ClickEventRecorder } from "@/components/common/ClickEventRecorder";
 import { Footer } from "../components/common/Footer";
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <QueryProvider>
           <AuthSessionHydrator>
             <VisitRecorder />
+            <ClickEventRecorder />
             <Header />
             <div className="flex-1">
               {children}
