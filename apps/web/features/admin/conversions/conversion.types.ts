@@ -28,6 +28,12 @@ export type ConversionRow = ConversionCounts & {
   rates: ConversionRates;
 };
 
+/** API가 날짜별로 묶어 반환하는 전환 현황 원본 형태 */
+export type ConversionDayResponse = {
+  day: string;
+  channels: ConversionRow[];
+};
+
 export type ConversionSummary = ConversionCounts & {
   rates: ConversionRates;
 };

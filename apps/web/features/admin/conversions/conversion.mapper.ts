@@ -1,4 +1,9 @@
-import type { ConversionCounts, ConversionRow, ConversionSummary } from "./conversion.types";
+import type {
+  ConversionCounts,
+  ConversionDayResponse,
+  ConversionRow,
+  ConversionSummary,
+} from "./conversion.types";
 
 const emptyCounts: ConversionCounts = {
   visitors: 0,
@@ -12,6 +17,19 @@ const emptyCounts: ConversionCounts = {
 
 function calculateRate(value: number, base: number) {
   return base > 0 ? Math.round((value / base) * 1_000) / 10 : null;
+}
+
+/**
+ * 날짜별 API 응답을 화면이 쓰는 날짜·채널 단위 행으로 정규화함.
+ * 화면은 이 뒤부터 API의 중첩 구조를 알 필요가 없음.
+ */
+export function toConversionRows(days: readonly ConversionDayResponse[]): ConversionRow[] {
+  return days.flatMap(({ day, channels }) =>
+    channels.map((channel) => ({
+      ...channel,
+      day,
+    })),
+  );
 }
 
 export function summarizeConversionRows(rows: readonly ConversionRow[]): ConversionSummary {

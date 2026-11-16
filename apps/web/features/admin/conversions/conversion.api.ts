@@ -1,8 +1,9 @@
 import { apiClient } from "@/lib/api/apiClient";
 
-import type { ConversionRow } from "./conversion.types";
+import { toConversionRows } from "./conversion.mapper";
+import type { ConversionDayResponse, ConversionRow } from "./conversion.types";
 
 export async function getConversionRows(signal?: AbortSignal): Promise<ConversionRow[]> {
-  const { data } = await apiClient.get<ConversionRow[]>("/admin/conversions", { signal });
-  return data;
+  const { data } = await apiClient.get<ConversionDayResponse[]>("/admin/conversions", { signal });
+  return toConversionRows(data);
 }
