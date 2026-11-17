@@ -88,12 +88,12 @@ export function MovieCollectionSkeleton({
   );
 }
 
-export function TodayMovieSkeleton() {
+export function TodayMovieSkeleton({ embedded = false }: { embedded?: boolean }) {
   return (
     <View
       accessible
       accessibilityLabel="오늘의 영화를 고르는 중"
-      className="mx-5 mt-4 overflow-hidden rounded-3xl border border-cinemo-gold/25 bg-cinemo-surface px-4 py-4"
+      className={`${embedded ? "m-5" : "mx-5 mt-4"} overflow-hidden rounded-3xl border border-cinemo-gold/25 bg-cinemo-surface px-4 py-4`}
     >
       <SkeletonPulse>
         <View className="flex-row items-center gap-2">
@@ -117,14 +117,16 @@ export function TodayMovieSkeleton() {
 
 export function MobileCurationHeroSkeleton({
   kind = "commemorative",
+  embedded = false,
 }: {
   kind?: "commemorative" | "upcoming" | "platform";
+  embedded?: boolean;
 }) {
   const showDescription = kind === "commemorative";
   const titleLines = kind === "platform" ? 2 : 1;
 
   return (
-    <View className="mx-5 mt-5 overflow-hidden rounded-3xl border border-cinemo-gold/20 bg-cinemo-surface px-5 py-6">
+    <View className={`${embedded ? "m-5" : "mx-5 mt-5"} overflow-hidden rounded-3xl border border-cinemo-gold/20 bg-cinemo-surface px-5 py-6`}>
       <SkeletonPulse>
         <View className="flex-row items-center justify-between">
           <SkeletonBlock style={{ width: 132, height: 12, borderRadius: 6 }} />
@@ -162,9 +164,9 @@ export function MobileCurationHeroSkeleton({
   );
 }
 
-export function PostcardHeroSkeleton() {
+export function PostcardHeroSkeleton({ embedded = false }: { embedded?: boolean }) {
   return (
-    <View className="mx-5 mt-5 h-[310px] overflow-hidden rounded-3xl border border-white/10 bg-cinemo-surface p-5">
+    <View className={`${embedded ? "m-5" : "mx-5 mt-5"} h-[310px] overflow-hidden rounded-3xl border border-white/10 bg-cinemo-surface p-5`}>
       <SkeletonPulse>
         <View className="flex-row justify-between">
           <SkeletonBlock style={{ width: 118, height: 12, borderRadius: 6 }} />

@@ -71,24 +71,31 @@ type CurationHeroProps = {
   embedded?: boolean;
 };
 
-function CurationHeroSkeleton({ embedded }: Pick<CurationHeroProps, "embedded">) {
+function CurationHeroSkeleton({
+  embedded,
+  showFilmStrip = false,
+}: Pick<CurationHeroProps, "embedded"> & { showFilmStrip?: boolean }) {
+  const minHeightClass = showFilmStrip
+    ? "min-h-[clamp(39rem,52vw,44rem)]"
+    : "min-h-[clamp(30rem,42vw,36rem)]";
+
   return (
     <section
       aria-busy="true"
       aria-label="CINEMO 큐레이션 불러오는 중"
-      className={`relative isolate min-h-[clamp(30rem,42vw,36rem)] overflow-hidden bg-[#081918] text-cinemo-text ${
+      className={`relative isolate ${minHeightClass} overflow-hidden bg-[#081918] text-cinemo-text ${
         embedded
           ? ""
           : "rounded-[2rem] border border-cinemo-gold/25 shadow-[0_2rem_5rem_rgb(0_0_0_/28%),inset_0_1px_0_rgb(255_255_255_/10%)]"
       }`}
     >
       <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_76%_30%,rgb(199_161_75_/12%),transparent_30%),linear-gradient(135deg,rgb(5_20_19_/100%),rgb(8_25_24_/96%))]" />
-      <div className="relative flex min-h-[clamp(30rem,42vw,36rem)] flex-col p-5 sm:p-8 lg:p-12">
+      <div className={`relative flex ${minHeightClass} flex-col p-5 sm:p-8 lg:p-12`}>
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium tracking-[0.32em] text-cinemo-gold sm:text-sm">CINEMO CURATION</p>
           <div className="cinemo-loading-orbit size-8 rounded-full border-2 border-cinemo-gold/25 border-t-cinemo-gold" />
         </div>
-        <div className="grid flex-1 items-center gap-8 pt-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,20rem)] lg:gap-16 lg:pt-3">
+        <div className="grid flex-1 items-center gap-6 pt-6 sm:grid-cols-[minmax(0,1fr)_10rem] sm:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,20rem)] lg:gap-16 lg:pt-3">
           <div className="space-y-4">
             <div className="cinemo-skeleton h-4 w-36 rounded-full" />
             <div className="cinemo-skeleton h-12 w-[min(31rem,86%)] rounded-2xl sm:h-16" />
@@ -99,6 +106,22 @@ function CurationHeroSkeleton({ embedded }: Pick<CurationHeroProps, "embedded">)
           </div>
           <div className="cinemo-skeleton mx-auto aspect-[2/3] w-full max-w-[11rem] rounded-[1.35rem] sm:max-w-[16rem] lg:max-w-[20rem]" />
         </div>
+        {showFilmStrip && (
+          <div className="mt-5 border-t border-white/10 pt-5">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="space-y-2">
+                <div className="cinemo-skeleton h-3 w-36 rounded-full" />
+                <div className="cinemo-skeleton h-3 w-52 rounded-full" />
+              </div>
+              <div className="cinemo-skeleton h-7 w-12 rounded-full" />
+            </div>
+            <div className="flex gap-3 overflow-hidden">
+              {Array.from({ length: 5 }, (_, index) => (
+                <div key={index} className="cinemo-skeleton aspect-[2/3] w-20 shrink-0 rounded-xl sm:w-24" />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <span className="sr-only">오늘의 큐레이션을 준비하는 중</span>
     </section>
@@ -225,6 +248,7 @@ export function CurationHero({
   const featuredMovie = selectedMovie ?? movies[0];
   const isUpcoming = currentKind === "upcoming";
   const isCommemorative = currentKind === "commemorative";
+  const showFilmStrip = isCommemorative && movies.length > 1;
   const featuredMovieDetailQuery = useQuery({
     ...movieDetailQueryOptions(featuredMovie?.id ?? ""),
     enabled: isCommemorative && Boolean(featuredMovie?.id),
@@ -238,7 +262,12 @@ export function CurationHero({
     (activeKind === "platform" && platformMoviesPending);
 
   if (isCurrentKindPending) {
-    return <CurationHeroSkeleton embedded={embedded} />;
+    return (
+      <CurationHeroSkeleton
+        embedded={embedded}
+        showFilmStrip={activeKind === "commemorative"}
+      />
+    );
   }
 
   // 로딩이 끝났는데 후보가 없으면 빈 큰 영역을 남기지 않음.
@@ -288,7 +317,7 @@ export function CurationHero({
   return (
     <section
       aria-labelledby="cinemo-curation-title"
-      className={`relative isolate min-h-[clamp(30rem,42vw,36rem)] overflow-hidden bg-[#081918] text-cinemo-text ${
+      className={`relative isolate ${showFilmStrip ? "min-h-[clamp(39rem,52vw,44rem)]" : "min-h-[clamp(30rem,42vw,36rem)]"} overflow-hidden bg-[#081918] text-cinemo-text ${
         embedded
           ? ""
           : "rounded-[2rem] border border-cinemo-gold/25 shadow-[0_2rem_5rem_rgb(0_0_0_/28%),inset_0_1px_0_rgb(255_255_255_/10%)]"
@@ -296,7 +325,7 @@ export function CurationHero({
     >
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_76%_30%,rgb(199_161_75_/12%),transparent_30%),linear-gradient(135deg,rgb(5_20_19_/100%),rgb(8_25_24_/96%))]" />
 
-      <div className="relative z-10 flex min-h-[clamp(30rem,42vw,36rem)] flex-col p-5 sm:p-8 lg:p-12">
+      <div className={`relative z-10 flex ${showFilmStrip ? "min-h-[clamp(39rem,52vw,44rem)]" : "min-h-[clamp(30rem,42vw,36rem)]"} flex-col p-5 sm:p-8 lg:p-12`}>
         <header className="flex flex-wrap items-center justify-between gap-4">
           <p className="text-xs font-medium tracking-[0.32em] text-cinemo-gold sm:text-sm">
             CINEMO CURATION
@@ -408,13 +437,13 @@ export function CurationHero({
             ) : null}
 
             {!isCommemorative && (
-              <div className="mt-8 hidden flex-wrap gap-3 lg:flex">
+              <div className="mt-8 hidden flex-wrap gap-2 lg:flex">
                 <Link
                   href={`/movies/${featuredMovie.id}`}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-cinemo-gold px-5 py-3.5 text-sm font-semibold text-cinemo-dark shadow-[0_0_2rem_rgb(199_161_75_/22%)] transition hover:bg-cinemo-gold-light"
+                  className="group inline-flex items-center justify-center gap-2 rounded-full border border-cinemo-gold/45 bg-cinemo-gold/10 px-4 py-2.5 text-sm font-semibold text-cinemo-gold-light transition hover:bg-cinemo-gold/20"
                 >
-                  영화 자세히 보기
-                  <ArrowUpRight className="size-4" />
+                  자세히 보기
+                  <ArrowUpRight className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </Link>
 
                 <Link
@@ -423,15 +452,33 @@ export function CurationHero({
                       ? "/lobby/movies/upcoming"
                       : "/lobby/movies/platform"
                   }
-                  className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-5 py-3.5 text-sm font-medium text-cinemo-text backdrop-blur-sm transition hover:border-cinemo-gold/60 hover:bg-white/10"
+                  className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/[.04] px-4 py-2.5 text-sm font-medium text-cinemo-muted transition hover:border-cinemo-gold/45 hover:text-cinemo-text"
                 >
-                  {isUpcoming ? "전체 개봉 예정작" : "플랫폼 영화 전체 보기"}
+                  {isUpcoming ? "개봉 예정작 전체" : "플랫폼 영화 전체"}
+                </Link>
+              </div>
+            )}
+
+            {!isCommemorative && (
+              <div className="mt-6 grid grid-cols-2 gap-2 lg:hidden">
+                <Link
+                  href={`/movies/${featuredMovie.id}`}
+                  className="group inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl border border-cinemo-gold/40 bg-cinemo-gold/10 px-3 py-2.5 text-xs font-semibold text-cinemo-gold-light transition hover:bg-cinemo-gold/20 sm:text-sm"
+                >
+                  자세히 보기
+                  <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                </Link>
+                <Link
+                  href={isUpcoming ? "/lobby/movies/upcoming" : "/lobby/movies/platform"}
+                  className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-white/15 bg-white/[.04] px-3 py-2.5 text-xs font-medium text-cinemo-muted transition hover:border-cinemo-gold/45 hover:text-cinemo-text sm:text-sm"
+                >
+                  {isUpcoming ? "개봉 예정작 전체" : "플랫폼 영화 전체"}
                 </Link>
               </div>
             )}
           </div>
 
-          <div className="mx-auto w-full max-w-[11rem] sm:max-w-[16rem] lg:max-w-[20rem]">
+          <div className="mx-auto w-full max-w-[11rem] sm:max-w-[10rem] lg:max-w-[20rem]">
             <Link
               href={`/movies/${featuredMovie.id}`}
               className="group relative block overflow-hidden rounded-[1.35rem] border border-cinemo-gold/35 bg-black/40 shadow-[0_2rem_4rem_rgb(0_0_0_/44%)]"
@@ -459,31 +506,33 @@ export function CurationHero({
                 )}
               </div>
             )}
-
-            {!isCommemorative && (
-              <div className="mt-4 flex flex-col gap-3 lg:hidden">
-                <Link
-                  href={`/movies/${featuredMovie.id}`}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cinemo-gold px-5 py-3.5 text-sm font-semibold text-cinemo-dark shadow-[0_0_2rem_rgb(199_161_75_/22%)] transition hover:bg-cinemo-gold-light"
-                >
-                  영화 자세히 보기
-                  <ArrowUpRight className="size-4" />
-                </Link>
-
-                <Link
-                  href={
-                    isUpcoming
-                      ? "/lobby/movies/upcoming"
-                      : "/lobby/movies/platform"
-                  }
-                  className="inline-flex w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 px-5 py-3.5 text-sm font-medium text-cinemo-text backdrop-blur-sm transition hover:border-cinemo-gold/60 hover:bg-white/10"
-                >
-                  {isUpcoming ? "전체 개봉 예정작" : "플랫폼 영화 전체 보기"}
-                </Link>
-              </div>
-            )}
           </div>
         </div>
+        {showFilmStrip && (
+          <div className="mt-6 border-t border-white/10 pt-5">
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[0.65rem] font-medium tracking-[0.24em] text-cinemo-gold">TODAY&apos;S FILM STRIP</p>
+                <p className="mt-1 text-sm text-cinemo-muted">한 장면씩 골라보는 오늘의 기념일</p>
+              </div>
+              <span className="rounded-full border border-cinemo-gold/25 bg-cinemo-gold/10 px-3 py-1 text-xs font-semibold text-cinemo-gold">{movies.length}편</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {movies.map((candidate, index) => {
+                const isSelected = candidate.id === featuredMovie.id;
+                return (
+                  <button key={candidate.id} type="button" aria-pressed={isSelected} aria-label={`${candidate.title} 선택`} onClick={() => setSelectedMovie(candidate)} className="w-20 shrink-0 text-left sm:w-24">
+                    <span className={`relative block aspect-[2/3] overflow-hidden rounded-xl border transition ${isSelected ? "border-cinemo-gold shadow-[0_0_1.5rem_rgb(199_161_75_/24%)]" : "border-white/10 opacity-75 hover:opacity-100"}`}>
+                      <Image src={candidate.posterUrl!} alt="" width={192} height={288} sizes="96px" className="h-full w-full object-cover" />
+                      <span className="absolute left-1.5 top-1.5 rounded-full bg-black/65 px-1.5 py-0.5 text-[0.625rem] font-semibold text-cinemo-text">{String(index + 1).padStart(2, "0")}</span>
+                    </span>
+                    <span className={`mt-2 block truncate text-xs ${isSelected ? "font-semibold text-cinemo-gold-light" : "text-cinemo-muted"}`}>{candidate.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

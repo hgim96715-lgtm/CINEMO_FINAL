@@ -11,7 +11,9 @@ import { popularMoviesQueryOptions } from "@/lib/queries/movie-popular.query";
 
 import { TodayMovieSkeleton } from "./LobbySkeleton";
 
-export function TodayMovieHero() {
+type TodayMovieHeroProps = { embedded?: boolean };
+
+export function TodayMovieHero({ embedded = false }: TodayMovieHeroProps) {
   const viewer = useQuery(currentUserQueryOptions());
   const today = useQuery({
     queryKey: ["daily-movie", viewer.data?.id ?? "guest", getDailyMovieDay()],
@@ -45,11 +47,11 @@ export function TodayMovieHero() {
   const isLoading = viewer.isPending || (personal && records.isPending) || today.isFetching || fallback.isFetching;
 
   if (!movie && isLoading) {
-    return <TodayMovieSkeleton />;
+    return <TodayMovieSkeleton embedded={embedded} />;
   }
 
   return (
-    <View className="mx-5 mt-4 overflow-hidden rounded-3xl border border-cinemo-gold/25 bg-cinemo-surface px-4 py-4">
+    <View className={`${embedded ? "m-5" : "mx-5 mt-4"} overflow-hidden rounded-3xl border border-cinemo-gold/25 bg-cinemo-surface px-4 py-4`}>
       <View className="flex-row items-center gap-2">
         <Sparkles size={16} color={CINEMO_COLORS.accentLight} />
         <Text className="text-xs font-semibold text-cinemo-gold-light">{eligibleToday?.headline ?? "오늘의 영화"}</Text>

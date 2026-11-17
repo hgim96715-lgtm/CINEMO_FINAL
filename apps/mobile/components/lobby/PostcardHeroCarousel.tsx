@@ -58,7 +58,9 @@ function getPostcardTranslation(metadata: PostcardMetadata | null) {
   );
 }
 
-export function PostcardHeroCarousel() {
+type PostcardHeroCarouselProps = { embedded?: boolean };
+
+export function PostcardHeroCarousel({ embedded = false }: PostcardHeroCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const postcardsQuery = useInfiniteQuery(postcardFeedQueryOptions());
   const postcards =
@@ -85,7 +87,7 @@ export function PostcardHeroCarousel() {
   }, [visiblePostcards.length]);
 
   if (postcardsQuery.isPending) {
-    return <PostcardHeroSkeleton />;
+    return <PostcardHeroSkeleton embedded={embedded} />;
   }
 
   if (postcardsQuery.isError || !activePostcard) {
@@ -104,7 +106,7 @@ export function PostcardHeroCarousel() {
       : activePostcard.content.length > 160;
 
   return (
-    <View className="mx-5 mt-5 overflow-hidden rounded-3xl border border-white/10 bg-cinemo-surface">
+    <View className={`${embedded ? "m-5" : "mx-5 mt-5"} overflow-hidden rounded-3xl border border-white/10 bg-cinemo-surface`}>
       <View className="h-[310px] overflow-hidden">
         <View
           className="absolute inset-0"

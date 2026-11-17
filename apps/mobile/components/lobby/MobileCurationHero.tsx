@@ -3,7 +3,7 @@ import { useQuery, useQueries } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { CalendarDays, Shuffle } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 import type { MovieSearchItemResponse } from "@cinemo/api-contract";
 import { CINEMO_COLORS } from "@cinemo/shared";
@@ -46,6 +46,7 @@ function toHeroMovie(movie: MovieSearchItemResponse): MobileHeroMovie {
 
 type MobileCurationHeroProps = {
   kind: MobileHeroKind;
+  embedded?: boolean;
 };
 
 function PlatformLogoRow({
@@ -84,7 +85,10 @@ function PlatformLogoRow({
   );
 }
 
-export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
+export function MobileCurationHero({
+  kind,
+  embedded = false,
+}: MobileCurationHeroProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const curationsQuery = useQuery({
     ...activeCurationsQueryOptions(),
@@ -205,7 +209,7 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
   );
 
   if (isPending) {
-    return <MobileCurationHeroSkeleton kind={kind} />;
+    return <MobileCurationHeroSkeleton kind={kind} embedded={embedded} />;
   }
 
   if (!movie) return null;
@@ -229,7 +233,7 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
       : null;
 
   return (
-    <View className="mx-5 mt-5 overflow-hidden rounded-3xl border border-cinemo-gold/20 bg-cinemo-surface px-5 py-6">
+    <View className={`${embedded ? "m-5" : "mx-5 mt-5"} overflow-hidden rounded-3xl border border-cinemo-gold/20 bg-cinemo-surface px-5 py-6`}>
       <View className="flex-row items-center justify-between">
         <Text className="text-xs font-semibold tracking-[3px] text-cinemo-gold">
           {eyebrow}
@@ -324,6 +328,80 @@ export function MobileCurationHero({ kind }: MobileCurationHeroProps) {
           )}
         </View>
       </Pressable>
+
+      {kind === "commemorative" && movies.length > 1 && (
+        <View className="mt-6 border-t border-white/10 pt-5">
+          <View className="flex-row items-center justify-between">
+            <View>
+              <Text className="text-[10px] font-semibold tracking-[2.4px] text-cinemo-gold">
+                TODAY&apos;S FILM STRIP
+              </Text>
+              <Text className="mt-1 text-xs text-cinemo-muted">
+                한 장면씩 골라보는 오늘의 기념일
+              </Text>
+            </View>
+            <View className="rounded-full border border-cinemo-gold/25 bg-cinemo-gold/10 px-3 py-1">
+              <Text className="text-xs font-semibold text-cinemo-gold">
+                {movies.length}편
+              </Text>
+            </View>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingTop: 14, paddingRight: 4, gap: 10 }}
+          >
+            {movies.map((candidate, index) => {
+              const isSelected = index === selectedIndex;
+              const candidatePosterUrl = getImageUrl(candidate.posterUrl);
+
+              return (
+                <Pressable
+                  key={candidate.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={`${candidate.title} 선택`}
+                  onPress={() => setSelectedIndex(index)}
+                  className="w-[76px]"
+                >
+                  <View
+                    className="relative overflow-hidden rounded-xl border"
+                    style={{
+                      borderColor: isSelected
+                        ? CINEMO_COLORS.accent
+                        : "rgba(255,255,255,0.12)",
+                    }}
+                  >
+                    {candidatePosterUrl ? (
+                      <Image
+                        source={{ uri: candidatePosterUrl }}
+                        resizeMode="cover"
+                        style={{ width: 76, height: 114, borderRadius: 11 }}
+                      />
+                    ) : null}
+                    <View className="absolute left-1.5 top-1.5 rounded-full bg-black/70 px-1.5 py-0.5">
+                      <Text className="text-[10px] font-semibold text-cinemo-text">
+                        {String(index + 1).padStart(2, "0")}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    className="mt-2 text-xs"
+                    style={{
+                      color: isSelected
+                        ? CINEMO_COLORS.accentLight
+                        : CINEMO_COLORS.textSecondary,
+                    }}
+                  >
+                    {candidate.title}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
     </View>
   );
