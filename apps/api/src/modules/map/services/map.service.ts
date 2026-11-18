@@ -7,12 +7,15 @@ import type { Venue } from "@prisma/client";
 import { GetCinemaVenuesRequestDto } from "../dto/requests/get-cinema-venues.request.dto";
 import { CinemaVenueResponseDto } from "../dto/responses/cinema-venue.response.dto";
 import { toCinemaVenueResponseDto } from "../mappers/cinema-venue-response.mapper";
+import { CinemaChainVenueRepository } from "../repositories/cinema-chain-venue.repository";
+import type { UpsertCinemaChainVenueInput } from "../repositories/cinema-chain-venue.repository";
 
 @Injectable()
 export class MapService {
   constructor(
     private readonly kakaoService: KakaoService,
     private readonly venueRepository: VenueRepository,
+    private readonly cinemaChainVenueRepository: CinemaChainVenueRepository,
   ) {}
 
   searchPlaces(query: string, page = 1, size = 15) {
@@ -48,5 +51,15 @@ export class MapService {
     });
 
     return venues.map(toCinemaVenueResponseDto);
+  }
+
+  async upsertCinemaChainVenue(input: UpsertCinemaChainVenueInput) {
+    const venue = await this.venueRepository.findCinemaById(input.venueId);
+
+    if (!venue) {
+      throw new NotFoundException("연결할 영화관을 찾을 수 없음");
+    }
+
+    return this.cinemaChainVenueRepository.upsert(input);
   }
 }

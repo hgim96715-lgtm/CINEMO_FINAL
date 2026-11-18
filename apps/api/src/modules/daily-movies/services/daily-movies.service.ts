@@ -181,12 +181,12 @@ export class DailyMoviesService {
 
   async preference(userId: string) {
     const current = await this.dailyMovieRepository.findPreference(userId);
-    return { enabled: current?.pushToken.userId === userId };
+    return { enabled: current?.enabled ?? false };
   }
 
   async setPreference(userId: string, enabled: boolean, pushTokenId?: string) {
     if (!enabled) {
-      await this.dailyMovieRepository.deletePreference(userId);
+      await this.dailyMovieRepository.disablePreference(userId);
       return { enabled: false };
     }
     const token = pushTokenId && await this.dailyMovieRepository.findPushToken(userId, pushTokenId);
@@ -205,13 +205,12 @@ export class DailyMoviesService {
 
   async sendDue(now = new Date()) {
     const day = seoulDate.format(now);
-    const start = new Date(`${day}T00:00:00+09:00`);
     const weekday = new Date(`${day}T00:00:00Z`).getUTCDay();
     const settings = await this.pushSettings();
     if (!settings.enabled || !settings.weekdays.includes(weekday) ||
         Number(seoulHour.format(now)) !== settings.hour) return 0;
 
-    const dueInput = { day, start, now };
+    const dueInput = { day, now };
     let cursor: string | undefined;
     let sent = 0;
     while (true) {

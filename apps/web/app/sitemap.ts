@@ -35,6 +35,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       "/lobby/postcards",
       "/lobby/lists",
       "/lobby/cinemas",
+      "/lobby/showtimes",
+      "/lobby/quizzes",
     ].map((path) => ({
       url: `${siteUrl}${path}`,
       changeFrequency: "daily" as const,

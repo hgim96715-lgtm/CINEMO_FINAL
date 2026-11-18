@@ -32,6 +32,8 @@ import { NotificationsModule } from "@/modules/notifications/notifications.modul
 import { CinemaPassportModule } from "@/modules/cinema-passport/cinema-passport.module";
 import { AdminModule } from "@/modules/admin/admin.module";
 import { ActivityModule } from "@/modules/activity/activity.module";
+import { CinemaShowtimesModule } from "@/modules/showtimes/cinema-showtimes.module";
+import { MovieQuizzesModule } from "@/modules/movie-quizzes/movie-quizzes.module";
 
 @Module({
   imports: [
@@ -81,6 +83,8 @@ import { ActivityModule } from "@/modules/activity/activity.module";
     CinemaPassportModule,
     AdminModule,
     ActivityModule,
+    CinemaShowtimesModule,
+    MovieQuizzesModule,
   ],
   providers: [
     {

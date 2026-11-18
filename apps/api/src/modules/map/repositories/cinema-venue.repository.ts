@@ -49,6 +49,17 @@ export class VenueRepository {
     });
   }
 
+  findCinemaById(venueId: string) {
+    return this.prisma.venue.findFirst({
+      where: {
+        id: venueId,
+        type: VenueType.CINEMA,
+        isActive: true,
+      },
+      select: { id: true },
+    });
+  }
+
   upsert(input: UpsertVenueInput) {
     const { provider, externalId, ...data } = input;
     return this.prisma.venue.upsert({

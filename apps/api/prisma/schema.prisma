@@ -121,6 +121,24 @@ enum MovieVisibility {
   HIDDEN
 }
 
+enum MovieQuizSource {
+  CINEMO
+  USER
+}
+
+enum MovieQuizStatus {
+  PENDING
+  PUBLISHED
+  HIDDEN
+  DELETED
+}
+
+enum MovieQuizRoundStatus {
+  ACTIVE
+  CORRECT
+  FAILED
+}
+
 enum MapProvider {
   KAKAO
 }
@@ -732,6 +750,8 @@ model User {
   activityLogs               UserActivityLog[]
   universeStars              UniverseStar[]
   universeConstellations     UniverseConstellation[]
+  movieQuizzes               MovieQuiz[]      @relation("MovieQuizAuthor")
+  movieQuizRounds            MovieQuizRound[]
 
   @@index([nickname])
   @@index([status])
@@ -945,6 +965,7 @@ model Venue {
 
   userMovieRecords UserMovieRecord[]
   cinemaVisits     CinemaVisit[]
+  cinemaChainVenues CinemaChainVenue[]
 
   @@unique([provider, externalId])
   @@index([type])
@@ -955,6 +976,27 @@ model Venue {
   @@index([hCode])
   @@index([bCode])
   @@map("venues")
+}
+
+// 카카오 장소와 체인 공식 상영시간표의 내부 극장 코드를 분리해 보관한다.
+// 동일 장소가 여러 체인 코드로 잘못 연결되는 일을 막기 위해 체인별로 유일하게 둔다.
+model CinemaChainVenue {
+  id           String          @id @default(uuid(7)) @db.Uuid
+  venueId      String          @map("venue_id") @db.Uuid
+  chain        TheaterExclusive
+  externalCode String          @map("external_code") @db.Text
+  officialName String?         @map("official_name") @db.Text
+  bookingUrl   String?         @map("booking_url") @db.Text
+  checkedAt    DateTime        @default(now()) @map("checked_at") @db.Timestamptz(3)
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@unique([venueId, chain])
+  @@unique([chain, externalCode])
+  @@index([chain])
+  @@map("cinema_chain_venues")
 }
 
 model UserPersonBookmark {
@@ -1026,9 +1068,49 @@ model Movie {
   universeStars          UniverseStar[]
   movieStamp             MovieStamp?
   dailyMoviePicks        DailyMoviePick[]
+  quizzes                MovieQuiz[]
 
   @@index([visibility])
   @@map("movies")
+}
+
+model MovieQuiz {
+  id        String           @id @default(uuid(7)) @db.Uuid
+  movieId   String           @map("movie_id") @db.Uuid
+  authorId  String?          @map("author_id") @db.Uuid
+  source    MovieQuizSource  @default(CINEMO)
+  status    MovieQuizStatus  @default(PUBLISHED)
+  prompt    String           @db.Text
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  movie   Movie           @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  author  User?           @relation("MovieQuizAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  rounds  MovieQuizRound[]
+
+  @@index([status, createdAt])
+  @@index([movieId])
+  @@index([authorId])
+  @@map("movie_quizzes")
+}
+
+model MovieQuizRound {
+  id           String               @id @default(uuid(7)) @db.Uuid
+  quizId       String               @map("quiz_id") @db.Uuid
+  userId       String               @map("user_id") @db.Uuid
+  choices      String[]             @default([])
+  attempts     Int                  @default(0)
+  status       MovieQuizRoundStatus @default(ACTIVE)
+  scoreAwarded Int                  @default(0) @map("score_awarded")
+  startedAt    DateTime             @default(now()) @map("started_at") @db.Timestamptz(3)
+  completedAt  DateTime?            @map("completed_at") @db.Timestamptz(3)
+
+  quiz MovieQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt])
+  @@index([status, startedAt])
+  @@map("movie_quiz_rounds")
 }
 
 model MovieTitle {
@@ -1398,6 +1480,7 @@ model DailyMoviePick {
 model DailyMoviePreference {
   userId      String    @id @map("user_id") @db.Uuid
   pushTokenId String    @map("push_token_id") @db.Uuid
+  enabled     Boolean   @default(true)
   enabledAt   DateTime  @map("enabled_at") @db.Timestamptz(3)
   lastVisitAt DateTime  @map("last_visit_at") @db.Timestamptz(3)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)

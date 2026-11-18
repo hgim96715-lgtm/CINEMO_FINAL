@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from "@nestjs/common";
 import {
   ApiCreatedResponse,
   ApiOkResponse,
@@ -15,6 +15,8 @@ import { GetCinemaVenuesRequestDto } from "../dto/requests/get-cinema-venues.req
 import { ImportCinemaVenuesRequestDto } from "../dto/requests/import-cinema-venues.request.dto";
 import { CinemaVenueResponseDto } from "../dto/responses/cinema-venue.response.dto";
 import { CinemaVenueImportService } from "../services/cinema-venue-import.service";
+import { AdminGuard } from "@/modules/admin/guards/admin.guard";
+import { UpsertCinemaChainVenueRequestDto } from "../dto/requests/upsert-cinema-chain-venue.request.dto";
 
 @ApiTags("MAP")
 @Controller("map")
@@ -57,5 +59,24 @@ export class MapController {
   @ApiCreatedResponse({ description: "관람 장소 저장 결과" })
   saveVenue(@Body() place: SaveVenueRequestDto): Promise<Venue> {
     return this.mapService.saveVenue(place);
+  }
+
+  @Put("venues/:venueId/chains")
+  @UseGuards(AdminGuard)
+  @ApiOperation({
+    summary: "영화관 체인 코드 연결",
+    description: "카카오 영화관 장소와 체인의 공식 상영시간표 극장 코드를 연결",
+  })
+  upsertCinemaChainVenue(
+    @Param("venueId") venueId: string,
+    @Body() body: UpsertCinemaChainVenueRequestDto,
+  ) {
+    return this.mapService.upsertCinemaChainVenue({
+      venueId,
+      chain: body.chain,
+      externalCode: body.externalCode,
+      officialName: body.officialName ?? null,
+      bookingUrl: body.bookingUrl ?? null,
+    });
   }
 }

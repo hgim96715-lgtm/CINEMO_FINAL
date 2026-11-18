@@ -35,7 +35,6 @@ const dailyMovieSelect = {
 
 type DuePreferencesInput = {
   day: string;
-  start: Date;
   now: Date;
 };
 
@@ -43,9 +42,9 @@ type DuePreferencesInput = {
 export class DailyMovieRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  private eligiblePreferencesWhere({ day, start, now }: DuePreferencesInput): Prisma.DailyMoviePreferenceWhereInput {
+  private eligiblePreferencesWhere({ day, now }: DuePreferencesInput): Prisma.DailyMoviePreferenceWhereInput {
     return {
-      lastVisitAt: { lt: start },
+      enabled: true,
       user: {
         status: "ACTIVE",
         mobileRefreshTokens: { some: { expiresAt: { gt: now }, revokedAt: null } },
@@ -220,12 +219,15 @@ export class DailyMovieRepository {
   findPreference(userId: string) {
     return this.prisma.dailyMoviePreference.findUnique({
       where: { userId },
-      select: { pushToken: { select: { userId: true } } },
+      select: { enabled: true },
     });
   }
 
-  deletePreference(userId: string) {
-    return this.prisma.dailyMoviePreference.deleteMany({ where: { userId } });
+  disablePreference(userId: string) {
+    return this.prisma.dailyMoviePreference.updateMany({
+      where: { userId },
+      data: { enabled: false },
+    });
   }
 
   findPushToken(userId: string, pushTokenId: string) {
@@ -238,8 +240,8 @@ export class DailyMovieRepository {
   savePreference(userId: string, pushTokenId: string, now: Date) {
     return this.prisma.dailyMoviePreference.upsert({
       where: { userId },
-      create: { userId, pushTokenId, enabledAt: now, lastVisitAt: now },
-      update: { pushTokenId, enabledAt: now, lastVisitAt: now },
+      create: { userId, pushTokenId, enabled: true, enabledAt: now, lastVisitAt: now },
+      update: { pushTokenId, enabled: true, enabledAt: now, lastVisitAt: now },
     });
   }
 

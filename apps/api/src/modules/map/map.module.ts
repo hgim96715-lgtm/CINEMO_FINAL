@@ -6,11 +6,17 @@ import { MapController } from "./controllers/map.controller";
 import { MapService } from "./services/map.service";
 import { VenueRepository } from "./repositories/cinema-venue.repository";
 import { CinemaVenueImportService } from "./services/cinema-venue-import.service";
+import { CinemaChainVenueRepository } from "./repositories/cinema-chain-venue.repository";
 
 @Module({
   imports: [PrismaModule, KakaoModule],
   controllers: [MapController],
-  providers: [MapService, VenueRepository, CinemaVenueImportService],
+  providers: [
+    MapService,
+    VenueRepository,
+    CinemaChainVenueRepository,
+    CinemaVenueImportService,
+  ],
   exports: [MapService, CinemaVenueImportService],
 })
 export class MapModule {}
